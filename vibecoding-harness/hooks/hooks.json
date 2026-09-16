@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "description": "Hooks de ciclo de vida del harness VibeCoding",
+  "hooks": {
+    "SessionStart": {
+      "enabled": true,
+      "script": "./scripts/session_start.js",
+      "description": "Carga el contexto de la sesion anterior al iniciar una nueva sesion"
+    },
+    "SessionEnd": {
+      "enabled": true,
+      "script": "./scripts/session_end.js",
+      "description": "Guarda un resumen de la sesion actual para continuidad"
+    },
+    "PreCompact": {
+      "enabled": false,
+      "script": "./scripts/pre_compact.js",
+      "description": "Sugiere que contexto preservar antes de compactar la ventana de contexto"
+    },
+    "EvaluateSession": {
+      "enabled": false,
+      "script": "./scripts/evaluate_session.js",
+      "description": "Evalua la sesion y extrae aprendizajes para mejorar el harness"
+    }
+  }
+}

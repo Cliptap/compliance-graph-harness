@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "model": "opencode-go/minimax-m3",
+    "fecha": "2026-07-09",
+    "tasks": {
+      "T01": "Validador de RUT chileno (modulo 11)",
+      "T02": "Endpoint GET /appointments con 7 query params + RBAC",
+      "T03": "Sanitizador de nombres propios (Unicode NFC)"
+    },
+    "modes": {
+      "without_skills": "Agent eval-libre: sin reglas del harness, libre albedrio",
+      "with_skills": "Agent eval-con-skills: 4 reglas Always-On inyectadas"
+    },
+    "diseno": "Intrasujeto balanceado. Mismo modelo, mismo proyecto, unica variable = system prompt del agent. 3 tareas x 2 modos = 6 corridas.",
+    "limitaciones": [
+      "T02 sin skills declaro 3 archivos en prosa pero no uso tool 'write' en la corrida documentada; metrics en null por la ausencia de contenido persistente.",
+      "Sample size: N=3 tareas. Significancia estadistica limitada; los resultados son indicativos, no concluyentes.",
+      "Modelo unico: opencode-go/minimax-m3. No se evaluan otros modelos del proveedor.",
+      "Sin medicion de carga cognitiva del desarrollador (NASA-TLX no aplicado por restricciones de tiempo)."
+    ]
+  },
+  "runs": [
+    {
+      "task_id": "01", "task_name": "rut_validator", "mode": "without_skills",
+      "status": "OK", "cycle_time_seconds": 160.0,
+      "files_persisted": 1, "files_declared": 1,
+      "files_persisted_paths": ["app/utils/rut_validator.py"],
+      "cc_avg": 3.67, "cog_avg": 3.67, "aloc_ratio": 0.0, "loc": 36, "hallucination_score": 0,
+      "cost_usd": 0.0539, "notes": "Genero solo rut_validator.py, sin tests."
+    },
+    {
+      "task_id": "01", "task_name": "rut_validator", "mode": "with_skills",
+      "status": "OK", "cycle_time_seconds": 127.1,
+      "files_persisted": 2, "files_declared": 2,
+      "files_persisted_paths": ["app/utils/rut_validator.py", "_test_rut.py"],
+      "cc_avg": 4.0, "cog_avg": 4.0, "aloc_ratio": 0.0, "loc": 63, "hallucination_score": 0,
+      "cost_usd": 0.0395, "notes": "Genero rut_validator.py + _test_rut.py (test util)."
+    },
+    {
+      "task_id": "02", "task_name": "appointments_endpoint", "mode": "without_skills",
+      "status": "OK", "cycle_time_seconds": 461.7,
+      "files_persisted": 3, "files_declared": 3,
+      "files_persisted_paths": [
+        "src/backend/api/appointments.py",
+        "src/backend/schemas.py",
+        "tests/unit/test_appointments.py"
+      ],
+      "cc_avg": 2.82, "cog_avg": 2.05, "aloc_ratio": 0.099, "loc": 532, "hallucination_score": 0,
+      "cost_usd": 0.2032, "notes": "Tras actualizar el agent prompt con instruccion explicita 'usa tool write', completo. appointments.py (217 LOC, CC 4.3, cog 5.0) + schemas.py (76 LOC, CC 1.0) + test_appointments.py (239 LOC, CC 3.15). Cero alucinaciones. Mayor superficie de archivos que con skills (3 vs 2) y mas LOC (532 vs 314). El modo libre declaro y entrego los 3 archivos que dijo."
+    },
+    {
+      "task_id": "02", "task_name": "appointments_endpoint", "mode": "with_skills",
+      "status": "OK", "cycle_time_seconds": 372.9,
+      "files_persisted": 2, "files_declared": 2,
+      "files_persisted_paths": [
+        "src/backend/api/appointments.py",
+        "tests/unit/test_appointments.py"
+      ],
+      "cc_avg": 4.25, "cog_avg": 3.92, "aloc_ratio": 0.024, "loc": 314, "hallucination_score": 0,
+      "cost_usd": 0.1933, "notes": "Tras actualizar el agent prompt con instruccion explicita 'usa tool write', completo. appointments.py (205 LOC, CC 4.0, cog 5.83) + test_appointments.py (109 LOC, CC 4.5, cog 2.0). Comentario inicial documenta 5 convenciones adoptadas del repo (coherente con Regla 1 del harness). Cero alucinaciones (todos los imports son reales de requirements.txt)."
+    },
+    {
+      "task_id": "03", "task_name": "name_normalizer", "mode": "without_skills",
+      "status": "OK", "cycle_time_seconds": 136.9,
+      "files_persisted": 3, "files_declared": 3,
+      "files_persisted_paths": [
+        "app/utils/text_normalizer.py",
+        "app/__init__.py",
+        "app/utils/__init__.py"
+      ],
+      "cc_avg": 8.0, "cog_avg": 8.0, "aloc_ratio": 0.0, "loc": 39, "hallucination_score": 0,
+      "cost_usd": 0.0510, "notes": "Genero text_normalizer.py + 2 __init__.py redundantes."
+    },
+    {
+      "task_id": "03", "task_name": "name_normalizer", "mode": "with_skills",
+      "status": "OK", "cycle_time_seconds": 88.5,
+      "files_persisted": 1, "files_declared": 1,
+      "files_persisted_paths": ["app/utils/text_normalizer.py"],
+      "cc_avg": 8.0, "cog_avg": 8.0, "aloc_ratio": 0.0, "loc": 23, "hallucination_score": 0,
+      "cost_usd": 0.0331, "notes": "Solo text_normalizer.py. Sin __init__.py redundantes."
+    }
+  ],
+  "resumen": {
+    "cycle_time_promedio_solo_exitosas": {
+      "without_skills": 252.9,
+      "with_skills": 196.2,
+      "reduccion_pct": 22.4
+    },
+    "archivos_promedio_solo_exitosas": {
+      "without_skills": 2.33,
+      "with_skills": 1.67,
+      "reduccion_pct": 28.6
+    },
+    "loc_promedio_solo_exitosas": {
+      "without_skills": 202.3,
+      "with_skills": 133.3,
+      "reduccion_pct": 34.1
+    },
+    "alucinaciones_totales": {
+      "without_skills": 0,
+      "with_skills": 0
+    },
+    "costo_total_usd": 0.5788,
+    "tareas_completadas": "6/6"
+  }
+}

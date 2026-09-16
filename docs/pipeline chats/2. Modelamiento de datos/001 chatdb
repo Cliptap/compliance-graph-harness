@@ -1,0 +1,56 @@
+# necesito que usemos el skill para armar la/s tablas del repositorio para el consultorio
+¡Excelente! Vamos a diseñar el esquema para el consultorio aplicando la nueva skill paso a paso. No generaré el código SQL hasta que completemos la información.
+
+Comencemos por el primer punto:
+
+1. Entidades y Propósito
+
+¿Cuáles son las entidades principales que necesitamos guardar? Por lo que me comentaste antes, claramente tenemos "Pacientes", pero ¿necesitamos alguna otra, como "Atenciones/Consultas", "Médicos" o "Especialidades"?
+¿Cuál es el propósito general de este modelo en particular? (ej. solo almacenar la ficha del paciente, o además dejar registro de cada vez que asisten).
+
+# solo entidad pacientes, el proposito por ahora solo es almacenar la ficha del paciente
+
+Perfecto, nos enfocamos únicamente en la entidad "Pacientes" para almacenar su ficha.
+
+Pasemos al siguiente paso:
+
+2. Relaciones y Gobernanza de Datos Dado que solo tenemos una entidad no hay relaciones por ahora. ¿Existen reglas de negocio estrictas para estos datos? (Por ejemplo: no se pueden borrar físicamente los pacientes, se debe registrar quién o cuándo se actualizaron por última vez, etc.).
+
+3. Atributos y Naturaleza de los Datos ¿Cuáles son los atributos o campos específicos que quieres guardar para el paciente? Nos habías mencionado RUT, correo y previsión (Fonasa o Isapre). ¿Se debe agregar nombre, apellido, teléfono, fecha de nacimiento o algún campo extra de la ficha? ¿Algún campo requerirá JSONB para observaciones o campos flexibles?
+
+# no existen reglas estrictas ademas del formato de rut y correo.
+# de datos necesitamos
+# RUT
+# Nombres y Apellidos
+# Fecha de nacimiento
+# Sexo
+# Correo electrónico
+# Teléfono
+# Previsión de salud
+
+Perfecto, ya tenemos definidos los atributos.
+
+Avancemos al último punto:
+
+4. Patrones de Acceso y Volumen
+
+¿Cómo se van a consultar típicamente estos pacientes? (Por ejemplo: búsquedas exactas por RUT, búsqueda parcial por nombres/apellidos, listados filtrados por previsión).
+¿Es un sistema con muchas lecturas (consultas de la ficha de pacientes diarios) o más equitativo (leer una vez, escribir una vez)?
+Recordando que son aproximadamente 10 ingresos diarios, el volumen será bajo inicialmente.
+Una vez que me digas las consultas más frecuentes (patrones de acceso), haré el resumen final antes de generar el SQL.
+
+# se consultaran tipicamente por RUT
+# más equitativo, dificilmente habrán demasiadas lecturas
+
+¡Perfecto! Ya tengo toda la información necesaria.
+
+Aquí tienes el resumen antes de generar el código:
+
+Resumen de la Arquitectura Propuesta:
+
+Entidades: Una sola tabla patients.
+Propósito: Almacenamiento seguro y rápido de fichas personales de pacientes del consultorio.
+Gobernanza: Reglas estrictas solo a nivel de Base de Datos para el formato del RUT y correo mediante constraints CHECK.
+Atributos: RUT (único), nombres, apellidos, fecha de nacimiento, sexo, correo, teléfono y previsión (limitado a 'fonasa' o 'isapre').
+Tipos de Datos (Reglas PG): TEXT para campos de texto, DATE para fecha de nacimiento, PK usando BIGINT IDENTITY.
+Patrones de Acceso: Búsqueda principal por RUT y volumen equitativo (bajo). Por ello, agregaremos un índice único sobre la columna RUT para hacer las búsquedas instantáneas y garantizar que no se dupliquen pacientes.

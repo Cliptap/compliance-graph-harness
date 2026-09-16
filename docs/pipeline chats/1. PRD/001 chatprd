@@ -1,0 +1,71 @@
+# Prompt: necesito que generes un prd para hacer un repositorio de procesamiento de datos para un consultorio en base al skill prd
+
+¡Hola! Para generar el PRD siguiendo el formato requerido, iremos paso a paso. No puedo generar el documento final hasta que no completemos todas las secciones.
+Comencemos con el primer punto:
+1. Problema y propósito
+¿Cuál es el problema principal que intentan resolver en el consultorio con este repositorio de datos?
+¿Cuál es el objetivo principal o propósito de construirlo?
+Por favor, cuéntame un poco sobre esto para poder avanzar a la siguiente sección.
+
+# Prompt: necesitamos almacenar los datos personales de los pacientes para poder consultarlos luego
+
+Avanzemos al siguiente punto:
+2. Usuarios y uso
+
+¿Quiénes usarán este sistema (por ejemplo: médicos, recepcionistas, administradores)?
+¿Qué acciones específicas necesitan hacer cada uno en el sistema (ej: cargar nuevos datos, consultar historiales, actualizar información)?
+
+# Prompt: Este sistema solo tendra 1 tipo de usuario, bajisima gobernanza, solo necesitamos que se puedan almacenar y leer los datos personales
+
+Entendido, queda claro que será un solo tipo de usuario y ya tomo nota de que la gobernanza será baja (sin control de acceso complejo, solo validaciones básicas).
+Pasemos al siguiente punto:
+3. Datos
+¿Qué tipo de datos se van a manejar (estructurados como tablas de Excel/SQL, semi-estructurados como documentos, o no estructurados como imágenes o PDFs)?
+¿Cuál es el dominio exacto de los datos (ej: solo datos de contacto y demográficos, o también historial médico)?
+¿Cuál es el volumen aproximado de pacientes o registros que esperan manejar a corto o mediano plazo?
+
+# Prompt: los datos van a ser estructurados. Por ahora los datos serán datos personales y correo de contacto y prevision de salud(fonasa o isapre)
+
+Perfecto, datos estructurados enfocados en información personal, contacto y previsión de salud.
+Para terminar de definir la sección de datos: ¿qué volumen aproximado de pacientes estiman manejar (ej: cientos, algunos miles)?
+Y avanzando al siguiente punto:
+4. Fuentes de datos
+¿De dónde provienen estos datos? ¿Se ingresan de forma manual por el usuario en el momento, o vienen de algún otro sistema/API preexistente del consultorio?
+
+# Prompt: vendrán unos 10 pacientes al día
+
+Anotado: un volumen bajo, de aproximadamente 10 pacientes por día.
+
+Ahora pasemos formalmente a las siguientes secciones que nos faltan para poder generar el documento:
+
+4. Fuentes de datos
+
+¿La información de estos pacientes se ingresará de forma manual por el usuario en sistema, o vendrá conectada desde algún otro sistema/formulario externo?
+5. Arquitectura
+
+Para guardar estos datos estructurados, ¿prefieren una base de datos SQL o NoSQL?
+¿El sistema se alojará en la nube (ej: AWS, Google Cloud, Azure) o de manera local en un computador/servidor del consultorio?
+
+# Prompt: se ingresaran manual | .sql, y se alojara en local
+
+Perfecto, tomamos nota: ingreso manual, base de datos SQL y alojamiento local.
+Ya casi terminamos. Solo nos falta la siguiente sección:
+6. Procesamiento de datos (ETL)
+Ya sabemos que la carga es manual, pero ¿cada cuánto se cargarán al sistema? (ej: ¿se ingresan paciente a paciente en el momento de la atención, o se cargan todos juntos al final del día?).
+¿Los datos requieren alguna transformación o limpieza antes de guardarse en la base de datos (ej: formatear el RUT, validar o estandarizar correos, etc.), o se guardarán exactamente tal cual los ingresa el usuario?
+(Nota: La sección 7 de Gobernanza ya la definimos como "Baja" según tu indicación anterior).
+Dime esto último y pasamos a la validación final del PRD.
+
+# Prompt: se ingresan paciente a paciente en el momento de la atención.
+los datos como rut y correo si requieren validacion/estandarizacion
+
+Tenemos toda la información necesaria para el documento. Resumo lo que hemos recopilado:
+
+Propósito: Almacenar y consultar fácilmente los datos personales de los pacientes.
+Usuarios: Un solo tipo de usuario que se encargará de almacenar y leer los datos.
+Datos: Estructurados (datos personales, correo y previsión de salud: Fonasa/Isapre). Volumen de ~10 pacientes diarios.
+Fuentes: Ingreso de forma manual.
+Arquitectura: Base de datos SQL en infraestructura local.
+Procesamiento de datos: Ingreso manual en el momento de la atención (paciente a paciente), aplicando estandarización y validación a campos clave como el RUT y correo electrónico antes de guardar.
+Gobernanza: Baja (validaciones básicas, sin controles de acceso complejos).
+Voy a generar el PRD. Confirma si la información es correcta.

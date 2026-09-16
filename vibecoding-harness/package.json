@@ -1,0 +1,59 @@
+{
+  "name": "@vibecoding/harness",
+  "version": "1.0.0",
+  "description": "Harness de desarrollo asistido por IA — skills, reglas y hooks para que el modelo pregunte en vez de asumir",
+  "keywords": [
+    "vibecoding",
+    "ai",
+    "harness",
+    "skills",
+    "development",
+    "mvp",
+    "best-practices",
+    "ask-dont-assume"
+  ],
+  "license": "MIT",
+  "author": "Proyecto 3 — VibeCoding",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibecoding/harness"
+  },
+  "scripts": {
+    "install:claude": "node scripts/install.js claude",
+    "install:opencode": "node scripts/install.js opencode",
+    "install:cursor": "node scripts/install.js cursor",
+    "eval": "node eval/run.js"
+  },
+  "files": [
+    "rules/",
+    "skills/",
+    "agents/",
+    "hooks/",
+    "contexts/",
+    "eval/",
+    "install.ps1",
+    "install.sh"
+  ],
+  "vibecoding": {
+    "harnessVersion": "1.0.0",
+    "minAgentVersion": "1.0.0",
+    "supportedHarnesses": [
+      "claude_code",
+      "opencode",
+      "cursor"
+    ],
+    "rulesCount": 4,
+    "skillsCount": 15,
+    "agentsCount": 3,
+    "defaultGovernance": "bajo",
+    "pipeline": {
+      "stages": [
+        "definicion",
+        "arquitectura",
+        "backend",
+        "frontend",
+        "cierre"
+      ]
+    }
+  }
+}
