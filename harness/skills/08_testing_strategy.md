@@ -5,7 +5,7 @@ depends_on: [prd-generation, backend-implementation]
 stage: cross-cutting
 project_types: [web_app, api, data_pipeline, cli_tool, mobile]
 governance: all
-description: Define la estrategia de testing: tipos de tests, herramientas, coverage, datos de prueba y CI integration.
+description: "Define la estrategia de testing: tipos de tests, herramientas, coverage, datos de prueba y CI integration."
 ---
 
 # Skill: Estrategia de Testing

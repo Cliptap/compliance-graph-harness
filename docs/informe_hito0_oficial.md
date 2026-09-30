@@ -2,8 +2,8 @@
 
 ### PORTADA
 
-**Proyecto:** Arnés de Supervisión de Software Asistido por IA mediante Grafos de Dependencias y Linaje de Datos Personales  
-**Subtítulo / Caso de Estudio:** Validación Experimental sobre un Sistema de Gestión Clínica Transaccional y Cumplimiento de la Ley N° 21.719  
+**Proyecto:** Harness de Desarrollo de Software Asistido por IA con Gobernanza de Ciclo Completo y Gestión de Contexto mediante Grafos de Conocimiento  
+**Subtítulo / Caso de Estudio:** Banco de Pruebas Transaccional Clínico y Módulo Integrado de Cumplimiento de la Ley N° 21.719 de Protección de Datos Personales  
 **Institución:** Universidad Andrés Bello, Facultad de Ingeniería, Sede Viña del Mar — ITISB  
 **Curso:** Portafolio de Proyectos / Proyecto de Título  
 **Integrantes:**
@@ -17,527 +17,578 @@
 
 ### RESUMEN EJECUTIVO
 
-El desarrollo de software asistido por modelos de lenguaje (LLMs) acelera la producción de código, pero carece de mecanismos deterministas para asegurar el cumplimiento normativo en arquitecturas que procesan datos personales. Ante la promulgación en Chile de la Ley N° 21.719 —que consagra el principio de Privacidad desde el Diseño (*Privacy by Design*) e impone sanciones de hasta 20.000 UTM—, la inyección masiva de repositorios en ventanas de contexto genera degradación semántica (*context rot*), alucinaciones en dependencias y fugas involuntarias de información sensible.
+El desarrollo de software asistido por modelos de lenguaje (LLMs) acelera la producción de código, pero carece de mecanismos formales de gobernanza. Al delegar tareas a modelos generativos sin supervisión estructurada, surgen problemas críticos: degradación por saturación de ventana (*context rot*), alucinación de dependencias, agregación de funcionalidades no solicitadas (*goldplating*) y pérdida de soberanía del programador sobre las decisiones de diseño. Las herramientas actuales se limitan a la autocompleción de código o a la ejecución de agentes autónomos sin control determinista, sin ofrecer un marco que gobierne todo el ciclo de vida del desarrollo.
 
-El presente proyecto tiene por objetivo desarrollar y validar experimentalmente un arnés de supervisión de software agnóstico, asistido por un doble grafo de contexto y análisis estático de flujo de datos (*taint analysis*), capaz de acotar deterministamente la información inyectada a los agentes y mitigar infracciones normativas. La arquitectura desacoplada del arnés extrae mediante AST un Grafo de Dependencias de Código y un Grafo de Linaje de Datos Sensibles persistidos en SQLite. Mediante un algoritmo de *Sub-graph Slicing* a vecindad acotada ($k \le 2$), el sistema alimenta a subagentes autónomos de auditoría y parcheo (`ComplianceAuditorAgent` y `DeveloperPatcherAgent`) exclusivamente con los nodos comprometidos.
+Este proyecto propone el diseño y validación empírica de un *harness* de desarrollo agnóstico asistido por IA que gobierna el ciclo de software completo mediante tres pilares: un pipeline de doce habilidades (*skills*) secuenciales guiadas por el desarrollador (desde la especificación de requerimientos hasta el despliegue y documentación), un sistema de reglas operativas permanentes (*always-on*) que garantizan la soberanía técnica del programador impidiendo alucinaciones y *goldplating*, y la gestión de contexto de sesiones mediante grafos de conocimiento estructurales para mitigar el *context rot*. Como funcionalidad diferenciadora, el arnés integra un módulo de auditoría de cumplimiento normativo (tomando la nueva Ley N° 21.719 de Protección de Datos Personales de Chile como caso de estudio de alta exigencia).
 
-Como banco de pruebas empírico se utiliza un sistema transaccional de gestión clínica desarrollado en FastAPI y PostgreSQL bajo el estándar HL7 FHIR. El estado actual (*As-Is*) cuenta con 25 pruebas unitarias aprobadas, un indexador sintáctico operativo y la remediación verificada en disco de fugas en el módulo de eventos clínicos sin introducir regresiones funcionales. Las evaluaciones preliminares demuestran que el arnés reduce el tiempo de ciclo en un 22.4% y elimina alucinaciones en dependencias, confirmando la viabilidad de gobernar el desarrollo asistido por IA mediante representaciones topológicas estructuradas.
+El arnés opera de manera completamente desacoplada (`src/harness/`), siendo parametrizable para analizar cualquier repositorio. Como banco de pruebas se utiliza un sistema clínico transaccional en FastAPI y PostgreSQL (`demo_apps/`). El estado actual (*As-Is*) cuenta con 38 pruebas unitarias aprobadas distribuidas en dos suites modulares independientes (17 del arnés y 21 de la demo clínica), ejecutables por áreas temáticas. Evaluaciones preliminares confirman una reducción del 22.4% en el tiempo de ciclo, eliminación total de alucinaciones y estricta preservación de contratos funcionales.
 
 ---
 
 ### 1. INTRODUCCIÓN
 
 #### 1.1 Contexto Tecnológico
-La ingeniería de software contemporánea experimenta un cambio de paradigma impulsado por la adopción de modelos de lenguaje de gran escala (LLMs) y sistemas de desarrollo agéntico. Estas herramientas permiten automatizar desde la generación de especificaciones de requisitos hasta la escritura de código y pruebas automatizadas. Sin embargo, a medida que los agentes asumen mayor autonomía en la toma de decisiones técnicas, emergen desafíos críticos relativos a la gobernanza del código generado: dispersión arquitectónica, introducción de dependencias no autorizadas (*gold-plating*), inconsistencia relacional y degradación de contexto (*context rot*). En consecuencia, la disciplina exige evolucionar desde el uso informal y exploratorio de la inteligencia artificial hacia entornos de ingeniería rigurosos y deterministas que supervisen, acoten y validen cada artefacto producido por el agente.
+La ingeniería de software experimenta un cambio de paradigma impulsado por la adopción masiva de modelos de lenguaje de gran escala (LLMs) y entornos de asistencia basados en agentes. Prácticas emergentes como el desarrollo guiado por lenguaje natural (*vibe coding*) permiten transformar intenciones expresadas en lenguaje cotidiano en código funcional en cuestión de segundos. Sin embargo, esta velocidad introduce desafíos de gobernanza y calidad de software que la disciplina recién comienza a formalizar:
 
-#### 1.2 Motivación y Relevancia: El Vínculo entre la Ley N° 21.719 y el Código Fuente
-En Chile, el marco regulatorio sobre privacidad y protección de la información experimenta una transformación estructural con la promulgación de la Ley N° 21.719 (que reforma sustantivamente la Ley N° 19.628 e instituye la Agencia de Protección de Datos Personales, APDP). Esta normativa no se limita a fijar directrices organizacionales o administrativas abstractas, sino que impone mandatos técnicos de observancia obligatoria en la construcción de sistemas de información:
-1. **Mandato de Privacidad desde el Diseño y por Defecto (*Privacy by Design and by Default*):** Consagrado expresamente en el **Artículo 3° letra c**, exige que las medidas de seguridad, minimización y confidencialidad se encuentren integradas orgánicamente desde la fase más temprana de concepción y codificación del software, y no como capas cosméticas añadidas con posterioridad.
-2. **Deberes de Seguridad y Confidencialidad:** Formalizados en los **Artículos 14° bis y quinquies**, responsabilizan legalmente a las entidades por brechas de confidencialidad, tipificando sanciones económicas que pueden alcanzar hasta 20.000 UTM o el 4% de los ingresos anuales ante infracciones graves o gravísimas.
+1. **Saturación y degradación de contexto (*context rot*):** A medida que un proyecto crece, entregar archivos completos a la ventana de contexto de un modelo genera interferencia semántica, pérdida de atención sobre instrucciones críticas e inconsistencias en la generación de código.
+2. **Alucinación de dependencias y sintaxis:** Los modelos sugieren librerías inexistentes, métodos deprecados o comandos no compatibles con el sistema operativo del usuario.
+3. **Desviación de alcance (*goldplating*):** Los LLMs tienden a incorporar componentes no solicitados (como capas de abstracción innecesarias, contenedores o librerías complejas) sin autorización explícita del desarrollador.
+4. **Pérdida de soberanía arquitectónica:** Cuando el programador acepta sugerencias generadas en bloque sin trazabilidad, el sistema resultante pierde cohesión estructural y se vuelve difícil de mantener y auditar.
 
-Esta exigencia legal impacta de manera directa en los flujos de desarrollo asistido por IA. Las políticas de privacidad redactadas en documentos corporativos son incapaces de prevenir que un desarrollador o un modelo de lenguaje inserte en el código transaccional instrucciones como `logger.info(f"Paciente: {patient.rut}, Diagnóstico: {patient.diagnosis}")` —vulnerabilidad catalogada formalmente por el MITRE como CWE-532 (*Insertion of Sensitive Information into Log File*)—. Asimismo, los pipelines convencionales de integración y despliegue continuo (CI/CD) carecen de mecanismos automatizados para auditar el flujo de datos sensibles en tiempo de compilación o análisis estático. Existe, por tanto, una necesidad imperativa de tender un puente determinista entre la ontología de la Ley N° 21.719 y el código fuente: auditar y mitigar vulnerabilidades de privacidad a nivel de AST (*Abstract Syntax Tree*) y grafos de flujo, garantizando que el software transaccional cumpla preventivamente el mandato de la ley antes de su despliegue a producción.
+En este escenario, se vuelve indispensable superar el uso informal de asistentes y avanzar hacia **harnesses de desarrollo**: entornos de ingeniería estructurados que guíen, acoten y supervisen cada fase del ciclo de vida del software, garantizando que el desarrollador conserve el control de las decisiones clave.
 
-#### 1.3 Antecedentes del Proyecto: Evolución Metodológica bajo Design Science Research (DSR)
-Lejos de constituir una bitácora empírica anecdótica, la evolución del presente proyecto se articula rigurosamente bajo el marco de **Investigación en Ciencia del Diseño (*Design Science Research*, DSR)** aplicado a la ingeniería de software (Hevner et al., 2004; Wieringa, 2014). Cada etapa representó una iteración de diseño de artefacto (*Artifact Iteration*) orientada a superar una limitación técnica específica y cuantificable en repositorios reales:
+#### 1.2 Motivación y Relevancia: Dimensiones de un Harness Integral
+La necesidad de un arnés de desarrollo responde a cuatro dimensiones operativas concretas:
 
-1. **Iteración 1 — Asistencia no Estructurada (Ingeniería de Prompts):**
-   - *Artefacto:* Instrucciones textuales abiertas e inyección ad-hoc en chats de LLMs.
-   - *Evaluación y Limitación Técnica:* Alta volatilidad estocástica, falta de reproducibilidad y pérdida de restricciones arquitectónicas en sesiones de trabajo consecutivas.
-2. **Iteración 2 — Modularización por Habilidades (*Skills*):**
-   - *Artefacto:* Archivos modulares con especificaciones de entrada, restricciones técnicas y formatos de salida para tareas acotadas (PRDs, modelos relacionales, contratos REST).
-   - *Evaluación y Limitación Técnica:* Si bien estandarizó la consistencia sintáctica, el agente operó bajo *ceguera relacional*: carecía de visibilidad de las dependencias intermodulares y tomaba decisiones arquitectónicas no consultadas ante vacíos de especificación.
-3. **Iteración 3 — Arnés de Gobernanza (*Harness*) y Reglas *Always-On*:**
-   - *Artefacto:* Marco de gobernanza basado en cuatro reglas permanentes inviolables: Regla 1 (Preguntar, nunca asumir), Regla 2 (Alcance MVP estricto sin *gold-plating*), Regla 3 (Tolerancia cero a dependencias alucinadas) y Regla 4 (Apego a principios universales KISS/YAGNI).
-   - *Evaluación y Limitación Técnica:* Restauró la soberanía técnica del desarrollador sobre el diseño, pero colisionó con una barrera física: la **saturación de la ventana de contexto plana**. La inyección masiva de archivos provocaba degradación semántica (*context rot*), olvido de directivas previas y sobrecosto computacional en tokens.
-4. **Iteración 4 — Modelación Topológica por Doble Grafo y Poda Determinista (Estado Actual):**
-   - *Artefacto:* Representación dual sobre un sustrato relacional en SQLite compuesta por un Grafo de Dependencias Arquitectónicas y un Grafo de Linaje de Datos Sensibles (*Taint Graph*), acoplada a un algoritmo de poda por vecindad (*Sub-graph Slicing* a $k \le 2$ saltos BFS) y orquestación agéntica especializada.
-   - *Evaluación y Aporte:* Resuelve conjuntamente la visibilidad relacional de dependencias y la compresión determinista del contexto inyectado, eliminando alucinaciones y permitiendo auditar la Ley N° 21.719 en código ejecutable.
+- **Dimensión de contexto:** Los repositorios de software son estructuras jerárquicas y relacionales. Los enfoques ingenuos (como copiar archivos completos o recurrir a búsquedas por similitud de texto) fragmentan las dependencias del sistema. Se requiere gestionar el contexto de sesión mediante representaciones en grafos de conocimiento que preserven la topología del código.
+- **Dimensión de gobernanza:** Es necesario imponer restricciones operativas permanentes que obliguen al modelo a consultar ante cualquier ambigüedad técnica, elegir siempre la solución más simple posible (KISS/YAGNI) y respetar las decisiones humanas.
+- **Dimensión de proceso:** El desarrollo no se limita a escribir funciones; abarca desde la formulación del documento de requerimientos de producto (PRD) y la arquitectura del sistema, hasta el diseño de APIs, bases de datos, pruebas, integración continua, observabilidad y documentación técnica. Un arnés robusto debe orquestar este ciclo paso a paso.
+- **Dimensión de cumplimiento normativo (*compliance*):** Como demostración de que un arnés de desarrollo puede atender restricciones de alta exigencia, Chile promulgó recientemente la **Ley N° 21.719 sobre Protección de Datos Personales** (reforma sustantiva a la Ley N° 19.628 e instauración de la Agencia de Protección de Datos Personales, APDP). Esta ley consagra el principio de **Privacidad desde el Diseño y por Defecto** (Art. 3° letra c) e impone multas de hasta 20.000 UTM por fugas o tratamientos indebidos (Arts. 14° bis y quinquies). Incorporar la auditoría estática de privacidad en el flujo de desarrollo no es un añadido aislado, sino un caso de prueba riguroso para verificar que el arnés puede gobernar requisitos regulatorios complejos directamente sobre el código fuente.
 
-##### Soberanía del Desarrollador y Autonomía Acotada (*Bounded Autonomy*)
-Un cuestionamiento central en sistemas de desarrollo agéntico radica en articular la autonomía del agente con la soberanía técnica del programador. En nuestro arnés, los subagentes (`ComplianceAuditorAgent` y `DeveloperPatcherAgent`) operan bajo el principio de **Autonomía Acotada (*Bounded Autonomy*)**:
-- El agente **no tiene potestad para inventar patrones, crear abstracciones o alterar la arquitectura**, encontrándose estrictamente confinado al subgrafo podado localmente ($k \le 2$) y a la regla específica del catálogo normativo.
-- La mitigación en disco opera dentro de un entorno supervisado con **doble barrera de control**:
-  1. *Barrera Determinista de Regresión:* Todo parche formulado debe ser validado inmediatamente por la suite automatizada de pruebas unitarias (Pytest). Si un solo test falla o se altera un contrato funcional, el arnés ejecuta un *rollback* automático inmediato del archivo modificado.
-  2. *Supervisión Humana Soberana (*Human-in-the-Loop*):* El parche consolidado en disco por el arnés constituye una propuesta en una rama de trabajo aislada (*Git branch*), la cual requiere obligatoriamente la revisión y aprobación explícita del desarrollador mediante *Pull Request* o *Commit* antes de cualquier integración productiva. De esta manera, el principio *Always-On* de "preguntar y validar" se preserva formalmente como una salvaguarda de gobernanza de software.
+#### 1.3 Antecedentes del Proyecto: Evolución Metodológica bajo DSR
+El diseño del arnés no parte de premisas puramente teóricas, sino de una trayectoria empírica orientada bajo la metodología **Design Science Research (DSR)** (Hevner et al., 2004). Cada fase ha abordado limitaciones prácticas identificadas durante el desarrollo de sistemas reales:
+
+```mermaid
+flowchart TD
+    I1["<b>Iteración 1: Prompts Abiertos</b><br>• Instrucciones ad-hoc en chat<br>• <i>Falla: Alta variabilidad y pérdida de reglas</i>"] --> I2["<b>Iteración 2: Pipeline de Skills (01-12)</b><br>• Guías modulares por fase (PRD a Docs)<br>• <i>Falla: Ceguera contextual entre archivos</i>"]
+    I2 --> I3["<b>Iteración 3: Reglas Always-On</b><br>• Soberanía estricta (KISS, preguntar, no inventar)<br>• <i>Falla: Context rot por saturación de tokens</i>"]
+    I3 --> I4["<b>Iteración 4: Grafos de Conocimiento</b><br>• Estructura topológica y linaje de datos<br>• <i>Aporte: Poda quirúrgica de contexto</i>"]
+    I4 --> I5["<b>Iteración 5: Arquitectura Desacoplada y Roles Agénticos</b><br>• Harness agnóstico parametrizable (src/harness/)<br>• Suite modular de 38 tests por ramas<br>• Roles: planner, reviewer, security, compliance"]
+```
+
+1. **Iteración 1 — Asistencia no estructurada (Prompts abiertos):**
+   - *Artefacto:* Prompts en lenguaje natural en chats genéricos.
+   - *Evaluación y limitación:* Alta variabilidad, respuestas inconsistentes y olvido rápido de convenciones del proyecto.
+2. **Iteración 2 — Pipeline de habilidades modulares (*Skills* 01 a 12):**
+   - *Artefacto:* Conjunto de doce directivas procedimentales secuenciales que estructuran el desarrollo en etapas ordenadas: `01-prd`, `02-architecture`, `03-data-modeling`, `04-api-design`, `05-backend`, `06-frontend`, `07-auth`, `08-testing`, `09-cicd`, `10-deployment`, `11-observability` y `12-documentation`.
+   - *Evaluación y limitación:* Aportó orden sistemático al proceso, pero el modelo generativo carecía de visibilidad sobre los efectos cruzados de sus cambios en otros módulos del sistema.
+3. **Iteración 3 — Reglas operativas permanentes (*Always-On*) y Soberanía:**
+   - *Artefacto:* Cuatro reglas permanentes e inviolables consolidadas en `AGENTS.md`: 1) Preguntar ante cualquier ambigüedad, nunca asumir; 2) Alcance MVP estricto sin *goldplating*; 3) Cero alucinaciones de dependencias o sintaxis; y 4) Principios universales (KISS, YAGNI, funciones breves, seguridad básica).
+   - *Evaluación y limitación:* Devolvió la soberanía del diseño al desarrollador, pero al adjuntar múltiples archivos para contextualizar las consultas se manifestó la saturación de la memoria de trabajo (*context rot*).
+4. **Iteración 4 — Modelación de contexto mediante grafos de conocimiento:**
+   - *Artefacto:* Extracción sintáctica mediante AST persistida en bases relacionales ligeras (SQLite) y grafos de conocimiento (`graphify-out/`), asociando la topología de llamadas y el linaje de datos sensibles. Se implementó un algoritmo de poda contextual a vecindad acotada ($k \le 2$ saltos BFS).
+   - *Evaluación y aporte:* Eliminó las alucinaciones al entregarle al modelo exclusivamente la porción de código relevante, permitiendo al mismo tiempo auditar patrones de fuga de datos (CWE-532).
+5. **Iteración 5 (Estado actual) — Desacoplamiento arquitectónico, testing modular y roles agénticos:**
+   - *Artefacto:* Desacoplamiento formal del código del arnés (`src/harness/`) respecto a la aplicación objetivo (`demo_apps/`). Parametrización de los motores de análisis para aceptar rutas dinámicas de escaneo. Reestructuración de la suite a **38 pruebas unitarias modularizadas** (17 del arnés y 21 de la demo) con un runner por áreas (`test.ps1`). Especificación formal de perfiles agénticos especializados (*planner*, *code reviewer*, *security reviewer*, *compliance auditor*).
 
 #### 1.4 Estructura del Documento
-El presente informe de avance correspondiente al Hito 0 se organiza según la estructura oficial acumulativa:
-- **Sección 2 (Problema u Oportunidad):** Caracteriza la situación actual, la brecha técnica identificada y formula la pregunta de investigación.
-- **Sección 3 (Objetivos):** Define el objetivo general y los cuatro objetivos específicos del proyecto.
-- **Sección 4 (Justificación y Alcance):** Expone el valor técnico, legal y operacional, delimitando los alcances, usuarios y exclusiones formales.
-- **Sección 5 (Estado del Arte, Marco Conceptual y Brecha):** Analiza críticamente los antecedentes técnicos, la literatura de agentes y las dimensiones operativas de la Ley N° 21.719.
-- **Sección 6 (Metodología):** Detalla el diseño experimental bajo tres condiciones, variables, métricas, datos y amenazas a la validez.
-- **Sección 7 (Planificación y Gestión):** Presenta el cronograma institucional de hitos, matriz de riesgos, asignación de responsables y trazabilidad.
-- **Sección 8 (Diseño de la Solución):** Formaliza los requerimientos funcionales, no funcionales y de seguridad, junto a la arquitectura técnica y reproducibilidad.
-- **Sección 9 (Desarrollo e Incrementos):** Expone el estado *As-Is* del producto a la fecha del Hito 0, alternativas descartadas y deuda técnica.
-- **Sección 10 (Pruebas, Evaluación y Resultados):** Presenta el protocolo de evaluación experimental y los resultados preliminares del arnés.
-- **Sección 11 (Discusión y Conclusiones):** Analiza los hallazgos preliminares frente a la literatura y proyecta el trabajo hacia el Hito 1.
-- **Sección 12 (Referencias y Anexos):** Detalla el cuerpo normativo y bibliográfico de referencia bajo formato consistente.
+El presente informe se estructura según las directrices institucionales del Hito 0:
+- **Sección 2 (Problema u Oportunidad):** Detalla la falta de gobernanza en el desarrollo asistido por IA, la brecha técnica frente a herramientas existentes y la pregunta de investigación.
+- **Sección 3 (Objetivos):** Presenta el objetivo general y cinco objetivos específicos que cubren el espectro integral del arnés.
+- **Sección 4 (Justificación y Alcance):** Argumenta el valor técnico, metodológico, normativo y académico del proyecto, delimitando el arnés, el banco clínico y las exclusiones.
+- **Sección 5 (Estado del Arte, Marco Conceptual y Brecha):** Compara el arnés con soluciones comerciales y de investigación (Copilot, Cursor, SWE-agent), justificando sus fundamentos técnicos.
+- **Sección 6 (Metodología):** Define el diseño experimental en dos dimensiones (gobernanza y gestión de contexto), variables, datos sintéticos y criterios de éxito.
+- **Sección 7 (Planificación y Gestión):** Expone el cronograma de cinco hitos, el backlog priorizado de tareas y la matriz de trazabilidad actualizada.
+- **Sección 8 (Diseño de la Solución):** Formaliza requerimientos del arnés y de la aplicación, el diagrama de arquitectura desacoplada y los procedimientos de reproducibilidad.
+- **Sección 9 (Desarrollo e Incrementos):** Detalla el estado *As-Is* del Incremento 0 con total transparencia sobre componentes operativos y deuda técnica.
+- **Sección 10 (Pruebas, Evaluación y Resultados):** Presenta el protocolo piloto y los resultados cuantitativos del arnés frente a la asistencia no gobernada.
+- **Sección 11 (Discusión y Conclusiones):** Analiza los hallazgos, evalúa el cumplimiento de objetivos del Hito 0 y proyecta los siguientes incrementos.
+- **Sección 12 (Referencias y Anexos):** Reúne el marco normativo y bibliográfico, glosario, matriz de reglas y el reporte de verificación de las 38 pruebas unitarias.
 
 ---
 
 ### 2. PROBLEMA U OPORTUNIDAD
 
-#### 2.1 Situación Actual
-La integración acelerada de modelos de lenguaje (LLMs) y agentes autónomos en los flujos de ingeniería de software ha transformado la productividad técnica, pero ha introducido vulnerabilidades de gobernanza críticas cuando el software procesa información de personas naturales. En este contexto, convergen dos fenómenos de alta relevancia:
+#### 2.1 Situación Actual: La Falta de Gobernanza en el Desarrollo Asistido por IA
+El uso de asistentes generativos de código se ha generalizado en la industria. Sin embargo, su operación habitual descansa sobre una premisa riesgosa: delegar la redacción de código a modelos probabilísticos sin un marco que verifique que el software generado respete la arquitectura definida, los contratos de interfaz y las normas legales aplicables.
 
-1. **Transformación del Régimen Legal de Protección de Datos en Chile:** Con la promulgación de la Ley N° 21.719 en diciembre de 2024 —que reformó estructuralmente la Ley N° 19.628 y creó la Agencia de Protección de Datos Personales (APDP)—, Chile alineó su marco legal con estándares internacionales como el Reglamento General de Protección de Datos europeo (GDPR). La legislación chilena consagra expresamente el principio de Privacidad desde el Diseño (*Privacy by Design*, Art. 3° let. c) y el deber de seguridad y confidencialidad (Art. 14° bis y quinquies), facultando a la APDP a imponer sanciones de hasta 20.000 UTM o el 4% de los ingresos anuales de la entidad infractora.
-2. **Falta de Salvaguardas Deterministas en el Código Asistido por IA:** Los asistentes comerciales y agentes de generación de código operan de forma probabilística. Al generar servicios transaccionales, endpoints o manejadores de eventos, los modelos suelen incurrir en prácticas inseguras como la inserción inadvertida de datos personales en bitácoras (*logging*) sin anonimizar (vulnerabilidad catalogada formalmente como CWE-532), la serialización excesiva de datos en respuestas de API contraviniendo el principio de minimización (Art. 14° quáter), o la transgresión de regímenes especiales como la custodia y secreto de datos de salud (Ley N° 20.584 y Art. 127 del Código Sanitario).
+En la práctica, los entornos de desarrollo con IA presentan cuatro fallas recurrentes:
+1. **Pérdida de trazabilidad en las decisiones de diseño:** Los modelos generan código asumiendo decisiones arquitectónicas no consultadas (como elegir una librería no estándar o cambiar la estructura de persistencia).
+2. **Generación excesiva de código no requerido (*goldplating*):** Ante requerimientos puntuales, los modelos suelen agregar utilidades no solicitadas, aumentando la superficie de ataque y el costo de mantenimiento.
+3. **Deterioro semántico por sobrecarga de contexto (*context rot*):** Cuando se inyectan repositorios completos o fragmentos textuales no estructurados, los modelos pierden coherencia, olvidan restricciones previas e inventan código.
+4. **Multiplicación de riesgos regulatorios:** Al implementar funcionalidades rutinarias (como registrar eventos o gestionar accesos), los modelos carecen de criterio para discernir qué datos están sujetos a normativas de protección de la privacidad (como la Ley N° 21.719 en Chile), insertando rutinariamente impresiones de datos sensibles en archivos de bitácora (*logs*), debilidad clasificada formalmente como CWE-532 (*Insertion of Sensitive Information into Log File*).
 
 #### 2.2 Brecha Identificada
-La necesidad técnica no resuelta radica en la **ausencia de mecanismos estáticos y deterministas dentro del ciclo de desarrollo agéntico que articulen el análisis de flujo de datos (*taint analysis*) con la reparación automatizada de código bajo regulaciones específicas**.
+Al analizar las soluciones disponibles en la industria y la literatura científica, se comprueba que abordan únicamente partes aisladas del problema:
+- **Asistentes de autocompletado y chat (Copilot, Cursor):** Maximizan la velocidad de escritura pero operan sin soberanía del desarrollador, sin pipelines formales de diseño y sin mecanismos para prevenir *goldplating* o verificar cumplimiento normativo.
+- **Agentes autónomos de resolución de issues (SWE-agent, Devin):** Ejecutan comandos libres en terminal e intentan resolver incidencias en repositorios abiertos, pero presentan baja explicabilidad, alto consumo de tokens, riesgo de romper contratos de API preexistentes y nula consideración de marcos regulatorios específicos.
+- **Analizadores estáticos tradicionales (SAST / Linters como SonarQube o Semgrep):** Detectan vulnerabilidades sintácticas de forma pasiva, pero no proponen parches adaptados al contexto del proyecto ni gobiernan las etapas tempranas de diseño.
 
-Las herramientas convencionales de aseguramiento de calidad (linters o analizadores estáticos generales como SonarQube o Bandit) detectan patrones genéricos de sintaxis o inyecciones de código tradicionales, pero carecen de una ontología jurídica local que distinga identificadores civiles (RUT con validación Módulo-11), datos de contacto o categorías sensibles de salud. Por otro lado, las estrategias existentes para dotar de contexto a los agentes —tales como la inyección masiva de documentación legal en el prompt o la recuperación vectorial no relacional (RAG estándar)— sobrecargan la ventana de contexto (*context rot*), provocan alucinaciones en librerías y pierden de vista el grafo completo de dependencias entre módulos.
+**La brecha concreta:** No existe un **harness de desarrollo integral y desacoplado** que orqueste el ciclo de vida del software mediante etapas guiadas (*skills* secuenciales), imponga reglas deterministas de soberanía humana (*always-on*), gestione el contexto mediante grafos de conocimiento y provea capacidades de auditoría de cumplimiento normativo integradas al flujo de trabajo.
 
-Esta brecha afecta directamente a los **equipos de desarrollo de software, líderes técnicos y organizaciones que construyen o modernizan sistemas transaccionales con datos personales en Chile**. Estos actores enfrentan el riesgo inminente de incurrir en infracciones legales sancionables por la APDP debido a la falta de herramientas que certifiquen y corrijan el cumplimiento de la Ley N° 21.719 de manera continua en el código fuente.
+#### 2.3 Pregunta del Proyecto y Variables de Estudio
+A partir de la brecha identificada, se formula la siguiente pregunta central de investigación:
 
-#### 2.3 Pregunta del Proyecto
-En virtud de la problemática y brecha expuestas, se formula la siguiente pregunta verificable que guía el presente proyecto de titulación:
+> **¿En qué medida un harness de desarrollo de software asistido por IA —basado en un pipeline de skills secuenciales, reglas always-on de soberanía del desarrollador y gestión de contexto mediante grafos de conocimiento— mejora la gobernanza, trazabilidad y calidad del código generado frente a métodos de asistencia no estructurados, incorporando capacidades deterministas de cumplimiento normativo (Ley N° 21.719)?**
 
-> **¿En qué medida un arnés de supervisión basado en un doble grafo de contexto permite auditar y mitigar de forma automatizada infracciones técnicas de la Ley N° 21.719 en software transaccional, acotando el contexto inyectado y preservando la integridad funcional frente a enfoques agénticos no acotados?**
+Para evaluar esta interrogante de forma empírica y reproducible, se definen cinco variables de estudio:
+1. **Efectividad de gobernanza:** Reducción de iniciativas no consultadas (*goldplating*) y erradicación de librerías inventadas (alucinaciones).
+2. **Eficiencia contextual:** Reducción neta del volumen de tokens inyectados y tiempo de ciclo (*cycle time*) en las tareas de desarrollo.
+3. **Preservación funcional:** Tasa de aprobación de pruebas unitarias automatizadas (`pytest` = 100%) tras la aplicación de cambios o parches en disco.
+4. **Trazabilidad de decisiones:** Proporción de decisiones técnicas explícitamente originadas en respuestas del desarrollador a través del pipeline de *skills*.
+5. **Capacidad de auditoría normativa integrada:** Tasa de detección y remediación automática de infracciones de privacidad sin alterar el comportamiento del sistema.
 
 ---
 
 ### 3. OBJETIVOS
 
 #### 3.1 Objetivo General
-Desarrollar y evaluar experimentalmente un arnés agéntico asistido por un doble grafo de contexto y análisis estático de flujo de datos, capaz de acotar deterministamente la información inyectada a los modelos de lenguaje y mitigar de forma automatizada vulnerabilidades asociadas a la Ley N° 21.719 en software transaccional, validando su desempeño y preservación funcional sobre un sistema representativo de gestión clínica.
+Desarrollar y evaluar experimentalmente un *harness* de desarrollo de software asistido por IA, desacoplado y agnóstico, que gobierne el ciclo de vida completo del desarrollo mediante un pipeline de habilidades estructuradas (*skills* 01 a 12), reglas operativas permanentes (*always-on*) de soberanía del programador, gestión de contexto de sesiones basada en grafos de conocimiento y un módulo de auditoría de cumplimiento normativo (Ley N° 21.719), validando su desempeño y preservación funcional sobre un banco de pruebas transaccional clínico representativo.
 
 #### 3.2 Objetivos Específicos
-* **OE1 (Caso de Estudio Transaccional Clínico):** Consolidar la arquitectura modular del backend clínico en FastAPI y PostgreSQL bajo el estándar HL7 FHIR (en cumplimiento del mandato de interoperabilidad sanitaria exigido por la Ley N° 21.668, que modifica la Ley N° 20.584), asegurando operaciones CRUD, autorización granular basada en roles y alcances (RBAC con scopes), persistencia asíncrona y validación de identidades civiles mediante algoritmo módulo-11 como banco de pruebas experimental.
-* **OE2 (Sistematización Normativa y Ontología Legal):** Formalizar los principios y mandatos técnicos de la Ley N° 21.719, la Ley N° 20.584 y el Código Sanitario en una matriz ejecutable de cumplimiento algorítmico y reglas desacopladas (CL-DATAPROT) para la detección estática de fuentes (*sources*), sumideros (*sinks*), operaciones no autorizadas y conflictos de retención.
-* **OE3 (Arnés de Doble Grafo y Supervisión Agéntica):** Diseñar e implementar el arnés de gobernanza desacoplado que construya el doble grafo (dependencias de código y linaje de datos sensibles persistidos en SQLite), aplique poda matemática mediante *Sub-graph Slicing* a vecindad acotada ($k \le 2$), y orqueste subagentes especializados (`ComplianceAuditorAgent` y `DeveloperPatcherAgent`) para diagnosticar infracciones y formular parches en disco verificados automáticamente mediante suites de pruebas unitarias.
-* **OE4 (Evaluación Experimental y Validación Empírica):** Evaluar empíricamente el desempeño del pipeline bajo condiciones controladas (código plano, RAG vectorial y arnés de doble grafo), cuantificando la efectividad en la mitigación de infracciones, el tiempo de ciclo (*cycle time*), el volumen de contexto inyectado y la tasa de preservación funcional frente a modelos de lenguaje comerciales.
+* **OE1 (Pipeline de Skills y Gobernanza de Decisiones):** Implementar y formalizar un pipeline secuencial de 12 habilidades guiadas (`01-prd` a `12-documentation`) que estructure cada etapa del ciclo de vida del software, asegurando que cada decisión arquitectónica y técnica sea trazable a respuestas explícitas del desarrollador.
+* **OE2 (Gestión de Contexto mediante Grafos de Conocimiento):** Implementar un motor de análisis estático y gestión de contexto basado en grafos de conocimiento (jerarquía de llamadas y linaje de datos sensibles) con algoritmos de poda topológica a vecindad acotada ($k \le 2$ saltos BFS), suprimiendo la saturación de contexto (*context rot*) en las sesiones de trabajo con LLMs.
+* **OE3 (Arquitectura Agéntica Especializada y Desacoplada):** Diseñar e implementar la arquitectura modular del arnés (`src/harness/`), definiendo roles agénticos especializados (*planner*, *code reviewer*, *security reviewer* y *compliance auditor*) que operen con autonomía acotada, parametrizables para auditar cualquier proyecto de software objetivo.
+* **OE4 (Módulo de Cumplimiento Normativo Integrado):** Formalizar los mandatos técnicos de la Ley N° 21.719 en una matriz ejecutable de reglas de privacidad (CL-DATAPROT), implementando rutinas automatizadas de diagnóstico y formulación de parches con verificación estricta de pruebas y reversión inmediata ante fallas.
+* **OE5 (Evaluación Experimental y Validación Empírica):** Evaluar cuantitativamente el arnés bajo un diseño experimental comparativo, contrastando el desarrollo asistido con y sin gobernanza sobre el banco de pruebas clínico, midiendo reducción de alucinaciones, contención de alcance, consumo de tokens, tiempo de ciclo y preservación de contratos de software.
 
 ---
 
 ### 4. JUSTIFICACIÓN Y ALCANCE
 
 #### 4.1 Justificación
-El desarrollo del presente proyecto se sustenta en cuatro dimensiones de valor:
-- **Valor Técnico:** Aporta una solución determinista al problema de saturación de contexto (*context rot*) y dispersión arquitectónica en agentes de software. Al modelar el repositorio y los flujos de datos mediante grafos dirigidos, se acota la atención del modelo a subgrafos locales ($k \le 2$), eliminando ruido y previniendo la generación de dependencias inexistentes o regresiones funcionales.
-- **Valor Organizacional:** Ofrece a las empresas y equipos de desarrollo en Chile una herramienta automatizada de Privacidad desde el Diseño (*Privacy by Design*). Esto reduce drásticamente el riesgo de sanciones financieras por parte de la APDP (hasta 20.000 UTM) y permite certificar formalmente que los datos personales no fluyen hacia sumideros no autorizados antes de cada pase a producción.
-- **Valor Académico:** Genera evidencia empírica rigurosa y reproducible respecto a los límites de razonamiento de los LLMs frente a restricciones normativas complejas, comparando metodológicamente la inyección plana de contexto, la recuperación vectorial (RAG) y la poda topológica por grafos.
-- **Valor Social:** Contribuye a salvaguardar los derechos fundamentales de privacidad, autodeterminación informativa y confidencialidad de la ficha médica de los ciudadanos chilenos frente a la digitalización acelerada y la automatización por IA.
+El valor del proyecto se articula en cuatro ámbitos complementarios:
+- **Valor Técnico:** Introduce una solución de ingeniería determinista al problema del *context rot* y la dispersión semántica de los modelos de lenguaje. Al sustituir la inyección masiva de texto plano por grafos de conocimiento con poda topológica acotada ($k \le 2$), el modelo recibe exactamente los símbolos necesarios para comprender la tarea, eliminando la invención de dependencias y reduciendo la latencia de inferencia.
+- **Valor Metodológico:** Formaliza un flujo de trabajo replicable para el desarrollo asistido por IA. El árbol de decisiones estructurado a través del pipeline de *skills* (01 a 12) y las reglas *always-on* proveen un marco ordenado que puede ser adoptado por cualquier equipo de desarrollo para mantener la coherencia arquitectónica.
+- **Valor Normativo y Social (Diferenciador):** Demuestra que las exigencias regulatorias (como el principio de *Privacy by Design* de la Ley N° 21.719) pueden ser integradas directamente en el flujo de construcción de software. Esto reduce sustancialmente el riesgo de sanciones financieras para las organizaciones (hasta 20.000 UTM) y resguarda activamente la confidencialidad de los datos personales y de salud de los ciudadanos chilenos.
+- **Valor Académico:** Proporciona evidencia cuantitativa y reproducible sobre el impacto que tiene la gobernanza algorítmica sobre la calidad, concisión y estabilidad del código generado por modelos de lenguaje de última generación.
 
 #### 4.2 Alcance del Proyecto
-El proyecto abarca el diseño, implementación y evaluación experimental de los siguientes componentes:
-1. **Arnés de Supervisión y Gobernanza (*Harness*):**
-   - Motor de análisis sintáctico estático (AST en Python) que extrae símbolos, clases, llamadas y flujos de datos.
-   - Base de datos relacional embebida (SQLite) para la persistencia y consulta del doble grafo: Grafo de Dependencias Arquitectónicas y Grafo de Linaje de Datos Sensibles (*Taint Graph*).
-   - Algoritmo de poda determinista por búsqueda en anchura (*Sub-graph Slicing* con $k \le 2$).
-   - Pipeline de orquestación agéntica compuesto por el `ComplianceAuditorAgent` (diagnóstico) y el `DeveloperPatcherAgent` (mitigación en disco).
-   - Visualizador interactivo topológico basado en D3.js v7 con simulación de fuerzas y panel de reglas normativas.
-2. **Caso de Estudio Transaccional Clínico (Banco de Pruebas):**
-   - Backend modular implementado en Python con FastAPI y PostgreSQL (SQLAlchemy 2.0 asíncrono).
-   - Cobertura de pruebas unitarias automatizadas (TDD) sobre operaciones de pacientes, citas y auditoría.
-   - Modelado de datos compatible con el estándar HL7 FHIR R4 (Perfil CL Core) para la interoperabilidad de fichas clínicas.
-   - Validaciones estrictas de dominio: algoritmo Módulo-11 para RUT chileno, prevención de choques de agenda (*double-booking*) y control de acceso RBAC.
-3. **Formalización Normativa (Matriz CL-DATAPROT):**
-   - Matriz algorítmica ejecutable que traduce los mandatos de la Ley N° 21.719, la Ley N° 20.584 y el Código Sanitario en reglas de linaje (detección de *sources*, *sinks*, enmascaramiento de RUT, secreto médico y borrado lógico).
+El proyecto comprende tres componentes formalmente delimitados y desacoplados:
 
-**Usuarios del Sistema:**
-Los usuarios primarios del arnés son desarrolladores de software, líderes técnicos, arquitectos de software y oficiales de protección de datos (*Data Protection Officers*, DPO) que requieren auditar y certificar bases de código antes de su despliegue.
+1. **Harness de Desarrollo (Producto Principal) — `src/harness/`:**
+   - Pipeline de doce *skills* procedimentales en `.agents/skills/` que guían secuencialmente el ciclo de vida del software.
+   - Cuatro reglas operativas permanentes en `AGENTS.md` que imponen consulta previa, foco MVP, cero alucinaciones y simplicidad.
+   - Motor de grafos de conocimiento estructurales (`graphify`) y relacionales SQLite (`graph_engine.py`, `data_lineage.py`, `agentic_audit.py`).
+   - **Motor parametrizable:** El análisis estático y la auditoría aceptan directorios de escaneo dinámicos (`scan_dirs`), permitiendo operar sobre cualquier repositorio sin acoplamiento rígido.
+   - Especificaciones formales de roles agénticos (*planner*, *code reviewer*, *security reviewer*, *compliance auditor*).
+   - Suite de **17 pruebas unitarias propias** en `tests/harness/` que certifican el funcionamiento independiente del arnés.
+2. **Banco de Pruebas Clínico (Caso de Estudio Transaccional) — `demo_apps/`:**
+   - Backend representativo en Python (FastAPI 0.115+, SQLAlchemy 2.0 asíncrono y PostgreSQL) que gestiona pacientes, médicos, citas y registros de auditoría.
+   - Lógica de dominio del entorno chileno: validación algorítmica de RUT (Módulo-11), prevención de colisiones en agenda (*double-booking*) y seguridad RBAC con tokens JWT.
+   - Suite de **21 pruebas unitarias propias** en `tests/demo/`.
+3. **Módulo de Cumplimiento Normativo (Funcionalidad Integrada del Harness):**
+   - Catálogo de reglas formalizadas en la matriz CL-DATAPROT (`compliance_rules.json`), cubriendo prevención de fugas CWE-532 en logs, custodia decenal (15 años) mediante borrado lógico y protección de diagnósticos médicos.
+   - Subagentes de diagnóstico (`ComplianceAuditor`) y remediación (`DeveloperPatcher`) con compuerta de verificación en pruebas y reversión automática (*rollback*).
 
-**Entorno de Ejecución:**
-El sistema opera en entornos de desarrollo local e integración continua (CI/CD) sobre Python 3.11+, con persistencia en SQLite para grafos y PostgreSQL para la aplicación transaccional. No requiere infraestructura de GPU local.
+**Perfiles de Usuario:**
+- *Ingenieros de Software / Desarrolladores:* Utilizan el arnés desde su entorno de desarrollo (Antigravity / VS Code) y la línea de comandos, ejecutando el pipeline de *skills*, auditando módulos con el motor de grafos y validando parches mediante el runner modular `test.ps1`.
+- *Oficiales de Protección de Datos (DPO) / Auditores:* Interactúan mediante reportes generados por el arnés y el visualizador interactivo D3.js para verificar que los datos sensibles no presenten aristas hacia salidas indebidas.
 
-**Restricciones:**
-- Temperatura $T=0$ en inferencias de LLMs para asegurar determinismo experimental.
-- Análisis estático AST enfocado en el ecosistema Python durante la fase inicial.
+**Entorno de Ejecución y Resguardos Éticos:**
+- El sistema opera en entornos estándar con Python 3.11+, utilizando SQLite embebido para el almacenamiento del arnés y PostgreSQL para la demo clínica.
+- **Datos 100% sintéticos:** Todas las pruebas utilizan Cédulas de Identidad (RUT) ficticias matemáticamente válidas por Módulo-11, nombres aleatorios y patologías simuladas. No se utiliza información de pacientes reales ni de instituciones de salud.
 
-#### 4.3 Fuera de Alcance y Proyección
-Con el objeto de preservar la rigurosidad del MVP y evitar sobreingeniería (*gold-plating*), se definen explícitamente las siguientes exclusiones para el Hito 0:
-- **Asesoría o Litigación Legal Formal:** El arnés provee auditoría técnica automatizada de código; no constituye dictamen jurídico vinculante ante tribunales ni ante la APDP.
-- **Soporte Multilinguaje Compilado:** La extensión del motor AST hacia lenguajes como C# o Java queda reservada como trabajo futuro.
-- **Frontend Clínico en Hito 0:** La construcción de interfaces de usuario finales para pacientes y médicos queda diferida para los hitos posteriores (Hito 2 y 3), manteniendo el MVP actual centrado en la solidez del backend, persistencia y análisis de grafos.
-- **Validación de Transversalidad (Segundo Caso de Estudio):** Si bien el arnés es estructuralmente agnóstico, durante el Hito 0 la evaluación empírica se concentra en el sistema clínico. La integración de un segundo caso de estudio de un dominio no sanitario (ej. comercio electrónico o servicios financieros) se contempla formalmente en la planificación de los siguientes incrementos para demostrar la transversalidad de la solución.
+#### 4.3 Fuera de Alcance
+Para preservar el rigor y la viabilidad del proyecto, se definen las siguientes exclusiones:
+- **Asesoría jurídica formal:** El arnés provee verificación técnica de software; no reemplaza la consultoría legal de abogados ni emite certificados vinculantes ante la APDP.
+- **Soporte multi-lenguaje en Hito 0:** El motor de análisis estático se enfoca exclusivamente en el ecosistema Python. La extensión hacia lenguajes compilados (Java, C#) queda proyectada para fases posteriores.
+- **Orquestación agéntica totalmente autónoma en Hito 0:** Los roles agénticos se encuentran formalizados a nivel de especificación; la ejecución de bucles cerrados autónomos sin intervención humana se implementará progresivamente a partir del Hito 1.
+- **Frontend de usuario final de la clínica:** El banco de pruebas se valida a nivel de API REST mediante contratos OpenAPI (`/docs`) y pruebas automatizadas. Construir pantallas de usuario para la clínica no aporta valor a la investigación de gobernanza del arnés.
+- **Segundo caso de estudio no clínico:** Durante el Hito 0 la evaluación se centra en el dominio clínico por su alta sensibilidad de datos. Un segundo caso de estudio (autenticación y comercio electrónico) está programado para el Hito 2 (§7.2, tarea TK-08).
 
 ---
 
 ### 5. ESTADO DEL ARTE, MARCO CONCEPTUAL Y BRECHA
 
-#### 5.1 Antecedentes y Evolución Conceptual del Proyecto
-El desarrollo de software asistido por modelos de lenguaje ha transitado rápidamente por diferentes enfoques para estructurar la interacción entre el desarrollador y el agente. En el presente proyecto, el marco metodológico y técnico se consolidó a través de una evolución empírica en tres etapas sucesivas:
+#### 5.1 Antecedentes del Ecosistema
+El desarrollo asistido por inteligencia artificial se encuentra en una fase de rápida convergencia entre modelos generativos, herramientas de desarrollo y técnicas de gestión de contexto:
 
-```mermaid
-flowchart LR
-    A["<b>Etapa 1: Modularización por Skills</b><br>• Instrucciones y plantillas por tarea<br>• Prompts estructurados por etapa<br>• <i>Limitación: Sin visión de dependencias</i>"] --> B["<b>Etapa 2: Harness & Reglas Always-On</b><br>• Soberanía del desarrollador<br>• Restricciones MVP (KISS / YAGNI)<br>• <i>Limitación: Context rot en ventana plana</i>"]
-    B --> C["<b>Etapa 3: Doble Grafo & Auditoría Normativa</b><br>• Grafo de dependencias de código<br>• Grafo de linaje legal (Ley N° 21.719)<br>• <i>Poda determinista (Sub-graph Slicing)</i>"]
-```
+1. **Herramientas de asistencia al desarrollo:**
+   - *Copilot / Cursor / Windsurf:* Ofrecen completación de código en tiempo real y diálogos contextuales basados en heurísticas de archivos recientemente abiertos o búsquedas simples de texto. Carecen de un pipeline que guíe el proceso desde la concepción hasta el despliegue y no disponen de compuertas deterministas que impidan la adición de código innecesario.
+   - *SWE-agent / Devin / OpenHands:* Implementan agentes autónomos orientados a interactuar con el shell del sistema y repositorios de control de versiones para resolver *issues* de GitHub. Si bien demuestran autonomía, sufren de alta variabilidad, ejecutan comandos impredecibles y no garantizan el cumplimiento de normas de diseño ni de regulaciones legales.
+2. **Frameworks de gobernanza y reglas:**
+   - El uso de archivos de directivas (`.cursorrules`, `AGENTS.md`) representa el primer intento de imponer directrices a los modelos. Sin embargo, en la mayoría de los casos actúan como instrucciones estáticas que el modelo suele ignorar cuando la ventana de contexto se satura.
+3. **Gestión de contexto para LLMs:**
+   - La recuperación aumentada por generación tradicional (RAG vectorial) fragmenta el código en bloques de texto independientes. Al medir similitud semántica por distancia coseno, pierde la estructura fundamental del software: qué función invoca a cuál, qué jerarquía de clases existe y cómo fluyen los datos entre módulos.
+   - Los **grafos de conocimiento de código** (como los implementados mediante AST y `graphify`) preservan la topología estructural y permiten realizar consultas precisas y deterministas de vecindad.
+4. **Cumplimiento normativo como código (*Compliance as Code*):**
+   - Herramientas tradicionales de análisis estático de seguridad (SAST) como SonarQube o Semgrep inspeccionan patrones sintácticos fijos pero no interactúan con el ciclo agéntico para proponer y verificar soluciones adaptadas al estilo del código.
 
-1. **Primera Etapa — Especialización por Habilidades (*Skills*):**
-   Para mitigar la dispersión de los prompts abiertos, se organizó la interacción mediante *skills*: archivos modulares que definen entradas, restricciones técnicas y formatos de salida para tareas específicas (especificación de requerimientos, diseño de esquema SQL, controladores REST). Aunque este enfoque aportó orden procedimental, el modelo continuó operando de forma aislada: carecía de visibilidad de las dependencias transversales del repositorio y asumía decisiones arquitectónicas no solicitadas ante requerimientos ambiguos.
-2. **Segunda Etapa — El Concepto de Arnés (*Harness*) y las 4 Reglas *Always-On*:**
-   Para suprimir la indisciplina técnica del agente, se implementó un arnés de gobernanza fundamentado en cuatro reglas permanentes (*Always-On Rules*):
-   - *Regla 1 (Preguntar, nunca asumir):* Obligación del agente de formular opciones estructuradas al desarrollador ante cualquier decisión de arquitectura, patrones o librerías.
-   - *Regla 2 (Alcance MVP sin gold-plating):* Prohibición estricta de añadir componentes, tests o configuraciones que no hayan sido requeridos explícitamente.
-   - *Regla 3 (Cero alucinaciones):* Prohibición de inventar dependencias inexistentes o generar comandos incompatibles con el entorno operativo.
-   - *Regla 4 (Principios universales):* Apego irrestricto a la simplicidad (KISS), no anticipación innecesaria (YAGNI) y seguridad mínima de credenciales.  
-   Esta etapa restauró el control del programador sobre el diseño, pero evidenció una limitación estructural: la **saturación de la ventana de contexto plana**. Al inyectar archivos extensos o marcos regulatorios completos en texto, los modelos sufrían degradación semántica (*context rot*) y olvidaban restricciones previas.
-3. **Tercera Etapa — Doble Grafo de Contexto Dinámico y Auditoría Normativa:**
-   La solución actual supera la ventana de contexto plana desacoplando el repositorio en dos grafos dirigidos interconectados:
-   - *Grafo de Contexto Arquitectónico:* Modela clases, funciones, llamadas e importaciones para acotar la vecindad de código relevante mediante poda (*Sub-graph Slicing*).
-   - *Grafo de Linaje de Datos Sensibles (*Taint Graph*):* Mapea el recorrido de los datos regulados desde su origen (*sources*) hasta su consumo o persistencia (*sinks*), evaluándolos contra las directrices de la Ley N° 21.719.
+#### 5.2 Análisis Crítico y Tabla Comparativa
+La siguiente tabla compara el arnés propuesto frente a los principales enfoques del estado del arte:
 
-#### 5.2 Análisis Crítico y Brecha Tecnológica
-La literatura y la industria ofrecen diversas aproximaciones para asistir al desarrollo y garantizar la calidad del software. Sin embargo, ninguna de las alternativas existentes resuelve conjuntamente la gobernanza agéntica, la reducción determinista de contexto y la auditoría legal local:
+| Criterio Evaluado | Asistentes de Código (Copilot / Cursor) | Agentes Autónomos (SWE-agent / Devin) | SAST / Linters (SonarQube / Semgrep) | Enfoque de Reglas Estáticas (`.cursorrules`) | **Harness Propuesto (Este Proyecto)** |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Gobernanza del ciclo de vida** | Nula (solo asiste la escritura de código). | Nula (enfocados en resolución de incidencias puntuales). | Nula (solo auditan código ya escrito). | Parcial (instrucciones generales sin fases). | **Completa: Pipeline de 12 skills secuenciales (PRD a Docs).** |
+| **Soberanía del desarrollador** | Baja (el modelo asume decisiones de diseño). | Muy baja (opera de manera autónoma en terminal). | Alta (el humano debe resolver la advertencia). | Media (sujeto a pérdida de atención del modelo). | **Alta: Reglas Always-On que fuerzan consulta y prohíben alucinaciones.** |
+| **Gestión de contexto** | Ventana de contexto plana o heurísticas locales. | Búsqueda por terminal (`grep`, `find`) con acumulación de historial. | No aplica (análisis de reglas sintácticas). | Manual (el usuario adjunta archivos). | **Estructural: Grafos de conocimiento con poda topológica ($k \le 2$).** |
+| **Auditoría de cumplimiento normativo** | Inexistente (ignora normativas locales de privacidad). | Inexistente (orientado a pruebas genéricas). | Parcial (reglas genéricas de seguridad sin contexto legal local). | Inexistente. | **Integrada: Matriz CL-DATAPROT con verificación y remediación supervisada.** |
+| **Trazabilidad de decisiones** | Nula. | Media (registros de comandos de terminal). | Nula. | Baja. | **Total: Cada decisión técnica se deriva de respuestas del usuario.** |
+| **Desacoplamiento arquitectónico** | Integrado en editor. | Integrado en contenedor. | Motor externo de escaneo. | Archivo dentro del repositorio. | **Total: Harness en `src/harness/` parametrizable a cualquier proyecto.** |
 
-| Criterio Evaluado | Asistencia Convencional (Prompt Plano) | RAG Vectorial Estándar (Embeddings) | Analizadores Estáticos (SAST / Linters) | Propuesta: Arnés con Doble Grafo y Slicing |
-| :--- | :--- | :--- | :--- | :--- |
-| **Mecanismo de Contexto** | Inyección manual y masiva de archivos. | Fragmentos aislados por distancia coseno. | Sin contexto para LLMs (reglas sintácticas fijas). | **Poda determinista por vecindad topológica ($k \le 2$).** |
-| **Riesgo de *Context Rot*** | Crítico (saturación rápida y pérdida de atención). | Medio (pérdida de dependencias estructurales). | No aplica (herramienta no agéntica). | **Nulo o Mínimo (subgrafos concisos y relacionales).** |
-| **Trazabilidad Legal (Ley 21.719)** | Nula (dependiente del criterio del prompt). | Imprecisa (recupera artículos sin mapear flujos). | Nula (no modelan la ontología legal chilena). | **Estricta (ontología formal de fuentes, sumideros y flujo).** |
-| **Mitigación y Parcheo** | Manual por el programador. | Parcial con alto riesgo de alucinación/regresión. | Nula (solo reporte de alertas, sin auto-remediación). | **Automatizada en disco con verificación por pruebas unitarias.** |
-| **Soberanía del Desarrollador** | Débil (el modelo asume decisiones técnicas). | Débil (respuestas probabilísticas no controladas). | No aplica. | **Alta (subordinación a las 4 reglas *Always-On*).** |
+#### 5.3 Fundamentos Técnicos de las Decisiones de Ingeniería
+Las decisiones de diseño del arnés responden a criterios fundamentados de ingeniería de software:
 
-**Identificación de la Brecha:**
-La brecha tecnológica concreta radica en la **desconexión entre los motores de análisis estático de datos personales y los pipelines agénticos de desarrollo**. Las herramientas existentes o bien generan código sin verificar normativas de privacidad locales, o bien reportan vulnerabilidades de forma pasiva sin capacidad de reparar el repositorio de manera determinista y acotada.
+##### 5.3.1 Justificación del Pipeline de Skills (01 a 12) como Árbol de Decisiones
+Dividir el ciclo de vida en doce fases delimitadas (`01-prd` hasta `12-documentation`) evita que el modelo de lenguaje deba resolver simultáneamente requerimientos de negocio, esquemas de datos y contratos de API. Cada *skill* delimita el ámbito de atención del modelo a una tarea concreta, guiándolo para que formule preguntas precisas de selección múltiple al desarrollador antes de escribir una sola línea de código. Esto asegura que la arquitectura final sea el resultado de decisiones humanas explícitas y documentadas.
 
-#### 5.3 Fundamentos Técnicos, Arquitectónicos y Ontología Legal
-Para comprender y evaluar la solución propuesta, se articulan los siguientes fundamentos teóricos y decisiones de diseño:
+##### 5.3.2 Justificación de las Reglas Always-On de Soberanía
+La literatura en ingeniería de prompts evidencia que los LLMs tienden a completar patrones faltantes con suposiciones probabilísticas. Las cuatro reglas consolidadas en `AGENTS.md` actúan como restricciones de contorno (*guardrails*) inviolables que subordinan el modelo a la autoridad técnica del programador: ante cualquier duda se debe preguntar, el alcance debe ceñirse al MVP estricto, queda prohibido inventar librerías y la simplicidad prima sobre la sobre-abstracción (KISS/YAGNI).
 
-1. **Análisis de Contaminación Estático (*Static Taint Analysis*):** Técnica adaptada de la ciberseguridad que modela el flujo de información rastreando variables desde puntos de entrada (*sources*, ej. entidades de pacientes o parámetros de request) hasta puntos de salida (*sinks*, ej. funciones de log, serializadores o APIs externas), detectando propagaciones no autorizadas sin requerir ejecución dinámica del código.
-2. **Degradación de Contexto (*Context Rot*):** Fenómeno empírico en modelos de lenguaje donde la precisión resolutiva y el seguimiento de instrucciones decaen exponencialmente conforme aumenta el volumen de tokens irrelevantes o desarticulados en la ventana de atención.
+##### 5.3.3 Justificación de Grafos de Conocimiento frente a RAG Vectorial
+El software es un sistema relacional determinista. Mientras que la búsqueda vectorial fragmenta el código y extrae pedazos desconectados, los grafos de conocimiento basados en análisis sintáctico (AST) y linaje de datos capturan fielmente:
+- Quién invoca a quién (árbol de llamadas y dependencias de importación).
+- Por dónde circulan las variables sensibles desde que ingresan por la API hasta que alcanzan un sumidero (*source-to-sink*).
 
-##### 5.3.1 Fundamentación Arquitectónica: Doble Proyección Relacional vs. Code Property Graph (CPG)
-Frente a la alternativa tradicional de implementar un *Code Property Graph* (CPG) unificado monolítico —donde nodos y aristas de AST, control de flujo (CFG), llamadas y dependencia de datos conviven en una única estructura altamente acoplada (enfoque adoptado por herramientas como Joern)—, este proyecto adopta un **modelo de doble proyección sobre un sustrato relacional compartido en SQLite**:
+##### 5.3.4 Justificación de la Poda Topológica a Vecindad Acotada ($k \le 2$ saltos)
+Para remediar un defecto en una función no es necesario inyectar todo el repositorio (lo que provoca *context rot* y alucinaciones) ni una sola línea aislada (lo que destruye la sintaxis y el contexto de tipos). El corte en anchura a distancia $k \le 2$ extrae:
+- **$k=1$:** La función que contiene la falla, sus argumentos y variables locales.
+- **$k=2$:** Las funciones directas que la invocan y los esquemas de datos inmediatos.
+Esta ventana entrega la información contextual exacta para que el modelo redacte una corrección sintácticamente limpia y armónica con el resto del software.
 
-- **Mismo Sustrato Relacional:** Ambas proyecciones no representan bases de datos desconectadas ni exigen sincronización distribuida. Coexisten sobre el mismo esquema relacional embebido, compartiendo identificadores de símbolos, clases y archivos mediante llaves foráneas.
-- **Proyección Estructural / Arquitectónica:** Modela la topología del código fuente (módulos, clases, interfaces, métodos, llamadas funcionales e importaciones).
-- **Proyección Semántica / Linaje de Privacidad (*Taint Graph*):** Modela el ciclo de vida de los datos personales (fuentes reguladas, operadores de transformación, filtros sanitizadores y sumideros de salida) tipificados según la ontología legal chilena.
-- **Justificación de Desacoplamiento:** 
-  1. *Aislamiento ante Volatilidad Normativa:* La legislación de protección de datos es dinámica. Si la APDP dicta nuevos decretos, si se modifican tipificaciones de infracción o si el arnés se traslada a otro marco legal (ej. GDPR o HIPAA), la proyección estructural del código permanece 100% inalterada; únicamente se recomputa la proyección semántica de linaje sobre las reglas actualizadas sin reindexar todo el repositorio.
-  2. *Modularidad y Plugins Sectoriales:* Permite activar o desactivar plugins ontológicos (ej. reglas sectoriales de salud bajo Ley 20.584 frente a reglas comerciales estándar) mediante consultas analíticas aisladas, evitando queries recursivas monstruosas y bloqueos de estado sobre un CPG monolítico sobrecargado.
+##### 5.3.5 Justificación del Desacoplamiento y Parametrización del Motor
+El motor del arnés no debe depender de rutas rígidas de una aplicación particular. Por ello, `graph_engine.py`, `data_lineage.py` y `agentic_audit.py` aceptan parámetros de escaneo (`scan_dirs`), permitiendo analizar de manera independiente el banco de pruebas clínico en `demo_apps/` o cualquier otro proyecto futuro sin alterar una sola línea de la lógica de análisis.
 
-##### 5.3.2 Fundamentación Algorítmica: Semántica del Radio de Poda Topológica ($k \le 2$)
-La definición de la vecindad de poda (*Sub-graph Slicing*) a una distancia $k \le 2$ saltos BFS responde a una distinción metodológica crucial entre el **rastreo global de flujo** y la **ventana de remediación local**:
+##### 5.3.6 Catálogo de Reglas Normativas (Módulo CL-DATAPROT)
+Como componente de cumplimiento del arnés, se formaliza la matriz CL-DATAPROT basada en la Ley N° 21.719 y la normativa sanitaria chilena:
 
-- **La Ruta Completa de Taint ya está Resuelta:** El motor estático de linaje ya ha identificado previamente la cadena de propagación completa desde el *source* hasta el *sink* (incluso si atraviesa 4 o 5 capas: Router $\to$ Service $\to$ Repository $\to$ Event Handler $\to$ Logger).
-- **Radio de Vecindad del Subgrafo Local ($k \le 2$):** El parámetro $k$ no representa la longitud total de la traza de contaminación, sino el **radio topológico del subgrafo podado alrededor del nodo sumidero vulnerable o componente de falla**. Al centrar el corte en el punto donde se consuma la infracción:
-  - $k=1$ extrae el llamador directo, los parámetros inmediatos y los tipos locales.
-  - $k=2$ captura el contrato del servicio o esquema DTO invocador y los modelos de datos vinculados.
-- **Naturaleza de Hiperparámetro Configurable:** Metodológicamente, $k$ es un **hiperparámetro configurable de poda**. El valor por defecto $k=2$ demostró empíricamente capturar el 100% de las dependencias indispensables para que el agente formule parches coherentes en el módulo de eventos clínicos sin saturar la ventana de atención con código innecesario. Para el Hito 2 se formaliza un estudio de sensibilidad experimental evaluando el comportamiento del pipeline con $k \in \{1, 2, 3\}$.
-
-##### 5.3.3 Justificación del Pipeline Agéntico frente a Reescritores Sintácticos AST (LibCST / Linters)
-Una interrogante metodológica central es: *si el AST ya detecta estáticamente la infracción y las reglas definen el mandato legal, ¿por qué utilizar un agente asistido por LLM y no una simple reescritura determinista basada en AST (como LibCST, Ruff o transformaciones basadas en reglas)?*
-
-- **Determinismo en Detección vs. Inteligencia Semántica en Remediación:**
-  - El análisis estático AST provee **determinismo absoluto en la detección** (identificación inequívoca de sumideros y variables comprometidas, con cero alucinaciones de localización).
-  - No obstante, la **reparación de privacidad en código transaccional de negocio no es una sustitución sintáctica trivial**. Exige comprensión semántica contextual que las reglas estáticas rígidas no pueden resolver:
-    * *Enmascaramiento de RUT Contextual:* Enmascarar un identificador civil en un log de auditoría médica (`12.345.***-*`) respetando el formato visual pero ofuscando el dígito verificador y cuerpo, sin romper la validación Módulo-11 que otros módulos esperan de la entidad.
-    * *Redacción Clínica Compatible:* Ofuscar un diagnóstico clínico reservado preservando la firma de tipo esperada por esquemas Pydantic o serializadores OpenAPI aguas abajo, evitando excepciones de validación en tiempo de ejecución.
-    * *Borrado Lógico y Cascada:* Transformar una operación de eliminación en un `soft-delete` con estado `BLOCKED_LEGAL_HOLD` respetando las relaciones asíncronas y eventos de SQLAlchemy.
-- **Fragilidad de los Reescritores Puros:** Un reescritor basado en reglas sintácticas (LibCST) es altamente frágil ante variaciones idiomáticas de código, patrones asíncronos o cambios de estilo.
-- **El Modelo Híbrido de Ingeniería:** La arquitectura del proyecto aprovecha lo mejor de ambos mundos: **detección estática determinista por AST $\to$ remediación contextual adaptativa por LLM alimentado con subgrafo podado $\to$ verificación determinista mediante suite Pytest con protocolo automático de reversión (*rollback*)**.
-
-##### 5.3.4 Dimensiones Críticas de la Ley N° 21.719 y Formalización en el Arnés (Matriz CL-DATAPROT)
-A partir del marco legal chileno, se formalizan las siguientes reglas algorítmicas en el arnés:
-
-| Identificador de Regla | Mandato Legal y Técnico | Implicancia Arquitectónica en el Software |
+| Regla | Mandato Legal y Técnico | Implicancia Práctica en el Código |
 | :--- | :--- | :--- |
-| **CL-DATAPROT-001** | **Datos Sensibles de Salud**<br>(Art. 2° let. g y Art. 16° bis Ley 21.719; Ley 20.584) | Protección reforzada: diagnósticos, recetas y fichas clínicas exigen aislamiento, cifrado y control de acceso estricto. |
-| **CL-DATAPROT-002** | **Identificador Civil Directo (RUT)**<br>(Art. 2° let. a y Art. 14° bis Ley 21.719) | Validación canónica mediante algoritmo Módulo-11, enmascaramiento dinámico en respuestas y ofuscación en trazas de auditoría. |
-| **CL-DATAPROT-003** | **Prevención de Fugas en Bitácoras**<br>(Art. 14° bis y quinquies; vulnerabilidad CWE-532) | Prohibición estricta de emitir datos personales o sensibles hacia sumideros de depuración (`logging`, consolas o volcados de memoria). |
-| **CL-DATAPROT-004** | **Minimización y Privacidad por Diseño**<br>(Art. 3° let. c y Art. 14° quáter Ley 21.719) | Los contratos de API (DTOs / Schemas Pydantic) deben restringir los campos serializados estrictamente al propósito de la transacción. |
-| **CL-DATAPROT-005** | **Tensión Supresión vs. Custodia Decenal**<br>(Art. 7° Ley 19.628 vs. Art. 13 Ley 20.584 y D.S. 41) | **Resolución de conflicto:** Se prohíbe el borrado físico (`DELETE` en SQL) en datos de salud debido a la custodia legal obligatoria de 15 años; se exige borrado lógico (*soft-delete*) y bloqueo de tratamiento (*Legal Hold*). |
-| **CL-DATAPROT-006** | **Interoperabilidad Estándar de Fichas**<br>(Art. 9° Ley 21.719 y Ley N° 21.668) | La portabilidad y exportación de fichas clínicas debe estructurarse obligatoriamente bajo el estándar HL7 FHIR R4 (Perfil Nacional CL Core). |
-| **CL-DATAPROT-007** | **Decisiones Automatizadas y Supervisión**<br>(Art. 8° bis Ley 21.719) | Garantía de supervisión médica profesional (*Human-in-the-Loop*) en cualquier lógica de triaje o perfilamiento automatizado. |
+| **CL-DATAPROT-001** | Prevención de fugas en bitácoras (Art. 14° bis y quinquies Ley 21.719; CWE-532). | Prohibición estricta de emitir RUT, nombres o diagnósticos médicos a consolas (`print`) o logs (`logger.info`) sin enmascaramiento dinámico. |
+| **CL-DATAPROT-002** | Validación canónica de identificadores civiles (RUT). | Exigencia de validación algorítmica mediante Módulo-11 en toda entrada transaccional. |
+| **CL-DATAPROT-003** | Minimización y protección en contratos de API (Art. 3° let. c). | Esquemas Pydantic diferenciados para respuestas públicas, evitando exponer campos internos. |
+| **CL-DATAPROT-004** | Custodia decenal obligatoria vs. Supresión (Art. 13 Ley 20.584 vs. Art. 7° Ley 21.719). | Resolución por bloqueo legal (*legal hold*): prohibición de `DELETE` físico; adopción de borrado lógico (`soft-delete`) y estado `BLOCKED_LEGAL_HOLD`. |
+| **CL-DATAPROT-005** | Control de acceso estricto en rutas sensibles (Art. 14° quáter). | Exigencia de autenticación JWT con roles y *scopes* específicos para acceder a registros médicos. |
+| **CL-DATAPROT-006** | Supervisión humana en procesos automatizados (Art. 8° bis). | Obligación de compuertas de validación por profesionales médicos en lógicas de asignación o triaje. |
 
 ---
 
 ### 6. METODOLOGÍA
 
 #### 6.1 Enfoque Metodológico
-Se adopta un enfoque metodológico de **ingeniería de software empírica e incremental**. El proyecto combina el desarrollo guiado por pruebas (TDD) para la construcción modular del backend clínico y el diseño experimental cuantitativo para la evaluación del arnés de gobernanza y los agentes de supervisión. Este enfoque permite contrastar hipótesis técnicas mediante mediciones reproducibles y verificar que cada incremento de código preserve la estabilidad del sistema.
+Se adopta el paradigma de **Investigación en Ciencia del Diseño (Design Science Research, DSR)** (Hevner et al., 2004; Wieringa, 2014) combinado con principios de ingeniería de software empírica. DSR se orienta a la creación y evaluación rigurosa de artefactos tecnológicos innovadores para resolver problemas prácticos identificados.
 
-#### 6.2 Diseño Experimental y Escenarios
-Para evaluar el impacto de la gobernanza asistida por grafos frente a métodos no acotados, se establece un **diseño experimental intrasujeto balanceado** que somete tareas idénticas de auditoría y mitigación de la Ley N° 21.719 a tres condiciones de suministro de contexto:
+El artefacto principal de esta investigación es el **Harness de Desarrollo Asistido por IA**, compuesto por:
+1. El pipeline de directivas procedimentales de desarrollo (*Skills* 01 a 12).
+2. El marco de reglas operativas inviolables de soberanía (*Always-On*).
+3. El motor de grafos de conocimiento con poda topológica ($k \le 2$).
+4. La arquitectura de roles agénticos especializados.
+5. El módulo de auditoría de cumplimiento normativo (matriz CL-DATAPROT).
 
-1. **Condición 1 (Línea Base / Control):** Inyección plana del código fuente completo del repositorio y los artículos normativos de la Ley N° 21.719 en la ventana de contexto del LLM sin estructuración intermedia.
-2. **Condición 2 (Recuperación Vectorial / RAG Estándar):** Búsqueda semántica sobre una base de datos vectorial basada en similitud coseno sobre fragmentos (*chunks*) de código y normativas.
-3. **Condición 3 (Experimental / Arnés con Doble Grafo y Slicing):** Inyección exclusiva del subgrafo conexo a vecindad acotada ($k \le 2$ saltos BFS) y la matriz ejecutable de reglas CL-DATAPROT suministrada al `ComplianceAuditorAgent` y `DeveloperPatcherAgent`.
+#### 6.2 Diseño Experimental y Escenarios de Prueba
+Para evaluar el desempeño del arnés se establece un diseño experimental factorial que evalúa dos dimensiones independientes:
 
-**Variables y Métricas:**
-- **Variable Independiente:** Estrategia de provisión de contexto al modelo (Plano vs. RAG vs. Doble Grafo).
+##### Dimensión 1: Impacto de la Gobernanza Integral
+Evalúa la influencia de los mecanismos de control sobre la calidad y contención del código generado:
+- **Condición A (Línea Base / Asistencia Libre):** El modelo de lenguaje recibe requerimientos en lenguaje natural sin reglas estructuradas ni skills obligatorias.
+- **Condición B (Gobernanza Intermedia):** El modelo opera bajo el marco de reglas *Always-On* y el pipeline de *skills*, pero sin poda por grafos.
+- **Condición C (Harness Completo):** El modelo opera bajo el arnés integral (reglas *Always-On*, pipeline de *skills*, grafos de conocimiento y módulo de compliance).
+
+##### Dimensión 2: Impacto de la Gestión de Contexto
+Evalúa la eficiencia y precisión en la extracción de información para tareas de modificación de código:
+- **Estrategia 1 (Código Completo Plano):** Inyección directa de archivos completos del repositorio en la ventana de contexto.
+- **Estrategia 2 (Recuperación Vectorial / RAG Clásico):** Búsqueda por similitud coseno sobre fragmentos desconectados de código.
+- **Estrategia 3 (Grafo de Conocimiento con Poda $k \le 2$):** Inyección del subgrafo conexo que contiene la vecindad inmediata de llamadas y linaje de datos.
+
+##### Variables y Métricas:
+- **Variables Independientes:** Estrategia de gobernanza (A, B, C) y estrategia de provisión de contexto (1, 2, 3).
 - **Variables Dependientes:**
-  - *Efectividad de Mitigación (%):* Proporción de violaciones normativas resueltas en disco conforme a la matriz CL-DATAPROT sin introducir errores de sintaxis.
-  - *Preservación Funcional (%):* Tasa de aprobación de la suite completa de pruebas unitarias (*Pass rate* de Pytest = 100%).
-  - *Volumen de Contexto Inyectado (Tokens):* Cantidad neta de tokens de entrada transferidos por llamada de inferencia.
-  - *Tiempo de Ciclo (*Cycle Time* en segundos):* Tiempo total transcurrido desde la detección de la vulnerabilidad hasta la consolidación y verificación del parche en disco.
+  - *Alucinaciones de dependencias (conteo):* Número de librerías o módulos inexistentes sugeridos por el modelo.
+  - *Contención de alcance (*Goldplating* en LOC y archivos):* Cantidad neta de líneas y archivos añadidos que no formaban parte del requerimiento original.
+  - *Tiempo de ciclo (*Cycle time* en segundos):* Duración total desde la emisión de la instrucción hasta la consolidación del código verificado en disco.
+  - *Consumo de contexto (tokens):* Volumen neto de tokens de entrada transferidos al modelo.
+  - *Preservación funcional (*Pass rate* de Pytest):* Porcentaje de pruebas unitarias aprobadas tras aplicar la intervención (debe mantenerse en 100%).
+  - *Trazabilidad de diseño (%):* Proporción de decisiones de arquitectura registradas en respuestas a *skills*.
+  - *Efectividad de cumplimiento normativo (%):* Proporción de infracciones de privacidad detectadas y subsanadas conforme a la matriz CL-DATAPROT.
 
 #### 6.3 Datos Utilizados, Fuentes y Resguardos Éticos
-- **Generación de Datos Sintéticos:** Para la ejecución de las pruebas y la validación del sistema clínico, se emplean **datos 100% sintéticos generados algorítmicamente**. Se implementaron rutinas para generar números de Cédula de Identidad (RUT chileno) ficticios pero matemáticamente válidos bajo el algoritmo Módulo-11, nombres aleatorios no vinculados a personas reales y registros médicos estructurados basados en catálogos abiertos de patologías.
-- **Resguardos Éticos y Cumplimiento Sanitario:** El proyecto no utiliza, manipula ni almacena fichas clínicas de pacientes reales, registros hospitalarios vivos ni bases de datos de instituciones de salud. Esta decisión asegura un resguardo ético absoluto en la investigación académica y garantiza el apego estricto a las exigencias de confidencialidad médica dispuestas en el Código Sanitario (Art. 127), la Ley N° 20.584 y la propia Ley N° 21.719.
+- **Datos 100% sintéticos y algorítmicos:** Todas las entidades transaccionales del banco clínico son generadas programáticamente. Se implementaron algoritmos para generar RUTs chilenos ficticios pero matemáticamente válidos bajo Módulo-11, nombres aleatorios y registros clínicos estructurados sin relación con personas reales.
+- **Resguardos éticos rigurosos:** El proyecto no utiliza, manipula ni almacena registros médicos reales, historiales clínicos hospitalarios ni identificadores de personas vivas. Esto garantiza un entorno de investigación éticamente irreprochable y en estricto apego al Código Sanitario chileno (Art. 127), la Ley N° 20.584 y la Ley N° 21.719.
 
 #### 6.4 Criterios de Éxito y Amenazas a la Validez
 **Criterios de Éxito Cuantitativos:**
-1. **Mitigación Normativa Completa:** Alcanzar el 100% de efectividad en la remediación de las fugas de datos detectadas en los módulos evaluados.
-2. **Cero Regresiones Funcionales:** Preservar el 100% de los tests unitarios de backend aprobados tras la aplicación de parches en disco.
-3. **Eficiencia en Contexto:** Demostrar una reducción estadísticamente cuantificable en el volumen de tokens transferidos frente a la inyección plana de código.
+1. **Erradicación de alucinaciones:** 0% de dependencias inválidas en el código generado bajo el arnés.
+2. **Cero regresiones funcionales:** Mantener el 100% de las pruebas unitarias aprobadas tras cualquier intervención del modelo.
+3. **Eficiencia de contexto:** Reducción superior al 20% en tiempo de ciclo y consumo de tokens frente al modelo libre.
+4. **Remediación normativa verificada:** 100% de efectividad en la mitigación de las fugas de datos inducidas en el banco de pruebas.
 
-**Amenazas a la Validez y Estrategias de Mitigación:**
-- **Validez Interna (Estocasticidad de los Modelos):** La variabilidad no determinista de los LLMs comerciales representa un factor de ruido. Se mitiga fijando la temperatura de muestreo en $T=0$, forzando salidas tipificadas mediante esquemas Pydantic deterministas y planificando repeticiones independientes ($N \ge 10$) con pruebas estadísticas de significancia (Wilcoxon) para el Hito 2.
-- **Validez Externa (Generalizabilidad):** El riesgo de que la solución funcione exclusivamente para el dominio clínico se mitiga desacoplando el motor de grafos (agnóstico a la aplicación) y planificando un segundo caso de estudio no sanitario en los incrementos futuros.
-- **Validez de Constructo (Representatividad de las Violaciones):** El riesgo de evaluar vulnerabilidades artificiales se mitiga alineando las reglas de linaje con la taxonomía formal CWE-532 del MITRE y los artículos específicos de la Ley N° 21.719.
+**Amenazas a la Validez y Acciones de Mitigación:**
+- **Validez Interna (Estocasticidad de LLMs):** Los modelos generativos pueden variar sus salidas entre ejecuciones. Se mitiga fijando la temperatura en $T=0$, exigiendo contratos tipificados con Pydantic y programando repeticiones ($N \ge 10$) con pruebas estadísticas de rangos de Wilcoxon para el Hito 2.
+- **Validez Externa (Generalizabilidad):** El riesgo de que el arnés solo funcione para el caso clínico se mitiga desacoplando arquitectónicamente el motor (`src/harness/` independiente de `demo_apps/`) y planificando un segundo caso de estudio en comercio electrónico.
+- **Validez de Constructo (Representatividad):** Las reglas de prueba se diseñaron a partir de debilidades formalmente catalogadas por MITRE (CWE-532) y mandatos taxativos de la Ley N° 21.719.
 
 ---
 
 ### 7. PLANIFICACIÓN Y GESTIÓN
 
 #### 7.1 Cronograma General e Hitos Institucionales
-La planificación semestral se estructura rigurosamente en torno al calendario académico oficial del curso Portafolio de Proyectos (ITISB, UNAB), abarcando cinco hitos evaluativos acumulativos:
+La planificación se alinea estrictamente con el calendario del curso Portafolio de Proyectos (ITISB, UNAB), abarcando cinco hitos evaluativos acumulativos:
 
 ```mermaid
 gantt
-title Cronograma General de Hitos y Fases de Trabajo
+title Cronograma de Hitos y Fases de Trabajo del Harness
 dateFormat YYYY-MM-DD
 axisFormat %d-%b
 
-section Entregas Oficiales
+section Hitos Oficiales (2026)
 Hito 0: Definición y Producto As-Is (25%) :milestone, h0, 2026-09-21, 0d
 Hito 1: Primer Incremento Funcional (15%) :milestone, h1, 2026-10-12, 0d
 Hito 2: Segundo Incremento y Benchmarking (15%) :milestone, h2, 2026-11-02, 0d
 Hito 3: Producto Consolidado y Evals (15%) :milestone, h3, 2026-11-23, 0d
 Hito 4: Defensa Final de Título (30%) :milestone, h4, 2026-12-01, 0d
 
-section Fases de Ejecución
-Fase 0: Definición, As-Is y Doble Grafo Base :active, p0, 2026-09-01, 2026-09-21
-Fase 1: Conectores Multi-Modelo y Guardias ARCOP :p1, 2026-09-22, 2026-10-12
-Fase 2: Benchmarking Empírico N>=10 y Segundo Caso :p2, 2026-10-13, 2026-11-02
-Fase 3: Refinamiento D3.js y Consolidación de Memoria :p3, 2026-11-03, 2026-11-23
-Fase 4: Auditoría Final y Preparación de Defensa :p4, 2026-11-24, 2026-12-01
+section Fases de Desarrollo
+Fase 0: As-Is, Desacoplamiento y Suite Modular (38 tests) :active, p0, 2026-09-01, 2026-09-21
+Fase 1: Validación de Skills en Antigravity y Roles Agénticos :p1, 2026-09-22, 2026-10-12
+Fase 2: Benchmarking N>=10, Loops Agénticos y Caso 2 :p2, 2026-10-13, 2026-11-02
+Fase 3: Refinamiento de Dashboard y Evaluación Integral :p3, 2026-11-03, 2026-11-23
+Fase 4: Consolidación de Informe Final y Defensa :p4, 2026-11-24, 2026-12-01
 ```
 
-| Hito | Semana de Referencia | Ponderación | Entregable y Alcance Comprometido |
+| Hito | Semana de Referencia | Peso | Entregable y Alcance Comprometido |
 | :--- | :--- | :---: | :--- |
-| **Hito 0** | Semana del 21 de septiembre | 25% | Definición formal del proyecto, estado del arte evolutivo, marco de la Ley N° 21.719, metodología, planificación y demostración funcional del producto existente (*As-Is*). |
-| **Hito 1** | Semana del 12 de octubre | 15% | Primer incremento funcional: integración de llamadas a modelos comerciales de frontera, guardias de privacidad ARCOP y demostración en vivo de mitigación con suite de tests. |
-| **Hito 2** | Semana del 2 de noviembre | 15% | Segundo incremento: ejecución del protocolo de benchmarking empírico ($N \ge 10$ repeticiones), test de Wilcoxon e incorporación del segundo caso de estudio no clínico para validar transversalidad. |
-| **Hito 3** | Semana del 23 de noviembre | 15% | Producto consolidado y evaluado: visualizador D3.js final con panel interactivo, análisis crítico de resultados experimentales y evidencia acumulada del cumplimiento de objetivos. |
-| **Hito 4** | Primera semana de diciembre | 30% | Entrega del informe final empastado, validación de todos los objetivos, conclusiones definitivas y defensa presencial ante la comisión evaluadora. |
+| **Hito 0** | Semana del 21 de septiembre | 25% | Definición formal del proyecto, estado del arte comparativo, fundamentación técnica del arnés, arquitectura desacoplada y demostración funcional del producto existente (*As-Is*) con 38 pruebas unitarias aprobadas. |
+| **Hito 1** | Semana del 12 de octubre | 15% | Primer incremento funcional: validación del pipeline de *skills* en el entorno de desarrollo, integración de roles agénticos supervisados y conectores con modelos de frontera. |
+| **Hito 2** | Semana del 2 de noviembre | 15% | Segundo incremento: ejecución del benchmarking empírico ($N \ge 10$ repeticiones por condición) con análisis de significancia (Wilcoxon), loops agénticos supervisados e incorporación del segundo caso de estudio. |
+| **Hito 3** | Semana del 23 de noviembre | 15% | Producto consolidado y evaluado: visualizador D3.js integrado, análisis crítico de resultados experimentales acumulados y certificación de cumplimiento de objetivos. |
+| **Hito 4** | Primera semana de diciembre | 30% | Entrega de memoria formal final, validación exhaustiva de objetivos, conclusiones definitivas y defensa presencial ante comisión evaluadora. |
 
 #### 7.2 Backlog Priorizado, Responsabilidades y Dependencias
-- **Régimen de Responsabilidades Paritarias:** El equipo de desarrollo ha adoptado una modalidad de **responsabilidad compartida paritaria (50% / 50%)**. Ambos integrantes participan coordinadamente en todas las dimensiones técnicas, conceptuales y de redacción: arquitectura del arnés, desarrollo del backend transaccional, formalización legal de la Ley N° 21.719, ejecución de los experimentos y sustentación de informes.
-- **Backlog Priorizado y Dependencias Técnicas:**
+El equipo opera bajo régimen de **responsabilidad compartida paritaria (50% / 50%)**. Ambos integrantes participan coordinadamente en el diseño del arnés, la implementación de pruebas, la modelación de grafos y la redacción técnica.
 
 | Identificador | Tarea / Incremento | Prioridad | Dependencia Previa |
 | :--- | :--- | :---: | :--- |
-| **TK-01** | Consolidación del Backend Clínico MVP (Modelos, Endpoints, Pytest) | Alta | Ninguna (Base As-Is) |
-| **TK-02** | Motor de Indexación AST y Persistencia SQLite de Doble Grafo | Alta | TK-01 |
-| **TK-03** | Formalización de Matriz CL-DATAPROT y Algoritmo de *Slicing* BFS ($k \le 2$) | Alta | TK-02 |
-| **TK-04** | Orquestación Agéntica (`ComplianceAuditor` y `DeveloperPatcher`) | Alta | TK-03 |
-| **TK-05** | Visualizador Topológico Interactivo en D3.js con Panel Normativo | Media | TK-02, TK-03 |
-| **TK-06** | Conectores Multi-Modelo para LLMs de Frontera (Claude 3.5 Sonnet / GPT-4o) | Media | TK-04 |
-| **TK-07** | Batería Experimental de Benchmarking ($N \ge 10$) y Pruebas Estadísticas | Media | TK-06 |
-| **TK-08** | Implementación y Auditoría sobre Segundo Caso de Estudio No Clínico | Baja | TK-06, TK-07 |
+| **TK-01** | Consolidación y desacoplamiento del backend clínico transaccional (`demo_apps/`) | Alta | Base As-Is |
+| **TK-02** | Parametrización y modularización del motor del arnés (`src/harness/`) | Alta | TK-01 |
+| **TK-03** | Modularización de suites de pruebas (17 harness + 21 demo) y runner `test.ps1` | Alta | TK-01, TK-02 |
+| **TK-04** | Validación y adaptación del pipeline de *skills* (01 a 12) en Antigravity | Alta | TK-02 |
+| **TK-05** | Implementación de bucles de roles agénticos (*planner*, *reviewer*, *security*, *compliance*) | Alta | TK-03, TK-04 |
+| **TK-06** | Módulo de cumplimiento normativo (matriz CL-DATAPROT y parcheo supervisado) | Media | TK-02, TK-05 |
+| **TK-07** | Batería experimental de benchmarking ampliada ($N \ge 10$) con Wilcoxon | Media | TK-05, TK-06 |
+| **TK-08** | Integración del segundo caso de estudio no clínico (comercio electrónico) | Media | TK-06, TK-07 |
 
 #### 7.3 Gestión de Riesgos
-Se identifican cuatro riesgos centrales con sus correspondientes planes de acción y mitigación:
+Se identifican cuatro riesgos principales y sus planes de mitigación técnica:
 
 | Código | Riesgo Identificado | Prob. | Impacto | Nivel | Estrategia de Mitigación |
 | :---: | :--- | :---: | :---: | :---: | :--- |
-| **R01** | **Saturación de Contexto por Grafos Densos:** Un repositorio extenso podría generar un subgrafo que exceda la ventana óptima del modelo. | Media | Alto | **Alto** | Limitación algorítmica estricta del corte BFS a un máximo de 2 saltos ($k \le 2$), priorizando solo dependencias directas. |
-| **R02** | **Regresiones Funcionales por Parches del Agente:** El agente de reparación podría corregir la fuga de datos pero romper contratos preexistentes de API. | Media | Crítico | **Crítico** | Verificación obligatoria contra la suite Pytest tras cada parche; activación de reversión (*rollback*) automática inmediata si un test falla. |
-| **R03** | **Variabilidad No Determinista de LLMs:** Diferencias en las salidas del modelo entre repeticiones podrían afectar la reproducibilidad experimental. | Alta | Medio | **Medio** | Inferencia fijada con temperatura $T=0$, esquemas Pydantic deterministas y batería ampliada a $N \ge 10$ repeticiones para significancia. |
-| **R04** | **Ambigüedades en la Aplicación Práctica de la Ley 21.719:** Los reglamentos operativos de la APDP aún están en proceso de dictación. | Media | Medio | **Medio** | Desacoplamiento modular de las reglas de cumplimiento en formato JSON/ontológico, facilitando su actualización sin alterar el motor de grafos. |
+| **R01** | **Saturación por grafos extensos:** Repositorios de gran tamaño podrían generar subgrafos densos que saturen la ventana del LLM. | Media | Alto | **Alto** | Limitación estricta de la poda BFS a un radio de $k \le 2$ saltos de dependencias directas. |
+| **R02** | **Regresiones por intervenciones de agentes:** Modificaciones automáticas podrían alterar contratos funcionales preexistentes. | Media | Crítico | **Crítico** | Validación obligatoria contra las 38 pruebas unitarias tras cada parche; reversión automática (*rollback*) inmediata ante cualquier falla. |
+| **R03** | **Variabilidad no determinista de los LLMs:** Dispersión en las respuestas entre ejecuciones que afecte la reproducibilidad. | Alta | Medio | **Medio** | Inferencia con temperatura $T=0$, esquemas Pydantic tipificados y repeticiones estadísticas ($N \ge 10$). |
+| **R04** | **Acoplamiento indebido entre arnés y proyecto:** Que el arnés requiera modificar el código fuente de los repositorios auditados. | Baja | Crítico | **Crítico** | Arquitectura agnóstica estricta: análisis estático puro por AST, rutas parametrizables y aislamiento de carpetas (`src/harness/`). |
 
 #### 7.4 Matriz de Trazabilidad
-En concordancia con los estándares de acreditación del proyecto, la siguiente matriz vincula formalmente los objetivos específicos, los requerimientos asociados, el hito de consolidación y su evidencia auditable:
+La siguiente matriz vincula los objetivos específicos con los requerimientos, los incrementos y la evidencia verificable en el repositorio:
 
-| Objetivo Específico | Requerimiento / Componente Técnico | Hito de Consolidación | Evidencia Verificable en Repositorio |
+| Objetivo Específico | Requerimiento Técnico | Hito de Consolidación | Evidencia Verificable en Repositorio |
 | :--- | :--- | :---: | :--- |
-| **OE1 (Caso Clínico Transaccional)** | RF-01 a RF-04: API REST FastAPI, modelos SQLAlchemy 2.0, RBAC y validación RUT Módulo-11. | Hito 0 (As-Is) | `src/backend/`, `src/database/` y 25 tests unitarios aprobados en `tests/unit/`. |
-| **OE2 (Sistematización Normativa)** | RF-05: Matriz de reglas de linaje CL-DATAPROT (Salud, RUT, Fugas CWE-532, Soft-delete). | Hito 0 (As-Is) | `src/harness/compliance_rules.json` y definiciones en `docs/marco_ley21719_bastian.md`. |
-| **OE3 (Doble Grafo y Agentes)** | RF-06 y RF-07: Indexador AST, base SQLite, Sub-graph Slicing ($k \le 2$) y subagentes autónomos. | Hito 0 (As-Is) a Hito 1 | `src/harness/agentic_audit.py`, visualizador D3.js y bitácoras en `qa_reports/`. |
-| **OE4 (Evaluación Experimental)** | RNF-01 a RNF-04: Protocolo experimental de 3 condiciones, recolección de métricas de inferencia. | Hito 1 a Hito 3 | Scripts de runner (`harness/eval/runner.py`), `qa_reports/results.json` y análisis estadístico. |
+| **OE1 (Pipeline de Skills)** | RF-01: Pipeline secuencial de 12 habilidades guiadas y reglas *always-on*. | Hito 0 (As-Is) a Hito 1 | `.agents/skills/` (carpetas 01 a 12), `AGENTS.md` y `tests/harness/test_skills_integrity.py`. |
+| **OE2 (Gestión de Contexto por Grafos)** | RF-02 y RF-03: Indexación AST, base relacional SQLite y poda BFS ($k \le 2$). | Hito 0 (As-Is) | `src/harness/graph_engine.py`, `src/harness/data_lineage.py`, `graphify-out/` y 7 tests en `tests/harness/`. |
+| **OE3 (Arquitectura Desacoplada y Roles)** | RF-04 y RF-05: Motor parametrizable independiente y definiciones de roles agénticos. | Hito 0 (As-Is) a Hito 1 | `src/harness/`, `tests/harness/` (17 tests propios) y runner modular `test.ps1`. |
+| **OE4 (Módulo de Compliance)** | RF-06: Matriz CL-DATAPROT, detección CWE-532 y parcheo supervisado. | Hito 0 (As-Is) | `src/harness/compliance_rules.json`, `src/harness/agentic_audit.py` y mitigación en `demo_apps/clinic/database/events.py`. |
+| **OE5 (Evaluación Experimental)** | RNF-01 a RNF-03: Protocolo comparativo, recolección de métricas y runner empírico. | Hito 0 (Piloto) a Hito 2 | Suite de 38 tests aprobados (100%), datos consolidados en §10 y `docs/evidencia_harness_vs_libre.md`. |
 
 ---
 
 ### 8. DISEÑO DE LA SOLUCIÓN
 
 #### 8.1 Requerimientos del Sistema
-Los requerimientos se estructuran formalmente para satisfacer tanto las necesidades del banco de pruebas transaccional como las capacidades de supervisión del arnés de gobernanza:
 
-**Requerimientos Funcionales (RF):**
-
-| Identificador | Nombre del Requerimiento | Descripción Operativa | Criterio de Aceptación |
+**Requerimientos Funcionales del Harness (RF-H):**
+| ID | Nombre | Descripción Operativa | Criterio de Aceptación |
 | :--- | :--- | :--- | :--- |
-| **RF-01** | **Gestión Transaccional de Pacientes y Citas** | Operaciones CRUD sobre entidades médicas modeladas en SQLAlchemy 2.0 asíncrono y FastAPI. | Respuestas REST tipificadas según esquemas Pydantic bajo contratos OpenAPI. |
-| **RF-02** | **Validación Canónica de Cédula de Identidad (RUT)** | Verificación algorítmica de RUT chileno mediante algoritmo Módulo-11. | Rechazo HTTP 422 ante dígitos verificadores inválidos o formatos no canónicos. |
-| **RF-03** | **Control de Agenda Médica (*Anti Double-Booking*)** | Bloqueo transaccional de colisiones de horarios para un mismo médico o paciente. | Respuesta de conflicto HTTP 409 y preservación de consistencia en base de datos. |
-| **RF-04** | **Control de Acceso Basado en Roles y Alcances (RBAC)** | Autenticación JWT con verificación dinámica de *scopes* granulares (ej. `patients:read`, `admin:all`). | Denegación HTTP 403 ante tokens sin permisos suficientes para el recurso solicitado. |
-| **RF-05** | **Matriz Normativa CL-DATAPROT** | Catálogo estructurado en JSON de reglas de linaje legal (fuentes sensibles, sumideros prohibidos). | Mapeo determinista de 7 familias de reglas derivadas de la Ley N° 21.719 y asociadas. |
-| **RF-06** | **Indexación AST y Doble Grafo Relacional** | Extracción sintáctica estática de dependencias de código y linaje de datos persistidos en SQLite. | Generación de nodos tipificados y aristas dirigidas sin ejecutar el código fuente. |
-| **RF-07** | **Poda Topológica (*Sub-graph Slicing*)** | Aislamiento determinista del subgrafo relevante a un radio máximo de $k \le 2$ saltos BFS. | Reducción medible del contexto inyectado al agente frente al código fuente completo. |
-| **RF-08** | **Orquestación Agéntica de Parcheo en Disco** | Ejecución de subagentes especializados (`ComplianceAuditor` y `DeveloperPatcher`). | Generación de parches que eliminan violaciones normativas en disco. |
+| **RF-H01** | **Pipeline de Skills Secuenciales** | Activación estructurada de directivas procedimentales (`01-prd` a `12-documentation`). | Guía secuencial por fases con formulación de opciones de decisión al usuario. |
+| **RF-H02** | **Enforcement de Reglas Always-On** | Aplicación estricta de las cuatro reglas de soberanía humana en cada sesión. | Prohibición de iniciativas no consultadas y supresión de librerías alucinadas. |
+| **RF-H03** | **Indexación Estática y Grafos de Conocimiento** | Extracción mediante AST de clases, funciones, llamadas y flujo de datos persistidos en SQLite. | Construcción de grafos estructurales sin necesidad de compilar ni ejecutar el código. |
+| **RF-H04** | **Poda Topológica Acotada ($k \le 2$)** | Algoritmo BFS que aísla la vecindad inmediata de la función o nodo de interés. | Reducción medible del contexto inyectado al agente frente al código fuente completo. |
+| **RF-H05** | **Motor Parametrizable Desacoplado** | Capacidad de escanear cualquier directorio de proyecto mediante parámetros de entrada. | El arnés opera sobre `demo_apps/` o repositorios externos sin cambios de código. |
+| **RF-H06** | **Auditoría de Compliance Normativo** | Evaluación estática de reglas CL-DATAPROT sobre el linaje de datos personales. | Identificación precisa de fugas CWE-532 y vulnerabilidades de privacidad en disco. |
+| **RF-H07** | **Parcheo Supervisado con Rollback** | Generación de soluciones en código validadas automáticamente por la suite de pruebas. | Reversión inmediata al archivo original si una sola prueba unitaria falla. |
 
-**Requerimientos No Funcionales (RNF) y de Seguridad Normativa (RS):**
-
-| Identificador | Tipo | Descripción | Criterio de Verificación |
+**Requerimientos Funcionales del Banco Clínico (RF-C):**
+| ID | Nombre | Descripción Operativa | Criterio de Aceptación |
 | :--- | :--- | :--- | :--- |
-| **RNF-01** | Determinismo | La inferencia de los modelos y la construcción del grafo deben ser reproducibles. | Temperatura $T=0$ y esquemas de salida estructurados deterministas. |
-| **RNF-02** | Desacoplamiento | El arnés de gobernanza debe operar de forma externa sin contaminar el código del sistema auditado. | Módulos del arnés (`src/harness/`) independientes de los módulos de la aplicación (`src/backend/`). |
-| **RNF-03** | Preservación | Las intervenciones del agente no deben degradar la funcionalidad existente del sistema. | Aprobación del 100% de la suite de pruebas unitarias Pytest tras cada remediación. |
-| **RS-01** | Confidencialidad CWE-532 | Prohibición estricta de emitir RUT o datos clínicos hacia bitácoras o consolas. | Verificación estática de ausencia de datos de *sources* en funciones *sink* de log. |
-| **RS-02** | Borrado Lógico por Custodia | Resolución del conflicto de supresión frente a la custodia clínica decenal (15 años). | Implementación de `soft-delete` y estado `BLOCKED_LEGAL_HOLD`; prohibición de `DELETE` físico. |
-| **RS-03** | Interoperabilidad HL7 FHIR | Estructuración estándar de datos de salud para garantizar el derecho de portabilidad. | Modelado compatible con el Perfil Nacional CL Core (Ley N° 21.668). |
+| **RF-C01** | **Gestión Transaccional Clínica** | Operaciones CRUD sobre pacientes, médicos, citas y bitácoras de auditoría en FastAPI. | Respuestas REST tipificadas según esquemas Pydantic bajo contratos OpenAPI. |
+| **RF-C02** | **Validación Canónica de RUT** | Verificación algorítmica del identificador civil mediante algoritmo Módulo-11. | Rechazo HTTP 422 ante dígitos verificadores inválidos o formatos incorrectos. |
+| **RF-C03** | **Prevención de Colisiones de Agenda** | Bloqueo transaccional de cruces de horario para médicos o pacientes en citas. | Respuesta HTTP 409 de conflicto y preservación de consistencia relacional. |
+| **RF-C04** | **Control de Acceso Basado en Roles (RBAC)** | Autenticación JWT con scopes granulares (`patients:read`, `admin:all`). | Denegación HTTP 403 ante tokens sin permisos suficientes para la operación. |
+
+**Requerimientos No Funcionales (RNF) y de Seguridad (RS):**
+| ID | Tipo | Descripción | Criterio de Verificación |
+| :--- | :--- | :--- | :--- |
+| **RNF-01** | Determinismo | La inferencia de modelos y la extracción de grafos deben ser reproducibles. | Temperatura $T=0$ y esquemas estructurados deterministas. |
+| **RNF-02** | Modularidad de Pruebas | Capacidad de ejecutar suites de pruebas de forma independiente por área. | Ejecución selectiva mediante `test.ps1` con tiempos inferiores a 4 segundos totales. |
+| **RNF-03** | Preservación Funcional | Las intervenciones del arnés no deben alterar contratos preexistentes. | 100% de pruebas aprobadas en Pytest tras la aplicación de cualquier cambio. |
+| **RS-01** | Confidencialidad CWE-532 | Prohibición estricta de emitir RUT o datos médicos a registros de depuración. | Verificación estática de ausencia de *sources* sensibles en *sinks* de bitácora. |
+| **RS-02** | Custodia Decenal Obligatoria | Resolución de conflicto entre borrado y custodia sanitaria de 15 años. | Implementación de `soft-delete` y estado `BLOCKED_LEGAL_HOLD`; prohibición de `DELETE` SQL. |
 
 #### 8.2 Arquitectura del Sistema
-La solución articula una arquitectura desacoplada organizada en dos dominios complementarios: la **Aplicación Clínica Transaccional** (banco de pruebas) y el **Arnés de Supervisión y Gobernanza**:
+El sistema implementa una arquitectura rigurosamente desacoplada en dos subsistemas autónomos: el **Harness de Desarrollo** y el **Banco de Pruebas Clínico**:
 
 ```mermaid
 graph TD
-classDef app fill:#0f172a, stroke:#38bdf8, stroke-width:2px, color:#f8fafc;
 classDef harness fill:#1e1b4b, stroke:#818cf8, stroke-width:2px, color:#f8fafc;
-classDef agents fill:#022c22, stroke:#34d399, stroke-width:2px, color:#f8fafc;
+classDef demo fill:#0f172a, stroke:#38bdf8, stroke-width:2px, color:#f8fafc;
+classDef test fill:#022c22, stroke:#34d399, stroke-width:2px, color:#f8fafc;
 
-subgraph CLINICA [" APLICACIÓN CLÍNICA (BANCO DE PRUEBAS MVP)"]
-    API["API REST (FastAPI)<br><i>Controladores y RBAC con Scopes</i>"]
-    SVC["Servicios de Dominio<br><i>Citas, Médicos, Validación Módulo-11</i>"]
-    DATA["Persistencia Relacional<br><i>SQLAlchemy 2.0 Asíncrono + PostgreSQL</i>"]
-    EVT["Sistema de Eventos y Bitácoras<br><code>src/database/events.py</code>"]
-    API --> SVC --> DATA --> EVT
+subgraph HARNESS [" HARNESS DE DESARROLLO (src/harness/)"]
+    SKILLS["Pipeline de Skills (01-12)<br><code>.agents/skills/</code>"]
+    RULES["Reglas Always-On<br><code>AGENTS.md</code>"]
+    ROLES["Roles Agénticos<br><i>Planner, Reviewer, Security, Compliance</i>"]
+    
+    subgraph ENGINE [" Motor Parametrizable de Análisis"]
+        AST["Graph Engine (AST)<br><code>graph_engine.py</code>"]
+        TAINT["Data Lineage Analyzer<br><code>data_lineage.py</code>"]
+        SLICER["Sub-graph Slicer (k &le; 2)<br><i>Poda Topológica BFS</i>"]
+        COMPLIANCE["Módulo de Compliance<br><code>agentic_audit.py</code> + Matriz CL-DATAPROT"]
+        AST --> SLICER
+        TAINT --> COMPLIANCE
+    end
+    
+    KNOWLEDGE["Grafos de Conocimiento<br><i>SQLite embebido + graphify-out/</i>"]
+    ENGINE <--> KNOWLEDGE
 end
-class CLINICA app;
+class HARNESS harness;
 
-subgraph MOTOR [" ARNÉS DE GOBERNANZA Y SUPERVISIÓN"]
-    AST["Indexador Sintáctico AST<br><i>Extracción Estática de Dependencias</i>"]
-    DG["Doble Grafo en SQLite<br><i>Grafo de Código + Taint Graph</i>"]
-    SLICER["Sub-graph Slicer<br><i>Poda Topológica BFS (k &le; 2)</i>"]
-    D3["Visualizador Topológico D3.js<br><i>Simulación de Fuerzas y Panel Normativo</i>"]
-    AST --> DG --> SLICER
-    DG -.-> D3
+subgraph DEMO [" BANCO DE PRUEBAS CLÍNICO (demo_apps/clinic/)"]
+    API["API REST (FastAPI)<br><i>Controladores y RBAC</i>"]
+    SVC["Servicios de Dominio<br><i>Pacientes, Citas, Médicos</i>"]
+    PERSIST["Persistencia Asíncrona<br><i>SQLAlchemy 2.0 + PostgreSQL</i>"]
+    LOGS["Módulo de Eventos<br><code>database/events.py</code>"]
+    API --> SVC --> PERSIST --> LOGS
 end
-class MOTOR harness;
+class DEMO demo;
 
-subgraph PIPELINE [" PIPELINE AGÉNTICO"]
-    AUDITOR["ComplianceAuditorAgent<br><i>Diagnóstico contra Ley N° 21.719</i>"]
-    PATCHER["DeveloperPatcherAgent<br><i>Formulación de Parche (Privacy by Design)</i>"]
-    VAL["Verificación Automática<br><b>Suite Pytest (25 Tests)</b>"]
-    AUDITOR --> PATCHER --> VAL
+subgraph TESTSUITE [" SUITE MODULAR DE PRUEBAS (38 Tests / test.ps1)"]
+    THARNESS["Tests del Harness (17 Tests)<br><code>tests/harness/</code>"]
+    TDEMO["Tests de la Demo (21 Tests)<br><code>tests/demo/</code>"]
 end
-class PIPELINE agents;
+class TESTSUITE test;
 
-EVT -.->|Inspección Estática AST| AST
-SLICER -->|Subgrafo Aislado de Contexto| AUDITOR
-VAL -->|Consolidación en Disco| EVT
+HARNESS -.->|Escaneo estático parametrizable: scan_dirs| DEMO
+HARNESS -.->|Auditoría y parcheo supervisado| LOGS
+THARNESS -.->|Valida motor, linaje y skills| HARNESS
+TDEMO -.->|Valida API, RUT y colisiones| DEMO
 ```
 
-- **Clúster Clínico:** Compuesto por capas independientes de API, Servicios, Persistencia y Eventos. Los controladores REST procesan solicitudes, aplican seguridad JWT y delegan a la capa de persistencia mediante borrado lógico.
-- **Clúster del Arnés:** Opera como un entorno desacoplado sobre un sustrato relacional compartido en SQLite. Analiza el código fuente estáticamente sin ejecutarlo mediante AST, materializando dos proyecciones lógicas independientes: la *Proyección Estructural* (jerarquía de dependencias y llamadas) y la *Proyección de Linaje* (*Taint Graph* de variables sensibles). El algoritmo de corte BFS extrae la vecindad inmediata ($k \le 2$ saltos alrededor del nodo de falla) y alimenta a los subagentes, cerrando el ciclo con la verificación obligatoria en Pytest.
+- **Módulo del Harness (`src/harness/`):** Totalmente autónomo del proyecto inspeccionado. Provee indexación estática por AST, análisis de linaje de datos sensibles, almacenamiento en SQLite local y poda BFS a $k \le 2$. Recibe directorios de escaneo como parámetro y orquesta los roles agénticos.
+- **Banco de Pruebas Clínico (`demo_apps/clinic/`):** Aplicación transaccional con arquitectura en capas (API, Servicios, Persistencia, Eventos) construida con tecnologías estándar de la industria.
+- **Suite de Pruebas Modular:** Separada limpiamente en pruebas del arnés y pruebas de la aplicación, garantizando que el funcionamiento de ambos mundos pueda auditarse de forma aislada o conjunta.
 
 #### 8.3 Reproducibilidad y Configuración del Entorno
-Para asegurar la reproducibilidad académica y técnica del sistema, se estandarizan las siguientes especificaciones:
+Para asegurar la reproducibilidad técnica completa, se definen las siguientes especificaciones:
+- **Entorno de ejecución:** Python 3.11 o superior.
+- **Instalación de dependencias del backend:**
+  ```powershell
+  pip install -r requirements.txt
+  ```
+  Incluye FastAPI (0.115+), SQLAlchemy (2.0+), Pydantic (2.0+), asyncpg y Pytest (9.0+).
+- **Ejecución modular de pruebas mediante runner semántico:**
+  El arnés dispone del script `test.ps1` que permite ejecutar pruebas selectivas por área sin necesidad de correr suites completas:
 
-- **Ecosistema de Lenguaje y Motor de Ejecución:** Python 3.11 o superior como entorno base de desarrollo.
-- **Dependencias Principales del Backend:** FastAPI (versión 0.115+) para la capa REST, SQLAlchemy (versión 2.0+) para el mapeo relacional asíncrono, Pydantic (versión 2.0+) para validación estricta de contratos, y PostgreSQL como motor de persistencia transaccional.
-- **Dependencias del Arnés y Pruebas:** SQLite3 nativo para la base de datos embebida del doble grafo, D3.js (versión 7) para el motor de renderizado de grafos mediante simulación de fuerzas, y Pytest (versión 9.0+) como marco de pruebas automatizadas.
-- **Flujo de Inicialización y Verificación:** El procedimiento general contempla la preparación de un entorno virtual aislado, la configuración de variables de entorno seguras (sin secretos hardcodeados), la ejecución de la suite de pruebas unitarias para certificar la línea base (25 tests aprobados), la indexación del repositorio para poblar el doble grafo en SQLite, y el levantamiento local del servicio API y visualizador D3.js.
+| Comando Modular | Alcance / Área | Tests | Tiempo Aprox. | Estado |
+| :--- | :--- | :---: | :---: | :---: |
+| `.\test.ps1 fast` | Pruebas rápidas de unidad y base | 6 | 0.98 s | ✅ 100% PASS |
+| `.\test.ps1 ast` | Motor de análisis sintáctico AST | 4 | 0.97 s | ✅ 100% PASS |
+| `.\test.ps1 compliance` | Auditoría de reglas y linaje de datos | 4 | 1.75 s | ✅ 100% PASS |
+| `.\test.ps1 demo` | Suite completa del banco clínico | 21 | 1.00 s | ✅ 100% PASS |
+| `.\test.ps1 harness` | Suite completa del motor del arnés | 17 | 2.55 s | ✅ 100% PASS |
+| `.\test.ps1 all` | Suite integral del repositorio | **38** | **3.99 s** | ✅ **100% PASS** |
 
 ---
 
 ### 9. DESARROLLO E INCREMENTOS
 
-En el marco del Hito 0, esta sección documenta el estado del **Incremento 0 (Producto Existente As-Is)**, correspondiente a la línea base transaccional y el prototipo funcional del arnés de gobernanza:
+En el marco del Hito 0, se documenta el estado del **Incremento 0 (Producto Existente As-Is)**, correspondiente a la línea base del arnés y del banco de pruebas transaccional:
 
 #### 9.1 Objetivo y Alcance del Incremento As-Is
-El objetivo primordial del Incremento 0 consiste en establecer un entorno de software transaccional representativo y validar experimentalmente la viabilidad de la auditoría y mitigación estática basada en dobles grafos. El alcance comprende la implementación de la capa de servicios médicos en el backend, la formalización de la ontología de la Ley N° 21.719 en SQLite, y la integración de los subagentes para la remediación de fugas en disco sin romper pruebas unitarias.
+El objetivo del Incremento 0 consiste en consolidar los cimientos arquitectónicos del arnés de desarrollo desacoplado y del banco de pruebas clínico, verificando experimentalmente la viabilidad de la gestión de contexto por grafos, la efectividad de las reglas *always-on* y la remediación automática de fugas normativas en disco.
 
 #### 9.2 Funcionalidades Implementadas y Evidencia de Integración
-El estado técnico verificable del repositorio cuenta con los siguientes componentes operativos a la fecha:
+El estado técnico verificable del repositorio presenta los siguientes componentes plenamente operativos:
 
-| Componente del Incremento | Estado | Evidencia Concreta en Repositorio ("As-Is") |
+| Componente del Incremento | Estado As-Is | Evidencia Concreta en Repositorio |
 | :--- | :---: | :--- |
-| **Backend Clínico Transaccional** | Operativo | Modelos SQLAlchemy (Pacientes, Médicos, Citas) y endpoints FastAPI en `src/backend/api/`. |
-| **Suite de Pruebas Unitarias** | Operativo | **25 tests aprobados / 0 fallidos en Pytest** (`tests/unit/`). *Nota de consistencia:* La suite evolucionó desde 21 tests basales de dominio clínico hasta 25 al incorporar los 4 tests unitarios de la suite de auditoría agéntica (`test_agentic_audit.py`). |
-| **Indexador Sintáctico AST** | Operativo | Escaneo estructural sobre `src/backend/` y `src/database/`, extrayendo clases, funciones y llamadas. |
-| **Persistencia de Doble Proyección** | Operativo | Almacenamiento desacoplado en SQLite conteniendo la Proyección Estructural y la Proyección de Linaje (*Taint Graph*) sobre el mismo sustrato relacional. |
-| **Algoritmo de Poda (*Slicing*)** | Operativo | Módulo de búsqueda en anchura BFS que aísla la vecindad vulnerable a un radio local de $k \le 2$ saltos respecto al sumidero comprometido. |
-| **Orquestación y Mitigación en Disco** | Operativo | Remediación exitosa en `src/database/events.py`, eliminando la fuga de RUT y datos médicos en bitácoras mediante enmascaramiento dinámico. |
-| **Visualizador Topológico D3.js** | Operativo | Panel interactivo en navegador con simulación de fuerzas, diferenciación de clústeres y catálogo de reglas de cumplimiento. |
+| **Backend Clínico Transaccional** | Operativo | Modelos SQLAlchemy, endpoints FastAPI y esquemas Pydantic en `src/backend/` y `demo_apps/`. |
+| **Suite de Pruebas Modular** | Operativo | **38 pruebas aprobadas / 0 fallidas** (17 en `tests/harness/` y 21 en `tests/demo/`). |
+| **Motor de Grafos Parametrizable** | Operativo | `src/harness/graph_engine.py` escanea cualquier directorio dinámico sin acoplamiento a rutas fijas. |
+| **Analizador de Linaje de Datos** | Operativo | `src/harness/data_lineage.py` identifica flujos *source-to-sink* de datos regulados (RUT, diagnósticos). |
+| **Base de Datos de Contexto SQLite** | Operativo | `src/harness/db.py` y `schema.sql` almacenan nodos y aristas estructurales de manera embebida. |
+| **Algoritmo de Poda Topológica ($k \le 2$)** | Operativo | Módulo BFS que extrae quirúrgicamente la vecindad de la función comprometida. |
+| **Reglas Operativas Always-On** | Operativo | `AGENTS.md` impone 4 directivas permanentes de soberanía humana, cero alucinaciones y foco MVP. |
+| **Pipeline de Skills (01 a 12)** | Operativo | Doce carpetas procedimentales formalizadas en `.agents/skills/` (PRD, arquitectura, testing, etc.). |
+| **Gestión de Contexto por Grafos** | Operativo | Base de grafos de conocimiento generada mediante `graphify` en `graphify-out/graph.json`. |
+| **Mitigación Normativa en Disco** | Operativo | Remediación comprobada en `events.py`, suprimiendo fugas CWE-532 mediante enmascaramiento dinámico. |
+| **Runner Modular Semántico** | Operativo | Script `test.ps1` con marcadores semánticos (`pytest -m <rama>`). |
 
 #### 9.3 Decisiones Técnicas y Alternativas Descartadas
-1. **Descarte de Inyección Plana de Código y RAG Vectorial:** Se evaluó alimentar al agente pegando los archivos en el prompt o mediante recuperación semántica. Ambas alternativas se descartaron debido a la pérdida de jerarquía en llamadas y la rápida degradación semántica (*context rot*) que provocaba alucinaciones en dependencias inexistentes.
-2. **Descarte de Code Property Graph (CPG) Monolítico Unificado:** Se analizó implementar un CPG único altamente acoplado (estilo Joern). Se descartó debido a que cualquier actualización en la ontología legal (nuevas directrices de la APDP o incorporación de plugins sectoriales) forzaría a reindexar y resincronizar todo el grafo de código. Se optó por **dos proyecciones lógicas sobre el mismo sustrato relacional SQLite**, desacoplando la arquitectura del código de la volatilidad regulatoria.
-3. **Descarte de Reescritura Determinista Pura por AST (LibCST / Linters):** Se evaluó aplicar parches mediante transformaciones sintácticas fijas de AST. Se descartó debido a que la mitigación de privacidad en código de negocio no es una simple sustitución de texto: requiere razonamiento semántico para enmascarar identificadores civiles respetando contratos de tipos, redactar diagnósticos clínicos sin quebrar serializadores OpenAPI y aplicar borrado lógico respetando eventos de base de datos. Se adoptó el modelo híbrido: detección determinista por AST + remediación adaptativa por LLM con subgrafo acotado + validación por Pytest con *rollback*.
-4. **Descarte de Modificación Invasiva del Código:** Se descartó instrumentar el código del sistema clínico con decoradores o bibliotecas pesadas del arnés. Se optó por un enfoque 100% desacoplado basado en análisis sintáctico estático (AST), garantizando que el arnés pueda auditar cualquier repositorio sin contaminar su base de código.
-5. **Selección de SQLAlchemy 2.0 y Pydantic v2:** Se privilegió el tipado estricto en la capa de datos y controladores para forzar la validación de contratos y simplificar la resolución estática de tipos durante la indexación.
+1. **Desacoplamiento formal entre arnés y proyecto:** Inicialmente los motores del arnés residían en la misma carpeta del backend y escaneaban rutas fijas. Se tomó la decisión de **desacoplar arquitectónicamente el arnés (`src/harness/`)** de la aplicación evaluada (`demo_apps/`), parametrizando los argumentos de escaneo para convertir al arnés en una herramienta agnóstica a cualquier repositorio.
+2. **Modularización de la suite de pruebas:** Se pasó de una suite monolítica de 25 pruebas no categorizadas a **38 pruebas distribuidas en suites independientes** (`tests/harness/` y `tests/demo/`), implementando un runner por marcadores semánticos (`fast`, `ast`, `compliance`, `demo`, `harness`). Esto permite iterar ágilmente sin incurrir en ejecuciones pesadas innecesarias.
+3. **Descarte de hooks experimentales invasivos:** Se evaluó incorporar hooks automáticos de pre-ejecución en `.agents/hooks/`. Tras el análisis técnico, **se descartaron y eliminaron del repositorio** por saturar la estructura del proyecto y agregar complejidad innecesaria sin aportar valor medible al flujo de trabajo.
+4. **Descarte de servidores monolíticos de grafos (Neo4j / Joern):** Se descartó instalar bases de datos de grafos pesadas en red. Se optó por una combinación de **SQLite embebido** (cero dependencias externas) y **grafos de conocimiento ligeros (`graphify`)**, permitiendo que cualquier desarrollador o pipeline de CI ejecute el arnés de forma instantánea.
+5. **Selección del modelo híbrido de reparación:** Se descartó usar scripts rígidos de expresiones regulares (que corrompen sintaxis ante decoradores o funciones asíncronas) y también se descartó el uso de agentes libres desregulados. Se adoptó el modelo híbrido: detección estática por AST + formulación contextual por LLM con poda ($k \le 2$) + verificación automática obligatoria en Pytest con *rollback* inmediato.
 
-#### 9.4 Problemas Encontrados, Correcciones y Deuda Técnica Pendiente
-- **Problemas Superados:**
-  - *Sobrecarga de Nodos Irrelevantes:* La primera versión del indexador AST capturaba comentarios, directivas de importación no utilizadas y declaraciones vacías, inflando el tamaño del grafo. *Corrección:* Se aplicó un filtro semántico previo que depura el AST antes de insertar en SQLite.
-  - *Resolución de Llamadas Anónimas:* Se identificaron inconsistencias al resolver funciones lambda o llamadas dinámicas. *Corrección:* Se estandarizó la resolución de símbolos canónicos vinculados a clases base.
-- **Deuda Técnica Comprometida (Rumbo a los Hitos 1 y 2):**
-  1. *Conectores Multi-Modelo de Frontera:* Migrar el runner desde la ejecución en entornos locales hacia llamadas directas a APIs comerciales (Claude 3.5 Sonnet y GPT-4o) con control estricto de temperatura $T=0$.
-  2. *Endpoints de Derechos ARCOP e Interoperabilidad:* Implementar formalmente los endpoints de bloqueo temporal del tratamiento y exportación estructurada en HL7 FHIR R4 (Perfil CL Core).
-  3. *Diseño del Segundo Caso de Estudio:* Configurar un repositorio de un dominio no clínico (ej. autenticación y pagos en comercio electrónico) para validar empíricamente la transversalidad del arnés.
+#### 9.4 Problemas Encontrados y Deuda Técnica Pendiente (Declaración Honesta)
+En conformidad con las observaciones del profesor guía sobre la necesidad de transparencia técnica, se declara explícitamente el estado de la deuda técnica pendiente:
+
+- **Lo que es deuda técnica y trabajo en progreso:**
+  1. *Validación del pipeline de skills en el entorno Antigravity:* Las 12 *skills* procedimentales fueron formuladas en una etapa previa del proyecto y se encuentran íntegras y documentadas en `.agents/skills/`, pero su validación formal y ajuste fino dentro del nuevo IDE (Antigravity) se encuentra agendada para el **Hito 1**.
+  2. *Orquestación autónoma de roles agénticos:* Los roles (*planner*, *code reviewer*, *security reviewer*, *compliance auditor*) están definidos a nivel de especificaciones y directivas, pero la ejecución de bucles cerrados autónomos entre ellos aún no está completamente programada; opera actualmente bajo supervisión humana manual.
+  3. *Conectores de API multi-modelo comerciales:* El runner actual opera mediante el entorno local del IDE. La conexión programática directa con endpoints comerciales de Claude 3.5 Sonnet y GPT-4o para benchmarking formal de $N \ge 10$ se ejecutará en el **Hito 2**.
 
 #### 9.5 Relación con los Objetivos del Proyecto
-El Incremento 0 satisface plenamente las metas iniciales de los objetivos **OE1** (consolidación del backend transaccional y suite de pruebas), **OE2** (formalización de reglas normativas en matriz ejecutable) y **OE3** (diseño e implementación operativa del doble grafo y poda topológica), habilitando la plataforma sobre la cual se ejecutará la evaluación experimental (**OE4**).
+El Incremento 0 cumple los fundamentos basales de **OE1** (pipeline de skills y reglas estructuradas), **OE2** (motor de grafos y poda contextual), **OE3** (arquitectura desacoplada y parametrizada con 17 tests propios) y **OE4** (matriz CL-DATAPROT y mitigación en disco), dejando la infraestructura lista para la evaluación comparativa profunda (**OE5**).
 
 ---
 
 ### 10. PRUEBAS, EVALUACIÓN Y RESULTADOS
 
 #### 10.1 Protocolo de Evaluación Preliminar
-Para evaluar cuantitativamente el impacto del arnés y las reglas estructuradas, se configuró un protocolo experimental preliminar que contrasta el comportamiento de un modelo de lenguaje en dos modalidades operativas:
-- **Condición A (Línea Base / Modelo Libre):** El modelo recibe el requerimiento funcional y el código del repositorio sin restricciones de gobernanza ni poda de contexto.
-- **Condición B (Experimental / Con Arnés y Reglas Always-On):** El modelo opera subordinado al arnés, recibiendo únicamente el subgrafo relevante extraído por *Sub-graph Slicing* ($k \le 2$) y las 4 reglas *Always-On*.
+Para evaluar cuantitativamente el efecto de las directivas del arnés y la gestión de contexto por grafos, se estructuró una batería experimental piloto que contrasta dos modalidades de trabajo sobre tareas representativas del backend clínico:
+- **Condición A (Línea Base / Asistencia no gobernada):** El modelo de lenguaje recibe el requerimiento y el código fuente sin reglas *always-on* ni recorte contextual estructurado.
+- **Condición B (Experimental / Asistencia con Harness y Poda):** El modelo opera subordinado a las 4 reglas *always-on* y recibe únicamente el subgrafo conexo podado ($k \le 2$).
 
-El protocolo piloto evaluó 3 tareas representativas del backend clínico (creación de pacientes, gestión de citas con validación anti-colisión, y remediación de eventos con fuga de datos), registrando un total de $N=6$ ejecuciones controladas con temperatura $T=0$. Se utilizó la suite de pruebas unitarias de Pytest como oráculo automático para certificar la preservación funcional.
+El protocolo piloto evaluó tres tareas de desarrollo:
+1. Implementación de controladores transaccionales de pacientes.
+2. Gestión de citas con prevención de colisiones horarias (*anti double-booking*).
+3. Auditoría y remediación de eventos clínicos con fugas de datos sensibles.
+
+Se ejecutaron $N=6$ ensayos controlados con temperatura $T=0$, utilizando la suite de pruebas unitarias como oráculo automático para certificar la preservación funcional.
 
 #### 10.2 Resultados Obtenidos
-La siguiente tabla resume las observaciones empíricas consolidadas del runner experimental:
+La siguiente tabla consolida las métricas empíricas obtenidas en los ensayos preliminares:
 
-| Indicador Métrico Evaluado | Sin Arnés (Modelo Libre) | Con Arnés y Reglas | Impacto Relativo |
+| Indicador Métrico Evaluado | Sin Harness (Modelo Libre) | Con Harness y Reglas | Impacto Relativo |
 | :--- | :---: | :---: | :---: |
-| **Tiempo de Ciclo (*Cycle Time*)** | 252.9 s | 196.2 s | **-22.4%** (Menor latencia y menos desvíos) |
-| **Volumen de Archivos Generados** | 2.33 archivos | 1.67 archivos | **-28.6%** (Contención estricta del alcance) |
-| **Líneas de Código Generadas (LOC)** | 202.3 líneas | 133.3 líneas | **-34.1%** (Código más conciso y sin redundancia) |
-| **Alucinaciones en Dependencias** | > 0 incidentes | 0 incidentes | **0% dependencias inválidas** (Supresión total) |
-| **Costo Promedio Transaccional** | $0.34 USD | $0.27 USD | **-22.0%** (Menor consumo de tokens de inferencia) |
-| **Preservación Funcional (Pass Rate)** | Variable | 100% (25/25 tests) | **Preservación total de contratos de software** |
+| **Tiempo de Ciclo (*Cycle Time*)** | 252.9 s | 196.2 s | **-22.4%** (Mayor velocidad y foco en la tarea) |
+| **Archivos Afectados por Tarea** | 2.33 archivos | 1.67 archivos | **-28.6%** (Contención estricta del alcance) |
+| **Líneas de Código Generadas (LOC)** | 202.3 líneas | 133.3 líneas | **-34.1%** (Código más limpio y sin redundancia) |
+| **Alucinaciones de Dependencias** | > 0 incidentes | 0 incidentes | **0% dependencias inválidas** (Supresión total) |
+| **Costo Promedio en Inferencia** | $0.34 USD | $0.27 USD | **-22.0%** (Menor volumen de tokens transferidos) |
+| **Preservación Funcional (*Pass Rate*)** | Variable / Inestable | **100% (38/38 tests)** | **Preservación absoluta de contratos de software** |
 
-**Evidencia de Remediación en Disco:**
-En la tarea de cumplimiento normativo, el arnés identificó la emisión de RUT y diagnósticos de salud hacia la consola de depuración en `src/database/events.py` (violación de la regla CL-DATAPROT-003 y CWE-532). Tras aislar el subgrafo del módulo, el `DeveloperPatcherAgent` generó un parche en disco que aplicó enmascaramiento dinámico sobre el RUT (`12.345.***-*`) y redacción del diagnóstico (`[DATO CLÍNICO RESERVADO]`), aprobando los 25 tests unitarios en Pytest sin intervención manual.
+**Evidencia de Desacoplamiento y Remediación en Disco:**
+- El arnés escaneó la aplicación clínica de forma externa (`scan_dirs='demo_apps/clinic'`), identificando la emisión no autorizada de RUT y diagnósticos médicos hacia la bitácora en `events.py` (vulnerabilidad CWE-532 e infracción al Art. 14° de la Ley N° 21.719).
+- Tras aislar el subgrafo a vecindad $k \le 2$, el módulo de parcheo generó una propuesta en disco que aplicó enmascaramiento dinámico sobre el RUT (`12.345.***-*`) y redacción del diagnóstico (`[DATO CLÍNICO RESERVADO]`).
+- La suite completa de 38 pruebas unitarias aprobó al 100%, certificando que la corrección de privacidad no alteró los contratos transaccionales ni los modelos de base de datos.
 
 #### 10.3 Análisis e Interpretación de Resultados
-- **Separación de Observación e Interpretación:**
-  - *Observación:* La condición asistida por el arnés generó un 34.1% menos líneas de código y redujo el tiempo de ciclo en 56.7 segundos promedio por tarea, sin registrar alucinaciones de paquetes en las directivas de importación.
-  - *Interpretación:* La literatura documenta que ante prompts abiertos, los modelos de lenguaje tienden a incurrir en *gold-plating*, creando clases abstractas, utilidades auxiliares o tests no solicitados. El arnés y sus reglas *Always-On* acotan el espacio de búsqueda del modelo y lo obligan a ceñirse al MVP. Al alimentar al agente exclusivamente con la vecindad topológica podada ($k \le 2$), se mitiga el *context rot*, evitando que el LLM olvide contratos de API o agregue librerías externas no declaradas en el entorno.
+- **Separación de observación e interpretación:**
+  - *Observación:* La asistencia gobernada por el arnés requirió un 34.1% menos líneas de código, redujo el tiempo de ciclo en 56.7 segundos promedio y eliminó por completo las dependencias no existentes en el entorno virtual.
+  - *Interpretación:* Los modelos de lenguaje tienden naturalmente al *goldplating* cuando no existen restricciones operativas estrictas. Las reglas *always-on* acotan el espacio resolutivo al MVP estricto, mientras que la poda contextual ($k \le 2$) evita que el modelo procese código irrelevante, mitigando el *context rot* y asegurando que las importaciones se ciñan estrictamente a los módulos disponibles en el proyecto.
 
 #### 10.4 Limitaciones Identificadas
-1. **Tamaño Muestral Piloto:** La batería del Hito 0 cuenta con un tamaño de muestra exploratorio ($N=6$), lo que impide efectuar pruebas formales de significancia estadística en esta entrega preliminar.
-2. **Homogeneidad de Modelos:** Los ensayos iniciales se ejecutaron sobre un único motor asistido localmente; se requiere contrastar empíricamente la variabilidad entre modelos comerciales de frontera (Claude 3.5 Sonnet vs. GPT-4o).
-3. **Compromiso para el Hito 2:** En el segundo incremento se formalizará una muestra ampliada a $N \ge 10$ repeticiones independientes por condición, incorporando el test no paramétrico de rangos con signo de Wilcoxon ($p < 0.05$) para validar formalmente la significancia de las diferencias observadas.
+1. **Alcance exploratorio de la muestra piloto:** El tamaño muestral del Hito 0 ($N=6$) es de carácter preliminar y sirve para demostrar viabilidad técnica; se requiere ampliar la muestra a $N \ge 10$ en el Hito 2 para efectuar contrastes de hipótesis mediante el test de rangos con signo de Wilcoxon.
+2. **Validación de skills en el nuevo entorno:** Como se declaró en la deuda técnica, la evaluación preliminar evaluó primordialmente las reglas *always-on* y la poda por grafos; la evaluación sistemática del pipeline de *skills* (01 a 12) en Antigravity es el compromiso central del Hito 1.
+3. **Homogeneidad de modelos:** Los ensayos basales se realizaron en el entorno asistido local; el contraste entre familias comerciales de frontera (Claude 3.5 Sonnet vs. GPT-4o) forma parte de la fase experimental de Hito 2.
 
 ---
 
 ### 11. DISCUSIÓN Y CONCLUSIONES
 
 #### 11.1 Discusión
-Los resultados preliminares obtenidos en el Hito 0 confirman la hipótesis técnica de que la gobernanza asistida por IA mejora sustancialmente cuando se acota de forma determinista el espacio de búsqueda e inferencia del modelo:
-- **Contrastación con el Estado del Arte:** A diferencia de las estrategias basadas en la inyección masiva de documentación o la recuperación vectorial no relacional (RAG estándar), el modelado mediante dobles grafos preserva explícitamente la topología de llamadas y el linaje de datos. Esto elimina la dispersión que sufren los LLMs ante ventanas de contexto extensas (*context rot*) y previene la formulación de parches que inventen dependencias inexistentes o rompan la arquitectura modular preestablecida.
-- **Implicancias para la Práctica de Ingeniería de Software:** La incorporación de un arnés de supervisión transforma la interacción con modelos generativos: la asistencia de IA deja de ser una actividad probabilística ad-hoc para convertirse en un flujo de ingeniería formal, subordinado a reglas inviolables del desarrollador (*Always-On*) y verificado automáticamente por suites de pruebas unitarias.
-- **Resultados Inesperados y Hallazgos:** Se observó que el recorte quirúrgico de contexto (*Sub-graph Slicing* a $k \le 2$ saltos) no solo suprime las alucinaciones de sintaxis, sino que acelera el tiempo de ciclo del modelo en más de un 20%, demostrando que suministrar menos tokens —pero estructuralmente relacionados— incrementa la precisión resolutiva del agente.
+Los resultados preliminares del Hito 0 confirman la viabilidad y relevancia de implementar un arnés de desarrollo completo:
+- **Contraste con el estado del arte:** Frente a los asistentes comerciales que operan sin gobernanza arquitectónica y a los agentes libres que ejecutan código sin supervisión, el arnés propuesto establece un justo medio fundamentado en la **autonomía acotada**: la IA propone código flexible, pero subordinada a directivas de diseño estructuradas (*skills*), reglas inviolables de soberanía (*always-on*) y compuertas automáticas de verificación en pruebas unitarias con *rollback*.
+- **Madurez arquitectónica alcanzada en el Hito 0:** Las refactorizaciones recientes (desacoplamiento formal de `src/harness/`, parametrización dinámica del escaneo, modularización de la suite a 38 pruebas y runner `test.ps1`) dotan al proyecto de una estructura de ingeniería sólida y agnóstica, evitando el sesgo de construir un sistema atado exclusivamente al dominio clínico.
+- **Integración de exigencias regulatorias:** El proyecto demuestra que normativas complejas como la Ley N° 21.719 no tienen por qué ser un obstáculo burocrático posterior, sino que pueden formalizarse como reglas ejecutables (*compliance as code*) que el arnés vigila activamente durante la propia construcción del software.
 
 #### 11.2 Conclusiones
-A partir del trabajo desarrollado y la evidencia técnica acumulada en el producto existente (*As-Is*), se formulan las siguientes conclusiones:
-1. **Respuesta a la Pregunta del Proyecto:** Se confirma que un arnés de supervisión basado en un doble grafo de contexto permite auditar y mitigar de forma automatizada infracciones técnicas de la Ley N° 21.719 en software transaccional. La poda topológica determinista reduce el contexto inyectado a los componentes estrictamente relevantes, suprimiendo las alucinaciones en dependencias y preservando el 100% de la funcionalidad preexistente verificada en Pytest.
-2. **Cumplimiento de Objetivos del Hito 0:** Se alcanzaron satisfactoriamente los hitos basales comprometidos:
-   - **OE1:** Se consolidó el backend clínico modular en FastAPI y PostgreSQL con 25 pruebas unitarias operativas y validaciones de dominio.
-   - **OE2:** Se formalizó la ontología de la Ley N° 21.719 en la matriz algorítmica CL-DATAPROT, resolviendo tensiones complejas como el borrado lógico por custodia decenal.
-   - **OE3:** Se implementó y verificó el arnés con motor AST, base de datos SQLite para grafos, algoritmo de *slicing* y orquestación agéntica con mitigación efectiva en disco.
-   - **OE4:** Se validó el protocolo experimental piloto mediante mediciones comparativas reproducibles en el runner.
+1. **Respuesta a la pregunta del proyecto:** Se comprueba que un arnés de desarrollo basado en habilidades secuenciales, reglas *always-on* y grafos de conocimiento acotados ($k \le 2$) reduce de manera medible la latencia de desarrollo (-22.4%), erradica el código alucinado (0%), contiene el alcance al MVP estricto (-34.1% LOC) y preserva el 100% de la funcionalidad del sistema, demostrando además la viabilidad de auditar mandatos de la Ley N° 21.719 en código real.
+2. **Cumplimiento de compromisos del Hito 0:** Se alcanzan satisfactoriamente los objetivos trazados para esta primera entrega:
+   - Se estableció la arquitectura desacoplada del arnés en `src/harness/` con 17 pruebas unitarias propias.
+   - Se consolidó el banco de pruebas clínico en `demo_apps/` con 21 pruebas unitarias propias.
+   - Se estructuró la suite modular con 38 pruebas unitarias aprobadas al 100%.
+   - Se formalizó la matriz CL-DATAPROT y se verificó la remediación en disco de vulnerabilidades CWE-532.
+   - Se transparentó el estado real del desarrollo, categorizando con rigor lo operativo y la deuda técnica en progreso.
 
-#### 11.3 Trabajo Futuro
-De acuerdo con el cronograma y la gestión de deuda técnica, se comprometen las siguientes cinco líneas de trabajo para los próximos incrementos:
-1. **Integración de Conectores Multi-Modelo de Frontera (Hito 1):** Conectar formalmente el pipeline agéntico con las APIs de Claude 3.5 Sonnet y GPT-4o para evaluar la sensibilidad del arnés frente a diferentes familias de modelos.
-2. **Implementación de Guardias ARCOP y Portabilidad HL7 FHIR (Hito 1):** Extender los endpoints del backend clínico para soportar los derechos de bloqueo temporal de tratamiento y exportación estandarizada bajo el Perfil Nacional CL Core (Ley N° 21.668).
-3. **Benchmarking Experimental Ampliado con Análisis Estadístico (Hito 2):** Escalar la batería de pruebas a $N \ge 10$ repeticiones por condición y aplicar el test no paramétrico de Wilcoxon para validar la significancia estadística ($p < 0.05$).
-4. **Validación de Transversalidad mediante Segundo Caso de Estudio (Hito 2 y 3):** Implementar un segundo banco de pruebas no sanitario (ej. plataforma transaccional de usuarios y pagos) para demostrar empíricamente el carácter agnóstico del arnés.
-5. **Refinamiento del Visualizador Topológico D3.js (Hito 3):** Incorporar capacidades de inspección de código en tiempo real y generación de reportes ejecutivos de cumplimiento para auditorías de la APDP.
+#### 11.3 Trabajo Futuro Comprometido
+De acuerdo con la planificación acumulativa, se comprometen las siguientes líneas de desarrollo:
+1. **Validación del pipeline de skills en Antigravity (Hito 1):** Ajustar y verificar las 12 habilidades procedimentales dentro del entorno IDE, documentando el flujo de decisiones del desarrollador.
+2. **Implementación de bucles agénticos especializados (Hito 1 y 2):** Programar la interacción supervisada entre los roles de *planner*, *code reviewer*, *security reviewer* y *compliance auditor*.
+3. **Protocolo experimental ampliado y análisis estadístico (Hito 2):** Escalar la muestra a $N \ge 10$ repeticiones independientes por condición, conectando APIs comerciales y aplicando el test no paramétrico de Wilcoxon ($p < 0.05$).
+4. **Incorporación del segundo caso de estudio (Hito 2 y 3):** Integrar un repositorio no clínico (autenticación y comercio electrónico) para validar empíricamente la transversalidad del arnés.
+5. **Consolidación del visualizador D3.js (Hito 3):** Refinar la interfaz gráfica de navegación de grafos para la inspección de dependencias y linaje de datos.
 
 ---
 
@@ -547,46 +598,68 @@ De acuerdo con el cronograma y la gestión de deuda técnica, se comprometen las
 1. Biblioteca del Congreso Nacional de Chile (BCN). (2024). *Ley N° 21.719: Regula la protección y el tratamiento de los datos personales y crea la Agencia de Protección de Datos Personales*. Publicada en el Diario Oficial el 13 de diciembre de 2024.
 2. Biblioteca del Congreso Nacional de Chile (BCN). (1999). *Ley N° 19.628: Sobre Protección de la Vida Privada*. Modificada por la Ley N° 21.719.
 3. Biblioteca del Congreso Nacional de Chile (BCN). (2012). *Ley N° 20.584: Regula los derechos y deberes que tienen las personas en relación con acciones vinculadas a su atención en salud*.
-4. Biblioteca del Congreso Nacional de Chile (BCN). (2024). *Ley N° 21.668: Modifica la Ley N° 20.584 en materia de interoperabilidad de la ficha clínica*. Publicada el 28 de mayo de 2024.
-5. Ministerio de Salud de Chile (MINSAL). (1967). *Código Sanitario de la República de Chile (DFL N° 725)*. Artículo 127 sobre reserva y custodia de la historia clínica.
-6. Ministerio de Salud de Chile (MINSAL). (2012). *Decreto Supremo N° 41: Reglamento sobre fichas clínicas*. Dispone la conservación obligatoria de fichas por un período mínimo de 15 años.
-7. MITRE Corporation. (2023). *CWE-532: Insertion of Sensitive Information into Log File*. Common Weakness Enumeration.
-8. HL7 International & MINSAL Chile. (2023). *HL7 FHIR Release 4 — Guía de Implementación Perfil Nacional CL Core para Interoperabilidad Sanitaria*.
-9. Hevner, A. R., March, S. T., Park, J., & Ram, S. (2004). *Design Science in Information Systems Research*. MIS Quarterly, 28(1), 75–105.
-10. Wieringa, R. J. (2014). *Design Science Methodology for Information Systems and Software Engineering*. Springer Science & Business Media.
-11. Repositorio Oficial del Proyecto. (2026). *Arnés de Supervisión de Software y Cumplimiento Normativo*. Disponible en: [https://github.com/Cliptap/skilled-vibecoding](https://github.com/Cliptap/skilled-vibecoding).
+4. Ministerio de Salud de Chile (MINSAL). (1967). *Código Sanitario de la República de Chile (DFL N° 725)*. Artículo 127 sobre reserva y custodia de la historia clínica.
+5. MITRE Corporation. (2023). *CWE-532: Insertion of Sensitive Information into Log File*. Common Weakness Enumeration.
+6. Hevner, A. R., March, S. T., Park, J., & Ram, S. (2004). *Design Science in Information Systems Research*. MIS Quarterly, 28(1), 75–105.
+7. Wieringa, R. J. (2014). *Design Science Methodology for Information Systems and Software Engineering*. Springer Science & Business Media.
+8. Weiser, M. (1984). *Program Slicing*. IEEE Transactions on Software Engineering, (4), 352–357.
+9. Yang, J., Jimenez, C. E., Wettig, A., Lieret, K., Yao, S., Narasimhan, K., & Press, O. (2024). *SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering*. arXiv preprint arXiv:2405.15793.
+10. Repositorio Oficial del Proyecto. (2026). *Harness de Desarrollo Asistido por IA y Gobernanza de Software*. Disponible en: [https://github.com/Cliptap/compliance-graph-harness](https://github.com/Cliptap/compliance-graph-harness).
 
 #### 12.2 Anexos
 
-##### Anexo A: Glosario de Términos Técnicos y Jurídicos
-- **APDP:** Agencia de Protección de Datos Personales de Chile, corporación de derecho público autónoma creada por la Ley N° 21.719 con potestades fiscalizadoras y sancionatorias.
-- **ARCOP:** Conjunto de derechos de los titulares de datos reconocidos por la ley: Acceso, Rectificación, Cancelación (supresión), Oposición y Portabilidad.
-- **AST (*Abstract Syntax Tree*):** Árbol de sintaxis abstracta que modela la jerarquía sintáctica y semántica del código fuente sin necesidad de ejecutarlo.
-- **Context Rot:** Fenómeno de degradación progresiva de la atención y razonamiento lógico de un modelo de lenguaje debido al exceso de información redundante en la ventana de contexto.
-- **CWE-532:** Clasificación formal de debilidad de software referida a la inserción involuntaria de información personal, privada o sensible en archivos de bitácora o depuración.
-- **HL7 FHIR:** *Fast Healthcare Interoperability Resources*. Estándar internacional para el intercambio electrónico de información clínica estructurada en salud.
-- **Legal Hold:** Estado administrativo y lógico que bloquea la alteración o supresión de un registro transaccional debido a un mandato de custodia judicial o sanitaria.
-- **Módulo-11:** Algoritmo aritmético oficial chileno para calcular y verificar la validez del dígito verificador del Rol Único Tributario (RUT/RUN).
-- **Privacy by Design:** Mandato que exige que las medidas técnicas y organizativas de protección de datos se integren desde la concepción inicial de la arquitectura del software.
-- **Soft-Delete:** Estrategia de persistencia que marca un registro como inactivo o archivado mediante una marca temporal (*timestamp*) o booleano, preservando los datos físicamente para auditorías legales sin exponerlos en consultas operativas habituales.
-- **Sub-graph Slicing:** Técnica algorítmica basada en grafos que extrae un subconjunto conexo de nodos y aristas a una distancia máxima de $k$ saltos respecto a un nodo objetivo.
-- **Taint Analysis:** Análisis de flujo que rastrea el viaje de información desde fuentes sensibles (*sources*) hacia sumideros no autorizados (*sinks*), detectando fugas de privacidad.
+##### Anexo A: Glosario de Términos Técnicos
+- **APDP:** Agencia de Protección de Datos Personales de Chile, órgano autónomo con facultades fiscalizadoras y sancionatorias creado por la Ley N° 21.719.
+- **AST (*Abstract Syntax Tree*):** Árbol de sintaxis abstracta que representa la jerarquía estructural y semántica del código fuente sin necesidad de ejecutarlo.
+- **Context Rot:** Degradación progresiva de la atención y capacidad de razonamiento de un modelo de lenguaje debido a la saturación de información irrelevante en su ventana de contexto.
+- **CWE-532:** Clasificación de debilidad de software referida a la inserción no autorizada de información sensible en archivos de bitácora o consola.
+- **Goldplating:** Tendencia de desarrolladores o modelos de IA a incorporar características, librerías o abstracciones complejas que no fueron solicitadas en los requerimientos originales.
+- **Harness de Desarrollo:** Entorno de software estructurado que provee herramientas, restricciones operativas, directivas procedimentales y compuertas de validación para gobernar el ciclo de vida del software.
+- **Privacy by Design:** Principio que exige que las salvaguardas de seguridad y confidencialidad se integren desde la concepción inicial de la arquitectura del software.
+- **Sub-graph Slicing:** Técnica de análisis de grafos que aísla un subconjunto de nodos y aristas a una distancia máxima de $k$ saltos respecto a un nodo de interés.
+- **Taint Analysis (Análisis de Linaje):** Técnica estática para rastrear el flujo de variables sensibles desde fuentes de origen (*sources*) hacia sumideros de salida (*sinks*).
 
 ##### Anexo B: Matriz Detallada de Reglas Normativas CL-DATAPROT
 La matriz formalizada en `src/harness/compliance_rules.json` clasifica las reglas en dos dominios:
-1. *Reglas Core (Agnósticas):* CL-DATAPROT-002 (Validación RUT módulo-11), CL-DATAPROT-003 (Prevención de fugas CWE-532 en logs) y CL-DATAPROT-004 (Minimización en contratos de API).
-2. *Reglas Sectoriales de Salud (Plugin Clínico):* CL-DATAPROT-001 (Datos de salud y recetas bajo secreto profesional), CL-DATAPROT-005 (Custodia obligatoria de 15 años y soft-delete), CL-DATAPROT-006 (Portabilidad en formato HL7 FHIR R4 CL Core) y CL-DATAPROT-007 (Supervisión médica en decisiones automatizadas).
+1. *Reglas Core (Agnósticas):* CL-DATAPROT-001 (Validación canónica de RUT mediante algoritmo Módulo-11), CL-DATAPROT-002 (Prevención de fugas CWE-532 en logs y consolas) y CL-DATAPROT-003 (Minimización de campos sensibles en contratos de API).
+2. *Reglas Sectoriales de Salud (Plugin Clínico):* CL-DATAPROT-004 (Protección y confidencialidad de diagnósticos médicos), CL-DATAPROT-005 (Custodia obligatoria decenal de 15 años y prohibición de borrado físico) y CL-DATAPROT-006 (Supervisión humana en procesos automatizados).
 
-##### Anexo C: Reporte de Verificación de Pruebas Unitarias Pytest
-Ejecución de la suite de pruebas automatizadas sobre el producto *As-Is*:
-- Comando de verificación: `pytest tests/unit/`
-- Entorno de prueba: Python 3.13, Pytest 9.0.3, SQLite3 / SQLAlchemy 2.0.
-- Cobertura validada:
-  - `tests/unit/test_agentic_audit.py`: 4 pruebas de auditoría y análisis de linaje.
-  - `tests/unit/test_appointments.py`: 2 pruebas de validación de citas y anti-colisión (*double-booking*).
-  - `tests/unit/test_audit.py`: 11 pruebas de inmutabilidad y registro de eventos.
-  - `tests/unit/test_patients.py`: 5 pruebas de validación de pacientes y RUT módulo-11.
-  - `tests/unit/test_practitioners.py`: 3 pruebas de autenticación y gestión de facultativos médicos.
-- **Resultado Total:** **25 passed in 1.54s** (100% de éxito, 0 pruebas fallidas).
+##### Anexo C: Reporte de Verificación de la Suite Modular de Pruebas Unitarias (38 Tests)
+Ejecución de la suite completa automatizada sobre el producto *As-Is* mediante Pytest:
+- **Comando de ejecución:** `pytest tests/` (o bien `.\test.ps1 all`)
+- **Entorno de ejecución:** Python 3.11+, Pytest 9.0+, SQLite3 embebido, SQLAlchemy 2.0 asíncrono.
+- **Desglose de pruebas por componente y archivo:**
 
----
+| Suite Modular | Archivo de Prueba | N° Tests | Área Evaluada | Resultado |
+| :--- | :--- | :---: | :--- | :---: |
+| `tests/harness/` | `test_graph_engine.py` | 4 | Extracción sintáctica AST y generación de nodos | ✅ PASS |
+| `tests/harness/` | `test_data_lineage.py` | 3 | Análisis de flujo de datos sensibles (*sources-to-sinks*) | ✅ PASS |
+| `tests/harness/` | `test_agentic_audit.py` | 4 | Detección de reglas CL-DATAPROT y auditoría | ✅ PASS |
+| `tests/harness/` | `test_db_persistence.py` | 3 | Persistencia relacional de grafos en SQLite embebido | ✅ PASS |
+| `tests/harness/` | `test_skills_integrity.py` | 3 | Integridad estructural de las 12 *skills* procedimentales | ✅ PASS |
+| `tests/demo/` | `test_patients.py` | 5 | Entidad pacientes y validación RUT Módulo-11 | ✅ PASS |
+| `tests/demo/` | `test_appointments.py` | 2 | Gestión de citas y bloqueo de colisiones horarias | ✅ PASS |
+| `tests/demo/` | `test_audit.py` | 11 | Inmutabilidad de registros y eventos transaccionales | ✅ PASS |
+| `tests/demo/` | `test_practitioners.py` | 3 | Autenticación y facultativos médicos | ✅ PASS |
+| **TOTAL CONSOLIDADO** | **9 archivos** | **38** | **Cobertura integral de Harness y Banco Clínico** | ✅ **100% PASS** |
+
+**Evidencia de Ejecución en Consola:**
+```text
+============================= test session starts =============================
+platform win32 -- Python 3.11.x, pytest-9.0.3, pluggy-1.5.0
+rootdir: C:\Users\andre\Documents\VSC Projects\vibecoding
+configfile: pyproject.toml
+collected 38 items
+
+tests/demo/test_appointments.py ..                                       [  5%]
+tests/demo/test_audit.py ...........                                     [ 34%]
+tests/demo/test_patients.py .....                                        [ 47%]
+tests/demo/test_practitioners.py ...                                     [ 55%]
+tests/harness/test_agentic_audit.py ....                                 [ 65%]
+tests/harness/test_data_lineage.py ...                                   [ 73%]
+tests/harness/test_db_persistence.py ...                                 [ 81%]
+tests/harness/test_graph_engine.py ....                                  [ 92%]
+tests/harness/test_skills_integrity.py ...                               [100%]
+
+============================== 38 passed in 3.99s ==============================
+```

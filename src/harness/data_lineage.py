@@ -157,7 +157,11 @@ class DataLineageEngine:
                 },
             }
 
-    def scan_and_build_lineage(self, root_dir: Path | str = WORKSPACE_ROOT) -> int:
+    def scan_and_build_lineage(
+        self,
+        root_dir: Path | str = WORKSPACE_ROOT,
+        scan_dirs: list[Path] | None = None,
+    ) -> int:
         """Escanea transversalmente el código fuente de la aplicación mediante AST,
         identificando fuentes, sumideros y trazando flujos de datos y mitigaciones de forma dinámica.
         """
@@ -169,7 +173,8 @@ class DataLineageEngine:
         file_scanners: dict[str, ASTLineageScanner] = {}
 
         # Escanear módulos de aplicación excluyendo harness, tests y entornos virtuales
-        scan_dirs = [root / "src" / "database", root / "src" / "backend"]
+        if scan_dirs is None:
+            scan_dirs = [root / "src" / "database", root / "src" / "backend"]
         try:
             for sdir in scan_dirs:
                 if not sdir.exists():

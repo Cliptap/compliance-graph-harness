@@ -45,8 +45,9 @@ if ($Ide -eq "") {
     Write-Host "  1. OpenCode      — reglas via AGENTS.md + opencode.json" -ForegroundColor Gray
     Write-Host "  2. Claude Code   — reglas via CLAUDE.md + ~/.claude/" -ForegroundColor Gray
     Write-Host "  3. Cursor        — reglas via .cursor/rules/" -ForegroundColor Gray
+    Write-Host "  4. Antigravity   — reglas via AGENTS.md + .agents/skills/" -ForegroundColor Gray
     Write-Host ""
-    $choice = (Read-Host "  ? Opcion (1-3)").Trim()
+    $choice = (Read-Host "  ? Opcion (1-4)").Trim()
 } else {
     $choice = $Ide
 }
@@ -94,6 +95,14 @@ switch ($choice.Trim()) {
         $SkillsDir = Join-Path $ConfigBase "skills\vibecoding"
         $AgentsDir = Join-Path $ConfigBase "agents\vibecoding"
         $RulesDir = Join-Path $ConfigBase "rules\vibecoding"
+    }
+    { $_ -in "4", "antigravity" } {
+        $IdeName = "Antigravity"
+        $IdeId = "antigravity"
+        $ConfigBase = Join-Path $ProjectDir ".agents"
+        $SkillsDir = Join-Path $ConfigBase "skills"
+        $AgentsDir = Join-Path $ConfigBase "agents"
+        $RulesDir = Join-Path $ConfigBase "rules"
     }
     default {
         $IdeName = "OpenCode"
@@ -216,6 +225,11 @@ switch ($IdeId) {
         # Cursor: .cursor/rules/ se lee automaticamente
         $rulesContent | Set-Content (Join-Path $ConfigBase "rules\vibecoding.md") -Encoding UTF8
         Write-Host "    + .cursor/rules/vibecoding.md (carga automatica)" -ForegroundColor Green
+    }
+    "antigravity" {
+        # Antigravity: AGENTS.md en raiz (always_on) + .agents/
+        $rulesContent | Set-Content (Join-Path $ProjectDir "AGENTS.md") -Encoding UTF8
+        Write-Host "    + AGENTS.md (reglas always-on, carga automatica)" -ForegroundColor Green
     }
 }
 

@@ -488,6 +488,7 @@ class AgenticAuditOrchestrator:
         self,
         sectorial_plugin: str | None = "health_clinical",
         apply_patches: bool = True,
+        scan_dirs: list[Path] | None = None,
     ) -> dict[str, Any]:
         from src.harness.pipeline import DeveloperPatcherAgent
 
@@ -495,7 +496,8 @@ class AgenticAuditOrchestrator:
         conn = get_db_connection(self.db_path)
 
         # Identificar archivos prioritarios para la auditoría (API y Base de Datos)
-        scan_dirs = [self.root_dir / "src" / "database", self.root_dir / "src" / "backend" / "api"]
+        if scan_dirs is None:
+            scan_dirs = [self.root_dir / "src" / "database", self.root_dir / "src" / "backend" / "api"]
         target_files: list[Path] = []
         for sdir in scan_dirs:
             if sdir.exists():
