@@ -192,7 +192,7 @@ class DeveloperPatcherAgent:
 
     def verify_patch(self) -> dict[str, Any]:
         """Ejecuta la suite de pruebas unitarias para certificar no-regresión tras el parche."""
-        cmd = [sys.executable, "-m", "pytest", "tests/unit/"]
+        cmd = [sys.executable, "-m", "pytest", "tests/"]
         res = subprocess.run(cmd, cwd=str(self.root_dir), capture_output=True, text=True)
         tests_passed = (res.returncode == 0)
         return {

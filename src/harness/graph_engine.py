@@ -326,6 +326,7 @@ def build_repository_graph(
     root_dir: Path | str = WORKSPACE_ROOT,
     db_path: Path | str = DEFAULT_DB_PATH,
     use_graphify: bool = True,
+    target_dirs: list[Path] | None = None,
 ) -> int:
     """Escanea el repositorio y construye el Grafo de Contexto de Código en SQLite.
     
@@ -355,7 +356,8 @@ def build_repository_graph(
 
     # Fallback al motor AST nativo si Graphify no está disponible
     conn = get_db_connection(db_path)
-    target_dirs = [root / "src" / "backend", root / "src" / "database"]
+    if target_dirs is None:
+        target_dirs = [root / "src" / "backend", root / "src" / "database"]
     nodes_count = 0
 
     try:
@@ -453,23 +455,99 @@ def subgraph_slice(target_node_id: str, depth: int = 1, db_path: Path | str = DE
         conn.close()
 
 
-def render_slice_context(slice_data: dict[str, Any], root_dir: Path | str = WORKSPACE_ROOT) -> str:
-    """Genera el bloque de contexto en Markdown ultracompacto para el subagente desarrollador."""
+from abc import ABC, abstractmethod
+
+
+class SymbolExtractor(ABC):
+    """Contrato base para extractores de símbolos de código independientes del lenguaje."""
+
+    @abstractmethod
+    def extract_symbol_code(self, file_path: Path, symbol_name: str) -> str | None:
+        """Extrae el fragmento de código correspondiente a un símbolo específico."""
+        pass
+
+
+class PythonSymbolExtractor(SymbolExtractor):
+    """Extractor quirúrgico de símbolos para código Python basado en rangos AST preservando formato."""
+
+    def extract_symbol_code(self, file_path: Path, symbol_name: str) -> str | None:
+        if not file_path.exists() or file_path.suffix != ".py":
+            return None
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            tree = ast.parse(content, filename=str(file_path))
+            lines = content.splitlines()
+
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    if node.name == symbol_name:
+                        start = max(0, node.lineno - 1)
+                        end = getattr(node, "end_lineno", len(lines))
+                        return "\n".join(lines[start:end])
+        except Exception:
+            return None
+        return None
+
+
+def render_slice_context(
+    slice_data: dict[str, Any],
+    root_dir: Path | str = WORKSPACE_ROOT,
+    symbol_level: bool = False,
+) -> str:
+    """Genera el bloque de contexto en Markdown para el agente.
+    
+    Si symbol_level es True, realiza un recorte quirúrgico (symbol-level slicing)
+    extrayendo solo las funciones, clases o endpoints involucrados, minimizando el consumo de tokens.
+    """
     root = Path(root_dir)
     files = slice_data.get("involved_files", [])
+    nodes = slice_data.get("nodes", [])
     parts = [
         f"### Sub-graph Slice de Contexto (Objetivo: `{slice_data.get('root_node')}`)",
         f"- **Archivos físicos aislados:** {len(files)}",
-        f"- **Nodos en vecindad:** {len(slice_data.get('nodes', []))}",
+        f"- **Nodos en vecindad:** {len(nodes)}",
         f"- **Aristas conectadas:** {len(slice_data.get('edges', []))}",
-        "\n#### Fragmentos de Archivos Críticos:\n",
+        f"- **Modo de extracción:** {'Symbol-Level Slicing' if symbol_level else 'File-Level Bundling'}",
+        "\n#### Fragmentos Críticos de Código:\n",
     ]
 
-    for fpath in files:
-        full_p = root / fpath
-        if full_p.exists():
-            content = full_p.read_text(encoding="utf-8")
-            parts.append(f"**Archivo:** `{fpath}`\n```python\n{content}\n```\n")
+    extractor = PythonSymbolExtractor()
+
+    if symbol_level and nodes:
+        # Agrupar nodos por archivo
+        rendered_symbols = set()
+        for n in nodes:
+            fpath = n.get("file_path")
+            ntype = n.get("node_type")
+            name = n.get("name")
+            if not fpath or ntype not in ("function", "class", "endpoint"):
+                continue
+
+            full_p = root / fpath
+            sym_key = f"{fpath}::{name}"
+            if sym_key in rendered_symbols:
+                continue
+
+            code_slice = extractor.extract_symbol_code(full_p, name)
+            if code_slice:
+                parts.append(
+                    f"**Símbolo ({ntype}):** `{name}` (`{fpath}`)\n```python\n{code_slice}\n```\n"
+                )
+                rendered_symbols.add(sym_key)
+
+        # Si ningún símbolo específico pudo extraerse, recurrir a los archivos
+        if not rendered_symbols:
+            for fpath in files:
+                full_p = root / fpath
+                if full_p.exists():
+                    content = full_p.read_text(encoding="utf-8")
+                    parts.append(f"**Archivo:** `{fpath}`\n```python\n{content}\n```\n")
+    else:
+        for fpath in files:
+            full_p = root / fpath
+            if full_p.exists():
+                content = full_p.read_text(encoding="utf-8")
+                parts.append(f"**Archivo:** `{fpath}`\n```python\n{content}\n```\n")
 
     return "\n".join(parts)
 
