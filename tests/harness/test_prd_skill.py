@@ -163,3 +163,94 @@ def test_prd_does_not_emit_allowed_paths():
     skill_text = SKILL_PATH.read_text(encoding="utf-8")
     assert "PRD Scope" in skill_text and "allowed_paths" in skill_text
     assert "PRD Scope ≠ TaskSpec Scope" in skill_text or "PRD Scope" in skill_text
+
+
+# ==============================================================================
+# TEST 6: Reglas Contractuales Anti-Drift en SKILL.md y Portable Package
+# ==============================================================================
+def test_skill_contract_governance_and_anti_drift_rules():
+    """Valida que SKILL.md y harness/skills/01_prd.md contienen las reglas estrictas anti-drift."""
+    for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
+        content = path.read_text(encoding="utf-8")
+
+        # 1. Elicitación obligatoria de gobernanza (sin asumir valor por defecto)
+        assert "Gobernanza Asumida en Silencio" in content
+        assert "COMPUERTA DE BLOQUEO" in content or "Sin Asunciones Silenciosas" in content
+        assert "ESTRICTAMENTE PROHIBIDO asumir o rellenar un valor por defecto" in content
+
+        # 2. Prohibición de inventar scope negativo en OUT OF SCOPE
+        assert "Scope Negativo Alucinado" in content
+        assert "PROHIBIDO inventar scope negativo" in content
+        assert "Regla Estricta de OUT OF SCOPE" in content
+
+        # 3. Prohibición de números mágicos en supuestos
+        assert "Números Mágicos en Supuestos" in content
+        assert "PROHIBIDO introducir números mágicos" in content
+
+        # 4. Prohibición de dilemas arquitectónicos prematuros en OPEN-*
+        assert "Preselección Técnica en OPEN-*" in content
+        assert "PROHIBIDO redactar dilemas o disyuntivas arquitectónicas concretas" in content
+        assert "referencia de delegación genérica" in content
+
+
+# ==============================================================================
+# TEST 7: Linter de Contrato Detecta Infracciones (Negative Testing)
+# ==============================================================================
+def lint_prd_contract(body: str) -> list[str]:
+    """Analizador determinista de cumplimiento de contrato de PRD."""
+    violations = []
+
+    # 1. Rutas físicas
+    if any(k in body for k in ["allowed_paths", "forbidden_paths", "src/"]):
+        violations.append("Rutas físicas o allowed_paths detectadas en el PRD")
+
+    # 2. Números mágicos en supuestos (ej: < 200, < 1.000, 10 usuarios, etc.)
+    assump_match = re.search(r"## 8\.\s*Supuestos.*?(?=##|\Z)", body, re.DOTALL | re.IGNORECASE)
+    if assump_match:
+        assump_text = assump_match.group(0)
+        if re.search(r"[<>]|\b\d+\s*(productos|usuarios|items|ms|segundos)\b", assump_text, re.IGNORECASE):
+            violations.append("Número mágico o umbral numérico arbitrario detectado en ASSUMP-*")
+
+    # 3. Disyuntivas técnicas prematuras en OPEN-*
+    open_match = re.search(r"## 9\.\s*Preguntas Abiertas.*?(?=##|\Z)", body, re.DOTALL | re.IGNORECASE)
+    if open_match:
+        open_text = open_match.group(0)
+        if re.search(r"\b(vs|versus)\b", open_text, re.IGNORECASE):
+            violations.append("Disyuntiva técnica o dilema arquitectónico prematuro detectado en OPEN-*")
+        if re.search(r"\b(SPA|SSR|FastAPI|Flask|Django|PostgreSQL|MySQL|MongoDB|Redis|SQLite|localStorage)\b", open_text, re.IGNORECASE):
+            violations.append("Tecnología concreta o arquitectura física preseleccionada en OPEN-*")
+
+    return violations
+
+
+def test_prd_linter_detects_anti_patterns():
+    """Verifica que el linter de contrato detecta números mágicos y dilemas arquitectónicos."""
+    bad_prd_body = """
+## 8. Supuestos de Trabajo (Assumptions)
+- **ASSUMP-001:** El catálogo inicial contiene un volumen acotado (< 200 productos).
+- **ASSUMP-002:** Concurrencia de hasta 10 usuarios simultáneos.
+
+## 9. Preguntas Abiertas y Decisiones Pendientes (Open Questions)
+- **OPEN-001:** ¿Qué patrón conviene adoptar (SPA vs SSR)?
+- **OPEN-002:** ¿Usar SQLite vs JSON en disco?
+"""
+    violations = lint_prd_contract(bad_prd_body)
+    assert len(violations) >= 2
+    assert any("Número mágico" in v for v in violations)
+    assert any("Disyuntiva técnica" in v or "Tecnología concreta" in v for v in violations)
+
+
+def test_prd_linter_accepts_conforming_spec():
+    """Verifica que un PRD conforme a las nuevas reglas es aceptado sin violaciones."""
+    good_prd_body = """
+## 8. Supuestos de Trabajo (Assumptions)
+- **ASSUMP-001:** El catálogo inicial cuenta con un volumen acotado para propósitos de demostración.
+- **ASSUMP-002:** Todos los precios se manejan bajo una única moneda base local predefinida.
+
+## 9. Preguntas Abiertas y Decisiones Pendientes (Open Questions)
+- **OPEN-001:** ¿Cuál debe ser el comportamiento visual si el usuario intenta agregar un producto con stock agotado?
+- **OPEN-002:** Delegación técnica: La selección de patrones de arquitectura y persistencia se resolverá formalmente en 02-architecture y 03-data-modeling.
+"""
+    violations = lint_prd_contract(good_prd_body)
+    assert len(violations) == 0, f"Violaciones inesperadas: {violations}"
+
