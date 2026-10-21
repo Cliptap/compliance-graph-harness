@@ -20,7 +20,7 @@ try {
   var contextToKeep = [];
 
   // 1. Buscar PRD mas reciente en docs/prd/
-  var projectRoot = process.env.OPENCODE_PROJECT_ROOT || process.cwd();
+  var projectRoot = process.env.VIBECODING_PROJECT_ROOT || process.env.OPENCODE_PROJECT_ROOT || process.cwd();
   var prdDir = path.join(projectRoot, 'docs', 'prd');
   if (fs.existsSync(prdDir)) {
     var prds = fs.readdirSync(prdDir).filter(function(f) { return f.endsWith('.md'); });

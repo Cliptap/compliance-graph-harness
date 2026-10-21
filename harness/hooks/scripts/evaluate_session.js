@@ -21,11 +21,11 @@ try {
     fs.mkdirSync(EVAL_DIR, { recursive: true });
   }
 
-  var projectRoot = process.env.OPENCODE_PROJECT_ROOT || process.cwd();
+  var projectRoot = process.env.VIBECODING_PROJECT_ROOT || process.env.OPENCODE_PROJECT_ROOT || process.cwd();
 
   var evaluation = {
     timestamp: new Date().toISOString(),
-    session_id: process.env.OPENCODE_SESSION_ID || 'unknown',
+    session_id: process.env.VIBECODING_SESSION_ID || process.env.OPENCODE_SESSION_ID || 'unknown',
     metrics: {
       harness_active: false,
       skills_loaded: [],

@@ -59,8 +59,9 @@ docker compose up -d db
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 
-# Dependencias
+# Dependencias (app) y dependencias de pruebas
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 # Servidor en modo recarga automática
 uvicorn src.backend.main:app --reload --port 8000

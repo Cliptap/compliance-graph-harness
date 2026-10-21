@@ -5,10 +5,14 @@ param(
     [string]$Action = "status"
 )
 
-# En modo standalone, el script esta en vibecoding-harness/harness.ps1
-# $ProjectDir es la raiz del proyecto (padre de vibecoding-harness/)
+# En la raiz del proyecto (junto a harness/) el proyecto es la carpeta del script.
+# En modo standalone el script esta en vibecoding-harness/harness.ps1 y el proyecto es su padre.
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectDir = Split-Path -Parent $ScriptDir
+if (Test-Path (Join-Path $ScriptDir "harness\render.py")) {
+    $ProjectDir = $ScriptDir
+} else {
+    $ProjectDir = Split-Path -Parent $ScriptDir
+}
 
 $agentsFile = Join-Path $ProjectDir "AGENTS.md"
 $agentsDisabled = Join-Path $ProjectDir "AGENTS.md.disabled"
