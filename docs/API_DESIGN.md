@@ -25,7 +25,7 @@ updated_at: "2026-10-21"
   - `AD-002:` Comunicación cliente-servidor síncrona desacoplada mediante transporte HTTP REST básico con prefijo `/api/v1`.
   - `AD-003:` Retención del estado del carrito íntegramente en Web Storage del cliente (`localStorage`), validando precios contra el servicio backend sin tablas ni endpoints de carrito en servidor.
   - `AD-005:` Persistencia del catálogo en SQLite con SQLAlchemy precargada con datos semilla (`SEED-001`).
-  - `AD-006:` Estrategia Fail-Fast con respuestas de error estructuradas.
+  - `AD-006:` Estrategia Fail-Fast con respuestas de error estructuradas y sanitización perimetral de transporte (justificación de diseño para la validación estricta de parámetros: cota máxima de 100 caracteres en 'q' para prevenir abusos de cómputo/memoria en SQLite y rechazo de caracteres nulos o valores de 'id < 1' bajo DTO-ERR-001).
   - `AD-007:` Nivel de seguridad mínimo: modo visitante anónimo sin sesiones ni tokens de acceso.
 
 ---
@@ -163,6 +163,8 @@ Conforme a la decisión arquitectónica vinculante **AD-003** y al modelo de dat
 - **Validación de Entradas:** Sanitización estricta de parámetros en la capa de transporte:
   - `id`: Coerción a entero positivo ($id \ge 1$).
   - `q`: Eliminación de espacios en blanco en los extremos (`strip`), verificación de longitud ($\le 100$) y rechazo de caracteres nulos.
+  > [!NOTE]
+  > **Nota de Linaje Técnico (AD-006 — Sanitización de Transporte):** La restricción de longitud máxima a 100 caracteres en el parámetro `q` y el rechazo de caracteres nulos derivan contractualmente de la decisión arquitectónica `AD-006` (Estrategia Fail-Fast). Estas cotas operativas protegen al motor de persistencia SQLite de sobrecargas de cómputo en búsquedas `contains` y previenen inyecciones o desbordamientos en la capa HTTP, garantizando respuestas deterministas inmediatas mediante el envelope estructurado `DTO-ERR-001` sin constituir goldplating huérfano.
 - **Política de Encabezados (CORS):** La API admitirá orígenes locales controlados (`http://localhost:*`, `http://127.0.0.1:*`) para habilitar el consumo directo desde la interfaz web estática (`COMP-003`).
 
 ---
