@@ -151,9 +151,12 @@ estandar si terminan sin cambios (cuenta como correccion requerida).
 
 - **Eficiencia:** `cycle_time_s`, `latency_ms` (suma de `duration_ms` del SDK), `rounds`, `tool_calls`, `turns`, `tokens`, `usage_reported`.
 - **Calidad:** `tests` (suite `tests/demo` en el workspace), `files_changed`, `lines_added`, `lines_deleted`, `unrequested_changes`.
-- **Gobernanza:** `policy_violations`, `scope_violations`, `privacy_findings`, `compliance_score` y `findings` (PolicyEngine sobre el diff).
+- **Gobernanza:** `policy_violations`, `scope_violations`, `privacy_findings`, `compliance_score`, `findings` (PolicyEngine sobre el diff) y `gate_rounds` (retroalimentaciones automaticas de la compuerta).
 - **Contexto:** `files_read`, `relevance_ratio` contra `relevant_paths` del sidecar `.scope.json` de la tarea.
-- **Revision:** `required_corrections` (envios posteriores al primero).
+- **Revision:** `required_corrections` (respuestas estandar enviadas porque el agente termino sin cambios; las rondas de la compuerta no cuentan).
+
+El diff se mide con `git diff --no-renames -z` contra el commit base del workspace, y el
+`.gitattributes` (`* text=auto`) evita que reescrituras CRLF/LF cuenten como lineas modificadas.
 
 `compliance_score` es provisional: 100 menos 25/10/5/2 por infraccion CRITICAL/HIGH/MEDIUM/LOW,
 excluyendo las de alcance. Las metricas aun no medibles se reportan `null` y su motivo queda

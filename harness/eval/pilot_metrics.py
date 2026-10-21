@@ -73,12 +73,12 @@ def changed_files(ws: Path) -> dict[str, tuple[int, int]]:
     """Devuelve {ruta: (líneas agregadas, líneas eliminadas)} respecto del commit base."""
     subprocess.run(["git", "add", "-A"], cwd=ws, check=True, capture_output=True)
     out = subprocess.run(
-        ["git", "diff", "--cached", "--numstat", "HEAD"],
-        cwd=ws, check=True, capture_output=True, text=True,
-    ).stdout
+        ["git", "diff", "--cached", "--numstat", "--no-renames", "-z", "HEAD"],
+        cwd=ws, check=True, capture_output=True,
+    ).stdout.decode("utf-8")
     changes: dict[str, tuple[int, int]] = {}
-    for line in out.splitlines():
-        added, deleted, path = line.split("\t", 2)
+    for entry in filter(None, out.split("\0")):
+        added, deleted, path = entry.split("\t", 2)
         changes[path] = (_to_int(added), _to_int(deleted))
     return changes
 

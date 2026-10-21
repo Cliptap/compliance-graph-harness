@@ -104,6 +104,42 @@ def test_changed_files_reports_modified_and_new_files(tmp_path):
     assert changes == {"a.py": (2, 1), "b.py": (1, 0)}
 
 
+def test_changed_files_reports_renames_as_delete_plus_add_and_keeps_privacy_findings(tmp_path):
+    ws = prepare_workspace(REPO_ROOT, "baseline", tmp_path / "ws")
+    old = ws / "src/backend/schemas.py"
+    content = old.read_text(encoding="utf-8")
+    old.unlink()
+    (ws / "src/backend/schemas_v2.py").write_text(
+        content + "\nlogging.info('rut %s', patient.rut)\n", encoding="utf-8"
+    )
+
+    changes = changed_files(ws)
+    findings = evaluate_policies(ws, changes, SCOPE)
+
+    assert set(changes) == {"src/backend/schemas.py", "src/backend/schemas_v2.py"}
+    assert changes["src/backend/schemas.py"][0] == 0
+    assert "privacy.cwe_532" in {f.policy_id for f in findings}
+
+
+def test_changed_files_ignores_line_ending_only_rewrites(tmp_path):
+    ws = prepare_workspace(REPO_ROOT, "baseline", tmp_path / "ws")
+    target = ws / "src/backend/schemas.py"
+    text = target.read_bytes().decode("utf-8").replace("\r\n", "\n")
+
+    target.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
+    assert changed_files(ws) == {}
+
+    target.write_bytes((text + "a = 1\nb = 2\nc = 3\n").encode("utf-8"))
+    assert changed_files(ws) == {"src/backend/schemas.py": (3, 0)}
+
+
+def test_changed_files_handles_non_ascii_paths(tmp_path):
+    ws = prepare_workspace(REPO_ROOT, "baseline", tmp_path / "ws")
+    (ws / "src/backend/api/citas_año.py").write_text("x = 1\n", encoding="utf-8")
+
+    assert changed_files(ws) == {"src/backend/api/citas_año.py": (1, 0)}
+
+
 def test_evaluate_policies_flags_scope_and_cwe_532(tmp_path):
     (tmp_path / "src/database").mkdir(parents=True)
     (tmp_path / "src/database/models.py").write_text("x = 1\n", encoding="utf-8")
@@ -276,6 +312,48 @@ def test_summarize_run_reports_metric_groups(tmp_path):
     assert summary["context"]["files_read"] == ["src/database/models.py"]
     assert summary["context"]["relevance_ratio"] == 1.0
     assert summary["review"]["required_corrections"] == 1
+
+
+@pytest.mark.parametrize("argv", [
+    ["--dry-run", "--model", "AUTO"],
+    ["--dry-run", "--arms", "baseline,bogus"],
+    ["--dry-run", "--reps", "0"],
+])
+def test_invalid_options_are_rejected_before_preparing(tmp_path, argv):
+    with pytest.raises(SystemExit) as exc:
+        cursor_runner.main([*argv, "--workspace-root", str(tmp_path / "ws"),
+                            "--out-dir", str(tmp_path / "out")])
+
+    assert exc.value.code == 2
+    assert not (tmp_path / "ws").exists()
+
+
+def test_gate_rounds_are_not_counted_as_required_corrections(tmp_path):
+    plan = _plan(tmp_path, "harness_compliance")
+    rounds = [{"kind": kind, "status": "finished", "duration_ms": 1, "wall_s": 0.1, "usage": None}
+              for kind in ("task", "compliance_feedback", "clarification")]
+
+    summary = cursor_runner.summarize_run(plan, {"status": "finished", "rounds": rounds,
+                                                 "messages": [], "cycle_time_s": 1.0})
+
+    assert summary["review"]["required_corrections"] == 1
+    assert summary["governance"]["gate_rounds"] == 1
+
+
+def test_compliance_tool_ignores_paths_outside_workspace(tmp_path):
+    plan = _plan(tmp_path, "harness_compliance")
+    outside = tmp_path / "secret.py"
+    outside.write_text("logging.info('rut %s', rut)\n", encoding="utf-8")
+
+    output = cursor_runner.compliance_tool(plan.workspace, plan.scope).execute(
+        {"files": [str(outside)]}, None
+    )
+
+    assert "privacy.cwe_532" not in output
+
+
+def test_api_key_is_not_in_settings_repr():
+    assert "secret-key" not in repr(cursor_runner.LiveSettings("m", "secret-key", 1, 1))
 
 
 def test_live_run_without_api_key_fails_before_preparing(tmp_path, monkeypatch, capsys):

@@ -21,7 +21,7 @@ import sys
 import tempfile
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -68,9 +68,9 @@ class RunPlan:
 @dataclass(frozen=True)
 class LiveSettings:
     model: str
-    api_key: str
-    max_rounds: int
-    timeout_s: int
+    api_key: str = field(repr=False)
+    max_rounds: int = 3
+    timeout_s: int = 900
 
 
 def build_prompt(task_path: Path) -> str:
@@ -93,7 +93,8 @@ def compliance_tool(workspace: Path, scope: dict[str, Any]) -> Any:
     from cursor_sdk import CustomTool
 
     def execute(args: dict[str, Any], _context: Any) -> str:
-        files = args.get("files") or list(changed_files(workspace))
+        requested = [_workspace_relative(workspace, raw) for raw in args.get("files") or []]
+        files = [rel for rel in requested if rel] or list(changed_files(workspace))
         return format_findings_feedback(scope["task_id"], evaluate_policies(workspace, files, scope))
 
     return CustomTool(
@@ -105,6 +106,15 @@ def compliance_tool(workspace: Path, scope: dict[str, Any]) -> Any:
             "properties": {"files": {"type": "array", "items": {"type": "string"}}},
         },
     )
+
+
+def _workspace_relative(workspace: Path, raw: str) -> str | None:
+    root = workspace.resolve()
+    target = (root / raw).resolve()
+    try:
+        return target.relative_to(root).as_posix()
+    except ValueError:
+        return None
 
 
 def run_live(plan: RunPlan, settings: LiveSettings) -> dict[str, Any]:
@@ -150,7 +160,7 @@ def _send(agent: Any, message: str, kind: str, timeout_s: int, sink: list[Any]) 
     started = time.perf_counter()
     run = agent.send(message)
     print(f"    run={run.id} kind={kind}", flush=True)
-    timer = threading.Timer(timeout_s, lambda: run.status == "running" and run.cancel())
+    timer = threading.Timer(timeout_s, _cancel_if_running, args=(run,))
     timer.start()
     try:
         sink.extend(run.messages())
@@ -159,7 +169,17 @@ def _send(agent: Any, message: str, kind: str, timeout_s: int, sink: list[Any]) 
         timer.cancel()
     return {"kind": kind, "run_id": run.id, "status": result.status,
             "duration_ms": result.duration_ms, "wall_s": round(time.perf_counter() - started, 2),
-            "usage": _usage_dict(result.usage)}
+            "usage": _usage_dict(result.usage),
+            "error_code": getattr(result, "error_code", None),
+            "error_message": getattr(result, "error_message", None)}
+
+
+def _cancel_if_running(run: Any) -> None:
+    try:
+        if run.status == "running":
+            run.cancel()
+    except Exception:  # el run pudo terminar entre la consulta y la cancelación
+        pass
 
 
 def _usage_dict(usage: Any) -> dict[str, int] | None:
@@ -195,6 +215,7 @@ def summarize_run(plan: RunPlan, live: dict[str, Any]) -> dict[str, Any]:
             "policy_violations": counts["policy"], "scope_violations": counts["scope"],
             "privacy_findings": counts["privacy"], "architecture_violations": None,
             "compliance_score": compliance_score(findings),
+            "gate_rounds": _count_rounds(rounds, "compliance_feedback"),
             "findings": [f.model_dump(include={"policy_id", "severity", "file", "line"}) for f in findings],
         },
         "context": {
@@ -203,13 +224,17 @@ def summarize_run(plan: RunPlan, live: dict[str, Any]) -> dict[str, Any]:
             "relevance_ratio": context_relevance(stats.files_read, plan.scope.get("relevant_paths", [])),
         },
         "review": {
-            "required_corrections": max(0, len(rounds) - 1),
+            "required_corrections": _count_rounds(rounds, "clarification"),
             "manual_changes_after": None, "human_review_minutes": None,
         },
         "rounds": rounds,
         "tool_calls_by_name": stats.tool_calls_by_name,
         "changed_files": {path: list(lines) for path, lines in changes.items()},
     }
+
+
+def _count_rounds(rounds: list[dict[str, Any]], kind: str) -> int:
+    return sum(1 for r in rounds if r["kind"] == kind)
 
 
 def _sum_usage(usages: list[dict[str, int]]) -> dict[str, int] | None:
@@ -222,15 +247,36 @@ def _sum_usage(usages: list[dict[str, int]]) -> dict[str, int] | None:
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--task", default=DEFAULT_TASK, help="tarea .md con su sidecar .scope.json")
-    parser.add_argument("--arms", default=",".join(ARMS), help="brazos separados por coma")
-    parser.add_argument("--model", default=DEFAULT_MODEL, help="id de modelo fijo (nunca 'auto')")
-    parser.add_argument("--reps", type=int, default=1, help="repeticiones por brazo")
+    parser.add_argument("--arms", type=_arms_arg, default=list(ARMS), help="brazos separados por coma")
+    parser.add_argument("--model", type=_model_arg, default=DEFAULT_MODEL, help="id de modelo fijo (nunca 'auto')")
+    parser.add_argument("--reps", type=_positive_int, default=1, help="repeticiones por brazo")
     parser.add_argument("--max-rounds", type=int, default=3, help="envíos máximos por corrida")
     parser.add_argument("--timeout", type=int, default=900, help="segundos máximos por envío")
     parser.add_argument("--workspace-root", default=None, help="raíz de workspaces (por defecto, temp del SO)")
     parser.add_argument("--out-dir", default="qa_reports/pilot", help="directorio del reporte JSON")
     parser.add_argument("--dry-run", action="store_true", help="prepara workspaces sin llamar al SDK")
     return parser.parse_args(argv)
+
+
+def _arms_arg(value: str) -> list[str]:
+    arms = [a.strip() for a in value.split(",") if a.strip()]
+    unknown = [a for a in arms if a not in ARMS]
+    if not arms or unknown:
+        raise argparse.ArgumentTypeError(f"brazos inválidos {unknown}; opciones: {', '.join(ARMS)}")
+    return arms
+
+
+def _model_arg(value: str) -> str:
+    if value.strip().lower() == "auto":
+        raise argparse.ArgumentTypeError("'auto' invalida la comparación; usa un id de modelo fijo")
+    return value.strip()
+
+
+def _positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("debe ser >= 1")
+    return number
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -240,17 +286,14 @@ def main(argv: list[str] | None = None) -> int:
         print("ERROR: define CURSOR_API_KEY (Cursor Dashboard -> Integrations) o usa --dry-run.",
               file=sys.stderr)
         return 1
-    if args.model == "auto":
-        print("ERROR: --model auto invalida la comparación; usa un id fijo.", file=sys.stderr)
-        return 1
     stamp = time.strftime("%Y%m%d-%H%M%S")
     task_path = (REPO_ROOT / args.task).resolve()
     ws_root = Path(args.workspace_root or Path(tempfile.gettempdir()) / "vibecoding-pilot" / stamp)
     settings = LiveSettings(args.model, api_key, args.max_rounds, args.timeout)
     runs = []
     for rep in range(1, args.reps + 1):
-        for arm in args.arms.split(","):
-            runs.append(_execute(arm.strip(), rep, task_path, ws_root, settings, args.dry_run))
+        for arm in args.arms:
+            runs.append(_execute(arm, rep, task_path, ws_root, settings, args.dry_run))
     report = {"metadata": _metadata(args, task_path, ws_root), "runs": runs}
     out_dir = REPO_ROOT / args.out_dir if not Path(args.out_dir).is_absolute() else Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -279,7 +322,7 @@ def _metadata(args: argparse.Namespace, task_path: Path, ws_root: Path) -> dict[
                             capture_output=True, text=True).stdout.strip()
     return {
         "dry_run": args.dry_run, "model": args.model, "task": task_path.name,
-        "arms": args.arms.split(","), "reps": args.reps, "max_rounds": args.max_rounds,
+        "arms": args.arms, "reps": args.reps, "max_rounds": args.max_rounds,
         "sdk_version": _sdk_version(), "harness_commit": commit,
         "platform": platform.platform(), "python": platform.python_version(),
         "workspace_root": str(ws_root), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),

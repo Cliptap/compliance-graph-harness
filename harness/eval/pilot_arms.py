@@ -20,6 +20,8 @@ PIPELINE_SKILLS = (
 )
 COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.db", ".pytest_cache")
 WORKSPACE_GITIGNORE = "__pycache__/\n*.pyc\n.pytest_cache/\n*.db\n"
+# Normaliza EOL en el index para que reescrituras CRLF/LF no cuenten como líneas modificadas.
+WORKSPACE_GITATTRIBUTES = "* text=auto\n"
 
 HARNESS_RULE_HEADER = """---
 description: VibeCoding harness always-on rules
@@ -72,6 +74,7 @@ def prepare_workspace(repo_root: Path, arm: str, dest: Path) -> Path:
     if config.compliance_tool:
         _write_text(dest / ".cursor/rules/compliance-gate.mdc", COMPLIANCE_GATE_RULE)
     _write_text(dest / ".gitignore", WORKSPACE_GITIGNORE)
+    _write_text(dest / ".gitattributes", WORKSPACE_GITATTRIBUTES)
     _commit_baseline(dest)
     return dest
 
