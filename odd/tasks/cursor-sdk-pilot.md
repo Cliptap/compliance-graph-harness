@@ -17,7 +17,7 @@ Delivery: ask-on-risk. Test runner: `python -m pytest tests/harness/test_cursor_
 |---|---|---|---|---|
 | T1 | S2, S3 | inline | done | RED: `ImportError cursor_runner`; GREEN: workspace tests pass |
 | T2 | S4 | inline | done | GREEN: metrics/policy/score/relevance tests pass |
-| T3 | S1, S5, S6 | inline | done | GREEN: 16/16 focused, 67/67 suite; dry run 3 arms; `tests/demo` 21/21 inside isolated baseline workspace |
+| T3 | S1, S5, S6 | inline | done | commits `f3db5eb`, `a4b4190`; 25/25 focused, 76/76 suite; dry run 3 arms; `tests/demo` 21/21 inside isolated baseline workspace; independent verifier: B1/B2 FIXED |
 | T4 | S1, S5 | inline | blocked: needs `CURSOR_API_KEY` | |
 
 Route evidence: one dependent chain of small units; no Writer trigger (no parallel independent units, no context backstop).
