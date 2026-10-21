@@ -131,9 +131,12 @@ del usuario y un modelo fijo (nunca `auto`). Dependencia: `harness/eval/requirem
 ```powershell
 python -m pip install -r harness/eval/requirements-eval.txt
 python -m harness.eval.cursor_runner --dry-run          # valida workspaces sin API key
-$env:CURSOR_API_KEY="..."                                # Cursor Dashboard -> Integrations
+# CURSOR_API_KEY en el entorno o en .env (raiz del repo, ignorado por git)
 python -m harness.eval.cursor_runner --model composer-2.5 --reps 1
 ```
+
+El runner usa la API asincrona del SDK: en Windows, el bridge sincrono de `cursor-sdk` 1.0.40
+falla al esperar el pipe con `select` (`WinError 10038`).
 
 ### Brazos
 

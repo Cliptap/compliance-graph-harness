@@ -1,3 +1,4 @@
+import asyncio
 import json
 import subprocess
 from pathlib import Path
@@ -198,31 +199,52 @@ def test_dry_run_prepares_all_arms_without_calling_sdk(tmp_path, monkeypatch):
 
 
 class FakeRun:
-    def __init__(self, run_id: str):
+    """Imita `AsyncRun`: `messages()` es iterable asíncrono; `wait` y `cancel` son corrutinas."""
+
+    def __init__(self, run_id: str, hang: bool = False):
         self.id = run_id
-        self.status = "finished"
+        self.status = "running" if hang else "finished"
+        self.hang = hang
+        self.cancelled = False
+
+    async def _stream(self):
+        yield SimpleNamespace(type="usage", usage=SimpleNamespace(total_tokens=1))
+        if self.hang:
+            await asyncio.sleep(3600)
 
     def messages(self):
-        return [SimpleNamespace(type="usage", usage=SimpleNamespace(total_tokens=1))]
+        return self._stream()
 
-    def wait(self):
-        return SimpleNamespace(status="finished", duration_ms=100,
+    async def wait(self):
+        status = "cancelled" if self.cancelled else "finished"
+        return SimpleNamespace(status=status, duration_ms=100,
                                usage=SimpleNamespace(input_tokens=10, output_tokens=5))
+
+    async def cancel(self):
+        self.cancelled = True
+        self.status = "cancelled"
 
 
 class FakeAgent:
     """Simula el agente: cada envío aplica la edición correspondiente al workspace."""
 
-    def __init__(self, edits):
+    def __init__(self, edits, hang: bool = False):
         self.edits = list(edits)
         self.sent = []
+        self.hang = hang
 
-    def send(self, message):
+    async def send(self, message):
         self.sent.append(message)
         edit = self.edits.pop(0) if self.edits else None
         if edit:
             edit()
-        return FakeRun(f"run-{len(self.sent)}")
+        return FakeRun(f"run-{len(self.sent)}", hang=self.hang)
+
+
+def _drive(agent, plan, settings=None):
+    rounds, messages = [], []
+    asyncio.run(cursor_runner._drive_rounds(agent, plan, settings or SETTINGS, rounds, messages))
+    return rounds
 
 
 def _plan(tmp_path, arm):
@@ -243,9 +265,8 @@ def test_no_changes_triggers_the_standard_clarification_reply(tmp_path):
     plan = _plan(tmp_path, "baseline")
     target = plan.workspace / "src/backend/api/appointments.py"
     agent = FakeAgent([None, _append(target, "\n# filtros\n")])
-    rounds, messages = [], []
 
-    cursor_runner._drive_rounds(agent, plan, SETTINGS, rounds, messages)
+    rounds = _drive(agent, plan)
 
     assert [r["kind"] for r in rounds] == ["task", "clarification"]
     assert agent.sent[1] == cursor_runner.CLARIFICATION_REPLY
@@ -257,9 +278,8 @@ def test_compliance_arm_feeds_violations_back_until_clean(tmp_path):
     original = target.read_text(encoding="utf-8")
     agent = FakeAgent([_append(target, LEAK), lambda: target.write_text(original + "\n# ok\n",
                                                                          encoding="utf-8")])
-    rounds, messages = [], []
 
-    cursor_runner._drive_rounds(agent, plan, SETTINGS, rounds, messages)
+    rounds = _drive(agent, plan)
 
     assert [r["kind"] for r in rounds] == ["task", "compliance_feedback"]
     assert "privacy.cwe_532" in agent.sent[1]
@@ -269,11 +289,20 @@ def test_baseline_arm_gets_no_compliance_feedback(tmp_path):
     plan = _plan(tmp_path, "baseline")
     target = plan.workspace / "src/backend/api/appointments.py"
     agent = FakeAgent([_append(target, LEAK)])
-    rounds, messages = [], []
 
-    cursor_runner._drive_rounds(agent, plan, SETTINGS, rounds, messages)
+    rounds = _drive(agent, plan)
 
     assert [r["kind"] for r in rounds] == ["task"]
+
+
+def test_send_timeout_cancels_the_run_and_stops_rounds(tmp_path):
+    plan = _plan(tmp_path, "baseline")
+    agent = FakeAgent([None], hang=True)
+
+    rounds = _drive(agent, plan, cursor_runner.LiveSettings("composer-2.5", "key", 3, timeout_s=1))
+
+    assert [r["status"] for r in rounds] == ["cancelled"]
+    assert rounds[0]["timed_out"] is True
 
 
 def test_compliance_tool_reports_findings_for_changed_files(tmp_path):
@@ -352,6 +381,23 @@ def test_compliance_tool_ignores_paths_outside_workspace(tmp_path):
     assert "privacy.cwe_532" not in output
 
 
+def test_api_key_is_read_from_env_file_when_variable_is_missing(tmp_path, monkeypatch):
+    monkeypatch.delenv("CURSOR_API_KEY", raising=False)
+    env_file = tmp_path / ".env"
+    env_file.write_text("# comentario\nOTHER=1\nCURSOR_API_KEY = \"key-from-file\"\n", encoding="utf-8")
+
+    assert cursor_runner.load_api_key(env_file) == "key-from-file"
+    assert cursor_runner.load_api_key(tmp_path / "missing.env") == ""
+
+
+def test_environment_variable_wins_over_env_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("CURSOR_API_KEY", "key-from-env")
+    env_file = tmp_path / ".env"
+    env_file.write_text("CURSOR_API_KEY=key-from-file\n", encoding="utf-8")
+
+    assert cursor_runner.load_api_key(env_file) == "key-from-env"
+
+
 def test_api_key_is_not_in_settings_repr():
     assert "secret-key" not in repr(cursor_runner.LiveSettings("m", "secret-key", 1, 1))
 
@@ -360,7 +406,8 @@ def test_live_run_without_api_key_fails_before_preparing(tmp_path, monkeypatch, 
     monkeypatch.delenv("CURSOR_API_KEY", raising=False)
 
     exit_code = cursor_runner.main(["--workspace-root", str(tmp_path / "ws"),
-                                    "--out-dir", str(tmp_path / "out")])
+                                    "--out-dir", str(tmp_path / "out"),
+                                    "--env-file", str(tmp_path / "missing.env")])
 
     assert exit_code == 1
     assert "CURSOR_API_KEY" in capsys.readouterr().err

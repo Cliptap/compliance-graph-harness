@@ -12,6 +12,7 @@ Los workspaces se crean fuera del repositorio y el reporte se escribe en `qa_rep
 from __future__ import annotations
 
 import argparse
+import asyncio
 import dataclasses
 import json
 import os
@@ -19,7 +20,6 @@ import platform
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 from dataclasses import dataclass, field
 from importlib import metadata
@@ -73,6 +73,18 @@ class LiveSettings:
     timeout_s: int = 900
 
 
+def load_api_key(env_file: Path) -> str:
+    """Devuelve CURSOR_API_KEY del entorno o, si falta, del archivo `.env` indicado."""
+    from_env = os.environ.get("CURSOR_API_KEY", "").strip()
+    if from_env or not env_file.is_file():
+        return from_env
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        name, sep, value = line.partition("=")
+        if sep and name.strip() == "CURSOR_API_KEY":
+            return value.strip().strip("\"'")
+    return ""
+
+
 def build_prompt(task_path: Path) -> str:
     return task_path.read_text(encoding="utf-8") + TASK_SUFFIX
 
@@ -117,8 +129,9 @@ def _workspace_relative(workspace: Path, raw: str) -> str | None:
         return None
 
 
-def run_live(plan: RunPlan, settings: LiveSettings) -> dict[str, Any]:
-    from cursor_sdk import Agent, CursorAgentError, LocalAgentOptions
+async def run_live(plan: RunPlan, settings: LiveSettings) -> dict[str, Any]:
+    # API asíncrona: en Windows el bridge síncrono de cursor-sdk 1.0.40 falla (select sobre pipes).
+    from cursor_sdk import AsyncClient, CursorAgentError, LocalAgentOptions
 
     tools = {"compliance_check": compliance_tool(plan.workspace, plan.scope)} if plan.arm.compliance_tool else None
     sources = list(plan.arm.setting_sources) if plan.arm.setting_sources else None
@@ -127,8 +140,10 @@ def run_live(plan: RunPlan, settings: LiveSettings) -> dict[str, Any]:
     messages: list[Any] = []
     started = time.perf_counter()
     try:
-        with Agent.create(model=settings.model, api_key=settings.api_key, local=local) as agent:
-            _drive_rounds(agent, plan, settings, rounds, messages)
+        async with await AsyncClient.launch_bridge(workspace=str(plan.workspace)) as client:
+            agent = await client.agents.create(model=settings.model, api_key=settings.api_key, local=local)
+            async with agent:
+                await _drive_rounds(agent, plan, settings, rounds, messages)
     except CursorAgentError as err:
         return {"status": "startup_error", "error": f"{err} (retryable={err.is_retryable})"}
     return {"status": rounds[-1]["status"] if rounds else "no_rounds", "error": None,
@@ -136,11 +151,11 @@ def run_live(plan: RunPlan, settings: LiveSettings) -> dict[str, Any]:
             "rounds": rounds, "messages": messages}
 
 
-def _drive_rounds(agent: Any, plan: RunPlan, settings: LiveSettings,
-                  rounds: list[dict[str, Any]], messages: list[Any]) -> None:
+async def _drive_rounds(agent: Any, plan: RunPlan, settings: LiveSettings,
+                        rounds: list[dict[str, Any]], messages: list[Any]) -> None:
     message, kind = plan.prompt, "task"
     for _ in range(settings.max_rounds):
-        rounds.append(_send(agent, message, kind, settings.timeout_s, messages))
+        rounds.append(await _send(agent, message, kind, settings.timeout_s, messages))
         if rounds[-1]["status"] != "finished":
             return
         changes = changed_files(plan.workspace)
@@ -156,28 +171,33 @@ def _drive_rounds(agent: Any, plan: RunPlan, settings: LiveSettings,
         message, kind = format_findings_feedback(plan.scope["task_id"], violations), "compliance_feedback"
 
 
-def _send(agent: Any, message: str, kind: str, timeout_s: int, sink: list[Any]) -> dict[str, Any]:
+async def _send(agent: Any, message: str, kind: str, timeout_s: int, sink: list[Any]) -> dict[str, Any]:
     started = time.perf_counter()
-    run = agent.send(message)
+    run = await agent.send(message)
     print(f"    run={run.id} kind={kind}", flush=True)
-    timer = threading.Timer(timeout_s, _cancel_if_running, args=(run,))
-    timer.start()
+    timed_out = False
     try:
-        sink.extend(run.messages())
-        result = run.wait()
-    finally:
-        timer.cancel()
-    return {"kind": kind, "run_id": run.id, "status": result.status,
+        await asyncio.wait_for(_consume(run, sink), timeout_s)
+    except asyncio.TimeoutError:
+        timed_out = True
+        await _cancel_if_running(run)
+    result = await run.wait()
+    return {"kind": kind, "run_id": run.id, "status": result.status, "timed_out": timed_out,
             "duration_ms": result.duration_ms, "wall_s": round(time.perf_counter() - started, 2),
             "usage": _usage_dict(result.usage),
             "error_code": getattr(result, "error_code", None),
             "error_message": getattr(result, "error_message", None)}
 
 
-def _cancel_if_running(run: Any) -> None:
+async def _consume(run: Any, sink: list[Any]) -> None:
+    async for message in run.messages():
+        sink.append(message)
+
+
+async def _cancel_if_running(run: Any) -> None:
     try:
         if run.status == "running":
-            run.cancel()
+            await run.cancel()
     except Exception:  # el run pudo terminar entre la consulta y la cancelación
         pass
 
@@ -255,6 +275,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--workspace-root", default=None, help="raíz de workspaces (por defecto, temp del SO)")
     parser.add_argument("--out-dir", default="qa_reports/pilot", help="directorio del reporte JSON")
     parser.add_argument("--dry-run", action="store_true", help="prepara workspaces sin llamar al SDK")
+    parser.add_argument("--env-file", default=str(REPO_ROOT / ".env"),
+                        help="archivo con CURSOR_API_KEY si la variable de entorno no está definida")
     return parser.parse_args(argv)
 
 
@@ -281,10 +303,10 @@ def _positive_int(value: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    api_key = os.environ.get("CURSOR_API_KEY", "").strip()
+    api_key = "" if args.dry_run else load_api_key(Path(args.env_file))
     if not args.dry_run and not api_key:
-        print("ERROR: define CURSOR_API_KEY (Cursor Dashboard -> Integrations) o usa --dry-run.",
-              file=sys.stderr)
+        print("ERROR: define CURSOR_API_KEY en el entorno o en --env-file "
+              "(Cursor Dashboard -> Integrations), o usa --dry-run.", file=sys.stderr)
         return 1
     stamp = time.strftime("%Y%m%d-%H%M%S")
     task_path = (REPO_ROOT / args.task).resolve()
@@ -311,7 +333,7 @@ def _execute(arm: str, rep: int, task_path: Path, ws_root: Path,
     print(f"[pilot] arm={arm} rep={rep} ws={workspace}", flush=True)
     if dry_run:
         return {**header, "status": "prepared"}
-    live = run_live(plan, settings)
+    live = asyncio.run(run_live(plan, settings))
     if live["status"] == "startup_error":
         return {**header, **live}
     return {**header, **summarize_run(plan, live)}
