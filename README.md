@@ -79,11 +79,11 @@ El frontend corre en http://localhost:5173 y hace proxy a la API en `:8000`.
 ### Tests
 
 ```powershell
-# Con la DB corriendo (docker compose up -d db)
-pytest tests\unit\ -v
+# Suite completa (app clínica en tests\demo, harness en tests\harness)
+python -m pytest tests -q
 
-# Test manual de la API
-python test_api.py
+# Solo la app clínica
+python -m pytest tests\demo -q
 ```
 
 ---
