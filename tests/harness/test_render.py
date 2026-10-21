@@ -68,6 +68,20 @@ def test_unresolved_placeholder_fails_the_render(fake_repo):
     assert not (fake_repo / "AGENTS.md").exists()
 
 
+@pytest.mark.parametrize("newline", [b"\r\n", b"\n"])
+def test_multiline_values_follow_the_template_line_endings(fake_repo, newline):
+    _write(fake_repo / "harness/templates/AGENTS.md",
+           b"# Reglas" + newline + b"{{RUNTIME_STRUCTURE}}" + newline)
+
+    data = render.plan(fake_repo, "antigravity")["AGENTS.md"]
+
+    assert data.count(newline) == 6
+    if newline == b"\r\n":
+        assert b"\n" not in data.replace(b"\r\n", b"")
+    else:
+        assert b"\r" not in data
+
+
 def test_unmanaged_files_are_left_untouched(fake_repo):
     _write(fake_repo / ".agents/hooks/hooks.json", b'{"enabled": true}\n')
     _write(fake_repo / ".agents/agents/eval-libre.md", b"eval\n")

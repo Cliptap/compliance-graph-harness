@@ -71,10 +71,11 @@ def plan(root: Path, target: str) -> dict[str, bytes]:
 
 
 def _fill(path: Path, values: dict[str, str]) -> bytes:
-    data = PLACEHOLDER.sub(
-        lambda m: values[m.group(1).decode()].encode() if m.group(1).decode() in values else m.group(0),
-        path.read_bytes(),
-    )
+    raw = path.read_bytes()
+    # Los valores multilínea adoptan el EOL de la plantilla (CRLF tras un checkout con autocrlf).
+    newline = "\r\n" if b"\r\n" in raw else "\n"
+    encoded = {k: v.replace("\n", newline).encode() for k, v in values.items()}
+    data = PLACEHOLDER.sub(lambda m: encoded.get(m.group(1).decode(), m.group(0)), raw)
     missing = sorted({m.decode() for m in PLACEHOLDER.findall(data)})
     if missing:
         raise RenderError(f"placeholders sin resolver en {path.name}: {', '.join(missing)}")
