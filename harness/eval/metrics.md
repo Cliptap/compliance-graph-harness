@@ -122,3 +122,39 @@ Cada vez que se detecte una metrica fuera de target, se debe:
 1. Identificar la skill o regla que fallo
 2. Agregar preguntas o restricciones adicionales
 3. Re-evaluar para verificar la mejora
+
+## Piloto Cursor SDK (3 brazos)
+
+Runner: `harness/eval/cursor_runner.py`. Usa el runtime local de `cursor-sdk` con el plan
+del usuario y un modelo fijo (nunca `auto`). Dependencia: `harness/eval/requirements-eval.txt`.
+
+```powershell
+python -m pip install -r harness/eval/requirements-eval.txt
+python -m harness.eval.cursor_runner --dry-run          # valida workspaces sin API key
+$env:CURSOR_API_KEY="..."                                # Cursor Dashboard -> Integrations
+python -m harness.eval.cursor_runner --model composer-2.5 --reps 1
+```
+
+### Brazos
+
+| Brazo | Workspace | Configuracion cargada |
+|---|---|---|
+| `baseline` | Solo la app clinica (`src/backend`, `src/database`, `tests/demo`) | Ninguna (`setting_sources` vacio, sin system prompt) |
+| `harness` | App + `AGENTS.md` como regla `.cursor/rules` + 12 skills del pipeline en `.cursor/skills` | `project` |
+| `harness_compliance` | `harness` + regla de compuerta | `project` + herramienta `compliance_check` + retroalimentacion de hallazgos |
+
+Los workspaces se crean fuera del repositorio (temp del SO) con un commit base, y el motor
+de cumplimiento nunca se copia. Todos los brazos reciben el mismo prompt y la misma respuesta
+estandar si terminan sin cambios (cuenta como correccion requerida).
+
+### Metricas del reporte (`qa_reports/pilot/pilot_<fecha>.json`)
+
+- **Eficiencia:** `cycle_time_s`, `latency_ms` (suma de `duration_ms` del SDK), `rounds`, `tool_calls`, `turns`, `tokens`, `usage_reported`.
+- **Calidad:** `tests` (suite `tests/demo` en el workspace), `files_changed`, `lines_added`, `lines_deleted`, `unrequested_changes`.
+- **Gobernanza:** `policy_violations`, `scope_violations`, `privacy_findings`, `compliance_score` y `findings` (PolicyEngine sobre el diff).
+- **Contexto:** `files_read`, `relevance_ratio` contra `relevant_paths` del sidecar `.scope.json` de la tarea.
+- **Revision:** `required_corrections` (envios posteriores al primero).
+
+`compliance_score` es provisional: 100 menos 25/10/5/2 por infraccion CRITICAL/HIGH/MEDIUM/LOW,
+excluyendo las de alcance. Las metricas aun no medibles se reportan `null` y su motivo queda
+en `metadata.null_reasons`.
