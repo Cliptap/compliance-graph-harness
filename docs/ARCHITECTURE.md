@@ -66,8 +66,8 @@ updated_at: "2026-10-07"
   - **Decisión:** Organización del código fuente orientada a módulos de dominio (`catalog/`, `cart/`, `shared/`).
   - **Justificación:** Agrupa la lógica, modelos conceptuales y pruebas de cada capacidad de negocio en directorios cohesivos, mejorando la mantenibilidad y preparando el código para la formulación de unidades de trabajo atómicas en etapas posteriores.
 - **AD-005 (tech_stack.runtime):**
-  - **Decisión:** Backend ligero en Python 3.12+ con framework de servicios web liviano y Frontend web estándar (HTML5 / Vanilla CSS / JavaScript moderno sin frameworks pesados).
-  - **Justificación:** Maximiza la compatibilidad con el entorno de pruebas del repositorio (`pytest`), garantiza un arranque inmediato sin procesos de compilación o bundling innecesarios y elimina dependencias de terceros pesadas.
+  - **Decisión:** Backend ligero en Python 3.12+ con persistencia relacional en SQLite con SQLAlchemy, framework de servicios web liviano y Frontend web estándar (HTML5 / Vanilla CSS / JavaScript moderno sin frameworks pesados).
+  - **Justificación:** Maximiza la compatibilidad con el entorno de pruebas del repositorio (`pytest`), garantiza un arranque inmediato sin procesos de compilación o bundling innecesarios y elimina dependencias de terceros pesadas, adoptando SQLite con SQLAlchemy como motor relacional embebido para almacenamiento persistente ligero sin necesidad de servicios de infraestructura adicionales.
 - **AD-006 (error_handling.strategy):**
   - **Decisión:** Fail Fast en servicios de backend y notificación visual no intrusiva en interfaz de usuario.
   - **Justificación:** Los servicios rechazan inmediatamente operaciones inválidas (ej: cantidades negativas) con respuestas estructuradas, mientras que `web_ui` presenta mensajes claros al usuario sin degradar la disponibilidad de la aplicación.

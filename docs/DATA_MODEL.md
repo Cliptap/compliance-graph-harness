@@ -32,9 +32,6 @@ updated_at: "2026-10-07"
     - `name`: String(255), Not Null. Denominación comercial del producto para visualización y búsqueda.
     - `description`: String(1000), Nullable (opcional). Resumen descriptivo de características y detalles.
     - `price`: Numeric(10, 2), Not Null. Precio unitario en moneda base. Sujeto a regla de no-negatividad.
-    - `stock`: Integer, Not Null, Valor por defecto 0. Unidades físicas disponibles para validación de inventario básico.
-    - `image_url`: String(500), Nullable. Enlace referencial o recurso estático de imagen ilustrativa.
-    - `created_at`: DateTime, Nullable, Valor por defecto hora del sistema. Registro temporal básico acorde a gobernanza baja.
   - **Índices de Soporte:** IDX-001 sobre `name`.
 
 ---
@@ -94,11 +91,11 @@ Conforme a la decisión arquitectónica vinculante **AD-003**, el estado del car
   - **Entidad Destino:** ENT-001 (`products`).
   - **Propósito:** Precargar el catálogo del MVP con un lote inicial variado y representativo para pruebas locales inmediatas.
   - **Registros Declarativos Semilla:**
-    1. `id: 1` | `name: "Cafetera Espresso Italiana"` | `description: "Cafetera clásica de aluminio para 6 tazas con mango ergonómico"` | `price: 19990.00` | `stock: 15`
-    2. `id: 2` | `name: "Molinillo de Café Manual"` | `description: "Molinillo con muelas cerámicas cónicas ajustables de acero inoxidable"` | `price: 14990.00` | `stock: 20`
-    3. `id: 3` | `name: "Café de Grano Tueste Medio 500g"` | `description: "Granos arábica seleccionados con notas de chocolate y avellana"` | `price: 9990.00` | `stock: 50`
-    4. `id: 4` | `name: "Taza Cerámica Artesanal 350ml"` | `description: "Taza esmaltada a mano resistente a microondas y lavavajillas"` | `price: 4990.00` | `stock: 30`
-    5. `id: 5` | `name: "Filtro de Papel para Café x100"` | `description: "Paquete de 100 filtros cónicos de papel natural sin blanquear"` | `price: 2990.00` | `stock: 100`
+    1. `id: 1` | `name: "Cuaderno Universitario"` | `description: "Cuaderno espiral de 100 hojas cuadriculadas"` | `price: 2500.00`
+    2. `id: 2` | `name: "Bolígrafo Tinta Negra"` | `description: "Bolígrafo retráctil con tinta gel de secado rápido"` | `price: 800.00`
+    3. `id: 3` | `name: "Organizador de Escritorio"` | `description: "Organizador modular de tres compartimentos para papelería"` | `price: 8500.00`
+    4. `id: 4` | `name: "Lámpara LED de Mesa"` | `description: "Lámpara de bajo consumo con brazo ajustable y luz cálida"` | `price: 15000.00`
+    5. `id: 5` | `name: "Mochila Urbana Multiuso"` | `description: "Mochila resistente con compartimento interior acolchado"` | `price: 22000.00`
 
 ---
 
