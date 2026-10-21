@@ -1,0 +1,617 @@
+{
+  "pack_id": "cl-ley-21719",
+  "version": "2.0.0",
+  "jurisdiction": "Chile",
+  "enforcement_date": "2026-12-01",
+  "laws": {
+    "L19628": {
+      "name": "Ley 19.628 (reformada por Ley 21.719)",
+      "short": "Ley 21.719"
+    },
+    "L20584": {
+      "name": "Ley 20.584 (derechos y deberes del paciente)",
+      "short": "Ley 20.584"
+    },
+    "L21668": {
+      "name": "Ley 21.668 (interoperabilidad de fichas clÃ­nicas)",
+      "short": "Ley 21.668"
+    }
+  },
+  "sanctions": {
+    "minor": "Amonestación escrita o multa de hasta 5.000 UTM",
+    "serious": "Multa de hasta 10.000 UTM",
+    "critical": "Multa de hasta 20.000 UTM o hasta el 4% de ingresos anuales por ventas y servicios"
+  },
+  "data_categories": {
+    "SENSITIVE_HEALTH": {
+      "description": "Datos relativos a la salud física o psíquica, diagnósticos (CIE-10/11), anamnesis, tratamientos, prescripciones o condición médica del paciente.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° bis (en armonía con Ley 20.584 y Art. 127 Código Sanitario)",
+      "fields": [
+        "diagnosis",
+        "diagnostico",
+        "clinical_notes",
+        "medical_record",
+        "historia_clinica",
+        "treatment",
+        "receta",
+        "anamnesis",
+        "exam_result",
+        "health_status",
+        "status",
+        "alergias",
+        "evolucion_clinica"
+      ]
+    },
+    "SENSITIVE_BIOMETRIC": {
+      "description": "Datos relativos a rasgos físicos, fisiológicos o conductuales que permiten autenticación unívoca (huellas, patrones faciales). Prohibición de imágenes en bruto.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° ter",
+      "fields": [
+        "biometria",
+        "huella",
+        "fingerprint",
+        "face_embedding",
+        "iris",
+        "vector_facial"
+      ]
+    },
+    "IDENTIFIER_RUT": {
+      "description": "Rol Único Tributario o Nacional (RUT/RUN), identificador civil directo de personas naturales en la República de Chile.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. a) y Art. 14° bis (Principio de Seguridad y Confidencialidad)",
+      "fields": [
+        "identifier",
+        "rut",
+        "run",
+        "dni",
+        "national_id"
+      ]
+    },
+    "PERSONAL_CONTACT": {
+      "description": "Datos personales de contacto y localización.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 3° let. c) y Art. 14° quáter (Principio de Minimización y Privacidad por Defecto)",
+      "fields": [
+        "telecom",
+        "email",
+        "phone",
+        "address",
+        "telefono",
+        "direccion_residencia"
+      ]
+    },
+    "SECURITY_METADATA": {
+      "description": "Metadatos de trazabilidad, pistas de auditoría forense inmutable y firmas HMAC para acreditación ante la APDP.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies y Art. 14° sexies",
+      "fields": [
+        "audit_trail",
+        "access_log",
+        "hmac_signature",
+        "operator_id",
+        "session_token"
+      ]
+    }
+  },
+  "controls": [
+    {
+      "id": "CL-DATAPROT-001",
+      "title": "Fuga de datos clínicos sensibles o RUT hacia logs del sistema o telemetría",
+      "description": "Prohibición absoluta de emitir RUT, diagnósticos o datos de salud hacia sumideros de depuración, logs en consola, archivos o APM sin sanitización previa.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° bis, Art. 14° quinquies, Art. 34° ter let. j)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis, Art. 14° quinquies y Art. 34° ter let. j)"
+        },
+        {
+          "law": "L20584",
+          "article": "Art. 12",
+          "citation": "Ley 20.584 Art. 12"
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-health-data-leak-logging",
+        "cwe": "CWE-532: Insertion of Sensitive Information into Log File",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "logging.Logger",
+          "logger",
+          "print",
+          "sys.stdout",
+          "sys.stderr",
+          "console.log",
+          "console.error",
+          "AuditLog.new_value",
+          "AuditLog.old_value"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "maskRut",
+          "hashIdentifier",
+          "redactMedicalData",
+          "encryptAesGcm"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      }
+    },
+    {
+      "id": "CL-DATAPROT-002",
+      "title": "Exposición de registros médicos en capas de caché sin cifrado en reposo",
+      "description": "El almacenamiento temporal en memorias caché distribuidas (Redis, Memcached) debe contar con cifrado autenticado AES-256-GCM previo a la escritura.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies, Art. 16° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies y Art. 16° bis"
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-unencrypted-cache-health-data",
+        "cwe": "CWE-311: Missing Encryption of Sensitive Data",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "redis.set",
+          "cache.put",
+          "memcached.set"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "encryptAesGcm",
+          "encryptEnvelope",
+          "kms.encrypt"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      }
+    },
+    {
+      "id": "CL-DATAPROT-003",
+      "title": "Persistencia de entidades de salud sin cifrado a nivel de campo (FLE) en modelo ORM",
+      "description": "Las entidades que gestionan diagnósticos, anamnesis o perfiles biológicos deben incorporar transformadores o decoradores de cifrado en reposo.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14°, Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter y Art. 14° quinquies"
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-orm-missing-encryption-transformer",
+        "cwe": "CWE-312: Cleartext Storage of Sensitive Information",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "unencrypted_column_storage"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "FieldLevelEncryption",
+          "EncryptedColumn",
+          "TypeDecorator.process_bind_param"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      }
+    },
+    {
+      "id": "CL-DATAPROT-004",
+      "title": "Borrado físico prematuro de historiales médicos (Infracción al deber de custodia decenal)",
+      "description": "Prohibición perentoria de ejecutar sentencias DELETE destructivas sobre fichas médicas antes del cumplimiento del plazo legal de 15 años. Debe aplicarse bloqueo temporal (soft-delete archivado).",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L20584",
+          "article": "Art. 13",
+          "citation": "Ley 20.584 Art. 13 (Custodia 15 años)"
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 7°, Art. 8° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° N° ii y Art. 8° ter"
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-illegal-hard-delete-medical-record",
+        "cwe": "CWE-404: Improper Resource Shutdown or Release",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "session.delete",
+          "delete().where",
+          "hard_delete",
+          "DROP"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "soft_delete_filter",
+          "status = BLOCKED_LEGAL_HOLD",
+          "check_retention_period_15_years"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      }
+    },
+    {
+      "id": "CL-DATAPROT-005",
+      "title": "Exposición de endpoints clínicos sin verificación estricta de autorización RBAC/ABAC",
+      "description": "Todo endpoint de consulta o mutación de historiales médicos debe exigir autenticación JWT y roles asistenciales explícitamente facultados.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14°, Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter y Art. 14° quinquies"
+        },
+        {
+          "law": "L20584",
+          "article": "Art. 13",
+          "citation": "Ley 20.584 Art. 13"
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-unprotected-clinical-endpoint",
+        "cwe": "CWE-285: Improper Authorization",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "unprotected_route",
+          "public_endpoint"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "Security(get_current_user, scopes=[...])",
+          "require_clinical_role"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      }
+    },
+    {
+      "id": "CL-DATAPROT-006",
+      "title": "Pipeline de inferencia clínica o triaje automatizado sin compuerta médica humana (Human-in-the-Loop)",
+      "description": "Los procesos algorítmicos que generen diagnósticos presuntivos o prioricen atención de urgencia no pueden ser resolutivos sin validación de un profesional médico habilitado.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 8° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis"
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-automated-decision-missing-human-review",
+        "cwe": "CWE-693: Protection Mechanism Failure",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "auto_resolve_diagnosis",
+          "unreviewed_triage_decision"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "status = PENDING_PHYSICIAN_REVIEW",
+          "human_in_the_loop_gate"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      }
+    },
+    {
+      "id": "CL-DATAPROT-007",
+      "title": "Endpoint de portabilidad de ficha clínica en formato propietario no estructurado",
+      "description": "El canal de portabilidad de datos médicos debe exportar la ficha clínica en un Resource Bundle estructurado bajo el estándar HL7 FHIR R4 compatible con la Guía CL Core del MINSAL.",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 9°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 9°"
+        },
+        {
+          "law": "L21668",
+          "article": "Art. 1°",
+          "citation": "Ley 21.668 Art. 1° (Interoperabilidad de la Ficha Clínica)"
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-non-fhir-portability-export",
+        "cwe": "CWE-20: Improper Input Validation",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "raw_json_dump",
+          "csv_export",
+          "unstructured_pdf"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "to_fhir_patient_bundle",
+          "fhir_cl_core_serializer"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      }
+    },
+    {
+      "id": "CORE-CHECK-001",
+      "title": "Privacidad desde el Diseño, Minimización y Cifrado/Enmascaramiento",
+      "description": "Obligación de aplicar salvaguardas técnicas desde el diseño: enmascaramiento o seudonimización de identificadores directos (RUT/RUN) en capas intermedias y persistencia, cifrado de campos sensibles y contención de parámetros superfluos.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14°, Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter y Art. 14° quinquies"
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "PRIVACY_BY_DESIGN",
+        "plugin": "core",
+        "indicators": [
+          "mask",
+          "redact",
+          "hash",
+          "encrypt",
+          "identifier",
+          "rut"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:mask",
+          "apply:redact",
+          "apply:hash",
+          "apply:encrypt",
+          "apply:identifier",
+          "apply:rut"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      }
+    },
+    {
+      "id": "CORE-CHECK-002",
+      "title": "Deber de Secreto y Prevención de Fugas en Logs, Consolas y Cachés",
+      "description": "Prohibición perentoria de emitir datos personales identificables hacia sumideros no autorizados como logs de depuración (logging, print, sys.stdout, console.log) o cachés sin cifrar.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° bis, Art. 34° ter let. j)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis y Art. 34° ter let. j) (CWE-532)"
+        }
+      ],
+      "detection": {
+        "type": "pattern",
+        "category": "CONFIDENTIALITY_LEAK_PREVENTION",
+        "plugin": "core",
+        "patterns": [
+          "print(",
+          "sys.stdout",
+          "logger.",
+          "logging.",
+          "log.info(",
+          "log.debug("
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "review:CONFIDENTIALITY_LEAK_PREVENTION"
+        ]
+      },
+      "evidence": {
+        "kind": "pattern_absent",
+        "note": "Prohibited patterns absent from the changed code."
+      }
+    },
+    {
+      "id": "CORE-CHECK-003",
+      "title": "Guardias de Derechos ARCOP y Control de Acceso Granular (RBAC/ABAC)",
+      "description": "Garantía de derechos de Acceso, Rectificación, Cancelación y Oposición; y exigencia de autenticación y autorización basada en roles (RBAC) para cualquier acceso a datos personales.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Arts. 5° al 10° y Art. 14° quáter"
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "ARCOP_AND_ACCESS_CONTROL",
+        "plugin": "core",
+        "indicators": [
+          "current_user",
+          "rbac",
+          "role",
+          "scopes",
+          "security",
+          "permission"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:current_user",
+          "apply:rbac",
+          "apply:role",
+          "apply:scopes",
+          "apply:security",
+          "apply:permission"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      }
+    },
+    {
+      "id": "CORE-CHECK-004",
+      "title": "Gobernanza de Decisiones Automatizadas y Human-in-the-Loop",
+      "description": "Los flujos algorítmicos que perfilen usuarios o generen determinaciones relevantes no pueden ser exclusivamente automatizados sin compuerta de validación y supervisión humana.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 8° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis"
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "AUTOMATED_DECISION_HUMAN_IN_THE_LOOP",
+        "plugin": "core",
+        "indicators": [
+          "human_review",
+          "physician_review",
+          "pending_review",
+          "automated_gate"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:human_review",
+          "apply:physician_review",
+          "apply:pending_review",
+          "apply:automated_gate"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      }
+    },
+    {
+      "id": "HEALTH-CHECK-001",
+      "title": "Retención Obligatoria de 15 Años y Soft-Delete / Legal Hold en Fichas Médicas",
+      "description": "Prohibición absoluta de sentencias DELETE destructivas sobre historiales y consultas clínicas ante solicitudes de cancelación. Debe implementarse bloqueo legal temporal (soft-delete / BLOCKED_LEGAL_HOLD) durante al menos 15 años.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 13, Art. 7° inc. final, Art. 8° ter",
+          "citation": "Ley 20.584 Art. 13 frente a Ley 19.628 reformada por Ley 21.719 Art. 7° inc. final y Art. 8° ter"
+        }
+      ],
+      "detection": {
+        "type": "pattern",
+        "category": "RETENTION_DECENAL_SOFT_DELETE",
+        "plugin": "health_clinical",
+        "patterns": [
+          "session.delete",
+          "delete().where",
+          "hard_delete",
+          "DROP TABLE"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "soft_delete_filter",
+          "status = BLOCKED_LEGAL_HOLD"
+        ]
+      },
+      "evidence": {
+        "kind": "pattern_absent",
+        "note": "Prohibited patterns absent from the changed code."
+      }
+    },
+    {
+      "id": "HEALTH-CHECK-002",
+      "title": "Interoperabilidad Universal de Ficha Clínica bajo HL7 FHIR R4 CL Core",
+      "description": "El canal de portabilidad y transferencia clínica debe estructurarse obligatoriamente bajo el estándar HL7 FHIR R4 compatible con el Perfil Nacional CL Core, prohibiendo volcados planos propietarios o PDF no estructurados.",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 1°, Art. 9°",
+          "citation": "Ley 21.668 Art. 1° y Ley 19.628 reformada por Ley 21.719 Art. 9°"
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "FHIR_INTEROPERABILITY",
+        "plugin": "health_clinical",
+        "indicators": [
+          "fhir",
+          "bundle",
+          "cl_core",
+          "patient_resource"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:fhir",
+          "apply:bundle",
+          "apply:cl_core",
+          "apply:patient_resource"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      }
+    },
+    {
+      "id": "HEALTH-CHECK-003",
+      "title": "Aislamiento Lógico y Protección Reforzada de Datos de Salud",
+      "description": "Diagnósticos, anamnesis y notas clínicas constituyen categorías especiales con presunción de secreto profesional (Art. 127 Código Sanitario), exigiendo aislamiento y cifrado en reposo.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 2° let. g), Art. 16° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° bis"
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "HEALTH_DATA_ISOLATION",
+        "plugin": "health_clinical",
+        "indicators": [
+          "diagnosis",
+          "clinical_notes",
+          "medical_record",
+          "encrypted"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:diagnosis",
+          "apply:clinical_notes",
+          "apply:medical_record",
+          "apply:encrypted"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      }
+    }
+  ]
+}
