@@ -75,6 +75,11 @@ No requieren configuración — son universales.
 4. **Usa HTTPS en producción** — asume que el entorno lo configura.
 5. **Sanitiza inputs de usuario** — nunca confíes en datos externos.
 
+## Resiliencia
+
+Todo código de extracción, limpieza o backend debe incluir manejo de excepciones (`try-except`).
+Nunca asumas un "camino feliz".
+
 ## Testing (Solo Si Se Solicitó)
 
 No escribas tests a menos que el PRD o el desarrollador lo pidan explícitamente.

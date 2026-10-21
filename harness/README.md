@@ -84,6 +84,21 @@ vibecoding-harness/
 | **Claude Code** | `CLAUDE.md` + `~/.claude/CLAUDE.md` | `~/.claude/skills/vibecoding/<name>/SKILL.md` | `~/.claude/agents/vibecoding/` | `~/.claude/hooks/` |
 | **Cursor** | `.cursor/rules/vibecoding.md` | `.cursor/skills/vibecoding/<name>/SKILL.md` | `.cursor/agents/vibecoding/` | `.cursor/hooks/` |
 
+## Fuente única dentro de este repositorio
+
+`harness/` es la fuente. En este repositorio, `.agents/rules`, `.agents/rules/stacks`,
+`.agents/contexts/vibecoding`, `.agents/agents`, `.agents/hooks/scripts` y el `AGENTS.md` raíz
+se generan desde ahí; no se editan a mano.
+
+```powershell
+python -m harness.render           # regenera las proyecciones
+python -m harness.render --check   # falla si alguna proyección difiere de la fuente
+```
+
+`tests/harness/test_render.py` falla si el repositorio queda desincronizado. Quedan fuera del
+render la configuración de la instancia (`.agents/hooks/hooks.json`), las skills y los agentes
+de evaluación `eval-*`.
+
 ## Las 4 reglas (cargadas siempre)
 
 1. **Ask-dont-assume** — Preguntar, nunca asumir tecnologias ni features

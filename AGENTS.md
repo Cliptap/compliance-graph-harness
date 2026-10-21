@@ -42,6 +42,7 @@ Recomiendo [X] porque [razón].
 - **DRY con cuidado:** No dupliques lógica, pero no sobre-abstraigas (regla de 3: si se repite 3 veces, abstraé).
 - **Código limpio:** Nombres descriptivos, funciones < 50 líneas, < 4 parámetros, sin números mágicos.
 - **Seguridad mínima:** Nunca hardcodees secrets. Usá variables de entorno. No loguees datos sensibles.
+- **Resiliencia:** Todo código de extracción, limpieza o backend debe incluir manejo de excepciones. Nunca asumas un "camino feliz".
 - **Testing:** Solo si el PRD o el desarrollador lo piden explícitamente. Patrón AAA cuando se pida.
 
 ## Estructura del Harness (Antigravity)
