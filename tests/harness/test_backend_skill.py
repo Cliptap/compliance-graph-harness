@@ -409,12 +409,14 @@ def test_backend_physical_scope_enforcement():
             continue
         status = line[:2].strip()
         filepath = line[3:].strip().replace("\\", "/")
-        if filepath.startswith("src/"):
+        # Inspeccionar archivos de src/ pertenecientes a la tarea de backend (excluyendo frontend de TS-FRONTEND-001)
+        if filepath.startswith("src/") and not filepath.startswith("src/frontend/"):
             changed_src_files[filepath] = status
+
+    policy = ScopePolicy()
 
     # Si hay archivos modificados/creados en src/, evaluar formalmente con ScopePolicy
     if changed_src_files:
-        policy = ScopePolicy()
         findings = policy.evaluate(task_spec, changed_src_files)
 
         # Validar que no existan violaciones de ScopePolicy

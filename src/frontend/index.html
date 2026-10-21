@@ -1,17 +1,113 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/webp" href="/logo.webp" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <title>Consultorio — Sistema de Gestión Clínica</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Catálogo comercial y carrito de compras ligero y desacoplado" />
+  <title>Catálogo Comercial & Carrito de Compras</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Encabezado Principal y Barra de Navegación -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <h1 class="brand-title">Catálogo Comercial</h1>
+        <span class="brand-subtitle">Papelería y Suministros</span>
+      </div>
+      <div class="header-actions">
+        <button id="cart-button" class="btn btn-cart" aria-label="Abrir carrito de compras">
+          <span class="cart-icon" aria-hidden="true">🛒</span>
+          <span class="cart-label">Carrito</span>
+          <span id="cart-badge" class="badge">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal de la Aplicación -->
+  <main class="main-container">
+    <!-- Barra de Búsqueda Reactiva (REQ-002) -->
+    <section class="search-section" aria-label="Búsqueda de productos">
+      <div class="search-bar">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          id="search-input"
+          class="search-input"
+          placeholder="Buscar productos por nombre (ej. Cuaderno, Bolígrafo)..."
+          maxlength="100"
+          autocomplete="off"
+          aria-label="Buscar productos por nombre"
+        />
+        <button id="clear-search-btn" class="btn-clear hidden" aria-label="Limpiar búsqueda">✕</button>
+      </div>
+    </section>
+
+    <!-- Sección de Catálogo Comercial (REQ-001) -->
+    <section class="catalog-section" aria-label="Listado de productos">
+      <!-- Estado de Carga (Loading State) -->
+      <div id="loading-state" class="state-container hidden" role="status" aria-live="polite">
+        <div class="spinner"></div>
+        <p class="state-text">Cargando catálogo comercial...</p>
+      </div>
+
+      <!-- Estado Vacío (Empty State - AC-003) -->
+      <div id="empty-state" class="state-container hidden" role="status" aria-live="polite">
+        <div class="empty-icon" aria-hidden="true">📦</div>
+        <h2 class="empty-title">No se encontraron productos coincidentes</h2>
+        <p class="empty-text">Intenta con otro término de búsqueda o limpia el filtro para ver todo el catálogo.</p>
+        <button id="reset-search-btn" class="btn btn-primary">Ver todos los productos</button>
+      </div>
+
+      <!-- Estado de Error (Error State - DTO-ERR-001) -->
+      <div id="error-state" class="state-container state-error hidden" role="alert" aria-live="assertive">
+        <div class="error-icon" aria-hidden="true">⚠️</div>
+        <h2 id="error-title" class="error-title">Error al consultar el catálogo</h2>
+        <p id="error-message" class="error-text">No fue posible conectar con el servicio backend.</p>
+        <button id="retry-btn" class="btn btn-primary">Reintentar</button>
+      </div>
+
+      <!-- Rejilla de Tarjetas de Productos (REQ-001, AC-001) -->
+      <div id="catalog-grid" class="catalog-grid" aria-live="polite">
+        <!-- Renderizado dinámico vía app.js -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Panel Lateral Deslizante de Carrito de Compras (AD-003, REQ-003, REQ-004) -->
+  <aside id="cart-drawer" class="cart-drawer hidden" aria-label="Panel de Carrito de Compras" aria-modal="true" role="dialog">
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-content">
+      <div class="cart-header">
+        <h2 class="cart-title">Tu Carrito de Compras</h2>
+        <button id="close-cart-btn" class="btn-close" aria-label="Cerrar carrito">✕</button>
+      </div>
+
+      <!-- Lista de Ítems del Carrito (DTO-CART-001) -->
+      <div id="cart-items" class="cart-items">
+        <!-- Renderizado dinámico vía cart.js / app.js -->
+      </div>
+
+      <!-- Mensaje de Carrito Vacío -->
+      <div id="cart-empty-message" class="cart-empty">
+        <p>Tu carrito está actualmente vacío.</p>
+      </div>
+
+      <!-- Pie de Carrito con Totales Calculados (REQ-004, AC-006, INV-004) -->
+      <div class="cart-footer">
+        <div class="cart-summary">
+          <span class="total-label">Total:</span>
+          <span id="cart-total" class="total-amount">$0,00</span>
+        </div>
+        <div class="cart-actions">
+          <button id="clear-cart-btn" class="btn btn-secondary">Vaciar Carrito</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Orquestación Modular en JavaScript Vanilla (AD-005) -->
+  <script type="module" src="app.js"></script>
+</body>
 </html>
