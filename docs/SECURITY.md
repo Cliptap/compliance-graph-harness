@@ -77,13 +77,8 @@ Se certifica mediante análisis estático de código determinista:
 
 ## 6. Hoja de Ruta para Escalamiento de Gobernanza (Futuro)
 
-En caso de que en un ciclo de vida posterior el proyecto evolucione hacia una escala comercial enterprise con `governance_level: "alto"`, la incorporación de autenticación activa deberá seguir la siguiente hoja de ruta arquitectónica:
-
-1. **Revisión del PRD:** Modificar formalmente `docs/PRD.md` para mover autenticación desde `OUT OF SCOPE` hacia `IN SCOPE`, definiendo roles y casos de uso de usuario.
-2. **Introducción de `COMP-AUTH`:** Diseñar un módulo independiente desacoplado (`src/auth/`) que exponga endpoints de emisión y renovación de tokens.
-3. **Hashing Robusto:** Implementar hashing de contraseñas con `argon2id` o `bcrypt` (cost factor $\ge 12$).
-4. **Protección de Rutas:** Incorporar dependencias de inyección de seguridad en FastAPI (`Depends(get_current_user)`) sobre endpoints mutacionales (`POST`, `PUT`, `DELETE`).
-5. **Transición del Carrito:** En caso de requerir carritos persistentes multi-dispositivo, migrar el almacenamiento desde `localStorage` hacia un modelo en base de datos vinculado a la clave foránea `user_id`.
+Cualquier incorporación de autenticación, control de accesos o persistencia de usuarios en ciclos futuros requerirá una modificación formal previa del PRD y la arquitectura del sistema.
+El diseño actual se mantiene 100% enfocado en el alcance MVP público y anónimo, evitando dependencias o abstracciones prematuras no solicitadas.
 
 ---
 

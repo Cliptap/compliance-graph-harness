@@ -44,6 +44,9 @@ $$\text{Acceptance Coverage} = \frac{\text{Criterios de Aceptación (AC) con Tes
 
 $$\text{Acceptance Coverage} = \frac{6}{6} \times 100\% = 100.0\%$$
 
+> [!NOTE]
+> La métrica de **Acceptance Coverage al 100.0%** certifica la trazabilidad formal entre la especificación del PRD y las pruebas unitarias, de integración y lógicas de contrato (backend en memoria y motor de carrito en Node.js). Se deja constancia explícita de que la validación E2E en navegador real queda fuera del alcance del harness actual conforme a los límites de complejidad del MVP.
+
 ### 3.2 Distribución Cuantitativa del Inventario de Pruebas
 Actualmente el sistema cuenta con **110 pruebas automatizadas activas**, todas operando al 100% en verde:
 
@@ -90,9 +93,9 @@ La auditoría estática determinista realizada sobre el repositorio certifica la
 3. **Ausencia de Tests Tautológicos (Zero Tautological Tests):**
    - Las pruebas no evalúan mocks vacíos; verifican comportamiento observable (cálculo de subtotales, rechazo de querys $> 100$ caracteres con HTTP 400, y remoción física de ítems al decrementar).
 4. **Validación Rigurosa de Invariantes de Dominio:**
-   - `INV-001` (Precios estrictamente positivos): Verificado en validadores Pydantic y tests de catálogo.
+   - `INV-001` (Precios no negativos, `price >= 0.0`): Verificado en validadores Pydantic y tests de catálogo.
    - `INV-002` (Cantidades enteras $\ge 1$ y eliminación ante $< 1$): Verificado en `test_cart_invariants_and_storage_contract`.
-   - `INV-003` (Unicidad de SKU): Verificado en esquema de base de datos.
+   - `INV-003` (Nombre de producto no vacío, `LENGTH(TRIM(name)) > 0`): Verificado en validaciones de modelo y pruebas de integridad.
    - `INV-004` (Consistencia aritmética de totales y subtotales): Verificado con aserciones sobre cálculos con decimales (`Math.round((val + EPSILON) * 100) / 100`).
 
 ---
