@@ -20,7 +20,7 @@ Branch: `feat/cursor-sdk-pilot` until T1 opens its own branch. Delivery: ask-on-
 | T1 | S2, S5 | Repo cleanup: single harness source, app/harness separation, broken refs, requirements, rule contradictions | inline | done | branch `chore/harness-cleanup`: `f22e9a8`, `04900db`, `7117050`, `2e41341`; 89/89 suite; `render --check` exit 0 in the repo and in a fresh clone; independent verifier: S2 pass after B1 fix, S5 pass |
 | T2 | S1 | Normative pack format (law â†’ article â†’ control â†’ detection â†’ remediation â†’ evidence); migrate the 14 rules | inline | done | pack `.harness/packs/cl-ley-21719.json` (14 controls); 99/99 suite |
 | T3 | S1, S4 | Real detection (AST/Semgrep), API personal-data exposure, written compliance score formula | inline | pending | |
-| T4 | S1, S4 | Detector validation on a labelled corpus (precision/recall) | inline | pending | |
+| T4 | S1, S4 | Detector validation on a labelled corpus (precision/recall) | inline | done | `harness/eval/corpus.py` + 16 labelled cases; hard misses published; 110 tests |
 | T5 | S1, S5 | Ley 21.719 skills for new-dev / audit / patch modes reusing `compliance_check` (not the 12 pipeline skills) | inline | pending | |
 | T6 | S3 | Context and memory: graph symbol slicing fix (or CodeGraph per T0), Engram integration | inline | pending | |
 | T7 | S3, S4 | Formal experiment: tasks with seeded privacy traps, hidden acceptance tests, preregistration, N from measured cost; resolve task 02 `practitioner_id` scope conflict | inline | pending | |

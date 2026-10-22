@@ -145,6 +145,54 @@ class SensitiveLoggingPolicy(BasePolicy):
             severity="CRITICAL",
         )
 
+    MASK_MARKERS = ("mask", "redact", "hash", "anon", "seudon", "[redacted]")
+
+    def _is_log_call(self, call: ast.Call) -> bool:
+        sink = ast.unparse(call.func).lower()
+        return any(sink == s or sink.endswith("." + s) for s in self.LOG_SINKS)
+
+    def _evaluate_ast(self, path: str, tree: ast.AST, lines: list[str]) -> list[Finding]:
+        """AST pass for Python: ignores comments/docstrings and inspects only log-call arguments."""
+        findings: list[Finding] = []
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and self._is_log_call(node)):
+                continue
+            args = [*node.args, *[k.value for k in node.keywords]]
+            args_src = " ".join(ast.unparse(a) for a in args).lower()
+            if any(m in args_src for m in self.MASK_MARKERS):
+                continue
+            words: set[str] = set()
+            for arg in args:
+                for sub in ast.walk(arg):
+                    if isinstance(sub, ast.Name):
+                        words.add(sub.id.lower())
+                    elif isinstance(sub, ast.Attribute):
+                        words.add(sub.attr.lower())
+                    elif isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                        words.update(sub.value.lower().replace("=", " ").replace(":", " ").split())
+            matched = sorted(t for t in self.SENSITIVE_TOKENS if t in words)
+            if not matched:
+                continue
+            findings.append(
+                Finding(
+                    policy_id="privacy.cwe_532",
+                    severity="CRITICAL",
+                    status="VIOLATION",
+                    file=path,
+                    line=node.lineno,
+                    message=(
+                        "Posible fuga de datos personales o clínicos hacia sumideros de depuración (CWE-532 / Ley 21.719). "
+                        f"Se detectó emisión con tokens sensibles: {matched}."
+                    ),
+                    evidence=lines[node.lineno - 1].strip() if node.lineno <= len(lines) else "",
+                    remediation_advice=(
+                        "No emitir RUT ni datos médicos en texto plano. Aplicar función de enmascaramiento "
+                        "(ej: XX.***.***-X) o eliminar el dato sensible de la cadena de registro."
+                    ),
+                )
+            )
+        return findings
+
     def evaluate(
         self,
         task_spec: TaskSpec,
@@ -156,6 +204,15 @@ class SensitiveLoggingPolicy(BasePolicy):
         for file_path, content in modified_files.items():
             normalized_path = file_path.replace("\\", "/")
             lines = content.splitlines()
+
+            if normalized_path.endswith(".py"):
+                try:
+                    tree = ast.parse(content)
+                except SyntaxError:
+                    tree = None
+                if tree is not None:
+                    findings.extend(self._evaluate_ast(normalized_path, tree, lines))
+                    continue
 
             # Inspección línea por línea para capturar llamadas a logging y patrones sensibles
             for idx, line in enumerate(lines, 1):

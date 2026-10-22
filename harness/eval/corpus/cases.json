@@ -1,0 +1,18 @@
+[
+ {"id":"log-rut-fstring","kind":"seeded","path":"src/backend/api/a.py","expected":["privacy.cwe_532"],"code":"import logging\nlogger = logging.getLogger(__name__)\n\ndef f(p):\n    logger.info(f'patient {p.rut} created')\n"},
+ {"id":"log-diagnosis-print","kind":"seeded","path":"src/backend/services/b.py","expected":["privacy.cwe_532"],"code":"def f(rec):\n    print('dx', rec.diagnosis)\n"},
+ {"id":"log-masked","kind":"clean","path":"src/backend/api/c.py","expected":[],"code":"def f(p):\n    logger.info('patient %s', mask_rut(p.rut))\n"},
+ {"id":"log-no-sensitive","kind":"clean","path":"src/backend/api/d.py","expected":[],"code":"def f(p):\n    logger.info('patient created id=%s', p.id)\n"},
+ {"id":"log-via-variable","kind":"seeded-hard","path":"src/backend/api/e.py","expected":["privacy.cwe_532"],"code":"def f(p):\n    msg = 'rut=' + p.rut\n    logger.info(msg)\n"},
+ {"id":"log-word-in-comment","kind":"clean","path":"src/backend/api/f.py","expected":[],"code":"def f(p):\n    # never print the rut here\n    return p.id\n"},
+ {"id":"api-dict-rut","kind":"seeded","path":"src/backend/api/g.py","expected":["privacy.api_exposure"],"code":"@router.get('/p/{pid}')\ndef get_p(pid):\n    p = load(pid)\n    return {'id': p.id, 'rut': p.rut}\n"},
+ {"id":"api-model-password","kind":"seeded","path":"src/backend/api/h.py","expected":["privacy.api_exposure"],"code":"class UserOut(BaseModel):\n    username: str\n    hashed_password: str\n\n@router.get('/u', response_model=UserOut)\ndef get_u():\n    return load()\n"},
+ {"id":"api-dict-masked","kind":"clean","path":"src/backend/api/i.py","expected":[],"code":"@router.get('/p')\ndef get_p():\n    return {'id': 1, 'rut': mask_rut(p.rut)}\n"},
+ {"id":"api-token-login","kind":"clean","path":"src/backend/api/j.py","expected":[],"code":"@router.post('/token')\ndef login():\n    return {'access_token': t, 'token_type': 'bearer'}\n"},
+ {"id":"api-imported-model-password","kind":"seeded-hard","path":"src/backend/api/k.py","expected":["privacy.api_exposure"],"code":"from schemas import UserWithPassword\n\n@router.get('/u', response_model=UserWithPassword)\ndef get_u():\n    return load()\n"},
+ {"id":"api-model-dump-all","kind":"seeded-hard","path":"src/backend/api/l.py","expected":["privacy.api_exposure"],"code":"@router.get('/p')\ndef get_p():\n    return patient.__dict__\n"},
+ {"id":"del-session-delete-patient","kind":"seeded","path":"src/backend/api/m.py","expected":["domain.prohibited_deletion"],"code":"def rm(db, patient):\n    db.session.delete(patient)\n"},
+ {"id":"del-soft-delete","kind":"clean","path":"src/backend/api/n.py","expected":[],"code":"def rm(db, patient):\n    patient.deleted_at = now()\n    patient.status = 'BLOCKED_LEGAL_HOLD'\n"},
+ {"id":"del-non-clinical","kind":"clean","path":"src/backend/api/o.py","expected":[],"code":"def clear(db):\n    db.session.delete(temp_file_row)\n"},
+ {"id":"del-raw-sql","kind":"seeded-hard","path":"src/backend/api/p.py","expected":["domain.prohibited_deletion"],"code":"def rm(db, pid):\n    db.execute(text('DELETE FROM appointments WHERE id = :i'), {'i': pid})\n"}
+]
