@@ -22,7 +22,7 @@ Recomiendo [X] porque [razón].
 ## Regla 2: Alcance MVP — Sin Goldplating
 
 1. **Solo implementá lo que está en el PRD o fue solicitado explícitamente.**
-2. **No agregues "buenas prácticas" no solicitadas** (Docker, CI/CD, tests, linting, dark mode, i18n).
+2. **No agregues "buenas prácticas" no solicitadas** (Docker, CI/CD, linting, dark mode, i18n; los tests siguen la regla de Testing).
 3. **No implementes features "por si acaso"** o "porque todos los proyectos lo tienen".
 4. **Ante la duda entre simple y complejo, elegí SIMPLE.**
 5. **No optimices prematuramente** — sin caché, sin colas, sin microservicios si no se necesitan.
@@ -43,7 +43,7 @@ Recomiendo [X] porque [razón].
 - **Código limpio:** Nombres descriptivos, funciones < 50 líneas, < 4 parámetros, sin números mágicos.
 - **Seguridad mínima:** Nunca hardcodees secrets. Usá variables de entorno. No loguees datos sensibles.
 - **Resiliencia:** Todo código de extracción, limpieza o backend debe incluir manejo de excepciones. Nunca asumas un "camino feliz".
-- **Testing:** Solo si el PRD o el desarrollador lo piden explícitamente. Patrón AAA cuando se pida.
+- **Testing:** Escribe un test cuando exista un runner ejecutable y un resultado esperado claro: obsérvalo fallar (RED), implementa hasta que pase (GREEN) y refactoriza. Un test por regla solicitada y uno por cada comportamiento existente que el cambio toque. Sin runner aplicable o en cambios solo de documentación, explica la excepción; nunca inventes evidencia. Todo cambio de cumplimiento normativo lleva test. Patrón AAA.
 
 ## Estructura del Harness ({{RUNTIME_NAME}})
 

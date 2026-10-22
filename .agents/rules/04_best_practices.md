@@ -80,10 +80,14 @@ No requieren configuración — son universales.
 Todo código de extracción, limpieza o backend debe incluir manejo de excepciones (`try-except`).
 Nunca asumas un "camino feliz".
 
-## Testing (Solo Si Se Solicitó)
+## Testing (Política Condicional)
 
-No escribas tests a menos que el PRD o el desarrollador lo pidan explícitamente.
-Cuando se pidan tests:
+Escribe un test cuando exista un runner ejecutable y un resultado esperado claro:
+- Observa el test fallar (RED) antes de implementar, luego GREEN y refactoriza
+- Un test por cada regla solicitada y uno por cada comportamiento existente que el cambio toque
+- Todo cambio de cumplimiento normativo (privacidad, retención) lleva su test
+- Sin runner aplicable o en cambios solo de documentación: explica la excepción; nunca inventes evidencia RED/GREEN
+Al escribir tests:
 - Sigue el patrón AAA: Arrange, Act, Assert
 - Un test = un comportamiento verificable
 - Nombra los tests describiendo el escenario: `test_login_fails_with_wrong_password`

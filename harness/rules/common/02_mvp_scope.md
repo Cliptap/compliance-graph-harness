@@ -18,7 +18,7 @@ always_on: true
    Si no está escrito, no se hace. Sin excepciones.
 
 2. **No agregues "buenas prácticas" automáticas no solicitadas.**
-   - Sin el usuario pedirlo: no agregues CI/CD, Docker, tests, linting, formateo, SEO, analytics, etc.
+   - Sin el usuario pedirlo: no agregues CI/CD, Docker, linting, formateo, SEO, analytics, etc. Los tests no entran aquí: siguen la política de Testing.
    - Cada "buena práctica" debe ser una decisión consciente del desarrollador.
 
 3. **No implementes features "por si acaso" o "porque todos los proyectos lo tienen".**
