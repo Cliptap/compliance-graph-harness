@@ -1,4 +1,4 @@
-# SPRINT1_STATUS.md — Diagnóstico Técnico, Inventario y Plan de Consolidación (Sprint 1)
+﻿# SPRINT1_STATUS.md — Diagnóstico Técnico, Inventario y Plan de Consolidación (Sprint 1)
 
 > **Fecha:** 29 de septiembre de 2026  
 > **Proyecto:** Arnés de gobernanza para desarrollo de software asistido por agentes de IA  
@@ -32,9 +32,9 @@
 | **Motor de Validación** | `src/harness/validation_engine.py` | Implementado y Probado | Orquesta políticas y `pytest`, emitiendo veredictos y mensajes de feedback estructurados con directivas de mitigación. |
 | **Motor de Grafo (Graph Engine)** | `src/harness/graph_engine.py` | Funcional (AST + SQLite + Slicing) | Construye nodos/aristas y realiza *symbol-level slicing* (`PythonSymbolExtractor`) para inyectar solo símbolos precisos en contexto. |
 | **Trazabilidad de Linaje** | `src/harness/data_lineage.py` | Funcional (Taint tracking estático) | Identifica fuentes sensibles (`sources`), sumideros (`sinks`) y sanitizadores (`sanitizers`) cruzados contra reglas. |
-| **Auditoría Normativa** | `src/harness/agentic_audit.py` | Funcional (Checklist estático + SQLite) | Evalúa archivos contra criterios de `compliance_rules.json` (`CORE-CHECK-001` a `004`, `HEALTH-CHECK-001` a `003`). |
+| **Auditoría Normativa** | `src/harness/agentic_audit.py` | Funcional (Checklist estático + SQLite) | Evalúa archivos contra criterios de `.harness/packs/cl-ley-21719.json` (`CORE-CHECK-001` a `004`, `HEALTH-CHECK-001` a `003`). |
 | **Persistencia SQLite** | `src/harness/db.py`, `.harness/harness.db` | Totalmente Operativo | Almacena nodos, aristas, hallazgos (`compliance_findings`), razonamientos y bitácora de auditorías. |
-| **Catálogo de Reglas Normativas** | `.harness/compliance_rules.json` | Operativo y Detallado | Ontología técnica de campos sensibles (salud, RUT, biometría) y catálogo de controles derivados de Ley 21.719 y Ley 20.584. |
+| **Catálogo de Reglas Normativas** | `.harness/packs/cl-ley-21719.json` | Operativo y Detallado | Ontología técnica de campos sensibles (salud, RUT, biometría) y catálogo de controles derivados de Ley 21.719 y Ley 20.584. |
 | **Catálogo de Skills** | `.agents/skills/01-*` a `12-*` | Directivas Documentales | 12 especificaciones markdown que guían etapas de ciclo de vida (PRD, arquitectura, backend, testing, etc.). |
 | **Backend Clínico (Demo 1)** | `src/backend/` | Totalmente Funcional (FastAPI) | Endpoints de pacientes, citas, auditoría, RBAC y servicios de negocio clínico. |
 | **Smoke Test de Validación** | `experiments/sprint1_experiment.py` | Verificado (Smoke Test) | Certifica la compuerta determinista del `ValidationEngine` frente a propuestas prefijadas (sin LLM en el bucle). |

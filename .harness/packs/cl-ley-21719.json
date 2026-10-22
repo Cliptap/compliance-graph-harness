@@ -18,9 +18,12 @@
     }
   },
   "sanctions": {
-    "minor": "Amonestación escrita o multa de hasta 5.000 UTM",
-    "serious": "Multa de hasta 10.000 UTM",
-    "critical": "Multa de hasta 20.000 UTM o hasta el 4% de ingresos anuales por ventas y servicios"
+    "terminology": "Infracciones leves, graves y gravísimas (legal terms).",
+    "legal_review": "pending",
+    "note": "Amounts carried over from the legacy file unverified. The 4% of annual revenue figure is not a general maximum: it applies under additional conditions (recidivism, company type).",
+    "leve": "Amonestación escrita o multa de hasta 5.000 UTM",
+    "grave": "Multa de hasta 10.000 UTM",
+    "gravisima": "Multa de hasta 20.000 UTM o hasta el 4% de ingresos anuales por ventas y servicios"
   },
   "data_categories": {
     "SENSITIVE_HEALTH": {
@@ -52,7 +55,8 @@
         "face_embedding",
         "iris",
         "vector_facial"
-      ]
+      ],
+      "requirement_note": "Raw-image ban / HMAC and immutable audit trail are project security policy, not literal legal requirements."
     },
     "IDENTIFIER_RUT": {
       "description": "Rol Único Tributario o Nacional (RUT/RUN), identificador civil directo de personas naturales en la República de Chile.",
@@ -86,7 +90,8 @@
         "hmac_signature",
         "operator_id",
         "session_token"
-      ]
+      ],
+      "requirement_note": "Raw-image ban / HMAC and immutable audit trail are project security policy, not literal legal requirements."
     }
   },
   "controls": [
@@ -135,12 +140,19 @@
       "evidence": {
         "kind": "scan_finding_absent",
         "note": "No open finding for this control in the compliance scan."
-      }
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code emits personal or sensitive data to log, console or telemetry sinks."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "Law requires security measures adequate to the risk; a blanket ban on any logging is stricter than the law."
     },
     {
       "id": "CL-DATAPROT-002",
       "title": "Exposición de registros médicos en capas de caché sin cifrado en reposo",
-      "description": "El almacenamiento temporal en memorias caché distribuidas (Redis, Memcached) debe contar con cifrado autenticado AES-256-GCM previo a la escritura.",
+      "description": "[Internal standard] El almacenamiento temporal en memorias caché distribuidas (Redis, Memcached) debe contar con cifrado autenticado AES-256-GCM previo a la escritura.",
       "severity": "HIGH",
       "sources": [
         {
@@ -170,12 +182,19 @@
       "evidence": {
         "kind": "scan_finding_absent",
         "note": "No open finding for this control in the compliance scan."
-      }
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "Code writes health data to a shared cache."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "AES-256-GCM before cache writes is a project standard, not a literal legal text."
     },
     {
       "id": "CL-DATAPROT-003",
       "title": "Persistencia de entidades de salud sin cifrado a nivel de campo (FLE) en modelo ORM",
-      "description": "Las entidades que gestionan diagnósticos, anamnesis o perfiles biológicos deben incorporar transformadores o decoradores de cifrado en reposo.",
+      "description": "[Internal standard] Las entidades que gestionan diagnósticos, anamnesis o perfiles biológicos deben incorporar transformadores o decoradores de cifrado en reposo.",
       "severity": "HIGH",
       "sources": [
         {
@@ -203,11 +222,18 @@
       "evidence": {
         "kind": "scan_finding_absent",
         "note": "No open finding for this control in the compliance scan."
-      }
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "Code persists health entities."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "Field-level encryption is a project standard; the law requires measures adequate to the risk."
     },
     {
       "id": "CL-DATAPROT-004",
-      "title": "Borrado físico prematuro de historiales médicos (Infracción al deber de custodia decenal)",
+      "title": "Borrado físico prematuro de historiales médicos (Infracción al deber de custodia de 15 años)",
       "description": "Prohibición perentoria de ejecutar sentencias DELETE destructivas sobre fichas médicas antes del cumplimiento del plazo legal de 15 años. Debe aplicarse bloqueo temporal (soft-delete archivado).",
       "severity": "CRITICAL",
       "sources": [
@@ -244,7 +270,14 @@
       "evidence": {
         "kind": "scan_finding_absent",
         "note": "No open finding for this control in the compliance scan."
-      }
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Code deletes clinical records (Ley 20.584 Art. 13: keep the record at least 15 years)."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "Retention is legal; soft delete / BLOCKED_LEGAL_HOLD is one possible implementation, not the only one."
     },
     {
       "id": "CL-DATAPROT-005",
@@ -282,7 +315,14 @@
       "evidence": {
         "kind": "scan_finding_absent",
         "note": "No open finding for this control in the compliance scan."
-      }
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "An HTTP endpoint exposes clinical or personal data."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "RBAC/ABAC/JWT are implementation choices; adequacy depends on context."
     },
     {
       "id": "CL-DATAPROT-006",
@@ -315,12 +355,19 @@
       "evidence": {
         "kind": "scan_finding_absent",
         "note": "No open finding for this control in the compliance scan."
-      }
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Automated decision or profiling with legal or otherwise significant effects on the data subject."
+      },
+      "validation_mode": "manual_assessment",
+      "legal_review": "pending",
+      "legal_review_note": "Art. 8 bis is not a universal ban on automation; legal exceptions and safeguards (information, human intervention, review) must be assessed."
     },
     {
       "id": "CL-DATAPROT-007",
       "title": "Endpoint de portabilidad de ficha clínica en formato propietario no estructurado",
-      "description": "El canal de portabilidad de datos médicos debe exportar la ficha clínica en un Resource Bundle estructurado bajo el estándar HL7 FHIR R4 compatible con la Guía CL Core del MINSAL.",
+      "description": "[Internal standard] El canal de portabilidad de datos médicos debe exportar la ficha clínica en un Resource Bundle estructurado bajo el estándar HL7 FHIR R4 compatible con la Guía CL Core del MINSAL.",
       "severity": "MEDIUM",
       "sources": [
         {
@@ -354,7 +401,14 @@
       "evidence": {
         "kind": "scan_finding_absent",
         "note": "No open finding for this control in the compliance scan."
-      }
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "An endpoint exports or ports clinical records."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "HL7 FHIR R4 CL Core is a project architecture requirement until a regulation or technical standard is identified."
     },
     {
       "id": "CORE-CHECK-001",
@@ -394,7 +448,14 @@
       "evidence": {
         "kind": "code_indicator_present",
         "note": "Indicators found in the changed code."
-      }
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code stores or processes direct identifiers or sensitive fields."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "Pseudonymisation and encryption are listed as possible measures, not invariable mandates."
     },
     {
       "id": "CORE-CHECK-002",
@@ -429,7 +490,14 @@
       "evidence": {
         "kind": "pattern_absent",
         "note": "Prohibited patterns absent from the changed code."
-      }
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code emits personal data to logs, consoles or caches."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "Detect exposure and missing safeguards; stricter internal bans must be labelled internal."
     },
     {
       "id": "CORE-CHECK-003",
@@ -469,7 +537,14 @@
       "evidence": {
         "kind": "code_indicator_present",
         "note": "Indicators found in the changed code."
-      }
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system handles data subject requests (access, rectification, erasure, opposition, portability, blocking)."
+      },
+      "validation_mode": "integration_test",
+      "legal_review": "pending",
+      "legal_review_note": "Portability and temporary blocking (Art. 8 ter) are missing from the description; RBAC/ABAC/JWT are not legal mandates."
     },
     {
       "id": "CORE-CHECK-004",
@@ -505,7 +580,14 @@
       "evidence": {
         "kind": "code_indicator_present",
         "note": "Indicators found in the changed code."
-      }
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Automated decisions or profiling with legal or significant effects."
+      },
+      "validation_mode": "manual_assessment",
+      "legal_review": "pending",
+      "legal_review_note": "Must not block all algorithmic flows; evaluate exceptions and required safeguards."
     },
     {
       "id": "HEALTH-CHECK-001",
@@ -521,7 +603,7 @@
       ],
       "detection": {
         "type": "pattern",
-        "category": "RETENTION_DECENAL_SOFT_DELETE",
+        "category": "RETENTION_15_YEAR_CLINICAL_RECORD",
         "plugin": "health_clinical",
         "patterns": [
           "session.delete",
@@ -539,12 +621,19 @@
       "evidence": {
         "kind": "pattern_absent",
         "note": "Prohibited patterns absent from the changed code."
-      }
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Code deletes or archives clinical records (Ley 20.584 Art. 13, at least 15 years)."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "pending",
+      "legal_review_note": "Category renamed from DECENAL (10 years) to the 15-year rule; soft delete is one implementation."
     },
     {
       "id": "HEALTH-CHECK-002",
       "title": "Interoperabilidad Universal de Ficha Clínica bajo HL7 FHIR R4 CL Core",
-      "description": "El canal de portabilidad y transferencia clínica debe estructurarse obligatoriamente bajo el estándar HL7 FHIR R4 compatible con el Perfil Nacional CL Core, prohibiendo volcados planos propietarios o PDF no estructurados.",
+      "description": "[Internal standard] El canal de portabilidad y transferencia clínica debe estructurarse obligatoriamente bajo el estándar HL7 FHIR R4 compatible con el Perfil Nacional CL Core, prohibiendo volcados planos propietarios o PDF no estructurados.",
       "severity": "MEDIUM",
       "sources": [
         {
@@ -575,7 +664,14 @@
       "evidence": {
         "kind": "code_indicator_present",
         "note": "Indicators found in the changed code."
-      }
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "Clinical data portability or transfer channel."
+      },
+      "validation_mode": "document_review",
+      "legal_review": "pending",
+      "legal_review_note": "Ley 21.668 does not by itself mandate FHIR R4 CL Core or a CSV/PDF ban; keep as project requirement until a source is identified."
     },
     {
       "id": "HEALTH-CHECK-003",
@@ -611,7 +707,22 @@
       "evidence": {
         "kind": "code_indicator_present",
         "note": "Indicators found in the changed code."
-      }
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code stores or serves health data."
+      },
+      "validation_mode": "integration_test",
+      "legal_review": "pending",
+      "legal_review_note": "Reinforced protection must be proportionate to risk."
     }
-  ]
+  ],
+  "legal_review": "pending",
+  "plugins": {
+    "health_clinical": {
+      "name": "Health and clinical record plugin",
+      "description": "Sector context for Chilean health systems (Ley 20.584, Ley 21.668)."
+    }
+  },
+  "classification_note": "Field-name classification is insufficient: context and data flow matter. Legal sensitive data also includes ethnic or racial origin, political or union affiliation, beliefs, socioeconomic status, biological profile, sexual life/orientation, gender identity, and data of minors. Pending legal validation and extension."
 }

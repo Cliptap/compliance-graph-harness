@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import sqlite3
@@ -9,7 +9,7 @@ WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent
 HARNESS_DIR = WORKSPACE_ROOT / ".harness"
 DEFAULT_DB_PATH = HARNESS_DIR / "harness.db"
 SCHEMA_PATH = HARNESS_DIR / "schema.sql"
-RULES_PATH = HARNESS_DIR / "compliance_rules.json"
+RULES_PATH = HARNESS_DIR / "packs" / "cl-ley-21719.json"  # normative pack (single source of truth)
 
 
 def get_db_connection(db_path: Path | str = DEFAULT_DB_PATH) -> sqlite3.Connection:
@@ -39,10 +39,12 @@ def init_harness_db(db_path: Path | str = DEFAULT_DB_PATH) -> None:
             schema_sql = SCHEMA_PATH.read_text(encoding="utf-8")
             conn.executescript(schema_sql)
 
-        # 2. Cargar reglas desde compliance_rules.json
+        # 2. Cargar reglas desde el pack normativo
         if RULES_PATH.exists():
             conn.execute("DELETE FROM compliance_rules;")
-            data = json.loads(RULES_PATH.read_text(encoding="utf-8"))
+            from src.harness.normative_pack import load_legacy_view
+
+            data = load_legacy_view(RULES_PATH)
             rules = data.get("rules", [])
             for r in rules:
                 conn.execute(

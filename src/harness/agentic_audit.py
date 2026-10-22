@@ -78,7 +78,9 @@ class ChecklistRegistry:
     def _load_registry(self) -> None:
         if not self.rules_path.exists():
             return
-        data = json.loads(self.rules_path.read_text(encoding="utf-8"))
+        from src.harness.normative_pack import load_legacy_view
+
+        data = load_legacy_view(self.rules_path)
         for raw in data.get("core_checklist", []):
             self.core_criteria.append(ChecklistCriterion(**raw))
         self.sectorial_plugins = data.get("sectorial_plugins", {})

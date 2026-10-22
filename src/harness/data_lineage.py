@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import ast
 import json
@@ -14,7 +14,7 @@ class ASTLineageScanner(ast.NodeVisitor):
     """Escáner estático transversal basado en AST de Python.
     
     Identifica de forma dinámica y agnóstica:
-    1. Fuentes de datos sensibles (Sources) según la ontología legal (compliance_rules.json).
+    1. Fuentes de datos sensibles (Sources) según la ontología legal (el pack normativo).
     2. Sumideros críticos (Sinks) como llamadas a logging, print, stdout o persistencia de auditoría.
     3. Mecanismos de sanitización y listas de campos enmascarados presentes en el código fuente.
     """
@@ -22,7 +22,7 @@ class ASTLineageScanner(ast.NodeVisitor):
     def __init__(self, file_path: Path, rel_path: str, categories: dict[str, Any]):
         self.file_path = file_path
         self.rel_path = rel_path.replace("\\", "/")
-        self.categories = categories  # Categorías legales cargadas dinámicamente desde compliance_rules.json
+        self.categories = categories  # Categorías legales cargadas dinámicamente desde el pack normativo
         self.sources: list[dict[str, Any]] = []
         self.sinks: list[dict[str, Any]] = []
         self.sanitizers: list[dict[str, Any]] = []
@@ -140,9 +140,11 @@ class DataLineageEngine:
         self._load_compliance_ontology()
 
     def _load_compliance_ontology(self) -> None:
-        """Carga el vocabulario y ontología de datos protegidos desde compliance_rules.json."""
+        """Carga el vocabulario y ontología de datos protegidos desde el pack normativo."""
         if self.rules_path.exists():
-            data = json.loads(self.rules_path.read_text(encoding="utf-8"))
+            from src.harness.normative_pack import load_legacy_view
+
+            data = load_legacy_view(self.rules_path)
             self.categories = data.get("data_categories", {})
         else:
             self.categories = {
