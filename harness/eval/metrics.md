@@ -1,4 +1,4 @@
-# Metricas de Evaluacion del Harness
+﻿# Metricas de Evaluacion del Harness
 
 ## Objetivo
 Medir la calidad del output de un LLM usando el harness de VibeCoding (con skills)
@@ -161,6 +161,21 @@ estandar si terminan sin cambios (cuenta como correccion requerida).
 El diff se mide con `git diff --no-renames -z` contra el commit base del workspace, y el
 `.gitattributes` (`* text=auto`) evita que reescrituras CRLF/LF cuenten como lineas modificadas.
 
-`compliance_score` es provisional: 100 menos 25/10/5/2 por infraccion CRITICAL/HIGH/MEDIUM/LOW,
-excluyendo las de alcance. Las metricas aun no medibles se reportan `null` y su motivo queda
+### Formula de `compliance_score` (v1, preregistrada)
+
+`compliance_score = max(0, 100 - sum(peso(severidad) por hallazgo VIOLATION))`
+
+| Severidad | Peso |
+|-----------|------|
+| CRITICAL  | 25   |
+| HIGH      | 10   |
+| MEDIUM    | 5    |
+| LOW       | 2    |
+
+- Cuenta un hallazgo por (politica, archivo, linea); los hallazgos de alcance (`scope.*`) se excluyen y se reportan aparte como `scope_violations`.
+- El score nunca se publica solo: se reportan siempre sus componentes (`findings` por severidad y por politica, `privacy_findings`).
+- La formula y los pesos quedan fijos antes del experimento formal (T7); cambiarlos exige una nueva version (v2) y reportar ambas.
+- Politicas de privacidad activas: `privacy.cwe_532` (logs) y `privacy.api_exposure` (respuestas de API con credenciales o identificadores sin enmascarar).
+
+Las metricas aun no medibles se reportan `null` y su motivo queda
 en `metadata.null_reasons`.

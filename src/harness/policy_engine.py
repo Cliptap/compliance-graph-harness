@@ -320,9 +320,12 @@ class PolicyEngine:
 
     def __init__(self, policies: list[BasePolicy] | None = None):
         if policies is None:
+            from src.harness.exposure_policy import ApiPersonalDataExposurePolicy  # avoids circular import
+
             self.policies: list[BasePolicy] = [
                 ScopePolicy(),
                 SensitiveLoggingPolicy(),
+                ApiPersonalDataExposurePolicy(),
                 DomainInvariantPolicy(),
                 DependencyPolicy(),
             ]
