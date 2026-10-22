@@ -1,4 +1,4 @@
-﻿# Metricas de Evaluacion del Harness
+# Metricas de Evaluacion del Harness
 
 ## Objetivo
 Medir la calidad del output de un LLM usando el harness de VibeCoding (con skills)

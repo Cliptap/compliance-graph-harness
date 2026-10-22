@@ -1,4 +1,4 @@
-﻿# SPRINT1_STATUS.md — Diagnóstico Técnico, Inventario y Plan de Consolidación (Sprint 1)
+# SPRINT1_STATUS.md — Diagnóstico Técnico, Inventario y Plan de Consolidación (Sprint 1)
 
 > **Fecha:** 29 de septiembre de 2026  
 > **Proyecto:** Arnés de gobernanza para desarrollo de software asistido por agentes de IA  
