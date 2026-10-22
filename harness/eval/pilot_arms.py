@@ -18,6 +18,8 @@ PIPELINE_SKILLS = (
     "06-frontend", "07-auth", "08-testing", "09-cicd", "10-deployment",
     "11-observability", "12-documentation",
 )
+COMPLIANCE_SKILLS = ("compliance-dev", "compliance-audit", "compliance-patch")
+PACK_REL = ".harness/packs/cl-ley-21719.json"
 COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.db", ".pytest_cache")
 WORKSPACE_GITIGNORE = "__pycache__/\n*.pyc\n.pytest_cache/\n*.db\n"
 # Normaliza EOL en el index para que reescrituras CRLF/LF no cuenten como líneas modificadas.
@@ -72,6 +74,9 @@ def prepare_workspace(repo_root: Path, arm: str, dest: Path) -> Path:
     if config.harness_files:
         _write_harness_files(repo_root, dest)
     if config.compliance_tool:
+        for skill in COMPLIANCE_SKILLS:
+            _copy(repo_root / ".agents/skills" / skill, dest / ".cursor/skills" / skill)
+        _copy(repo_root / PACK_REL, dest / PACK_REL)
         _write_text(dest / ".cursor/rules/compliance-gate.mdc", COMPLIANCE_GATE_RULE)
     _write_text(dest / ".gitignore", WORKSPACE_GITIGNORE)
     _write_text(dest / ".gitattributes", WORKSPACE_GITATTRIBUTES)

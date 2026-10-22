@@ -68,6 +68,26 @@ def test_compliance_workspace_adds_gate_rule_but_not_engine(tmp_path):
     assert not (ws / "src/harness").exists()
     assert ARMS["harness_compliance"].compliance_tool is True
     assert ARMS["baseline"].setting_sources is None
+    for skill in ("compliance-dev", "compliance-audit", "compliance-patch"):
+        assert (ws / ".cursor/skills" / skill / "SKILL.md").is_file()
+    assert (ws / ".harness/packs/cl-ley-21719.json").is_file()
+    assert not (ws / ".harness/compliance_rules.json").exists()
+
+
+def test_compliance_skills_and_pack_only_in_compliance_arm(tmp_path):
+    ws = prepare_workspace(REPO_ROOT, "harness", tmp_path / "h")
+    assert not (ws / ".cursor/skills/compliance-dev").exists()
+    assert not (ws / ".harness").exists()
+
+
+def test_compliance_skills_reference_existing_pack_and_outcome_vocabulary():
+    for skill in ("compliance-dev", "compliance-audit", "compliance-patch"):
+        text = (REPO_ROOT / ".agents/skills" / skill / "SKILL.md").read_text(encoding="utf-8")
+        assert text.startswith("---\nname: " + skill)
+        assert ".harness/packs/cl-ley-21719.json" in text
+    audit = (REPO_ROOT / ".agents/skills/compliance-audit/SKILL.md").read_text(encoding="utf-8")
+    for outcome in ("confirmed_violation", "potential_risk", "not_applicable", "insufficient_evidence"):
+        assert outcome in audit
 
 
 def test_collect_event_stats_counts_each_tool_call_once_and_files_read():
