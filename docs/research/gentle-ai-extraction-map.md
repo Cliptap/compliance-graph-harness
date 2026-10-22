@@ -58,3 +58,18 @@ Recomendación: **combinar**. CodeGraph para la recuperación de contexto del ag
 - RDD: `GA:internal/reviewtransaction`, `GA:contracts/review-integration`, `GA:docs/architecture/organic-rdd.md`.
 - Skills y memoria: `GA:internal/components/agentguidance/orchestrator.go:251`, `GA:internal/skillregistry/registry.go`, `GA:internal/assets/skills/_shared/skill-resolver.md`, `GA:internal/assets/engram/protocol.md`.
 - CodeGraph: `GA:internal/components/communitytool/tool.go`, README upstream de `colbymchenry/codegraph`.
+
+## Resultado: CodeGraph vs graphify (2026-10-22)
+
+Benchmark `harness/eval/context_semantic.py`: 6 tareas en lenguaje natural sobre `src/backend` + `src/database`, CodeGraph 1.6.2 (`context --format json`, telemetría apagada) contra graphify 0.9.55 (`extract --code-only` + `query`). El conjunto correcto es manual y pequeño: los resultados son orientativos, no estadísticos.
+
+| Estrategia | Recall medio | Precisión media | Archivos devueltos | Tokens si se leen |
+|---|---|---|---|---|
+| CodeGraph | 0,63 | 0,61 | 3,3 | ~2.500 |
+| graphify | 0,65 | 0,32 | 10,0 | ~6.900 |
+
+- Recall equivalente; CodeGraph devuelve menos archivos y más relevantes (menos de la mitad de tokens).
+- Fallos de CodeGraph: solo 3 de 8 archivos en la tarea de impacto (llamadores) y recall 0 en `appointment_response_field`.
+- Fallos de graphify: 0 resultados en `password_hashing` (el query no coincide con nombres de nodo) y 17-18 archivos en tareas amplias.
+- La línea base `grep` NO es comparable: recibe las palabras clave con las que se construyó el conjunto correcto (circular). Se publica solo como referencia.
+- Conclusión: ninguna herramienta es "muy superior"; CodeGraph gana en precisión y costo de contexto. Se mantiene la recomendación de CodeGraph para recuperación y el grafo AST propio para linaje.
