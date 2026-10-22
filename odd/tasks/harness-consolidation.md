@@ -22,7 +22,7 @@ Branch: `feat/cursor-sdk-pilot` until T1 opens its own branch. Delivery: ask-on-
 | T3 | S1, S4 | Real detection (AST/Semgrep), API personal-data exposure, written compliance score formula | inline | done | `src/harness/exposure_policy.py` (`privacy.api_exposure`), score formula v1 in `harness/eval/metrics.md`; `54fa302`; no Semgrep |
 | T4 | S1, S4 | Detector validation on a labelled corpus (precision/recall) | inline | done | `harness/eval/corpus.py` + 16 labelled cases; hard misses published; 110 tests |
 | T5 | S1, S5 | Ley 21.719 skills for new-dev / audit / patch modes reusing `compliance_check` (not the 12 pipeline skills) | inline | done | 3 skills in `.agents/skills/compliance-*`; compliance arm only; 121 tests |
-| T6 | S3 | Context and memory: graph symbol slicing fix (or CodeGraph per T0), Engram integration | inline | done | slicing fix + context bench (`e85104c`), CodeGraph vs graphify (`13da480`), CodeGraph installed via Gentle-AI TUI (1.6.2, telemetry off, project MCP path), Engram mirror under project `compliance-graph-harness` |
+| T6 | S3 | Context and memory: graph symbol slicing fix (or CodeGraph per T0), Engram integration | inline | done (Engram mirror pending) | slicing fix + context bench (`e85104c`), CodeGraph vs graphify (`13da480`), CodeGraph installed via Gentle-AI TUI (1.6.2, telemetry off, project MCP path). Engram mirror NOT written: the server rejects project `compliance-graph-harness` (`unknown_project`, only `andre` is available) because its working directory is not `vibecoding` |
 | T7 | S3, S4 | Formal experiment: tasks with seeded privacy traps, hidden acceptance tests, preregistration, N from measured cost; resolve task 02 `practitioner_id` scope conflict | inline | pending | |
 
 ## Log
