@@ -38,6 +38,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest pytest-asyncio anyio
 
       - name: Initialize Harness Database
         run: |
@@ -45,4 +46,4 @@ jobs:
 
       - name: Run Test Suite & Quality Gates
         run: |
-          pytest tests/harness/ tests/catalog/ tests/frontend/ -v
+          python -m pytest -v
