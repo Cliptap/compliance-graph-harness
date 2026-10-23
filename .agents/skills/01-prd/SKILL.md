@@ -55,7 +55,7 @@ Para evitar el acoplamiento prematuro y el scope creep, la skill debe clasificar
 | :--- | :--- | :--- | :--- | :--- |
 | **Requisito Funcional** | `REQ-xxx` | Capacidad observable que el sistema debe brindar al usuario. | `REQ-001: El sistema debe permitir consultar productos por categoría.` | `REQ-001: El sistema debe tener un endpoint GET /api/v1/products con FastAPI y SQLAlchemy.` |
 | **Restricción** | `CONST-xxx` | Límite operativo, regulatorio o de entorno impuesto desde el exterior. | `CONST-001: El MVP no utilizará servicios externos de búsqueda ni APIs de pago de terceros.` | `CONST-001: Usaremos PostgreSQL con índices B-Tree.` *(Decisión técnica prematura)* |
-| **Decisión Técnica** | *(Diferida)* | Elección de patrones, frameworks, esquemas y componentes (`AD-xxx`). | *No se toma en 01-prd. Se registra como OPEN QUESTION o se delega a `02-architecture` / `03-data-modeling`.* | Elegir React, Docker, Postgres o Redis en esta fase si el usuario no lo impuso como restricción. |
+| **Decisión Técnica** | *(Diferida)* | Elección de patrones, frameworks, esquemas y componentes (`AD-xxx`). | *No se toma en 01-prd ni se especulan alternativas técnicas en OPEN-*. Se indica únicamente una delegación genérica a `02-architecture` / `03-data-modeling` sin preseleccionar opciones.* | Elegir React, Docker, Postgres o Redis en esta fase, o formular preguntas como "SPA vs SSR" o "SQL vs NoSQL" en el PRD. |
 
 ---
 
@@ -95,10 +95,11 @@ El agente debe guiar al desarrollador a través de las siguientes etapas sin sal
    - `data_pipeline`: Flujo de procesamiento de datos, ETL o análisis por lotes.
    - `cli_tool`: Herramienta interactiva o utilitaria de línea de comandos.
    - `mobile`: Aplicación para plataformas móviles.
-3. Preguntar el nivel de gobernanza:
+3. **Preguntar obligatoriamente el nivel de gobernanza:**
    - `bajo`: Prototipo rápido, validaciones mínimas, sin auditoría obligatoria.
    - `medio`: Aplicación estándar con validaciones de datos y registro de eventos clave.
    - `alto`: Entorno regulado o crítico; trazabilidad estricta, RBAC y auditoría exhaustiva.
+   - 🛑 **COMPUERTA DE BLOQUEO (Sin Asunciones Silenciosas):** Si el desarrollador no especificó el nivel de gobernanza en su solicitud inicial, el agente **DEBE PREGUNTARLO EXPLÍCITAMENTE** antes de emitir el frontmatter del PRD. Está **ESTRICTAMENTE PROHIBIDO asumir o rellenar un valor por defecto (como `medio`) sin respuesta o confirmación del usuario**.
 
 ### Paso 1: Problema, Contexto y Actores
 1. **Problema:** ¿Qué dolor, ineficiencia o necesidad concreta resuelve este sistema?
@@ -112,7 +113,9 @@ El agente debe guiar al desarrollador a través de las siguientes etapas sin sal
 
 ### Paso 3: Frontera de Alcance (`IN SCOPE` vs. `OUT OF SCOPE`)
 1. Listar los requisitos funcionales aprobados bajo `IN SCOPE`.
-2. Registrar explícitamente en `OUT OF SCOPE` todo lo que fue mencionado pero descartado o postergado (ej: "Autenticación OAuth/SSO externa", "Soporte multi-moneda", "Sincronización offline").
+2. **Regla Estricta de OUT OF SCOPE (Frontera sin Invenciones):**
+   - Registrar en `OUT OF SCOPE` **ÚNICA Y EXCLUSIVAMENTE** aquellas capacidades o requerimientos que hayan sido explícitamente mencionados y descartados o postergados durante la elicitación con el usuario.
+   - 🛑 **PROHIBIDO inventar scope negativo:** No agregues capacidades no solicitadas ni mencionadas "por si acaso" o "por iniciativa propia" (ej: inventar exclusión de multi-almacén, blockchain o notificaciones push si el usuario nunca habló de ellas). Agregar elementos no discutidos a `OUT OF SCOPE` activa erróneamente la barrera de Change Request y distorsiona el ciclo de vida del producto.
 3. **Regla de No Re-Interrogación y Gobierno de Frontera:** Si un elemento fue clasificado como `OUT OF SCOPE`, las skills posteriores NO deben volver a consultar al usuario si desea incluirlo por iniciativa propia. No constituye un muro físico inmutable: si durante etapas posteriores surge una necesidad legítima de incorporar un elemento excluido, el agente NO puede modificarlo silenciosamente; debe emitir un **Change Request formal** para que el desarrollador humano decida, generando un `PRD v2` (`APPROVED`) antes de autorizar el cambio en arquitectura o código.
 
 ### Paso 4: Criterios de Aceptación (`AC-xxx`)
@@ -125,8 +128,11 @@ El agente debe guiar al desarrollador a través de las siguientes etapas sin sal
 
 ### Paso 5: Restricciones, Supuestos y Preguntas Abiertas
 1. **Restricciones (`CONST-xxx`):** Factores externos inmutables (legales, plazos, licencias, plataformas obligatorias). Si no hay, dejar vacío o indicar "Ninguna restricción externa declarada".
-2. **Supuestos (`ASSUMP-xxx`):** Hipótesis de trabajo explícitas (ej: "Se asume conectividad IP estándar", "Se asume codificación UTF-8"). Evitan que las suposiciones se conviertan silenciosamente en "hechos".
-3. **Preguntas Abiertas (`OPEN-xxx`):** Puntos de decisión técnica o funcional que aún requieren confirmación del desarrollador o que competen a etapas posteriores (`02-architecture`, `03-data-modeling`).
+2. **Supuestos (`ASSUMP-xxx`):** Hipótesis de trabajo explícitas de carácter cualitativo (ej: "Se asume conectividad IP estándar", "Se asume codificación UTF-8", "Se asume moneda base local única para el MVP"). Evitan que las suposiciones se conviertan silenciosamente en "hechos".
+   - 🛑 **PROHIBIDO introducir números mágicos o umbrales cuantitativos inventados:** Queda terminantemente prohibido introducir cotas numéricas no fundamentadas (ej: `< 200 productos`, `< 10 usuarios concurrentes`, `latencia < 100ms`) a menos que hayan sido provistas textualmente por el desarrollador o fijadas en una restricción regulatoria externa. Si la volumetría es incierta, debe preguntarse al usuario o expresarse de forma cualitativa ("volumen reducido para prototipo MVP").
+3. **Preguntas Abiertas (`OPEN-xxx`):** Puntos de decisión **ESTRICTAMENTE FUNCIONALES, DE NEGOCIO O DE COMPORTAMIENTO OBSERVABLE** pendientes de clarificación con el usuario (ej: comportamiento ante expiración de sesión, reglas de validación de negocio).
+   - 🛑 **PROHIBIDO redactar dilemas o disyuntivas arquitectónicas concretas:** No formules preguntas técnicas prematuras como "SPA vs SSR", "localStorage vs backend session", "PostgreSQL vs MongoDB".
+   - **Tratamiento de Incertidumbres Técnicas:** Si existe una necesidad técnica que debe resolverse en etapas posteriores, se registra como una **referencia de delegación genérica** (ej: `OPEN-xxx: Delegación técnica: La selección de patrones arquitectónicos, estrategia de persistencia y contratos de API se resolverá formalmente en 02-architecture, 03-data-modeling y 04-api-design`), sin preseleccionar ni deliberar sobre alternativas técnicas específicas dentro del PRD.
 
 ### Paso 6: Aprobación y Versionado Lógico
 1. El agente presenta el borrador completo en `docs/PRD.md` con `status: DRAFT` y `version: 1`.
@@ -154,6 +160,10 @@ El agente debe guiar al desarrollador a través de las siguientes etapas sin sal
 
 - 🚨 **Decisión de Stack Prematura:** Elegir bases de datos, ORMs, librerías o frameworks en el PRD cuando el desarrollador no los impuso como restricción.
 - 🚨 **Scope a Rutas Físicas (`allowed_paths` en PRD):** Mencionar archivos, carpetas o extensiones dentro del PRD.
+- 🚨 **Gobernanza Asumida en Silencio:** Fijar `governance_level` sin consulta explícita ni confirmación del desarrollador.
+- 🚨 **Scope Negativo Alucinado:** Agregar en `OUT OF SCOPE` funcionalidades, módulos o tecnologías que el usuario jamás mencionó ni formaron parte de la negociación de alcance.
+- 🚨 **Números Mágicos en Supuestos:** Inventar cotas, umbrales o métricas numéricas arbitrarias en `ASSUMP-xxx` sin respaldo documental o confirmación del usuario.
+- 🚨 **Preselección Técnica en OPEN-*:** Plantear disyuntivas de patrones, frameworks, esquemas o librerías en las preguntas abiertas del PRD en vez de registrar dudas de negocio o una delegación genérica a `02-architecture`.
 - 🚨 **Re-interrogar lo Excluido:** Preguntar en etapas posteriores si se desea agregar algo que el PRD marcó en `OUT OF SCOPE`.
 - 🚨 **Preguntas Abiertas Resueltas en Silencio:** Transformar una duda técnica en un requisito sin intervención del desarrollador.
 - 🚨 **Requisitos sin Criterios de Aceptación:** Dejar un `REQ-xxx` sin al menos un `AC-xxx` que permita verificar su cumplimiento.
@@ -170,9 +180,9 @@ El artefacto producido debe residir en `docs/PRD.md` y cumplir estrictamente la 
 project_id: "nombre-proyecto-slug"
 project_name: "Nombre Formal del Proyecto"
 version: 1
-status: "APPROVED" # "DRAFT" durante formulación
+status: "DRAFT" # "DRAFT" durante formulación, "APPROVED" tras confirmación explícita
 project_type: "web_app" # web_app | api | data_pipeline | cli_tool | mobile
-governance_level: "medio" # bajo | medio | alto
+governance_level: "medio" # bajo | medio | alto (Elicitado obligatoriamente, nunca asumido)
 created_at: "YYYY-MM-DD"
 updated_at: "YYYY-MM-DD"
 ---
@@ -208,8 +218,8 @@ updated_at: "YYYY-MM-DD"
 - [Capacidad funcional 2 respaldada por REQ-xxx]
 
 ### OUT OF SCOPE (Explícitamente Excluido)
-- [Capacidad excluida 1 - Prohibida su reintroducción sin Change Request]
-- [Capacidad excluida 2 - Prohibida su reintroducción sin Change Request]
+- [Capacidad mencionada y descartada 1 - Prohibida su reintroducción sin Change Request]
+- [Capacidad mencionada y descartada 2 - Prohibida su reintroducción sin Change Request]
 
 ## 6. Criterios de Aceptación (Acceptance Criteria)
 - **AC-001** (Vinculado a `REQ-001`): [Comportamiento observable verificable]
@@ -221,12 +231,12 @@ updated_at: "YYYY-MM-DD"
 - **CONST-002:** [Restricción técnica externa obligatoria, si existe]
 
 ## 8. Supuestos de Trabajo (Assumptions)
-- **ASSUMP-001:** [Supuesto explícito 1]
-- **ASSUMP-002:** [Supuesto explícito 2]
+- **ASSUMP-001:** [Hipótesis cualitativa explícita 1 — Sin números mágicos ni umbrales inventados]
+- **ASSUMP-002:** [Hipótesis cualitativa explícita 2]
 
 ## 9. Preguntas Abiertas y Decisiones Pendientes (Open Questions)
-- **OPEN-001:** [Decisión técnica delegada a 02-architecture / 03-data-modeling]
-- **OPEN-002:** [Duda funcional pendiente de clarificación con el negocio]
+- **OPEN-001:** [Duda funcional o de comportamiento de negocio pendiente de aclaración con el usuario]
+- **OPEN-002:** Delegación técnica: La selección de patrones y arquitectura se resolverá formalmente en `02-architecture`
 ```
 
 ---
@@ -243,12 +253,16 @@ updated_at: "YYYY-MM-DD"
 - [ ] Cada `REQ-xxx` cuenta con al menos un `AC-xxx` asociado.
 - [ ] Existen tanto la subsección `IN SCOPE` como `OUT OF SCOPE`.
 - [ ] El documento **NO CONTIENE** definiciones de rutas de archivos (`allowed_paths` o patrones tipo `src/**`).
+- [ ] No existen números mágicos ni cotas cuantitativas arbitrarias inventadas en `ASSUMP-xxx`.
+- [ ] `OPEN-xxx` no preselecciona dilemas de implementación técnica concreta (solo dudas funcionales o delegación técnica genérica).
 
 ### Verificación Humana (Juicio de Negocio):
 - [ ] Los requisitos representan fielmente la necesidad del usuario.
 - [ ] El alcance `IN SCOPE` es realista para un MVP sin goldplating.
+- [ ] `OUT OF SCOPE` contiene únicamente elementos mencionados y descartados o restricciones acordadas, sin scope negativo inventado.
 - [ ] Los criterios `AC-xxx` describen comportamientos suficientes para aceptar el producto.
 - [ ] Las restricciones `CONST-xxx` reflejan límites reales y no suposiciones inventadas.
+- [ ] El `governance_level` fue confirmado explícitamente por el desarrollador.
 
 ---
 
