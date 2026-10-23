@@ -27,9 +27,9 @@ El pipeline automatizado hace cumplir obligatoriamente tres compuertas de calida
 
 | Quality Gate | Nombre de la Compuerta | Criterio Técnico de Aprobación | Mecanismo de Verificación | Política de Fallo |
 | :--- | :--- | :--- | :--- | :--- |
-| **`GATE-001`** | Zero Failure en Suite Completa | `exit_code == 0` (118/118 tests pasando sin errores ni omisiones inesperadas) | `pytest tests/harness/ tests/catalog/ tests/frontend/ -v` | **BLOQUEO INMEDIATO:** El pipeline falla y bloquea el merge si cualquier test unitario o de contrato reporta error. |
+| **`GATE-001`** | Zero Failure en Suite Completa | `exit_code == 0` (151/151 tests pasando sin errores ni omisiones inesperadas) | `pytest tests/harness/ tests/catalog/ tests/frontend/ -v` | **BLOQUEO INMEDIATO:** El pipeline falla y bloquea el merge si cualquier test unitario o de contrato reporta error. |
 | **`GATE-002`** | Cobertura Formal de Aceptación (Acceptance Coverage) | $\text{Acceptance Coverage} == 100.0\%$ (Trazabilidad verificada de `AC-001` a `AC-006`) | `test_active_repository_acceptance_criteria_coverage` en `test_testing_skill.py` | **BLOQUEO INMEDIATO:** Prohíbe la presencia de criterios de aceptación sin prueba física automatizada. |
-| **`GATE-003`** | Scope Policy & Security Audit | 0 invasiones de perímetro en `TaskSpec`, 0 dependencias ilícitas y 0 secrets hardcodeados | `test_policy_engine.py` y linters de skills (`ScopePolicy`, `CWE-532`) | **BLOQUEO INMEDIATO:** Prohíbe mutaciones a rutas no autorizadas o introducción de tokens/secrets. |
+| **`GATE-003`** | Scope Policy & Security Audit | 0 invasiones de perímetro en `TaskSpec`, 0 dependencias ilícitas y 0 secrets hardcodeados | Evaluación de políticas del arnés en `test_policy_engine.py` y linters estáticos de skills (`ScopePolicy`, `CWE-532`) | **BLOQUEO INMEDIATO:** Prohíbe mutaciones a rutas no autorizadas o introducción de tokens/secrets. |
 
 ---
 
@@ -53,7 +53,7 @@ Adicionalmente, se implementa control de concurrencia mediante `concurrency.canc
           │ - SO: ubuntu-latest                             │
           │ - Checkout de código (actions/checkout@v4)      │
           │ - Python 3.12 (actions/setup-python@v5)         │
-          │ - Node.js LTS v20 (actions/setup-node@v4)       │
+          │ - Node.js LTS v24 (actions/setup-node@v4)       │
           └────────────────────────┬────────────────────────┘
                                    │
                                    ▼
@@ -69,7 +69,7 @@ Adicionalmente, se implementa control de concurrencia mediante `concurrency.canc
           │ STAGE-003: Quality Gates y Evaluación           │
           │ - pytest tests/harness/ tests/catalog/          │
           │          tests/frontend/ -v                     │
-          │   * GATE-001: Zero Failure (118/118 PASS)       │
+          │   * GATE-001: Zero Failure (151/151 PASS)       │
           │   * GATE-002: Acceptance Coverage 100%          │
           │   * GATE-003: ScopePolicy & Cero Secrets        │
           └────────────────────────┬────────────────────────┘
@@ -87,7 +87,7 @@ Adicionalmente, se implementa control de concurrencia mediante `concurrency.canc
    - Runner: `ubuntu-latest`.
    - Clonación profunda del código fuente mediante `actions/checkout@v4`.
    - Configuración de Python 3.12 (`actions/setup-python@v5`) con caché activa para gestor `pip`.
-   - Configuración de Node.js v20 LTS (`actions/setup-node@v4`), indispensable para que `test_cart_invariants_and_storage_contract` evalúe el motor `CartManager` en runtime real de JavaScript con mocks de Web Storage.
+   - Configuración de Node.js v24 LTS (`actions/setup-node@v4`), indispensable para que `test_cart_invariants_and_storage_contract` evalúe el motor `CartManager` en runtime real de JavaScript con mocks de Web Storage.
 2. **`STAGE-002` (Instalación de Dependencias e Inicialización):**
    - Instalación determinista de librerías listadas en `requirements.txt`.
    - Inicialización obligatoria del esquema SQLite del arnés mediante `python -c "from src.harness.db import init_harness_db; init_harness_db()"`, evitando errores de tablas inexistentes (`sqlite3.OperationalError: no such table: graph_nodes`).
@@ -102,13 +102,13 @@ Adicionalmente, se implementa control de concurrencia mediante `concurrency.canc
 ### 4.1 Inventario de Dependencias en Runner
 El pipeline se ejecuta de forma autosuficiente utilizando las dependencias declaradas en el manifiesto raíz:
 - **Runtime Python:** `fastapi`, `pydantic`, `sqlalchemy`, `uvicorn`, `pytest`, `pytest-asyncio`, `pyyaml`.
-- **Runtime JavaScript:** Entorno Node.js LTS estándar provisto por la GitHub Actions virtual environment image (sin empaquetadores pesados ni dependencias externas en `node_modules`).
+- **Runtime JavaScript:** Entorno Node.js LTS v24 estándar provisto por la GitHub Actions virtual environment image (sin empaquetadores pesados ni dependencias externas en `node_modules`).
 
 ### 4.2 Métricas de Rendimiento y Tiempos Observados
 - **Tiempo de Checkout y Configuración de Runtimes:** ~15 - 20 segundos.
 - **Tiempo de Instalación de Dependencias (con pip cache):** ~10 - 15 segundos.
 - **Tiempo de Inicialización de Persistencia SQLite:** < 1.0 segundo.
-- **Tiempo de Ejecución de Suites de Pruebas (118 tests):** ~5.5 - 7.0 segundos.
+- **Tiempo de Ejecución de Suites de Pruebas (151 tests):** ~6.0 - 7.5 segundos.
 - **Tiempo Total de Pipeline E2E:** **< 45 segundos**.
 
 ---

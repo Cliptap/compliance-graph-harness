@@ -21,6 +21,30 @@ def _extract_frontmatter_and_body(text: str) -> tuple[dict, str]:
     return fm, parts[2]
 
 
+def _is_out_of_scope_context(text: str, match_start: int, match_end: int) -> bool:
+    """Verifica si la coincidencia ocurre dentro de una sección o cláusula de exclusión / out of scope."""
+    # 1. Verificar la línea en la que ocurre
+    line_start = text.rfind("\n", 0, match_start)
+    line_start = 0 if line_start == -1 else line_start + 1
+    line_end = text.find("\n", match_end)
+    line_end = len(text) if line_end == -1 else line_end
+    line = text[line_start:line_end]
+
+    exclusion_pattern = r"(out\s+of\s+scope|fuera\s+de\s+alcance|exclusi[oó]n(es)?|alternativas?\s+descartadas?|descartad[ao]s?|no\s+(se\s+)?incluye|no\s+soportad[ao]s?)"
+    if re.search(exclusion_pattern, line, re.IGNORECASE):
+        return True
+
+    # 2. Verificar la sección (último encabezado markdown antes del match)
+    text_before = text[:match_start]
+    headers = re.findall(r"(?m)^#{1,6}\s+(.+)$", text_before)
+    if headers:
+        last_header = headers[-1]
+        if re.search(exclusion_pattern, last_header, re.IGNORECASE):
+            return True
+
+    return False
+
+
 # ==============================================================================
 # Linter Determinista de Contrato de Documentación (documentation-generation)
 # ==============================================================================
@@ -51,6 +75,7 @@ def lint_documentation_contract(
 
     combined_text = (readme_content or "") + "\n" + (system_guide_content or "")
 
+
     # 2. Anti-Amnesia y Detección de Tecnologías Descartadas / Deuda Legacy
     toxic_patterns = [
         (r"\b(postgresql|postgres|mysql|mongodb|redis|dynamodb)\b", "Base de datos externa no autorizada (contradicción con SQLite embebido AD-005)"),
@@ -61,9 +86,15 @@ def lint_documentation_contract(
         (r"\b(admin@clinic\.com|admin123|super_secret_hipaa_key)\b", "Deuda técnica de aplicación clínica legacy en documentación"),
     ]
     for pattern, reason in toxic_patterns:
-        m = re.search(pattern, combined_text, re.IGNORECASE)
-        if m:
-            violations.append(f"Violación de No-Goldplating / Anti-Amnesia: {reason} ('{m.group(0)}')")
+        if pattern == r"\b(stripe|paypal|webpay|gateway)\b":
+            # Para pasarelas financieras, ignorar menciones legítimas en secciones o cláusulas de OUT OF SCOPE / Exclusiones / Alternativas Descartadas
+            for m in re.finditer(pattern, combined_text, re.IGNORECASE):
+                if not _is_out_of_scope_context(combined_text, m.start(), m.end()):
+                    violations.append(f"Violación de No-Goldplating / Anti-Amnesia: {reason} ('{m.group(0)}')")
+        else:
+            m = re.search(pattern, combined_text, re.IGNORECASE)
+            if m:
+                violations.append(f"Violación de No-Goldplating / Anti-Amnesia: {reason} ('{m.group(0)}')")
 
     # 3. Verificación de Contrato de README.md
     if readme_content:
@@ -386,3 +417,61 @@ def test_documentation_artifacts_pass_linter_if_exist():
         allowed_paths=["README.md", "docs/SYSTEM_GUIDE.md"],
     )
     assert len(violations) == 0, f"Violaciones en artefactos de documentación: {violations}"
+
+
+def test_documentation_linter_permits_out_of_scope_payment_gateway_exclusions():
+    """Certifica que menciones a pasarelas (Stripe, PayPal, WebPay) en cláusulas de OUT OF SCOPE o Exclusiones pasan el linter con 0 violaciones."""
+    doc_with_exclusions = """---
+status: "APPROVED"
+version: 1
+governance_level: "bajo"
+project_id: "catalogo-carrito-web"
+total_stages: 12
+last_audit: "2026-10-22"
+---
+
+# docs/SYSTEM_GUIDE.md — Guía Integral del Sistema y Gobernanza de Arquitectura
+
+## 1. Propósito y Alcance Consolidado del Sistema (PRD)
+REQ-001, REQ-002, REQ-003, REQ-004 y AC-001 a AC-006.
+
+### Exclusiones y Cláusulas OUT OF SCOPE
+- Pasarelas de pago externas (Stripe, PayPal, WebPay) quedan fuera del alcance del MVP por directiva de visitante anónimo.
+
+## 2. Topología Arquitectónica y Componentes (Monolito Liviano)
+Decisiones AD-001 a AD-007.
+
+### Alternativas Descartadas
+Se descartaron gateways financieros comerciales (Stripe, PayPal) para priorizar simplicidad sin cuentas bancarias.
+
+## 3. Modelo de Dominio y Persistencia (SQLite + Web Storage)
+ENT-001, INV-001 a INV-004 y SEED-001.
+
+## 4. Contrato de Integración REST y Manejo de Errores
+EP-001, EP-002, DTO-ERR-001, ERR-001, ERR-002, ERR-500.
+
+## 5. Postura de Seguridad Defensiva y Privacidad (CWE-532)
+SEC-CTRL-001 a SEC-CTRL-005 y prevención CWE-532.
+
+## 6. Matriz Consolidada de Trazabilidad End-to-End (Etapas 01 a 12)
+| Etapa | Nombre | Contrato | Salida |
+| :---: | :--- | :--- | :--- |
+| 01 | 01-prd | PRD | docs/PRD.md |
+| 02 | 02-architecture | Architecture | docs/ARCHITECTURE.md |
+| 03 | 03-data-modeling | Model | docs/DATA_MODEL.md |
+| 04 | 04-api-design | API | docs/API_DESIGN.md |
+| 05 | 05-backend | Backend | src/main.py |
+| 06 | 06-frontend | Frontend | src/frontend/ |
+| 07 | 07-auth | Security | docs/SECURITY.md |
+| 08 | 08-testing | Tests | docs/TEST_PLAN.md |
+| 09 | 09-cicd | CI/CD | docs/CICD.md |
+| 10 | 10-deployment | Docker | docs/DEPLOYMENT.md |
+| 11 | 11-observability | Telemetría | docs/OBSERVABILITY.md |
+| 12 | 12-documentation | Guía | docs/SYSTEM_GUIDE.md |
+"""
+
+    violations = lint_documentation_contract(
+        system_guide_content=doc_with_exclusions,
+        allowed_paths=["docs/SYSTEM_GUIDE.md"],
+    )
+    assert len(violations) == 0, f"Violaciones inesperadas en especificación con exclusiones: {violations}"

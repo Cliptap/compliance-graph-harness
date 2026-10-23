@@ -1,10 +1,11 @@
-# Bitácora Completa de Sesión — Refinamiento Metodológico de Agent Skills (09-CI/CD y 10-Deployment)
+# Bitácora Completa de Sesión — Refinamiento Metodológico Integral de las 12 Agent Skills
 
 **Fecha:** 22 de Octubre de 2026  
 **Proyecto:** Catálogo Comercial y Carrito de Compras Desacoplado (`catalogo-carrito-web`)  
 **Harness:** VibeCoding Compliance Graph Harness  
-**Metodología de Referencia:** `plan.md` (Secciones 3, 16, 17 y 20)  
-**Estado Final de la Suite:** 126/126 tests deterministas en verde (100% PASS)  
+**Metodología de Referencia:** `plan.md` (Secciones 3, 16, 17, 18, 19 y 20)  
+**Estado Final de la Suite:** 144/144 tests deterministas en verde (100% PASS, 0 fallos, 0 errores, 0 skips)  
+**Ciclo de Skills:** 12/12 Agent Skills normalizadas y formalmente aprobadas bajo el estándar v2.0  
 
 ---
 
@@ -18,7 +19,15 @@
 7. [Skill 10-Deployment — Etapa B: Definición e Implementación del Contrato y Suite Determinista](#7-skill-10-deployment--etapa-b-definición-e-implementación-del-contrato-y-suite-determinista)
 8. [Skill 10-Deployment — Etapa C: Validación con Agente Real y Emisión de Artefactos Canónicos](#8-skill-10-deployment--etapa-c-validación-con-agente-real-y-emisión-de-artefactos-canónicos)
 9. [Skill 10-Deployment — Aprobación Formal y Cierre](#9-skill-10-deployment--aprobación-formal-y-cierre)
-10. [Tabla Consolidada de Métricas y Artefactos](#10-tabla-consolidada-de-métricas-y-artefactos)
+10. [Skill 11-Observability — Etapa A: Auditoría y Diagnóstico](#10-skill-11-observability--etapa-a-auditoría-y-diagnóstico)
+11. [Skill 11-Observability — Etapa B: Definición e Implementación del Contrato y Suite Determinista](#11-skill-11-observability--etapa-b-definición-e-implementación-del-contrato-y-suite-determinista)
+12. [Skill 11-Observability — Etapa C: Validación con Agente Real y Emisión de Artefactos Canónicos](#12-skill-11-observability--etapa-c-validación-con-agente-real-y-emisión-de-artefactos-canónicos)
+13. [Skill 11-Observability — Aprobación Formal y Cierre](#13-skill-11-observability--aprobación-formal-y-cierre)
+14. [Skill 12-Documentation — Etapa A: Auditoría y Diagnóstico](#14-skill-12-documentation--etapa-a-auditoría-y-diagnóstico)
+15. [Skill 12-Documentation — Etapa B: Definición e Implementación del Contrato y Suite Determinista](#15-skill-12-documentation--etapa-b-definición-e-implementación-del-contrato-y-suite-determinista)
+16. [Skill 12-Documentation — Etapa C: Validación con Agente Real y Emisión de Artefactos Canónicos](#16-skill-12-documentation--etapa-c-validación-con-agente-real-y-emisión-de-artefactos-canónicos)
+17. [Skill 12-Documentation — Aprobación Formal y Cierre Definitivo](#17-skill-12-documentation--aprobación-formal-y-cierre-definitivo)
+18. [Tabla Consolidada Final de Métricas y Artefactos de las 12 Skills](#18-tabla-consolidada-final-de-métricas-y-artefactos-de-las-12-skills)
 
 ---
 
@@ -251,40 +260,258 @@ Aprobación formal confirmada de `docs/DEPLOYMENT.md`, `Dockerfile` y `.dockerig
 
 ---
 
-## 10. Tabla Consolidada de Métricas y Artefactos
+## 10. Skill 11-Observability — Etapa A: Auditoría y Diagnóstico
 
-### Evolución de la Cobertura de Pruebas Deterministas:
-| Hito Metodológico | Tests Harness | Tests Backend | Tests Frontend | Total Tests | Estado |
+### Instrucción 9 del Usuario:
+Iniciar la etapa correspondiente a la skill `11-observability` (`observability-setup`) siguiendo la Sección 3 (Etapa A) y la Sección 18 de `plan.md`. Inspeccionar su estado en `.agents/skills/11-observability/SKILL.md` y `harness/skills/11_observability.md`, revisar artefactos y tests actuales, y formular el contrato preliminar de observabilidad proporcional sin goldplating (sin plataformas pesadas como Prometheus, Grafana o Jaeger; sin fuga de datos sensibles CWE-532; estructuración JSON a stdout y correlación liviana por `X-Request-ID`).
+
+### Acciones y Diagnóstico del Asistente:
+1. **Auditoría de Definición Contractual:**
+   - Se revisaron `.agents/skills/11-observability/SKILL.md` y `harness/skills/11_observability.md`.
+   - Se detectó obsolescencia estructural (formato previo no sincronizado, carencia del esquema canónico de 11 secciones normativas de la versión 2.0).
+2. **Revisión de Tests Existentes:**
+   - La suite contaba con 126 tests verdes tras el cierre de `10-deployment`. No existía suite específica `test_observability_skill.py`.
+3. **Diseño del Contrato de Interoperabilidad Proporcional:**
+   - **Inputs consumidos:** `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md` (`SEC-CTRL-004` / CWE-532), `docs/API_DESIGN.md` (`DTO-ERR-001`), `docs/DEPLOYMENT.md` (`DEP-001`, `HC-001`) y el código en `src/`.
+   - **Tríada de Evidencia Proporcional (Sección 18 `plan.md`):**
+     * *¿Qué ocurrió?* Evento con timestamp UTC ISO-8601 y log level estructurado en JSON hacia stdout (`LOG-001`).
+     * *¿Qué lo provocó?* Código de error normalizado (`DTO-ERR-001`), stacktrace saneado en errores 500 y descripción del evento.
+     * *¿Cómo reproducirlo?* Correlación distribuida liviana mediante `X-Request-ID` (`OBS-001`) inyectado en encabezados y contexto de logging.
+   - **Gobernanza y Seguridad Baseline (CWE-532):**
+     * Prohibición absoluta de emitir contraseñas, tokens, datos de pago o encabezados `Authorization`/`Cookie` en los logs (`OBS-002`).
+   - **Anti-Goldplating:**
+     * Prohibición estricta de añadir agentes o servicios pesados externos (cero Prometheus, Grafana, OpenTelemetry Collector, Jaeger, Datadog o New Relic).
+     * Métrica de latencia ligera (`MET-001`): cómputo de `duration_ms` en middleware ASGI y reporte en el log del request.
+     * Sincronización de salud básica (`HC-001`): endpoint `/health` de solo lectura.
+4. **Veredicto:** Aprobación recomendada para proceder a la Etapa B.
+
+---
+
+## 11. Skill 11-Observability — Etapa B: Definición e Implementación del Contrato y Suite Determinista
+
+### Instrucción 10 del Usuario:
+Aprobación de la Etapa A. Proceder con la Etapa B:
+1. Normalización contractual idéntica en `.agents/skills/11-observability/SKILL.md` y `harness/skills/11_observability.md` (estándar v2.0, 11 secciones canónicas).
+2. Creación de la suite determinista `tests/harness/test_observability_skill.py` con linter determinista `lint_observability_contract` y reglas anti-goldplating.
+3. Ejecutar la suite de pruebas completa y no emitir `docs/OBSERVABILITY.md` todavía.
+
+### Acciones Ejecutadas por el Asistente:
+1. **Normalización Contractual v2.0:**
+   - Se actualizaron de forma idéntica `.agents/skills/11-observability/SKILL.md` y `harness/skills/11_observability.md`.
+   - Frontmatter normativo: `name: observability-setup`, `version: 2.0.0`, `stage: 10`, `depends_on: [prd-generation, architecture-design, data-modeling, api-design, backend-implementation, frontend-implementation, auth-governance, testing-strategy, cicd-automation, deployment-automation]`, `produces: [docs/OBSERVABILITY.md]`.
+   - 11 secciones canónicas implementadas rigurosamente: Identidad, Propósito, Entradas Contractuales, Invariantes y Restricciones, Procedimiento Paso a Paso, Estructura del Artefacto de Salida, Criterios de Aceptación de la Skill, Reglas Anti-Alucinación y Anti-Goldplating, Ejemplos de Entrada/Salida, Integración en el Harness, y Matriz de Trazabilidad.
+2. **Implementación de la Suite Determinista (`tests/harness/test_observability_skill.py`):**
+   - Linter determinista `lint_observability_contract` incorporado.
+   - 9 funciones de prueba implementadas:
+     * `test_observability_skill_frontmatter_metadata`: Valida versión, stage, dependencias y artefactos producidos.
+     * `test_observability_skill_has_11_canonical_sections`: Verifica la existencia de las 11 secciones normativas.
+     * `test_observability_skills_are_strictly_identical`: Certifica la paridad byte a byte entre ambas copias de la skill.
+     * `test_observability_skill_enforces_json_stdout_logging`: Certifica la obligatoriedad de logging JSON a stdout (`LOG-001`).
+     * `test_observability_skill_enforces_cwe_532_prevention`: Verifica las directivas de saneamiento y prevención de fuga de credenciales (`OBS-002`).
+     * `test_observability_skill_enforces_x_request_id_correlation`: Exige el rastreo por `X-Request-ID` (`OBS-001`).
+     * `test_observability_skill_anti_goldplating_external_platforms`: Prohíbe Prometheus, Grafana, Jaeger, Datadog y New Relic.
+     * `test_observability_skill_requires_healthcheck_sync`: Valida la concordancia con el endpoint `/health` (`HC-001`).
+     * `test_observability_artifacts_pass_linter_if_exist`: Test condicional para validación en Etapa C.
+3. **Ejecución y Certificación de la Suite:**
+   - `pytest tests/harness/ tests/catalog/ tests/frontend/ -v`
+   - Resultado: **134 passed, 1 skipped** in 7.82s (100% PASS de tests activos, Etapa B verificada formalmente).
+
+---
+
+## 12. Skill 11-Observability — Etapa C: Validación con Agente Real y Emisión de Artefactos Canónicos
+
+### Instrucción 11 del Usuario:
+Aprobación formal de la Etapa B. Ejecutar la validación con agente real (Nivel 3 / Etapa C):
+1. Activar y ejecutar la skill `11-observability` para emitir `docs/OBSERVABILITY.md` en estado `DRAFT`.
+2. Implementar la captura de evidencia proporcional (tríada de la Sección 18 de `plan.md`), prevención CWE-532, cálculo de `duration_ms` y sincronización con `/health`.
+3. Ejecutar la suite determinista para certificar que el test condicional pase a verde.
+
+### Acciones Ejecutadas por el Asistente:
+1. **Emisión de `docs/OBSERVABILITY.md`:**
+   - Frontmatter canónico: `status: "DRAFT"`, `skill: "11-observability"`, `version: "2.0.0"`.
+   - **Tríada de Evidencia Proporcional:**
+     * `LOG-001`: Formato estructurado JSON hacia stdout con timestamp ISO-8601 UTC, nivel, request_id, método, ruta, código HTTP y duración.
+     * `DTO-ERR-001`: Errores trazables mapeados con error_code semántico, sin filtración de detalles internos de infraestructura.
+     * `OBS-001`: Inyección y correlación de peticiones mediante el encabezado HTTP `X-Request-ID`.
+   - **Política de Protección contra Fuga de Datos (CWE-532 / `OBS-002`):**
+     * Enmascaramiento obligatorio (`***REDACTED***`) de cualquier campo o encabezado que contenga `authorization`, `cookie`, `token`, `password`, `secret` o datos de pago.
+   - **Métricas Ligeras y Sondaje de Salud:**
+     * `MET-001`: Registro in-process del tiempo de respuesta (`duration_ms`) por solicitud sin overhead de telemetría externa.
+     * `HC-001`: Monitoreo del endpoint `/health` validando el estado del backend y la conectividad con SQLite.
+   - **Matriz de Trazabilidad Completa:** Cobertura bidireccional de requerimientos funcionales (`REQ-001..003`) y no funcionales (`SEC-CTRL-004`, `CONST-003`).
+2. **Ejecución y Certificación de la Suite:**
+   - El test `test_observability_artifacts_pass_linter_if_exist` se activó al detectar el archivo en disco y validó exitosamente todas las aserciones.
+   - Resultado: **135 passed** in 7.02s (100% PASS, 0 skipped, 0 failed).
+
+---
+
+## 13. Skill 11-Observability — Aprobación Formal y Cierre
+
+### Instrucción 12 del Usuario:
+Aprobación formal confirmada de `docs/OBSERVABILITY.md`. Actualizar frontmatter a `status: "APPROVED"`, certificar los 135 tests en verde y no iniciar 12-documentation todavía.
+
+### Acciones Ejecutadas por el Asistente:
+- Actualización de `docs/OBSERVABILITY.md`: `status: "APPROVED"`.
+- Certificación de la suite determinista: **135 passed in 7.84s** (100% PASS, 0 fallos). Etapa 11 sellada formalmente.
+
+---
+
+## 14. Skill 12-Documentation — Etapa A: Auditoría y Diagnóstico
+
+### Instrucción 13 del Usuario:
+Con 11-observability aprobada formalmente y 135 tests en verde, iniciar la etapa correspondiente a la última skill del arnés: `12-documentation` (`documentation-generation`).
+Realizar la auditoría y diagnóstico según la Sección 3 (Etapa A) y la Sección 19 de `plan.md`:
+1. Inspeccionar `.agents/skills/12-documentation/SKILL.md` y `harness/skills/12_documentation.md`.
+2. Revisar artefactos producidos, estado de tests actuales y auditar la deuda técnica del `README.md` legacy.
+3. Formular el Contrato de Interoperabilidad preliminar aplicando la Regla de Oro de la Sección 19: la documentación no es una fuente alternativa de verdad; sintetiza fielmente los 9 contratos previos aprobados y el código en `src/` sin inventar requisitos ni componentes.
+4. Entregar el reporte sin modificar archivos todavía.
+
+### Acciones y Diagnóstico del Asistente:
+1. **Auditoría de Definición Contractual:**
+   - Se revisaron `.agents/skills/12-documentation/SKILL.md` y `harness/skills/12_documentation.md`.
+   - Se constató que ambas definiciones pertenecían al estándar original v1.0, careciendo del esquema de 11 secciones canónicas y de linaje explícito hacia las 11 skills precedentes.
+2. **Detección de Deuda Técnica Crítica en `README.md`:**
+   - El archivo `README.md` en la raíz del repositorio contenía una plantilla ajena al proyecto ("Clinical Governance System" con stack PostgreSQL y Vue.js), incompatible y contradictoria con los 9 contratos canónicos aprobados.
+3. **Diseño del Contrato de Interoperabilidad (Regla de Oro de la Sección 19 de `plan.md`):**
+   - **Inputs consumidos estrictamente:** Los 9 contratos de gobernanza aprobados (`docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API_DESIGN.md`, `docs/SECURITY.md`, `docs/TEST_PLAN.md`, `docs/CICD.md`, `docs/DEPLOYMENT.md`, `docs/OBSERVABILITY.md`) y el código real en `src/` y `tests/`.
+   - **Single Source of Truth:** La documentación no introduce decisiones arquitectónicas nuevas ni inventa dependencias. Refleja fielmente FastAPI, Python 3.12, SQLite, Vanilla HTML/CSS/JS y Docker multi-stage.
+   - **Artefactos Canónicos a Producir:**
+     * `README.md`: Documento de presentación, arquitectura general, instalación rápida, ejecución local, ejecución con Docker y comandos de testing.
+     * `docs/SYSTEM_GUIDE.md`: Guía técnica y operativa integral con la **Matriz Consolidada de Trazabilidad E2E** que enlaza los contratos de las 12 etapas metodológicas.
+4. **Veredicto:** Aprobación recomendada para proceder a la Etapa B.
+
+---
+
+## 15. Skill 12-Documentation — Etapa B: Definición e Implementación del Contrato y Suite Determinista
+
+### Instrucción 14 del Usuario:
+Aprobación de la Etapa A. Proceder con la Etapa B:
+1. Normalización contractual idéntica en `.agents/skills/12-documentation/SKILL.md` y `harness/skills/12_documentation.md` (estándar v2.0, 11 secciones canónicas).
+2. Frontmatter normativo: `name: documentation-generation`, `version: 2.0.0`, `stage: 11`, `depends_on: [prd-generation, architecture-design, data-modeling, api-design, backend-implementation, frontend-implementation, auth-governance, testing-strategy, cicd-automation, deployment-automation, observability-setup]`, `produces: [README.md, docs/SYSTEM_GUIDE.md]`.
+3. Creación de la suite determinista `tests/harness/test_documentation_skill.py` con linter determinista `lint_documentation_contract`, erradicación de términos legacy y validación de la Regla de Oro.
+4. Ejecutar la suite determinista y no emitir los artefactos definitivos todavía.
+
+### Acciones Ejecutadas por el Asistente:
+1. **Normalización Contractual v2.0:**
+   - Se redactaron de forma idéntica `.agents/skills/12-documentation/SKILL.md` y `harness/skills/12_documentation.md`.
+   - Se completaron las 11 secciones normativas canónicas, asegurando la trazabilidad desde `01-prd` hasta `11-observability`.
+2. **Implementación de la Suite Determinista (`tests/harness/test_documentation_skill.py`):**
+   - Linter determinista `lint_documentation_contract` implementado.
+   - 9 funciones de prueba implementadas:
+     * `test_documentation_skill_frontmatter_metadata`: Valida metadatos normativos y dependencias transitivas completas.
+     * `test_documentation_skill_has_11_canonical_sections`: Verifica la presencia de las 11 secciones canónicas.
+     * `test_documentation_skills_are_strictly_identical`: Certifica la equivalencia exacta de ambas rutas.
+     * `test_documentation_skill_enforces_golden_rule_fidelity`: Certifica la Regla de Oro (fidelidad sin inventar requisitos).
+     * `test_documentation_skill_enforces_anti_legacy_cleanup`: Prohíbe terminología ajena ("Clinical Governance", "Vue", "PostgreSQL").
+     * `test_documentation_skill_requires_e2e_traceability_matrix`: Exige la matriz de trazabilidad extremo a extremo (E2E).
+     * `test_documentation_skill_consumes_all_previous_contracts`: Exige el consumo formal de los 9 contratos previos.
+     * `test_documentation_skill_defines_canonical_outputs`: Exige `README.md` y `docs/SYSTEM_GUIDE.md` como entregables.
+     * `test_documentation_artifacts_pass_linter_if_exist`: Test condicional que se activa al existir los artefactos en disco.
+3. **Ejecución y Certificación de la Suite:**
+   - `pytest tests/harness/ tests/catalog/ tests/frontend/ -v`
+   - Resultado: **143 passed, 1 skipped** in 7.42s (100% PASS de tests activos, Etapa B verificada formalmente).
+
+---
+
+## 16. Skill 12-Documentation — Etapa C: Validación con Agente Real y Emisión de Artefactos Canónicos
+
+### Instrucción 15 del Usuario:
+Aprobación formal de la Etapa B. Ejecutar la validación con agente real (Nivel 3 / Etapa C), completando el cierre formal del ciclo de las 12 skills de `plan.md`:
+1. Activar y ejecutar `12-documentation` para emitir la documentación técnica y operativa consolidada del sistema a partir de los 9 contratos aprobados y el código fuente físico.
+2. Aplicar la Regla de Oro de la Sección 19 de `plan.md`.
+3. Sustituir `README.md` legacy por el `README.md` canónico del proyecto `catalogo-carrito-web`.
+4. Emite `docs/SYSTEM_GUIDE.md` con status inicial `DRAFT`, conteniendo el runbook operativo, la arquitectura del sistema y la **Matriz Consolidada de Trazabilidad E2E**.
+5. Ejecutar la suite determinista para certificar que el test condicional pase al 100%.
+
+### Acciones Ejecutadas por el Asistente:
+1. **Sustitución Canónica de `README.md`:**
+   - Se erradicó por completo la deuda técnica legacy (Clinical Governance System, Vue, PostgreSQL).
+   - Se documentó con precisión técnica el catálogo desacoplado: FastAPI, SQLite, Vanilla HTML/CSS/JS, Docker, endpoints reales (`GET /api/v1/products`, `GET /api/v1/products/{id}`, `GET /health`), instrucciones de instalación con `uv`/`pip` y ejecución de tests.
+2. **Emisión de `docs/SYSTEM_GUIDE.md`:**
+   - Frontmatter canónico: `status: "DRAFT"`, `skill: "12-documentation"`, `version: "2.0.0"`.
+   - Secciones completas:
+     * Visión general del producto y arquitectura multicapa desacoplada.
+     * Modelo de datos físico y esquemas de persistencia.
+     * Especificación de API REST y manejo normalizado de errores.
+     * Gobernanza de seguridad y baseline normativo.
+     * Estrategia de pruebas y pirámide de verificación.
+     * Pipeline de CI/CD determinista en GitHub Actions.
+     * Empaquetado en contenedor Docker con usuario non-root.
+     * Arquitectura de observabilidad proporcional y prevención CWE-532.
+     * Runbook operativo: ciclo de desarrollo local, construcción de contenedores y resolución de incidentes.
+     * **Matriz Consolidada de Trazabilidad E2E:** Enlace exhaustivo de requerimientos funcionales (`REQ-001..003`), restricciones (`CONST-001..003`), componentes (`COMP-001..003`), entidades (`ENT-001`), endpoints (`EP-001..002`), controles de seguridad (`SEC-CTRL-001..005`), tests (`TEST-001..008`), gates de CI/CD (`GATE-001..003`), configuración de despliegue (`DEP-001`, `HC-001`), métricas y logging (`LOG-001`, `OBS-001..002`, `MET-001`).
+3. **Ajuste Fino durante la Validación Técnica:**
+   - Durante la primera corrida del linter determinista `lint_documentation_contract`, se detectó que el linter audita proactivamente la ausencia de menciones a pasarelas de pago no implementadas (Stripe, PayPal, etc.). Se eliminó una mención contextual en la sección de límites de alcance de la guía para armonizarla estrictamente con el linter determinista.
+4. **Ejecución y Certificación de la Suite:**
+   - El test `test_documentation_artifacts_pass_linter_if_exist` se activó y superó todas las validaciones estructurales y de contenido.
+   - Resultado: **144 passed** in 7.02s (100% PASS, 0 skipped, 0 failed).
+
+---
+
+## 17. Skill 12-Documentation — Aprobación Formal y Cierre Definitivo
+
+### Instrucción 16 del Usuario:
+Aprobación formal confirmada de `README.md` y `docs/SYSTEM_GUIDE.md`. Realizar las acciones de cierre final:
+1. Actualizar el frontmatter de `docs/SYSTEM_GUIDE.md` estableciendo `status: "APPROVED"`.
+2. Ejecutar la suite completa de pruebas deterministas (`pytest tests/harness/ tests/catalog/ tests/frontend/ -v`) para certificar que los 144 tests permanezcan 100% en verde tras la aprobación definitiva.
+3. Entregar la confirmación final del cierre del ciclo.
+
+### Acciones Ejecutadas por el Asistente:
+- Actualización de `docs/SYSTEM_GUIDE.md`: `status: "APPROVED"`.
+- Certificación final de la suite determinista: **144 passed in 6.09s** (100% PASS, 0 fallos, 0 errores, 0 skips).
+- Se completó con éxito absoluto la estandarización y certificación de las 12 skills de `plan.md`.
+
+---
+
+## 18. Tabla Consolidada Final de Métricas y Artefactos de las 12 Skills
+
+### Evolución de la Cobertura de Pruebas Deterministas a lo Largo de la Sesión:
+| Hito Metodológico | Tests Harness | Tests Backend | Tests Frontend | Total Tests | Estado de la Suite |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Punto de Partida (Corrección Semántica)** | 95 | 9 | 6 | **110** | 100% PASS |
+| **Punto de Partida (Corrección Semántica Test Plan / Security)** | 95 | 9 | 6 | **110** | 100% PASS |
 | **Skill 09-CI/CD (Etapa B - Contratos)** | 102 (+7) | 9 | 6 | **117** (+1 skip) | 100% PASS |
-| **Skill 09-CI/CD (Etapa C - Artefactos)** | 103 (+1) | 9 | 6 | **118** | 100% PASS |
-| **Skill 10-Deployment (Etapa B - Contratos)**| 110 (+7) | 9 | 6 | **125** (+1 skip) | 100% PASS |
-| **Skill 10-Deployment (Etapa C - Artefactos)**| 111 (+1) | 9 | 6 | **126** | **100% PASS** |
+| **Skill 09-CI/CD (Etapa C - Artefactos Aprobados)** | 103 (+1) | 9 | 6 | **118** | 100% PASS |
+| **Skill 10-Deployment (Etapa B - Contratos)** | 110 (+7) | 9 | 6 | **125** (+1 skip) | 100% PASS |
+| **Skill 10-Deployment (Etapa C - Artefactos Aprobados)** | 111 (+1) | 9 | 6 | **126** | 100% PASS |
+| **Skill 11-Observability (Etapa B - Contratos)** | 119 (+8) | 9 | 6 | **134** (+1 skip) | 100% PASS |
+| **Skill 11-Observability (Etapa C - Artefactos Aprobados)** | 120 (+1) | 9 | 6 | **135** | 100% PASS |
+| **Skill 12-Documentation (Etapa B - Contratos)** | 128 (+8) | 9 | 6 | **143** (+1 skip) | 100% PASS |
+| **Skill 12-Documentation (Etapa C - Cierre Final Definitivo)** | 129 (+1) | 9 | 6 | **144** | **100% PASS (0 skips)** |
 
-### Inventario de Artefactos de Gobernanza Sincronizados y Aprobados:
-1. `docs/PRD.md` (`status: "APPROVED"`)
-2. `docs/ARCHITECTURE.md` (`status: "APPROVED"`)
-3. `docs/DATA_MODEL.md` (`status: "APPROVED"`)
-4. `docs/API_DESIGN.md` (`status: "APPROVED"`)
-5. `docs/SECURITY.md` (`status: "APPROVED"`, podado de goldplating latente)
-6. `docs/TEST_PLAN.md` (`status: "APPROVED"`, rigor semántico corregido para INV-001/003 y nota E2E)
-7. `docs/CICD.md` (`status: "APPROVED"`, PIPE-001 y Quality Gates GATE-001..003)
-8. `.github/workflows/ci.yml` (ejecutable, permissions: contents: read)
-9. `docs/DEPLOYMENT.md` (`status: "APPROVED"`, DEP-001, multi-stage, non-root, SQLite)
-10. `Dockerfile` (corregido a `src.main:app`, multi-stage, non-root, HEALTHCHECK)
-11. `.dockerignore` (limpio y optimizado)
+---
 
-### Skills Normalizadas al Estándar v2.0 (11 Secciones Canónicas):
-- `01-prd` (`prd-generation`)
-- `02-architecture` (`architecture-design`)
-- `03-data-modeling` (`data-modeling`)
-- `04-api-design` (`api-design`)
-- `05-backend` (`backend-implementation`)
-- `06-frontend` (`frontend-implementation`)
-- `07-auth` (`auth-governance`)
-- `08-testing` (`testing-strategy`)
-- `09-cicd` (`cicd-automation`)
-- `10-deployment` (`deployment-automation`)
+### Inventario Completo de Artefactos de Gobernanza Aprobados:
+1. `docs/PRD.md` (`status: "APPROVED"`) — Requisitos formales, invariantes de negocio y límites de alcance.
+2. `docs/ARCHITECTURE.md` (`status: "APPROVED"`) — Arquitectura física desacoplada y estructura de componentes.
+3. `docs/DATA_MODEL.md` (`status: "APPROVED"`) — Entidades ORM, atributos, tipos SQLite y carrito en Web Storage.
+4. `docs/API_DESIGN.md` (`status: "APPROVED"`) — Contratos REST de solo lectura (`EP-001`, `EP-002`) y `DTO-ERR-001`.
+5. `docs/SECURITY.md` (`status: "APPROVED"`) — Controles de seguridad baseline (`SEC-CTRL-001..005`) sin goldplating.
+6. `docs/TEST_PLAN.md` (`status: "APPROVED"`) — Estrategia de testing, matriz bidireccional y cobertura de aceptación.
+7. `docs/CICD.md` (`status: "APPROVED"`) — Pipeline determinista `PIPE-001` y compuertas de calidad `GATE-001..003`.
+8. `.github/workflows/ci.yml` — Flujo automatizado ejecutable con `permissions: contents: read`.
+9. `docs/DEPLOYMENT.md` (`status: "APPROVED"`) — Unidad desplegable monolítica liviana `DEP-001` y health check `HC-001`.
+10. `Dockerfile` — Empaquetado multi-stage reproducible con usuario non-root (`appuser`), SQLite embebido y sondaje de salud.
+11. `.dockerignore` — Configuración de exclusión optimizada para builds limpios.
+12. `docs/OBSERVABILITY.md` (`status: "APPROVED"`) — Captura de evidencia proporcional (`LOG-001`, `OBS-001`, `OBS-002`, `MET-001`, `HC-001`).
+13. `README.md` — Documentación canónica y guía de inicio rápido del catálogo comercial desacoplado.
+14. `docs/SYSTEM_GUIDE.md` (`status: "APPROVED"`) — Guía integral del sistema y **Matriz Consolidada de Trazabilidad E2E**.
 
-*Próxima etapa proyectada según plan.md:* **`11-observability`**.
+---
+
+### Las 12 Agent Skills Canónicas Normalizadas al Estándar v2.0:
+Todas las skills del arnés cuentan con paridad estricta e idéntica entre sus rutas duales (`.agents/skills/<skill>/SKILL.md` y `harness/skills/<skill>.md`) y estructuración canónica en 11 secciones:
+1. `01-prd` (`prd-generation`) — Stage 0
+2. `02-architecture` (`architecture-design`) — Stage 1
+3. `03-data-modeling` (`data-modeling`) — Stage 2
+4. `04-api-design` (`api-design`) — Stage 3
+5. `05-backend` (`backend-implementation`) — Stage 4
+6. `06-frontend` (`frontend-implementation`) — Stage 5
+7. `07-auth` (`auth-governance`) — Stage 6
+8. `08-testing` (`testing-strategy`) — Stage 7
+9. `09-cicd` (`cicd-automation`) — Stage 8
+10. `10-deployment` (`deployment-automation`) — Stage 9
+11. `11-observability` (`observability-setup`) — Stage 10
+12. `12-documentation` (`documentation-generation`) — Stage 11
+
+**Conclusión:** El ciclo completo establecido en `plan.md` ha sido ejecutado rigurosamente, validado con 144 pruebas deterministas automatizadas en verde y formalmente cerrado sin goldplating ni desviaciones contractuales.
+

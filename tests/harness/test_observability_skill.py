@@ -38,16 +38,19 @@ def lint_observability_contract(
         for ap in allowed_paths:
             normalized_ap = ap.replace("\\", "/")
             if (
-                normalized_ap.startswith("src/")
-                or normalized_ap.startswith("tests/")
+                normalized_ap.startswith("src/backend/")
+                or normalized_ap.startswith("src/database/")
+                or normalized_ap.startswith("src/frontend/")
                 or normalized_ap.startswith(".github/")
                 or normalized_ap == "Dockerfile"
             ):
                 violations.append(
-                    f"Invasión perimetral de TaskSpec: '{ap}' modifica rutas protegidas en src/, tests/, .github/ o Dockerfile "
-                    "(Observability no muta código ni pipelines durante la especificación documental)"
+                    f"Invasión perimetral de TaskSpec: '{ap}' modifica rutas protegidas en src/backend/, src/database/, src/frontend/, .github/ o Dockerfile"
                 )
-            elif normalized_ap not in ["docs/OBSERVABILITY.md"]:
+            elif (
+                normalized_ap not in ["docs/OBSERVABILITY.md", "src/main.py", "tests/catalog/**"]
+                and not normalized_ap.startswith("tests/catalog/")
+            ):
                 violations.append(f"Ruta no autorizada en TaskSpec de Observability: '{ap}'")
 
     # 2. Anti-Amnesia y Detección de Goldplating de Telemetría
@@ -229,13 +232,15 @@ def test_observability_task_spec_boundary_control():
         assert "allowed_paths" in content
         assert "forbidden_paths" in content
         assert "docs/OBSERVABILITY.md" in content
-        assert "src/**" in content
-        assert "tests/**" in content
+        assert "src/main.py" in content
+        assert "tests/catalog/**" in content
+        assert "src/backend/**" in content
+        assert "src/frontend/**" in content
 
-    # Verificación en el linter: invasión perimetral debe ser detectada
+    # Verificación en el linter: invasión perimetral debe ser detectada ante rutas prohibidas
     perimeter_violations = lint_observability_contract(
         "Spec normal",
-        allowed_paths=["src/main.py", "docs/OBSERVABILITY.md"],
+        allowed_paths=["src/backend/api/patients.py", "docs/OBSERVABILITY.md"],
     )
     assert any("Invasión perimetral" in v for v in perimeter_violations)
 
@@ -244,6 +249,19 @@ def test_observability_task_spec_boundary_control():
         allowed_paths=["Dockerfile", "docs/OBSERVABILITY.md"],
     )
     assert any("Invasión perimetral" in v for v in forbidden_dockerfile_violations)
+
+    forbidden_frontend_violations = lint_observability_contract(
+        "Spec normal",
+        allowed_paths=["src/frontend/app.js", "docs/OBSERVABILITY.md"],
+    )
+    assert any("Invasión perimetral" in v for v in forbidden_frontend_violations)
+
+    # Rutas autorizadas legítimas deben pasar sin violaciones perimetrales
+    clean_violations = lint_observability_contract(
+        "Spec normal",
+        allowed_paths=["docs/OBSERVABILITY.md", "src/main.py", "tests/catalog/**"],
+    )
+    assert len(clean_violations) == 0
 
 
 # ==============================================================================

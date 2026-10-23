@@ -88,6 +88,19 @@ curl -f http://localhost:8000/health
 curl -f http://localhost:8000/api/v1/products
 ```
 
+#### 5.2.1 Registro de Evidencia de Validación Operativa Real (Prueba de Humo en Docker)
+La operatividad física del contenedor fue validada de forma determinista en el entorno local (Docker Engine 28.4.0 en Docker Desktop):
+
+| Etapa de Validación | Comando Operativo Ejecutado | Resultado Observado | Criterio de Éxito y Seguridad |
+| :--- | :--- | :--- | :--- |
+| **Construcción Inmutable** | `docker build -t catalogo-carrito:audit .` | `Successfully built` (Multi-stage: builder + runtime) | Imagen limpia generada exclusivamente con artefactos de producción y dependencias de `requirements.txt`. |
+| **Arranque en Aislamiento** | `docker run -d --name catalogo-audit-test -p 8001:8000 catalogo-carrito:audit` | Contenedor activo `Up (healthy)` en puerto 8001 | Arranque exitoso del servidor uvicorn y enlace a interfaces de red. |
+| **Sondeo de Liveness (`HC-001`)** | `GET http://localhost:8001/health` | `HTTP 200` — `{"status":"healthy","database":"connected"}` | Conectividad relacional verificada con SQLite embebida activa. |
+| **Consulta de Catálogo (`EP-001`)** | `GET http://localhost:8001/api/v1/products` | `HTTP 200` — 5 ítems (`SEED-001`) precargados | Integridad del catálogo comercial verificada en runtime de contenedor. |
+| **Usuario sin Privilegios** | `docker exec catalogo-audit-test id` | `uid=1000(appuser) gid=1000(appuser)` | `SEC-CTRL-001` y principio de menor privilegio verificados en ejecución. |
+| **Limpieza y Desmantelamiento** | `docker rm -f catalogo-audit-test` | Contenedor eliminado limpiamente | Sin procesos huérfanos ni ocupación residual de puertos. |
+| **Regresión de Suite Completa** | `pytest -q` | `150 passed` | Cero fallos y cero regresiones en la suite determinista del sistema. |
+
 ---
 
 ## 6. Matriz de Linaje con ARCHITECTURE.md, SECURITY.md y CICD.md

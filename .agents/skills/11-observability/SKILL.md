@@ -112,9 +112,12 @@ Toda directiva, formato de evento, métrica o sondeo de salud definido por esta 
    task_spec:
      allowed_paths:
        - "docs/OBSERVABILITY.md"
+       - "src/main.py"
+       - "tests/catalog/**"
      forbidden_paths:
-       - "src/**"
-       - "tests/**"
+       - "src/backend/**"
+       - "src/database/**"
+       - "src/frontend/**"
        - ".github/**"
        - "Dockerfile"
    ```

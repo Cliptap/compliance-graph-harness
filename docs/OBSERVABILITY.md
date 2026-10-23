@@ -128,7 +128,7 @@ En concordancia con el principio de proporcionalidad del MVP, el monitoreo del s
 
 ### 5.3 Sondeo de Salud Operativa (`HC-001`)
 - **Definición:** Endpoint nativo de verificación de liveness expuesto en `GET /health` ([`src/main.py`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/main.py#L57-L61)).
-- **Respuesta Estándar:** `{"status": "healthy"}` con código HTTP 200.
+- **Respuesta Estándar:** `{"status": "healthy", "database": "connected"}` con código HTTP 200 (o `503 Service Unavailable` con `{"status": "unhealthy", "database": "disconnected"}` si SQLite falla).
 - **Integración con Despliegue:** Consumido por la directiva `HEALTHCHECK` del contenedor Docker formalizada en [`docs/DEPLOYMENT.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md#L68-L72):
   ```dockerfile
   HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

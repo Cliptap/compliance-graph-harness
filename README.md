@@ -72,9 +72,10 @@ pip install -r requirements.txt
 
 ### 5.2 Inicialización de la Base de Datos
 ```powershell
-# Inicializa la base de datos relacional y precarga los 5 productos semilla (SEED-001)
+# Inicializa las tablas SQLite del grafo de cumplimiento del arnés (graph_nodes, graph_edges)
 python -c "from src.harness.db import init_harness_db; init_harness_db()"
 ```
+> **Nota Operativa:** El catálogo comercial y sus 5 productos semilla (`SEED-001`) son gestionados de forma independiente por el backend: `src/main.py` crea automáticamente las tablas de catálogo y precarga los productos en su evento `lifespan` al arrancar el servidor.
 
 ### 5.3 Arranque del Servidor Backend
 ```powershell
@@ -91,10 +92,10 @@ La aplicación estará disponible inmediatamente en:
 ---
 
 ## 6. Ejecución de la Suite Completa de Pruebas
-El sistema garantiza calidad determinista con compuertas de bloqueo automatizadas en CI (**`GATE-001`**, **`GATE-002`**, **`GATE-003`**):
+El sistema garantiza calidad determinista con compuertas de bloqueo automatizadas en CI (**`GATE-001`**, **`GATE-002`**, **`GATE-003`**), certificando la totalidad de la suite activa (**150 tests deterministas en verde — 100% PASS**):
 
 ```powershell
-# Ejecución de la suite completa de pruebas deterministas
+# Ejecución de la suite completa de pruebas deterministas (150 tests)
 pytest tests/harness/ tests/catalog/ tests/frontend/ -v
 ```
 

@@ -16,7 +16,8 @@ El sistema **Catálogo Comercial y Carrito de Compras Desacoplado** (`catalogo-c
 De conformidad con [`docs/PRD.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md):
 - **REQ-001 (Visualización de Catálogo):** Consulta pública y paginada de productos comerciales disponibles, exponiendo denominación, descripción y precio unitario en moneda base.
 - **REQ-002 (Búsqueda Textual):** Filtrado insensible a mayúsculas sobre el nombre de producto mediante parámetro de consulta (`q`), con cota máxima de 100 caracteres.
-- **REQ-003 (Gestión de Carrito en Cliente):** Incorporación reactiva de ítems, modificación de cantidades, remoción unitaria y vaciado integral de compras, computando subtotales y total consolidado en tiempo real.
+- **REQ-003 (Gestión de Carrito en Cliente):** Incorporación reactiva de ítems desde el catálogo hacia el carrito de compras con cantidad inicial.
+- **REQ-004 (Modificación Interactiva de Carrito):** Modificación dinámica de cantidades (incrementar, reducir y remover ítems), recalculando subtotales y total general en tiempo real.
 
 ### 1.2 Límites de Alcance Inmutables (`OUT OF SCOPE`)
 Por decisión contractual y mandato Anti-Amnesia, se excluyen de forma permanente del sistema:
@@ -137,14 +138,14 @@ La siguiente matriz certifica la integridad y linaje ininterrumpido a lo largo d
 
 | Etapa | Nombre Canónico de la Skill | Insumos Upstream Consumidos | Contrato / Directiva Formal | Artefacto de Salida Emitido | Cobertura y Verificación |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **01** | `01-prd` | Requerimiento de negocio | `REQ-001` a `REQ-003`, `AC-001` a `AC-006` | [`docs/PRD.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) | Alcance MVP, 0 pagos, 0 cuentas, baja gobernanza. |
+| **01** | `01-prd` | Requerimiento de negocio | `REQ-001` a `REQ-004`, `AC-001` a `AC-006` | [`docs/PRD.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) | Alcance MVP, 0 pagos, 0 cuentas, baja gobernanza. |
 | **02** | `02-architecture` | `docs/PRD.md` | `AD-001` a `AD-007`, `COMP-001`, `COMP-002` | [`docs/ARCHITECTURE.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) | Monolito desacoplado, SQLite embebido, carrito en cliente. |
 | **03** | `03-data-modeling` | `PRD`, `ARCHITECTURE` | `ENT-001`, `INV-001` a `INV-004`, `SEED-001` | [`docs/DATA_MODEL.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md) | Esquema relacional de catálogo y DTO de carrito. |
 | **04** | `04-api-design` | `PRD`, `ARCHITECTURE`, `DATA_MODEL` | `EP-001`, `EP-002`, `DTO-ERR-001`, `ERR-xxx` | [`docs/API_DESIGN.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/API_DESIGN.md) | API REST `/api/v1` de solo lectura y Fail-Fast. |
 | **05** | `05-backend` | `ARCHITECTURE`, `DATA_MODEL`, `API` | `src/catalog/`, `src/shared/`, `src/main.py` | [`src/main.py`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/main.py) | FastAPI + SQLite con datos semilla e invariantes. |
 | **06** | `06-frontend` | `PRD`, `ARCHITECTURE`, `API` | `src/frontend/` (HTML/CSS/JS Vanilla) | [`src/frontend/index.html`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/frontend/index.html) | UI reactiva en cliente sin dependencias pesadas. |
 | **07** | `07-auth` | `PRD`, `ARCHITECTURE`, `SECURITY` | `SEC-CTRL-001` a `005`, `SEC-DEC-001` | [`docs/SECURITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md) | Modo visitante anónimo y cero fugas CWE-532. |
-| **08** | `08-testing` | `PRD`, `ARCHITECTURE`, `TEST_PLAN` | Matriz AC -> Test, Acceptance Coverage | [`docs/TEST_PLAN.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md) | 100.0% cobertura de requisitos sin tests huérfanos. |
+| **08** | `08-testing` | `PRD`, `ARCHITECTURE`, `TEST_PLAN` | Matriz AC -> Test, Acceptance Coverage | [`docs/TEST_PLAN.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md) | 100.0% cobertura de requisitos sin tests huérfanos (150 tests deterministas). |
 | **09** | `09-cicd` | `TEST_PLAN`, `ARCHITECTURE` | `PIPE-001`, `GATE-001`, `002`, `003` | [`docs/CICD.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/CICD.md), [`.github/workflows/ci.yml`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.github/workflows/ci.yml) | Pipeline continuo reproducible en GitHub Actions. |
 | **10** | `10-deployment` | `ARCHITECTURE`, `CICD`, `SECURITY` | `DEP-001`, `HC-001`, Non-Root User | [`docs/DEPLOYMENT.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md), [`Dockerfile`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/Dockerfile) | Contenedor multi-stage Python 3.12 y sondeo `/health`. |
 | **11** | `11-observability`| `PRD`, `ARCHITECTURE`, `DEPLOYMENT` | `LOG-001`, `OBS-001`, `002`, `MET-001` | [`docs/OBSERVABILITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/OBSERVABILITY.md) | Logging JSON a stdout y correlación por `X-Request-ID`. |
