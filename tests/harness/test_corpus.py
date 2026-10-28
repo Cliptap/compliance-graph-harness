@@ -1,10 +1,38 @@
-from harness.eval.corpus import detect, load_cases, score
+from harness.eval.corpus import (
+    WARNING_TARGETS,
+    detect,
+    detect_warnings,
+    load_cases,
+    score,
+    score_warnings,
+)
 
 
 def test_no_false_positives_on_clean_controls():
     for case in load_cases():
         if case["kind"] == "clean":
             assert detect(case) == set(), case["id"]
+
+
+def test_warning_only_detectors_are_measured():
+    stats = score_warnings(load_cases())
+    for policy in WARNING_TARGETS:
+        assert stats[policy]["precision"] == 1.0, policy
+        assert stats[policy]["recall"] == 1.0, policy
+
+
+def test_every_warning_detector_has_a_seeded_and_a_clean_case():
+    cases = load_cases()
+    for policy in WARNING_TARGETS:
+        assert any(policy in c.get("expected_warnings", []) for c in cases), policy
+        assert any(policy in c.get("warning_clean", []) for c in cases), policy
+
+
+def test_warning_clean_cases_do_not_warn_for_the_named_policy():
+    for case in load_cases():
+        got = detect_warnings(case)
+        for policy in case.get("warning_clean", []):
+            assert policy not in got, (case["id"], policy)
 
 
 def test_all_easy_seeded_defects_are_detected():

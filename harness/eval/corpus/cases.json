@@ -1,36 +1,449 @@
 [
- {"id":"log-rut-fstring","kind":"seeded","path":"src/backend/api/a.py","expected":["privacy.cwe_532"],"code":"import logging\nlogger = logging.getLogger(__name__)\n\ndef f(p):\n    logger.info(f'patient {p.rut} created')\n"},
- {"id":"log-diagnosis-print","kind":"seeded","path":"src/backend/services/b.py","expected":["privacy.cwe_532"],"code":"def f(rec):\n    print('dx', rec.diagnosis)\n"},
- {"id":"log-masked","kind":"clean","path":"src/backend/api/c.py","expected":[],"code":"def f(p):\n    logger.info('patient %s', mask_rut(p.rut))\n"},
- {"id":"log-no-sensitive","kind":"clean","path":"src/backend/api/d.py","expected":[],"code":"def f(p):\n    logger.info('patient created id=%s', p.id)\n"},
- {"id":"log-via-variable","kind":"seeded-hard","tags":["flow"],"path":"src/backend/api/e.py","expected":["privacy.cwe_532"],"code":"def f(p):\n    msg = 'rut=' + p.rut\n    logger.info(msg)\n"},
- {"id":"log-word-in-comment","kind":"clean","path":"src/backend/api/f.py","expected":[],"code":"def f(p):\n    # never print the rut here\n    return p.id\n"},
- {"id":"api-dict-rut","kind":"seeded","path":"src/backend/api/g.py","expected":["privacy.api_exposure"],"code":"@router.get('/p/{pid}')\ndef get_p(pid):\n    p = load(pid)\n    return {'id': p.id, 'rut': p.rut}\n"},
- {"id":"api-model-password","kind":"seeded","path":"src/backend/api/h.py","expected":["privacy.api_exposure"],"code":"class UserOut(BaseModel):\n    username: str\n    hashed_password: str\n\n@router.get('/u', response_model=UserOut)\ndef get_u():\n    return load()\n"},
- {"id":"api-dict-masked","kind":"clean","path":"src/backend/api/i.py","expected":[],"code":"@router.get('/p')\ndef get_p():\n    return {'id': 1, 'rut': mask_rut(p.rut)}\n"},
- {"id":"api-token-login","kind":"clean","path":"src/backend/api/j.py","expected":[],"code":"@router.post('/token')\ndef login():\n    return {'access_token': t, 'token_type': 'bearer'}\n"},
- {"id":"api-imported-model-password","kind":"seeded-hard","path":"src/backend/api/k.py","expected":["privacy.api_exposure"],"code":"from schemas import UserWithPassword\n\n@router.get('/u', response_model=UserWithPassword)\ndef get_u():\n    return load()\n"},
- {"id":"api-model-dump-all","kind":"seeded-hard","path":"src/backend/api/l.py","expected":["privacy.api_exposure"],"code":"@router.get('/p')\ndef get_p():\n    return patient.__dict__\n"},
- {"id":"del-session-delete-patient","kind":"seeded","path":"src/backend/api/m.py","expected":["domain.prohibited_deletion"],"code":"def rm(db, patient):\n    db.session.delete(patient)\n"},
- {"id":"del-soft-delete","kind":"clean","path":"src/backend/api/n.py","expected":[],"code":"def rm(db, patient):\n    patient.deleted_at = now()\n    patient.status = 'BLOCKED_LEGAL_HOLD'\n"},
- {"id":"del-non-clinical","kind":"clean","path":"src/backend/api/o.py","expected":[],"code":"def clear(db):\n    db.session.delete(temp_file_row)\n"},
- {"id":"del-raw-sql","kind":"seeded-hard","path":"src/backend/api/p.py","expected":["domain.prohibited_deletion"],"code":"def rm(db, pid):\n    db.execute(text('DELETE FROM appointments WHERE id = :i'), {'i': pid})\n"},
- {"id":"pay-orm-card-number","kind":"seeded","path":"src/shop/models.py","expected":["privacy.payment_data_storage"],"code":"from sqlalchemy import Column, String\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    id = Column(String, primary_key=True)\n    card_number = Column(String(19))\n"},
- {"id":"pay-orm-cvv-mapped","kind":"seeded","path":"src/shop/models.py","expected":["privacy.payment_data_storage"],"code":"from sqlalchemy.orm import Mapped, mapped_column\n\nclass Card(Base):\n    __tablename__ = 'cards'\n    id: Mapped[int] = mapped_column(primary_key=True)\n    cvv: Mapped[str] = mapped_column(String(4))\n"},
- {"id":"pay-orm-token-last4","kind":"clean","path":"src/shop/models.py","expected":[],"code":"from sqlalchemy import Column, String\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    id = Column(String, primary_key=True)\n    gateway_token = Column(String(64))\n    card_last4 = Column(String(4))\n"},
- {"id":"pay-request-schema-card","kind":"clean","path":"src/shop/schemas.py","expected":[],"code":"from pydantic import BaseModel\n\nclass CheckoutIn(BaseModel):\n    card_number: str\n    cvv: str\n"},
- {"id":"pay-orm-card-encrypted","kind":"clean","path":"src/shop/models.py","expected":[],"code":"from sqlalchemy import Column\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    card_number = Column(EncryptedType(String, key))\n"},
- {"id":"pay-json-blob","kind":"seeded-hard","path":"src/shop/models.py","expected":["privacy.payment_data_storage"],"code":"from sqlalchemy import Column, JSON\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    payload = Column(JSON)\n\ndef save(db, form):\n    db.add(Payment(payload={'pan': form.pan, 'cvv': form.cvv}))\n"},
- {"id":"flow-param-to-logger","kind":"seeded","tags":["flow"],"path":"src/backend/services/q.py","expected":["privacy.cwe_532"],"code":"import logging\nlogger = logging.getLogger(__name__)\n\ndef audit(value):\n    logger.info('value=%s', value)\n\ndef create(p):\n    audit(p.rut)\n"},
- {"id":"flow-return-to-print","kind":"seeded","tags":["flow"],"path":"src/backend/services/r.py","expected":["privacy.cwe_532"],"code":"def describe(rec):\n    return 'dx ' + rec.diagnosis\n\ndef show(rec):\n    print(describe(rec))\n"},
- {"id":"flow-dict-payload","kind":"seeded","tags":["flow"],"path":"src/backend/api/s.py","expected":["privacy.cwe_532"],"code":"def handle(form):\n    payload = {'rut': form.rut, 'name': form.name}\n    logger.info('request %s', payload)\n"},
- {"id":"flow-two-hops","kind":"seeded","tags":["flow"],"path":"src/backend/services/t.py","expected":["privacy.cwe_532"],"code":"def emit(msg):\n    print(msg)\n\ndef wrap(x):\n    emit('patient ' + x)\n\ndef job(p):\n    wrap(p.rut)\n"},
- {"id":"flow-self-method","kind":"seeded","tags":["flow"],"path":"src/backend/services/u.py","expected":["privacy.cwe_532"],"code":"class Service:\n    def _trace(self, data):\n        logger.debug(data)\n\n    def register(self, p):\n        self._trace(p.diagnosis)\n"},
- {"id":"flow-fstring-variable","kind":"seeded","tags":["flow"],"path":"src/backend/services/v.py","expected":["privacy.cwe_532"],"code":"def f(rec):\n    note = rec.clinical_notes\n    print(f'note: {note}')\n"},
- {"id":"flow-masked-variable","kind":"clean","tags":["flow"],"path":"src/backend/api/w.py","expected":[],"code":"def f(p):\n    safe = mask_rut(p.rut)\n    logger.info('patient %s', safe)\n"},
- {"id":"flow-reassigned-clean","kind":"clean","tags":["flow"],"path":"src/backend/api/x.py","expected":[],"code":"def f(p):\n    msg = p.rut\n    msg = 'patient created'\n    logger.info(msg)\n"},
- {"id":"flow-clean-arg-to-logger","kind":"clean","tags":["flow"],"path":"src/backend/services/y.py","expected":[],"code":"def audit(value):\n    logger.info('value=%s', value)\n\ndef create(p):\n    audit(p.id)\n"},
- {"id":"flow-lookup-by-rut","kind":"clean","tags":["flow"],"path":"src/backend/services/z.py","expected":[],"code":"def f(repo, p):\n    patient = repo.find(p.rut)\n    logger.info('found patient %s', patient.id)\n"},
- {"id":"flow-param-not-logged","kind":"clean","tags":["flow"],"path":"src/backend/services/aa.py","expected":[],"code":"def valid(v):\n    return len(v) == 9\n\ndef f(p):\n    ok = valid(p.rut)\n    logger.info('valid=%s', ok)\n"},
- {"id":"flow-run-variable","kind":"clean","tags":["flow"],"path":"harness/eval/ab.py","expected":[],"code":"def report(results):\n    run = results[0]\n    score = run.get('cc_avg')\n    print(f'cc={score}')\n"}
+  {
+    "id": "log-rut-fstring",
+    "kind": "seeded",
+    "path": "src/backend/api/a.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "import logging\nlogger = logging.getLogger(__name__)\n\ndef f(p):\n    logger.info(f'patient {p.rut} created')\n"
+  },
+  {
+    "id": "log-diagnosis-print",
+    "kind": "seeded",
+    "path": "src/backend/services/b.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "def f(rec):\n    print('dx', rec.diagnosis)\n"
+  },
+  {
+    "id": "log-masked",
+    "kind": "clean",
+    "path": "src/backend/api/c.py",
+    "expected": [],
+    "code": "def f(p):\n    logger.info('patient %s', mask_rut(p.rut))\n"
+  },
+  {
+    "id": "log-no-sensitive",
+    "kind": "clean",
+    "path": "src/backend/api/d.py",
+    "expected": [],
+    "code": "def f(p):\n    logger.info('patient created id=%s', p.id)\n"
+  },
+  {
+    "id": "log-via-variable",
+    "kind": "seeded-hard",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/api/e.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "def f(p):\n    msg = 'rut=' + p.rut\n    logger.info(msg)\n"
+  },
+  {
+    "id": "log-word-in-comment",
+    "kind": "clean",
+    "path": "src/backend/api/f.py",
+    "expected": [],
+    "code": "def f(p):\n    # never print the rut here\n    return p.id\n"
+  },
+  {
+    "id": "api-dict-rut",
+    "kind": "seeded",
+    "path": "src/backend/api/g.py",
+    "expected": [
+      "privacy.api_exposure"
+    ],
+    "code": "@router.get('/p/{pid}')\ndef get_p(pid):\n    p = load(pid)\n    return {'id': p.id, 'rut': p.rut}\n"
+  },
+  {
+    "id": "api-model-password",
+    "kind": "seeded",
+    "path": "src/backend/api/h.py",
+    "expected": [
+      "privacy.api_exposure"
+    ],
+    "code": "class UserOut(BaseModel):\n    username: str\n    hashed_password: str\n\n@router.get('/u', response_model=UserOut)\ndef get_u():\n    return load()\n"
+  },
+  {
+    "id": "api-dict-masked",
+    "kind": "clean",
+    "path": "src/backend/api/i.py",
+    "expected": [],
+    "code": "@router.get('/p')\ndef get_p():\n    return {'id': 1, 'rut': mask_rut(p.rut)}\n"
+  },
+  {
+    "id": "api-token-login",
+    "kind": "clean",
+    "path": "src/backend/api/j.py",
+    "expected": [],
+    "code": "@router.post('/token')\ndef login():\n    return {'access_token': t, 'token_type': 'bearer'}\n"
+  },
+  {
+    "id": "api-imported-model-password",
+    "kind": "seeded-hard",
+    "path": "src/backend/api/k.py",
+    "expected": [
+      "privacy.api_exposure"
+    ],
+    "code": "from schemas import UserWithPassword\n\n@router.get('/u', response_model=UserWithPassword)\ndef get_u():\n    return load()\n"
+  },
+  {
+    "id": "api-model-dump-all",
+    "kind": "seeded-hard",
+    "path": "src/backend/api/l.py",
+    "expected": [
+      "privacy.api_exposure"
+    ],
+    "code": "@router.get('/p')\ndef get_p():\n    return patient.__dict__\n"
+  },
+  {
+    "id": "del-session-delete-patient",
+    "kind": "seeded",
+    "path": "src/backend/api/m.py",
+    "expected": [
+      "domain.prohibited_deletion"
+    ],
+    "code": "def rm(db, patient):\n    db.session.delete(patient)\n"
+  },
+  {
+    "id": "del-soft-delete",
+    "kind": "clean",
+    "path": "src/backend/api/n.py",
+    "expected": [],
+    "code": "def rm(db, patient):\n    patient.deleted_at = now()\n    patient.status = 'BLOCKED_LEGAL_HOLD'\n"
+  },
+  {
+    "id": "del-non-clinical",
+    "kind": "clean",
+    "path": "src/backend/api/o.py",
+    "expected": [],
+    "code": "def clear(db):\n    db.session.delete(temp_file_row)\n"
+  },
+  {
+    "id": "del-raw-sql",
+    "kind": "seeded-hard",
+    "path": "src/backend/api/p.py",
+    "expected": [
+      "domain.prohibited_deletion"
+    ],
+    "code": "def rm(db, pid):\n    db.execute(text('DELETE FROM appointments WHERE id = :i'), {'i': pid})\n"
+  },
+  {
+    "id": "pay-orm-card-number",
+    "kind": "seeded",
+    "path": "src/shop/models.py",
+    "expected": [
+      "privacy.payment_data_storage"
+    ],
+    "code": "from sqlalchemy import Column, String\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    id = Column(String, primary_key=True)\n    card_number = Column(String(19))\n"
+  },
+  {
+    "id": "pay-orm-cvv-mapped",
+    "kind": "seeded",
+    "path": "src/shop/models.py",
+    "expected": [
+      "privacy.payment_data_storage"
+    ],
+    "code": "from sqlalchemy.orm import Mapped, mapped_column\n\nclass Card(Base):\n    __tablename__ = 'cards'\n    id: Mapped[int] = mapped_column(primary_key=True)\n    cvv: Mapped[str] = mapped_column(String(4))\n"
+  },
+  {
+    "id": "pay-orm-token-last4",
+    "kind": "clean",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "code": "from sqlalchemy import Column, String\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    id = Column(String, primary_key=True)\n    gateway_token = Column(String(64))\n    card_last4 = Column(String(4))\n"
+  },
+  {
+    "id": "pay-request-schema-card",
+    "kind": "clean",
+    "path": "src/shop/schemas.py",
+    "expected": [],
+    "code": "from pydantic import BaseModel\n\nclass CheckoutIn(BaseModel):\n    card_number: str\n    cvv: str\n"
+  },
+  {
+    "id": "pay-orm-card-encrypted",
+    "kind": "clean",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "code": "from sqlalchemy import Column\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    card_number = Column(EncryptedType(String, key))\n"
+  },
+  {
+    "id": "pay-json-blob",
+    "kind": "seeded-hard",
+    "path": "src/shop/models.py",
+    "expected": [
+      "privacy.payment_data_storage"
+    ],
+    "code": "from sqlalchemy import Column, JSON\n\nclass Payment(Base):\n    __tablename__ = 'payments'\n    payload = Column(JSON)\n\ndef save(db, form):\n    db.add(Payment(payload={'pan': form.pan, 'cvv': form.cvv}))\n"
+  },
+  {
+    "id": "flow-param-to-logger",
+    "kind": "seeded",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/q.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "import logging\nlogger = logging.getLogger(__name__)\n\ndef audit(value):\n    logger.info('value=%s', value)\n\ndef create(p):\n    audit(p.rut)\n"
+  },
+  {
+    "id": "flow-return-to-print",
+    "kind": "seeded",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/r.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "def describe(rec):\n    return 'dx ' + rec.diagnosis\n\ndef show(rec):\n    print(describe(rec))\n"
+  },
+  {
+    "id": "flow-dict-payload",
+    "kind": "seeded",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/api/s.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "def handle(form):\n    payload = {'rut': form.rut, 'name': form.name}\n    logger.info('request %s', payload)\n"
+  },
+  {
+    "id": "flow-two-hops",
+    "kind": "seeded",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/t.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "def emit(msg):\n    print(msg)\n\ndef wrap(x):\n    emit('patient ' + x)\n\ndef job(p):\n    wrap(p.rut)\n"
+  },
+  {
+    "id": "flow-self-method",
+    "kind": "seeded",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/u.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "class Service:\n    def _trace(self, data):\n        logger.debug(data)\n\n    def register(self, p):\n        self._trace(p.diagnosis)\n"
+  },
+  {
+    "id": "flow-fstring-variable",
+    "kind": "seeded",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/v.py",
+    "expected": [
+      "privacy.cwe_532"
+    ],
+    "code": "def f(rec):\n    note = rec.clinical_notes\n    print(f'note: {note}')\n"
+  },
+  {
+    "id": "flow-masked-variable",
+    "kind": "clean",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/api/w.py",
+    "expected": [],
+    "code": "def f(p):\n    safe = mask_rut(p.rut)\n    logger.info('patient %s', safe)\n"
+  },
+  {
+    "id": "flow-reassigned-clean",
+    "kind": "clean",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/api/x.py",
+    "expected": [],
+    "code": "def f(p):\n    msg = p.rut\n    msg = 'patient created'\n    logger.info(msg)\n"
+  },
+  {
+    "id": "flow-clean-arg-to-logger",
+    "kind": "clean",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/y.py",
+    "expected": [],
+    "code": "def audit(value):\n    logger.info('value=%s', value)\n\ndef create(p):\n    audit(p.id)\n"
+  },
+  {
+    "id": "flow-lookup-by-rut",
+    "kind": "clean",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/z.py",
+    "expected": [],
+    "code": "def f(repo, p):\n    patient = repo.find(p.rut)\n    logger.info('found patient %s', patient.id)\n"
+  },
+  {
+    "id": "flow-param-not-logged",
+    "kind": "clean",
+    "tags": [
+      "flow"
+    ],
+    "path": "src/backend/services/aa.py",
+    "expected": [],
+    "code": "def valid(v):\n    return len(v) == 9\n\ndef f(p):\n    ok = valid(p.rut)\n    logger.info('valid=%s', ok)\n"
+  },
+  {
+    "id": "flow-run-variable",
+    "kind": "clean",
+    "tags": [
+      "flow"
+    ],
+    "path": "harness/eval/ab.py",
+    "expected": [],
+    "code": "def report(results):\n    run = results[0]\n    score = run.get('cc_avg')\n    print(f'cc={score}')\n"
+  },
+  {
+    "id": "consent-preticked-default",
+    "kind": "seeded",
+    "path": "src/shop/models.py",
+    "expected": [
+      "privacy.consent_transparency"
+    ],
+    "code": "from sqlalchemy import Boolean, Column, String\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n    marketing_consent = Column(Boolean, default=True)\n"
+  },
+  {
+    "id": "consent-optin-default-false",
+    "kind": "clean",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "code": "from sqlalchemy import Boolean, Column, String\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n    marketing_consent = Column(Boolean, default=False)\n"
+  },
+  {
+    "id": "sensitive-biometric-raw",
+    "kind": "seeded",
+    "path": "src/shop/models.py",
+    "expected": [
+      "privacy.minors_and_sensitive"
+    ],
+    "code": "from sqlalchemy import Column, LargeBinary\n\nclass BiometricProfile(Base):\n    __tablename__ = 'biometric_profiles'\n    face_encoding = Column(LargeBinary)\n"
+  },
+  {
+    "id": "sensitive-biometric-token",
+    "kind": "clean",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "code": "from sqlalchemy import Column, String\n\nclass BiometricProfile(Base):\n    __tablename__ = 'biometric_profiles'\n    face_template_id = Column(String)\n"
+  },
+  {
+    "id": "rights-seeded-missing",
+    "kind": "seeded-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "expected_warnings": [
+      "privacy.rights_reachability"
+    ],
+    "code": "from sqlalchemy import Column, String\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n    rut = Column(String)\n"
+  },
+  {
+    "id": "rights-clean-routes",
+    "kind": "clean-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "warning_clean": [
+      "privacy.rights_reachability",
+      "privacy.retention_minimization",
+      "privacy.consent_transparency"
+    ],
+    "code": "from sqlalchemy import Boolean, Column, DateTime, Integer, String\nfrom fastapi import APIRouter\nrouter = APIRouter()\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n    rut = Column(String)\n    blocked = Column(Boolean, default=False)\n    requested_at = Column(DateTime)\n    retention_days = Column(Integer)\n\n@router.get('/me/data')\ndef read_me(): ...\n@router.patch('/me/update')\ndef update_me(): ...\n@router.delete('/me/delete')\ndef delete_me(): ...\n@router.post('/me/opposition')\ndef oppose(): ...\n@router.get('/me/export')\ndef export_me(): ...\n@router.post('/me/block')\ndef block_me(): ...\n@router.get('/privacy/policy')\ndef policy(): ...\n"
+  },
+  {
+    "id": "retention-seeded-missing",
+    "kind": "seeded-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "expected_warnings": [
+      "privacy.retention_minimization"
+    ],
+    "code": "from sqlalchemy import Column, String\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n"
+  },
+  {
+    "id": "retention-clean-field",
+    "kind": "clean-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "warning_clean": [
+      "privacy.retention_minimization"
+    ],
+    "code": "from sqlalchemy import Column, Integer, String\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n    retention_days = Column(Integer)\n"
+  },
+  {
+    "id": "transfers-seeded-host",
+    "kind": "seeded-warning",
+    "path": "src/shop/sync.py",
+    "expected": [],
+    "expected_warnings": [
+      "privacy.third_party_transfers"
+    ],
+    "code": "from sqlalchemy import Column, String\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n\nSTRIPE_URL = 'https://api.stripe.com/v1/charges'\n"
+  },
+  {
+    "id": "transfers-clean-local",
+    "kind": "clean-warning",
+    "path": "src/shop/sync.py",
+    "expected": [],
+    "warning_clean": [
+      "privacy.third_party_transfers"
+    ],
+    "code": "from sqlalchemy import Column, String\n\nclass Customer(Base):\n    __tablename__ = 'customers'\n    email = Column(String)\n\nLOCAL_URL = 'http://localhost:8000/health'\n"
+  },
+  {
+    "id": "consent-seeded-incomplete-record",
+    "kind": "seeded-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "expected_warnings": [
+      "privacy.consent_transparency"
+    ],
+    "code": "from sqlalchemy import Boolean, Column, String\n\nclass Consent(Base):\n    __tablename__ = 'consents'\n    email = Column(String)\n    marketing_consent = Column(Boolean, default=False)\n"
+  },
+  {
+    "id": "consent-clean-record",
+    "kind": "clean-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "warning_clean": [
+      "privacy.consent_transparency"
+    ],
+    "code": "from sqlalchemy import Boolean, Column, DateTime, String\nfrom fastapi import APIRouter\nrouter = APIRouter()\n\nclass Consent(Base):\n    __tablename__ = 'consents'\n    email = Column(String)\n    marketing_consent = Column(Boolean, default=False)\n    purpose = Column(String)\n    version = Column(String)\n    granted_at = Column(DateTime)\n\n@router.post('/consent')\ndef grant(): ...\n@router.delete('/consent/revoke')\ndef revoke(): ...\n@router.get('/privacy/policy')\ndef policy(): ...\n"
+  },
+  {
+    "id": "minors-seeded-age",
+    "kind": "seeded-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "expected_warnings": [
+      "privacy.minors_and_sensitive"
+    ],
+    "code": "from sqlalchemy import Column, Date\n\nclass Shopper(Base):\n    __tablename__ = 'shoppers'\n    birth_date = Column(Date)\n"
+  },
+  {
+    "id": "minors-clean-age-gate",
+    "kind": "clean-warning",
+    "path": "src/shop/models.py",
+    "expected": [],
+    "warning_clean": [
+      "privacy.minors_and_sensitive"
+    ],
+    "code": "from sqlalchemy import Boolean, Column, Date\n\nclass Shopper(Base):\n    __tablename__ = 'shoppers'\n    birth_date = Column(Date)\n    explicit_consent = Column(Boolean, default=False)\n\ndef is_minor(age):\n    return age < 14\n"
+  }
 ]

@@ -13,6 +13,7 @@ from harness.eval.pilot_metrics import (
     collect_event_stats,
     compliance_score,
     context_relevance,
+    count_potential_risks,
     evaluate_policies,
     parse_pytest_summary,
 )
@@ -186,6 +187,18 @@ def test_compliance_score_weights_severity_and_ignores_scope():
     assert compliance_score([privacy]) == 75.0
     assert compliance_score([scope]) == 100.0
     assert compliance_score([privacy] * 5) == 0.0
+    warning = Finding(policy_id="privacy.rights_reachability", severity="MEDIUM", status="WARNING",
+                      file="c.py", message="m")
+    assert compliance_score([warning]) == 99.0
+
+
+def test_potential_risks_are_counted_separately_from_violations():
+    warning = Finding(policy_id="privacy.rights_reachability", severity="MEDIUM", status="WARNING",
+                      file="c.py", message="m")
+    violation = Finding(policy_id="privacy.cwe_532", severity="CRITICAL", file="d.py", message="m")
+    scope = Finding(policy_id="scope.forbidden_path", severity="CRITICAL", status="WARNING",
+                    file="e.py", message="m")
+    assert count_potential_risks([warning, violation, scope]) == 1
 
 
 def test_context_relevance_ratio():

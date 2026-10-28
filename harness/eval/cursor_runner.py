@@ -33,6 +33,7 @@ from harness.eval.pilot_metrics import (
     collect_event_stats,
     compliance_score,
     context_relevance,
+    count_potential_risks,
     evaluate_policies,
     run_pytest,
 )
@@ -233,10 +234,11 @@ def summarize_run(plan: RunPlan, live: dict[str, Any]) -> dict[str, Any]:
         },
         "governance": {
             "policy_violations": counts["policy"], "scope_violations": counts["scope"],
-            "privacy_findings": counts["privacy"], "architecture_violations": None,
+            "privacy_findings": counts["privacy"], "potential_risks_detected": count_potential_risks(findings),
+            "architecture_violations": None,
             "compliance_score": compliance_score(findings),
             "gate_rounds": _count_rounds(rounds, "compliance_feedback"),
-            "findings": [f.model_dump(include={"policy_id", "severity", "file", "line"}) for f in findings],
+            "findings": [f.model_dump(include={"policy_id", "severity", "status", "file", "line"}) for f in findings],
         },
         "context": {
             "files_read": stats.files_read, "files_read_count": len(stats.files_read),
