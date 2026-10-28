@@ -16,7 +16,7 @@ def test_all_easy_seeded_defects_are_detected():
 def test_hard_cases_are_documented_known_misses():
     # Recall limits are published, not hidden: update this list when a detector improves.
     missed = sorted(c["id"] for c in load_cases() if c["kind"] == "seeded-hard" and not detect(c))
-    assert missed == ["api-imported-model-password", "api-model-dump-all", "del-raw-sql", "log-via-variable"]
+    assert missed == ["api-imported-model-password", "api-model-dump-all", "del-raw-sql", "log-via-variable", "pay-json-blob"]
 
 
 def test_score_reports_precision_and_recall_per_policy():

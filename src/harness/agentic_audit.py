@@ -353,7 +353,7 @@ class StatelessAuditor:
                         title=criterion.title,
                         status="VIOLATION",
                         severity=criterion.severity,
-                        details=f"Infracción al deber de retención decenal (Art. 13 Ley 20.584): Borrado físico detectado en línea {bad_line}.",
+                        details=f"Infracción al deber de conservación por 15 años (Art. 13 Ley 20.584): Borrado físico detectado en línea {bad_line}.",
                         evidence_snippet=bad_snippet,
                         line_number=bad_line,
                         remediation_advice="Reemplazar borrado destructivo por marcado lógico (repo.soft_delete o status='BLOCKED_LEGAL_HOLD').",

@@ -149,7 +149,7 @@ class DataLineageEngine:
         else:
             self.categories = {
                 "SENSITIVE_HEALTH": {
-                    "fields": ["diagnosis", "clinical_notes", "medical_record", "treatment", "health_status", "status"]
+                    "fields": ["diagnosis", "clinical_notes", "medical_record", "treatment", "health_status"]
                 },
                 "IDENTIFIER_RUT": {
                     "fields": ["identifier", "rut", "run", "dni", "national_id"]

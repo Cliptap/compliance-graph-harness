@@ -8,7 +8,7 @@ from src.harness.contracts import TaskSpec
 from src.harness.policy_engine import PolicyEngine
 
 CASES = Path(__file__).with_name("corpus") / "cases.json"
-TARGETS = ("privacy.cwe_532", "privacy.api_exposure", "domain.prohibited_deletion")
+TARGETS = ("privacy.cwe_532", "privacy.api_exposure", "privacy.payment_data_storage", "domain.prohibited_deletion")
 SPEC = TaskSpec(task_id="corpus", goal="corpus", allowed_paths=["*"], forbidden_paths=[])
 
 

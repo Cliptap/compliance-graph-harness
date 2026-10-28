@@ -256,7 +256,7 @@ class SensitiveLoggingPolicy(BasePolicy):
 
 
 class DomainInvariantPolicy(BasePolicy):
-    """Salvaguarda invariantes del dominio clínico: retención decenal (Ley 20.584) y soft-delete obligatorio."""
+    """Salvaguarda invariantes del dominio clínico: conservación de 15 años (Ley 20.584) y soft-delete obligatorio."""
 
     DESTRUCTIVE_PATTERNS = [
         "session.delete",
@@ -310,7 +310,7 @@ class DomainInvariantPolicy(BasePolicy):
                             file=normalized_path,
                             line=idx,
                             message=(
-                                f"Infracción al deber de retención decenal de fichas médicas (Ley 20.584 Art. 13): "
+                                f"Infracción al deber de conservación por 15 años de fichas médicas (Ley 20.584 Art. 13): "
                                 f"Se detectó operación de borrado físico destructivo sobre entidad clínica."
                             ),
                             evidence=line.strip(),
@@ -378,11 +378,13 @@ class PolicyEngine:
     def __init__(self, policies: list[BasePolicy] | None = None):
         if policies is None:
             from src.harness.exposure_policy import ApiPersonalDataExposurePolicy  # avoids circular import
+            from src.harness.payment_policy import PaymentDataStoragePolicy
 
             self.policies: list[BasePolicy] = [
                 ScopePolicy(),
                 SensitiveLoggingPolicy(),
                 ApiPersonalDataExposurePolicy(),
+                PaymentDataStoragePolicy(),
                 DomainInvariantPolicy(),
                 DependencyPolicy(),
             ]
