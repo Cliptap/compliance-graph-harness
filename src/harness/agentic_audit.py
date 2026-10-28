@@ -33,11 +33,13 @@ class ChecklistCriterion(BaseModel):
     severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] = "CRITICAL"
     indicators: list[str] = Field(default_factory=list)
     prohibited_patterns: list[str] = Field(default_factory=list)
+    detection_type: str = "indicator"
+    evidence_kind: str = ""
 
 
 class ChecklistEvaluationResult(BaseModel):
     criterion_id: str
-    plugin_name: str  # "core_universal" | "health_clinical"
+    plugin_name: str  # "core_universal" | "health_clinical" | "ecommerce_retail"
     law_article: str
     title: str
     status: Literal["PASSED", "VIOLATION", "NOT_APPLICABLE"]
@@ -185,6 +187,21 @@ class StatelessAuditor:
         slice_data: dict[str, Any],
     ) -> ChecklistEvaluationResult:
         cid = criterion.id
+
+        # Controles manuales: el código no puede aportar la evidencia exigida
+        if criterion.detection_type == "manual":
+            return ChecklistEvaluationResult(
+                criterion_id=cid,
+                plugin_name=plugin_name,
+                law_article=criterion.law_article,
+                title=criterion.title,
+                status="NOT_APPLICABLE",
+                severity=criterion.severity,
+                details=(
+                    "Control de evidencia documental: no se evalúa desde el código; "
+                    f"requiere revisión de '{criterion.evidence_kind}'."
+                ),
+            )
 
         # CORE-CHECK-001: Privacidad desde el Diseño (Enmascaramiento / Cifrado)
         if cid == "CORE-CHECK-001":

@@ -6,12 +6,22 @@ control traces back to a legal source and declares:
 * ``requirement_type``: legal_obligation | risk_based_measure | internal_standard
 * ``applicability``: when the control applies
 * ``validation_mode``: how it is verified
-* ``legal_review``: pending | validated (nothing is trusted as law until validated)
+* ``legal_review``: pending | validated
 * ``detection`` / ``remediation`` / ``evidence``
 
 Every source carries a ``source_check`` (status, url, retrieved, note) recording whether a
 public primary text supports the citation. It is separate from ``legal_review``: a verified
-source does not validate the control's legal interpretation.
+source does not validate the control's legal interpretation by itself.
+
+``validated`` means self-validated against the primary legal text by the harness authors
+(the pack's ``validation_method``): every source of the control is ``verified`` and a
+``validation_note`` records the judgment of why the cited text supports exactly what the
+control claims. It is never legal advice. The pack may be ``validated`` only when every
+control is.
+
+Each law declares a ``source_type`` (statute | guidance | contract, default statute). A
+``legal_obligation`` needs at least one statute source; guidance or contracts alone never
+make a control law.
 
 ``OUTCOMES`` are the allowed results of evaluating a control at runtime.
 ``to_legacy_document`` projects a pack onto the legacy ``compliance_rules.json``
@@ -29,6 +39,7 @@ REQUIREMENT_TYPES = ("legal_obligation", "risk_based_measure", "internal_standar
 VALIDATION_MODES = ("static_analysis", "integration_test", "document_review", "manual_assessment")
 LEGAL_REVIEW = ("pending", "validated")
 SOURCE_CHECK_STATUSES = ("verified", "partially_supported", "wrong_article", "not_found")
+SOURCE_TYPES = ("statute", "guidance", "contract")
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 OUTCOMES = ("confirmed_violation", "potential_risk", "not_applicable", "insufficient_evidence")
 CONTROL_ID = re.compile(r"^[A-Z]+(-[A-Z]+)*-\d{3}$")
@@ -68,12 +79,34 @@ def _check_source(errors: list[str], cid: str, src: dict) -> None:
         errors.append(f"{cid}: source_check.note required unless verified")
 
 
+def _check_self_validation(errors: list[str], cid: str, control: dict) -> None:
+    if control.get("legal_review") != "validated":
+        return
+    if any(s.get("source_check", {}).get("status") != "verified" for s in control.get("sources", [])):
+        errors.append(f"{cid}: validated control needs every source verified")
+    if not str(control.get("validation_note", "")).strip():
+        errors.append(f"{cid}: validated control needs a validation_note")
+
+
+def _check_pack_review(errors: list[str], pack: dict) -> None:
+    for key, law in pack.get("laws", {}).items():
+        if law.get("source_type", "statute") not in SOURCE_TYPES:
+            errors.append(f"law {key}: invalid source_type {law.get('source_type')!r}")
+    if pack.get("legal_review") != "validated":
+        return
+    if any(c.get("legal_review") != "validated" for c in pack.get("controls", [])):
+        errors.append("pack: pack legal_review validated requires every control validated")
+    if not str(pack.get("validation_method", "")).strip():
+        errors.append("pack: validated pack needs a validation_method")
+
+
 def validate_pack(pack: dict) -> None:
     errors: list[str] = []
     for key in ("pack_id", "version", "jurisdiction", "laws", "controls"):
         if key not in pack:
             errors.append(f"pack: missing '{key}'")
     laws = pack.get("laws", {})
+    _check_pack_review(errors, pack)
     seen: set[str] = set()
     for control in pack.get("controls", []):
         cid = control.get("id", "<no id>")
@@ -91,6 +124,11 @@ def validate_pack(pack: dict) -> None:
         _check_enum(errors, cid, control, "legal_review", LEGAL_REVIEW)
         if control.get("requirement_type") == "legal_obligation" and not control.get("sources"):
             errors.append(f"{cid}: legal_obligation needs at least one legal source")
+        elif control.get("requirement_type") == "legal_obligation" and not any(
+                laws.get(s.get("law"), {}).get("source_type", "statute") == "statute"
+                for s in control.get("sources", [])):
+            errors.append(f"{cid}: legal_obligation needs a statute source")
+        _check_self_validation(errors, cid, control)
         if not control.get("sources") and control.get("requirement_type") != "internal_standard":
             errors.append(f"{cid}: needs at least one legal source")
         for src in control.get("sources", []):
@@ -147,7 +185,8 @@ def to_legacy_rules(pack: dict) -> list[dict]:
 def _criterion(c: dict) -> dict:
     det = c["detection"]
     item = {"id": c["id"], "category": det.get("category", ""), "law_article": _citation(c),
-            "title": c["title"], "description": c["description"], "severity": c["severity"]}
+            "title": c["title"], "description": c["description"], "severity": c["severity"],
+            "detection_type": det["type"], "evidence_kind": c["evidence"]["kind"]}
     if det["type"] == "pattern":
         item["prohibited_patterns"] = list(det["patterns"])
     else:
