@@ -29,7 +29,10 @@ than the same agent without it, on the same e-commerce tasks, at a measurable co
 - Fictional Chilean online supermarket (Jumbo used only as functional reference; no copied assets).
 - Minimum scope: catalog, cart, account (RUT, email, phone, delivery address), order with delivery
   or pickup, simulated payment, points program, marketing subscription.
-- Stack and structure are fixed before the run and identical across arms.
+- Stack (frozen before the build on 2026-10-28): Python 3.13, FastAPI, Jinja2 server-rendered
+  templates and SQLite through the standard library. No external services, no real gateway.
+- Verification: the harness detectors report zero findings on the clean base (see
+  `experiments/supermercado/README.md`); seeded variants in fase 3 introduce one violation at a time.
 
 ## Tasks
 
