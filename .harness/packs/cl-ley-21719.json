@@ -6,29 +6,32 @@
   "laws": {
     "L19628": {
       "name": "Ley 19.628 (reformada por Ley 21.719)",
-      "short": "Ley 21.719"
+      "short": "Ley 21.719",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272"
     },
     "L20584": {
       "name": "Ley 20.584 (derechos y deberes del paciente)",
-      "short": "Ley 20.584"
+      "short": "Ley 20.584",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348"
     },
     "L21668": {
-      "name": "Ley 21.668 (interoperabilidad de fichas clÃ­nicas)",
-      "short": "Ley 21.668"
+      "name": "Ley 21.668 (interoperabilidad de fichas clínicas)",
+      "short": "Ley 21.668",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1203827"
     }
   },
   "sanctions": {
     "terminology": "Infracciones leves, graves y gravísimas (legal terms).",
     "legal_review": "pending",
-    "note": "Amounts carried over from the legacy file unverified. The 4% of annual revenue figure is not a general maximum: it applies under additional conditions (recidivism, company type).",
+    "note": "Amounts checked against Ley 19.628 Arts. 34-36 as reformed by Ley 21.719 (BCN, 2026-10-28). Interpretation still pending legal review.",
     "leve": "Amonestación escrita o multa de hasta 5.000 UTM",
     "grave": "Multa de hasta 10.000 UTM",
-    "gravisima": "Multa de hasta 20.000 UTM o hasta el 4% de ingresos anuales por ventas y servicios"
+    "gravisima": "Multa de hasta 20.000 UTM (Art. 35 let. c)); hasta el 2% (grave) o 4% (gravísima) de los ingresos anuales solo para empresas que no son de menor tamaño y reinciden (Art. 35 inciso final, Art. 36)"
   },
   "data_categories": {
     "SENSITIVE_HEALTH": {
       "description": "Datos relativos a la salud física o psíquica, diagnósticos (CIE-10/11), anamnesis, tratamientos, prescripciones o condición médica del paciente.",
-      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° bis (en armonía con Ley 20.584 y Art. 127 Código Sanitario)",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° bis (en armonía con Ley 20.584 Art. 12 inc. 3°)",
       "fields": [
         "diagnosis",
         "diagnostico",
@@ -60,7 +63,7 @@
     },
     "IDENTIFIER_RUT": {
       "description": "Rol Único Tributario o Nacional (RUT/RUN), identificador civil directo de personas naturales en la República de Chile.",
-      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. a) y Art. 14° bis (Principio de Seguridad y Confidencialidad)",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. f) (identificadores, incluido el número de cédula de identidad), Art. 3° let. f) y h) (principios de seguridad y confidencialidad) y Art. 14° bis (deber de secreto)",
       "fields": [
         "identifier",
         "rut",
@@ -103,13 +106,47 @@
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 14° bis, Art. 14° quinquies, Art. 34° ter let. j)",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis, Art. 14° quinquies y Art. 34° ter let. j)"
+          "article": "Art. 14° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Secrecy duty of the controller; it contains no absolute ban on logging, so the logging rule is a risk-based measure."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Security measures proportionate to risk; pseudonymisation and encryption are listed as possible measures ('en su caso'), not invariable mandates."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Let. i) classifies breach of secrecy as serious; let. d) of Art. 34 quáter makes it very serious for sensitive data. Let. j) covers security, not secrecy."
+          }
         },
         {
           "law": "L20584",
           "article": "Art. 12",
-          "citation": "Ley 20.584 Art. 12"
+          "citation": "Ley 20.584 Art. 12",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28",
+            "note": "Makes clinical-record content sensitive data and requires its confidentiality; it says nothing about logs."
+          }
         }
       ],
       "detection": {
@@ -157,8 +194,24 @@
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 14° quinquies, Art. 16° bis",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies y Art. 16° bis"
+          "article": "Art. 2° let. g)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies inc. 2° let. a)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies inc. 2° let. a)",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Security measures proportionate to risk; pseudonymisation and encryption are listed as possible measures ('en su caso'), not invariable mandates."
+          }
         }
       ],
       "detection": {
@@ -199,8 +252,24 @@
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 14°, Art. 14° quinquies",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter y Art. 14° quinquies"
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Protection by design and by default in risk-based wording; the specific technical measure is not mandated."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
         }
       ],
       "detection": {
@@ -240,12 +309,33 @@
         {
           "law": "L20584",
           "article": "Art. 13",
-          "citation": "Ley 20.584 Art. 13 (Custodia 15 años)"
+          "citation": "Ley 20.584 Art. 13 (conservación de la ficha clínica por al menos 15 años)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
         },
         {
           "law": "L19628",
-          "article": "Art. 7°, Art. 8° ter",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° N° ii y Art. 8° ter"
+          "article": "Art. 7° inc. 2° N° ii",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° inc. 2° N° ii",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 8° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° ter",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Right of the data subject to request temporary suspension; it is not a retention or legal-hold duty, and blocking 'no afectará el almacenamiento'."
+          }
         }
       ],
       "detection": {
@@ -287,13 +377,34 @@
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 14°, Art. 14° quinquies",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter y Art. 14° quinquies"
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Access control is a reasonable risk-based measure; the article does not prescribe RBAC/ABAC."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
         },
         {
           "law": "L20584",
-          "article": "Art. 13",
-          "citation": "Ley 20.584 Art. 13"
+          "article": "Art. 13 inc. 4°",
+          "citation": "Ley 20.584 Art. 13 inc. 4°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
         }
       ],
       "detection": {
@@ -333,7 +444,13 @@
         {
           "law": "L19628",
           "article": "Art. 8° bis",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis"
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Right to object to automated decisions with significant effects, with exceptions (contract, express consent, law); in every case the controller must guarantee explanation, human intervention and review. A mandatory human gate before any automated step is project policy."
+          }
         }
       ],
       "detection": {
@@ -373,12 +490,34 @@
         {
           "law": "L19628",
           "article": "Art. 9°",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 9°"
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 9°",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Portability requires a structured, generic, commonly used format only when processing is automated and consent-based; no technical standard such as HL7 FHIR is named."
+          }
+        },
+        {
+          "law": "L20584",
+          "article": "Art. 13 inc. 1°",
+          "citation": "Ley 20.584 Art. 13 inc. 1°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
         },
         {
           "law": "L21668",
-          "article": "Art. 1°",
-          "citation": "Ley 21.668 Art. 1° (Interoperabilidad de la Ficha Clínica)"
+          "article": "Artículo único",
+          "citation": "Ley 21.668 Artículo único",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1203827",
+            "retrieved": "2026-10-28",
+            "note": "Amending law with a single 'Artículo único'; the operative duty lives in Ley 20.584 Art. 13 and no technical interoperability standard is named."
+          }
         }
       ],
       "detection": {
@@ -418,8 +557,25 @@
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 14°, Art. 14° quinquies",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter y Art. 14° quinquies"
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Protection by design and by default in risk-based wording; the specific technical measure is not mandated."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies inc. 2° let. a)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies inc. 2° let. a)",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Security measures proportionate to risk; pseudonymisation and encryption are listed as possible measures ('en su caso'), not invariable mandates."
+          }
         }
       ],
       "detection": {
@@ -465,8 +621,25 @@
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 14° bis, Art. 34° ter let. j)",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis y Art. 34° ter let. j) (CWE-532)"
+          "article": "Art. 14° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Secrecy duty of the controller; it contains no absolute ban on logging, so the logging rule is a risk-based measure."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Let. i) classifies breach of secrecy as serious; let. d) of Art. 34 quáter makes it very serious for sensitive data. Let. j) covers security, not secrecy."
+          }
         }
       ],
       "detection": {
@@ -507,8 +680,24 @@
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 14°",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Arts. 5° al 10° y Art. 14° quáter"
+          "article": "Arts. 4° al 11°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Arts. 4° al 11° (derechos del titular, incluido bloqueo y procedimiento)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Access control is a reasonable risk-based measure; the article does not prescribe RBAC/ABAC."
+          }
         }
       ],
       "detection": {
@@ -555,7 +744,13 @@
         {
           "law": "L19628",
           "article": "Art. 8° bis",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis"
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Right to object to automated decisions with significant effects, with exceptions (contract, express consent, law); in every case the controller must guarantee explanation, human intervention and review. A mandatory human gate before any automated step is project policy."
+          }
         }
       ],
       "detection": {
@@ -596,9 +791,35 @@
       "severity": "CRITICAL",
       "sources": [
         {
+          "law": "L20584",
+          "article": "Art. 13",
+          "citation": "Ley 20.584 Art. 13 (conservación de la ficha clínica por al menos 15 años)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
           "law": "L19628",
-          "article": "Art. 13, Art. 7° inc. final, Art. 8° ter",
-          "citation": "Ley 20.584 Art. 13 frente a Ley 19.628 reformada por Ley 21.719 Art. 7° inc. final y Art. 8° ter"
+          "article": "Art. 7° inc. 2° N° ii",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° inc. 2° N° ii",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 8° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° ter",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Right of the data subject to request temporary suspension; it is not a retention or legal-hold duty, and blocking 'no afectará el almacenamiento'."
+          }
         }
       ],
       "detection": {
@@ -637,9 +858,36 @@
       "severity": "MEDIUM",
       "sources": [
         {
+          "law": "L20584",
+          "article": "Art. 13 inc. 1° y 2°",
+          "citation": "Ley 20.584 Art. 13 inc. 1° y 2°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L21668",
+          "article": "Artículo único",
+          "citation": "Ley 21.668 Artículo único",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1203827",
+            "retrieved": "2026-10-28",
+            "note": "Amending law with a single 'Artículo único'; the operative duty lives in Ley 20.584 Art. 13 and no technical interoperability standard is named."
+          }
+        },
+        {
           "law": "L19628",
-          "article": "Art. 1°, Art. 9°",
-          "citation": "Ley 21.668 Art. 1° y Ley 19.628 reformada por Ley 21.719 Art. 9°"
+          "article": "Art. 9°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 9°",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Portability requires a structured, generic, commonly used format only when processing is automated and consent-based; no technical standard such as HL7 FHIR is named."
+          }
         }
       ],
       "detection": {
@@ -676,13 +924,29 @@
     {
       "id": "HEALTH-CHECK-003",
       "title": "Aislamiento Lógico y Protección Reforzada de Datos de Salud",
-      "description": "Diagnósticos, anamnesis y notas clínicas constituyen categorías especiales con presunción de secreto profesional (Art. 127 Código Sanitario), exigiendo aislamiento y cifrado en reposo.",
+      "description": "Diagnósticos, anamnesis y notas clínicas son datos sensibles (Ley 20.584 Art. 12 inc. 3°) cuyo tratamiento se limita a los fines sanitarios (Art. 16° bis); el aislamiento lógico y el cifrado en reposo son medidas según riesgo, no exigencias literales.",
       "severity": "CRITICAL",
       "sources": [
         {
           "law": "L19628",
-          "article": "Art. 2° let. g), Art. 16° bis",
-          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° bis"
+          "article": "Art. 2° let. g)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 16° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 16° bis",
+          "source_check": {
+            "status": "partially_supported",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Restricts the purposes and lawful bases for health data; it does not require logical isolation or encryption at rest."
+          }
         }
       ],
       "detection": {

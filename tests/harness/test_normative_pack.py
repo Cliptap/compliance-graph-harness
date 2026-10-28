@@ -1,10 +1,12 @@
 import copy
+import re
 from pathlib import Path
 
 import pytest
 
 from src.harness.normative_pack import (
-    LEGAL_REVIEW, OUTCOMES, PackError, load_legacy_view, load_pack, to_legacy_rules, validate_pack,
+    LEGAL_REVIEW, OUTCOMES, SOURCE_CHECK_STATUSES, PackError, load_legacy_view, load_pack,
+    to_legacy_rules, validate_pack,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,7 +63,53 @@ def test_every_control_cites_a_declared_law_and_article():
             assert s["law"] in pack["laws"] and s["article"]
 
 
+def _all_sources(pack: dict) -> list[dict]:
+    return [s for c in pack["controls"] for s in c["sources"]]
+
+
+def test_every_source_has_a_public_source_check():
+    for s in _all_sources(load_pack(PACK)):
+        check = s["source_check"]
+        assert check["status"] in SOURCE_CHECK_STATUSES
+        assert check["url"].startswith("https://")
+        assert check["retrieved"] == "2026-10-28"
+        if check["status"] != "verified":
+            assert check["note"].strip()
+
+
+def test_source_check_is_separate_from_legal_review():
+    assert SOURCE_CHECK_STATUSES == ("verified", "partially_supported", "wrong_article", "not_found")
+    pack = load_pack(PACK)
+    assert all(c["legal_review"] == "pending" for c in pack["controls"])
+
+
+def test_no_shipped_citation_is_wrong_or_not_found():
+    statuses = {s["source_check"]["status"] for s in _all_sources(load_pack(PACK))}
+    assert statuses <= {"verified", "partially_supported"}
+
+
+def test_known_citation_defects_are_fixed():
+    text = PACK.read_text(encoding="utf-8")
+    pack = load_pack(PACK)
+    by_id = {c["id"]: c for c in pack["controls"]}
+    assert "Art. 127" not in text
+    assert "\u00c3" not in text
+    assert all(s["article"] == "Artículo único" for s in _all_sources(pack) if s["law"] == "L21668")
+    assert not any(re.search(r"Art\. 14°(?! (bis|ter|quáter|quinquies|sexies))", s["article"])
+                   for s in _all_sources(pack) if s["law"] == "L19628")
+    assert ("L20584", "Art. 13") in {(s["law"], s["article"]) for s in by_id["HEALTH-CHECK-001"]["sources"]}
+    for cid in ("CL-DATAPROT-001", "CORE-CHECK-002"):
+        assert any("34° ter let. i)" in s["article"] for s in by_id[cid]["sources"])
+    assert "Art. 2° let. f)" in pack["data_categories"]["IDENTIFIER_RUT"]["legal_basis"]
+
+
 @pytest.mark.parametrize("mutate,msg", [
+    (lambda c: c["sources"][0].pop("source_check"), "source without source_check"),
+    (lambda c: c["sources"][0]["source_check"].update(status="maybe"), "invalid source_check status"),
+    (lambda c: c["sources"][0]["source_check"].update(url="bcn.cl"), "source_check.url"),
+    (lambda c: c["sources"][0]["source_check"].update(retrieved="ayer"), "source_check.retrieved"),
+    (lambda c: c["sources"][0]["source_check"].update(status="partially_supported", note=""),
+     "source_check.note"),
     (lambda c: c.update(severity="SEVERE"), "invalid severity"),
     (lambda c: c.update(sources=[]), "legal source"),
     (lambda c: c["sources"][0].update(law="L0"), "not declared"),

@@ -9,6 +9,10 @@ control traces back to a legal source and declares:
 * ``legal_review``: pending | validated (nothing is trusted as law until validated)
 * ``detection`` / ``remediation`` / ``evidence``
 
+Every source carries a ``source_check`` (status, url, retrieved, note) recording whether a
+public primary text supports the citation. It is separate from ``legal_review``: a verified
+source does not validate the control's legal interpretation.
+
 ``OUTCOMES`` are the allowed results of evaluating a control at runtime.
 ``to_legacy_document`` projects a pack onto the legacy ``compliance_rules.json``
 shape so the DB loader, lineage scanner and auditor keep working unchanged.
@@ -24,6 +28,8 @@ DETECTION_TYPES = ("taint_sink", "pattern", "indicator", "manual")
 REQUIREMENT_TYPES = ("legal_obligation", "risk_based_measure", "internal_standard")
 VALIDATION_MODES = ("static_analysis", "integration_test", "document_review", "manual_assessment")
 LEGAL_REVIEW = ("pending", "validated")
+SOURCE_CHECK_STATUSES = ("verified", "partially_supported", "wrong_article", "not_found")
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 OUTCOMES = ("confirmed_violation", "potential_risk", "not_applicable", "insufficient_evidence")
 CONTROL_ID = re.compile(r"^[A-Z]+(-[A-Z]+)*-\d{3}$")
 REQUIRED_CONTROL_KEYS = (
@@ -45,6 +51,21 @@ def load_pack(path: Path) -> dict:
 def _check_enum(errors: list[str], cid: str, control: dict, key: str, allowed: tuple[str, ...]) -> None:
     if key in control and control[key] not in allowed:
         errors.append(f"{cid}: invalid {key} {control[key]!r}")
+
+
+def _check_source(errors: list[str], cid: str, src: dict) -> None:
+    check = src.get("source_check")
+    if not isinstance(check, dict):
+        errors.append(f"{cid}: source without source_check")
+        return
+    if check.get("status") not in SOURCE_CHECK_STATUSES:
+        errors.append(f"{cid}: invalid source_check status {check.get('status')!r}")
+    if not str(check.get("url", "")).startswith("https://"):
+        errors.append(f"{cid}: source_check.url must be an https URL")
+    if not ISO_DATE.match(str(check.get("retrieved", ""))):
+        errors.append(f"{cid}: source_check.retrieved must be an ISO date")
+    if check.get("status") != "verified" and not str(check.get("note", "")).strip():
+        errors.append(f"{cid}: source_check.note required unless verified")
 
 
 def validate_pack(pack: dict) -> None:
@@ -77,6 +98,7 @@ def validate_pack(pack: dict) -> None:
                 errors.append(f"{cid}: source law {src.get('law')!r} not declared in 'laws'")
             if not src.get("article"):
                 errors.append(f"{cid}: source without article")
+            _check_source(errors, cid, src)
         det = control.get("detection", {})
         if det.get("type") not in DETECTION_TYPES:
             errors.append(f"{cid}: invalid detection type {det.get('type')!r}")
