@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Crear cuenta · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Crear cuenta</h1>
+{% if errors %}<ul class="errors">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+<form method="post" action="/register" class="form">
+  <label>RUT <input type="text" name="rut" value="{{ rut or '' }}" required autocomplete="off"></label>
+  <label>Nombre completo <input type="text" name="full_name" value="{{ full_name or '' }}" autocomplete="name"></label>
+  <label>Correo electrónico <input type="email" name="email" value="{{ email or '' }}" required autocomplete="email"></label>
+  <label>Teléfono <input type="tel" name="phone" value="{{ phone or '' }}" autocomplete="tel"></label>
+  <label>Contraseña <input type="password" name="password" minlength="8" required autocomplete="new-password"></label>
+  <label class="check">
+    <input type="checkbox" name="marketing_opt_in" value="1">
+    Quiero recibir comunicaciones promocionales (opcional, puedes darte de baja cuando quieras).
+  </label>
+  <button type="submit" class="button primary">Crear cuenta</button>
+</form>
+<p class="muted">Al crear la cuenta tratamos tus datos para gestionar tu compra. Consulta la
+  <a href="/privacy">política de privacidad</a>.</p>
+{% endblock %}

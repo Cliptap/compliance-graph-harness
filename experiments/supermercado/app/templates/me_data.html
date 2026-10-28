@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Mis datos · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Mis datos</h1>
+<p class="muted">Esta vista es para ti: muestra los datos asociados a tu cuenta. Descarga una copia en
+  <a href="/me/export">JSON</a>.</p>
+<dl class="facts">
+  <dt>RUT</dt><dd>{{ customer["rut"] }}</dd>
+  <dt>Nombre</dt><dd>{{ customer["full_name"] or "No registrado" }}</dd>
+  <dt>Correo</dt><dd>{{ customer["email"] }}</dd>
+  <dt>Teléfono</dt><dd>{{ customer["phone"] or "No registrado" }}</dd>
+  <dt>Puntos</dt><dd>{{ points }}</dd>
+</dl>
+
+<h2>Actualizar contacto</h2>
+<form method="post" action="/me/update" class="form">
+  <label>Nombre completo <input type="text" name="full_name" value="{{ customer['full_name'] or '' }}"></label>
+  <label>Teléfono <input type="tel" name="phone" value="{{ customer['phone'] or '' }}"></label>
+  <button type="submit" class="button primary">Guardar y registrar rectificación</button>
+</form>
+
+<h2>Otras acciones</h2>
+<form method="post" action="/me/delete" class="inline"><button type="submit" class="button">Solicitar supresión</button></form>
+<form method="post" action="/me/opposition" class="inline"><button type="submit" class="button">Oponerme al tratamiento</button></form>
+<form method="post" action="/me/block" class="inline"><button type="submit" class="button">Bloquear mi cuenta</button></form>
+
+<h2>Direcciones</h2>
+{% if addresses %}<ul>{% for address in addresses %}<li>{{ address["label"] }}: {{ address["line1"] }}, {{ address["commune"] }}</li>{% endfor %}</ul>{% else %}<p class="muted">Sin direcciones.</p>{% endif %}
+
+<h2>Pedidos</h2>
+{% if orders %}<ul>{% for order in orders %}<li>#{{ order["id"] }} · {{ order["created_at"] }} · {{ order["status"] }} · ${{ order["subtotal_clp"] }}</li>{% endfor %}</ul>{% else %}<p class="muted">Sin pedidos.</p>{% endif %}
+
+<h2>Consentimientos</h2>
+{% if consents %}<ul>{% for consent in consents %}<li>{{ consent["purpose"] }} · {{ consent["granted_at"] }}{% if consent["withdrawn_at"] %} · revocado {{ consent["withdrawn_at"] }}{% endif %}</li>{% endfor %}</ul>{% else %}<p class="muted">Sin consentimientos.</p>{% endif %}
+
+<h2>Solicitudes</h2>
+{% if rights %}<ul>{% for row in rights %}<li>{{ row["right_type"] }} · {{ row["requested_at"] }} · {{ row["status"] }}</li>{% endfor %}</ul>{% else %}<p class="muted">Sin solicitudes.</p>{% endif %}
+{% endblock %}

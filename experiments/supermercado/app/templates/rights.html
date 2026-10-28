@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Derechos sobre mis datos · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Derechos sobre mis datos</h1>
+<form method="post" action="/rights" class="form">
+  <label>Derecho
+    <select name="right_type">
+      <option value="access">Acceso</option>
+      <option value="rectification">Rectificación</option>
+      <option value="erasure">Supresión</option>
+      <option value="opposition">Oposición</option>
+      <option value="portability">Portabilidad</option>
+      <option value="block">Bloqueo</option>
+    </select>
+  </label>
+  <label>Detalle (opcional) <textarea name="notes" rows="3"></textarea></label>
+  <button type="submit" class="button primary">Enviar solicitud</button>
+</form>
+<p class="muted">Registramos la fecha y hora. Respondemos en 30 días corridos, prorrogables una vez por 30; el bloqueo se responde en 2 días hábiles.</p>
+
+<h2>Solicitudes</h2>
+{% if rights %}
+<table>
+  <thead><tr><th>Derecho</th><th>Solicitado</th><th>Vence</th><th>Estado</th></tr></thead>
+  <tbody>{% for row in rights %}<tr><td>{{ row["right_type"] }}</td><td>{{ row["requested_at"] }}</td><td>{{ row["due_at"] }}</td><td>{{ row["status"] }}</td></tr>{% endfor %}</tbody>
+</table>
+{% else %}<p class="muted">No has enviado solicitudes.</p>{% endif %}
+{% endblock %}

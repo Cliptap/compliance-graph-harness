@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Checkout · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Checkout</h1>
+<table>
+  <thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead>
+  <tbody>{% for line in lines %}<tr><td>{{ line["product"]["name"] }}</td><td>{{ line["quantity"] }}</td><td>${{ line["line_total"] }}</td></tr>{% endfor %}</tbody>
+</table>
+<p class="price">Subtotal: ${{ subtotal }}</p>
+
+<form method="post" action="/checkout" class="form">
+  <fieldset>
+    <legend>Entrega</legend>
+    <label class="check"><input type="radio" name="delivery_mode" value="delivery" checked> Despacho a domicilio</label>
+    <label class="check"><input type="radio" name="delivery_mode" value="pickup"> Retiro en local</label>
+  </fieldset>
+  <label>Dirección de entrega
+    <select name="address_id">
+      <option value="">Selecciona una dirección</option>
+      {% for address in addresses %}<option value="{{ address['id'] }}">{{ address["label"] }}: {{ address["line1"] }}, {{ address["commune"] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Local de retiro
+    <select name="pickup_store">
+      <option value="">Selecciona un local</option>
+      {% for store in stores %}<option value="{{ store }}">{{ store }}</option>{% endfor %}
+    </select>
+  </label>
+  <p class="muted">El pago es simulado: no se solicitan datos de tarjeta.</p>
+  <button type="submit" class="button primary">Confirmar pedido</button>
+</form>
+{% endblock %}

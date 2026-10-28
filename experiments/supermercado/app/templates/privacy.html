@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Política de privacidad · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Política de privacidad y tratamiento de datos personales</h1>
+<p class="muted">Versión {{ policy_version }} · Vigente desde {{ policy_date if policy_date else "2026-10-28" }} ·
+  Contacto: {{ contact_channel }}</p>
+
+<h2>1. Responsable</h2>
+<p>Supermercado Ficticio es el responsable del tratamiento de los datos personales que se describen en esta política.</p>
+
+<h2>2. Datos y finalidades</h2>
+<ul>
+  <li>Identificación (RUT, nombre), contacto (correo, teléfono) y direcciones: crear la cuenta, gestionar pedidos y entregas.</li>
+  <li>Historial de compras y puntos: operar el programa de fidelización.</li>
+  <li>Consentimiento de marketing: enviar comunicaciones solo si otorgaste una acción afirmativa; puedes revocarlo en cualquier momento.</li>
+  <li>Cookies: necesarias para operar; las categorías de funcionalidad, rendimiento y publicidad están desactivadas por defecto.</li>
+</ul>
+
+<h2>3. Base de licitud</h2>
+<p>Ejecución del contrato y consentimiento para marketing y cookies opcionales. Los datos de salud no se tratan.</p>
+
+<h2>4. Conservación</h2>
+<p>La cuenta se conserva mientras esté activa y hasta 730 días después. Los registros de pedidos se conservan por obligaciones tributarias. Al vencer, se anonimizan o suprimen.</p>
+
+<h2>5. Derechos</h2>
+<p>Puedes ejercer acceso, rectificación, supresión, oposición, portabilidad y bloqueo desde
+  <a href="/rights">Derechos sobre mis datos</a>, con registro de fecha y plazo de respuesta (30 días corridos,
+  prórroga única de 30; bloqueo en 2 días hábiles). También puedes escribir a {{ contact_channel }}.</p>
+
+<h2>6. Terceros y transferencias</h2>
+<p>El sistema no envía datos a terceros por defecto. El inventario vigente está en
+  <a href="/privacy/third-parties">terceros y transferencias</a>.</p>
+
+<h2>7. Seguridad e incidentes</h2>
+<p>Se aplican medidas técnicas y organizativas proporcionadas al riesgo. Los incidentes se registran y se notifican
+  a la autoridad cuando corresponde.</p>
+
+<h2>8. Cookies</h2>
+<p>Puedes configurar tus preferencias en <a href="/cookies">Cookies</a>.</p>
+{% endblock %}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Supermercado Ficticio{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Supermercado Ficticio</a>
+  <nav>
+    <a href="/">Catálogo</a>
+    <a href="/cart">Carrito ({{ cart_count }})</a>
+    {% if customer %}
+      <a href="/account">Mi cuenta</a>
+      <form method="post" action="/logout" class="inline"><button type="submit" class="link">Salir</button></form>
+    {% else %}
+      <a href="/login">Ingresar</a>
+      <a href="/register">Crear cuenta</a>
+    {% endif %}
+    <a href="/privacy">Privacidad</a>
+    <a href="/cookies">Cookies</a>
+  </nav>
+</header>
+
+{% if not cookie_prefs %}
+<div class="cookie-banner" role="region" aria-label="Aviso de cookies">
+  <p>Usamos cookies necesarias para operar. Las categorías opcionales están desactivadas por defecto.</p>
+  <div>
+    <a class="button" href="/cookies">Configurar</a>
+    <form method="post" action="/cookies/necessary" class="inline">
+      <button type="submit" class="button primary">Aceptar solo necesarias</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<footer>
+  <p>Supermercado Ficticio · Sistema de prueba · Política v{{ policy_version }} · {{ contact_channel }}</p>
+</footer>
+</body>
+</html>

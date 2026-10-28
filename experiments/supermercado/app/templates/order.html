@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Pedido #{{ order["id"] }} · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Pedido #{{ order["id"] }}</h1>
+<dl class="facts">
+  <dt>Estado</dt><dd>{{ order["status"] }}</dd>
+  <dt>Entrega</dt><dd>{{ "Despacho" if order["delivery_mode"] == "delivery" else "Retiro en " ~ order["pickup_store"] }}</dd>
+  <dt>Total</dt><dd>${{ order["subtotal_clp"] }}</dd>
+  <dt>Puntos ganados</dt><dd>{{ order["points_earned"] }}</dd>
+  {% if order["payment_token"] %}<dt>Transacción</dt><dd>{{ order["payment_token"] }}</dd>{% endif %}
+</dl>
+<table>
+  <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th></tr></thead>
+  <tbody>{% for item in items %}<tr><td>{{ item["name"] }}</td><td>{{ item["quantity"] }}</td><td>${{ item["unit_price_clp"] }}</td></tr>{% endfor %}</tbody>
+</table>
+{% if order["status"] == "pending" %}
+<form method="post" action="/orders/{{ order['id'] }}/pay" class="form">
+  <p class="muted">Pago simulado. No se solicitan datos de tarjeta.</p>
+  <button type="submit" class="button primary">Pagar</button>
+</form>
+{% endif %}
+{% endblock %}

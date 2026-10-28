@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Mi cuenta · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Mi cuenta</h1>
+{% if blocked %}<p class="errors">Tu cuenta está bloqueada. Escríbenos a {{ contact_channel }}.</p>{% endif %}
+<dl class="facts">
+  <dt>Correo</dt><dd>{{ customer["email"] }}</dd>
+  <dt>RUT</dt><dd>{{ masked_rut }}</dd>
+  <dt>Teléfono</dt><dd>{{ customer["phone"] or "No registrado" }}</dd>
+  <dt>Puntos</dt><dd>{{ points }}</dd>
+  <dt>Marketing</dt><dd>{{ "Activo" if marketing_active else "Inactivo" }} · <a href="/consent/marketing">gestionar</a></dd>
+</dl>
+<p><a class="button" href="/addresses">Direcciones</a> <a class="button" href="/orders">Mis pedidos</a>
+  <a class="button" href="/rights">Derechos sobre mis datos</a> <a class="button" href="/me/data">Ver mis datos</a>
+  <a class="button" href="/me/export">Descargar copia</a></p>
+
+<h2>Direcciones</h2>
+{% if addresses %}
+<ul>{% for address in addresses %}<li>{{ address["label"] }}: {{ address["line1"] }}, {{ address["commune"] }}, {{ address["city"] }}</li>{% endfor %}</ul>
+{% else %}<p class="muted">Aún no registras direcciones.</p>{% endif %}
+
+<h2>Solicitudes de derechos</h2>
+{% if rights %}
+<table>
+  <thead><tr><th>Derecho</th><th>Solicitado</th><th>Vence</th><th>Estado</th></tr></thead>
+  <tbody>{% for row in rights %}<tr><td>{{ row["right_type"] }}</td><td>{{ row["requested_at"] }}</td><td>{{ row["due_at"] }}</td><td>{{ row["status"] }}</td></tr>{% endfor %}</tbody>
+</table>
+{% else %}<p class="muted">No has ejercido derechos todavía.</p>{% endif %}
+{% endblock %}

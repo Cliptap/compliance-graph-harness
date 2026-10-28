@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Catálogo · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Catálogo</h1>
+<form method="get" action="/" class="filters">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o marca">
+  <select name="category">
+    <option value="">Todas las categorías</option>
+    {% for item in categories %}
+      <option value="{{ item }}" {% if item == category %}selected{% endif %}>{{ item }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="button">Buscar</button>
+</form>
+
+<div class="grid">
+  {% for product in products %}
+  <article class="card">
+    <h2>{{ product["name"] }}</h2>
+    <p class="muted">{{ product["brand"] }} · {{ product["category"] }}</p>
+    <p class="price">${{ product["price_clp"] }}</p>
+    <p class="muted">Stock: {{ product["stock"] }}</p>
+    <form method="post" action="/cart/add/{{ product['id'] }}">
+      <input type="number" name="quantity" value="1" min="1" max="{{ product['stock'] }}" class="qty">
+      <button type="submit" class="button primary" {% if product["stock"] < 1 %}disabled{% endif %}>Agregar</button>
+    </form>
+  </article>
+  {% else %}
+  <p>No hay productos que coincidan con la búsqueda.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Direcciones · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Direcciones de entrega</h1>
+{% if addresses %}
+<ul>{% for address in addresses %}<li>{{ address["label"] }}: {{ address["line1"] }}, {{ address["commune"] }}, {{ address["city"] }}</li>{% endfor %}</ul>
+{% else %}<p class="muted">Aún no registras direcciones.</p>{% endif %}
+<h2>Agregar dirección</h2>
+<form method="post" action="/addresses" class="form">
+  <label>Etiqueta <input type="text" name="label" placeholder="Casa"></label>
+  <label>Dirección <input type="text" name="line1" required></label>
+  <label>Comuna <input type="text" name="commune" required></label>
+  <label>Ciudad <input type="text" name="city" required></label>
+  <button type="submit" class="button primary">Guardar</button>
+</form>
+{% endblock %}

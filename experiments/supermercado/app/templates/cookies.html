@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Cookies · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Preferencias de cookies</h1>
+<p>Las cookies necesarias permiten operar el carrito y la sesión. Las demás categorías están desactivadas por defecto y puedes cambiarlas cuando quieras.</p>
+<form method="post" action="/cookies" class="form">
+  <label class="check"><input type="checkbox" checked disabled> Necesarias (siempre activas)</label>
+  <label class="check"><input type="checkbox" name="functionality" value="1" {% if prefs.get("functionality") %}checked{% endif %}> Funcionalidad</label>
+  <label class="check"><input type="checkbox" name="performance" value="1" {% if prefs.get("performance") %}checked{% endif %}> Rendimiento</label>
+  <label class="check"><input type="checkbox" name="targeting" value="1" {% if prefs.get("targeting") %}checked{% endif %}> Publicidad</label>
+  <button type="submit" class="button primary">Guardar preferencias</button>
+</form>
+<p class="muted">Este sistema no carga analítica ni publicidad de terceros; las categorías opcionales solo registran tu elección.</p>
+{% endblock %}

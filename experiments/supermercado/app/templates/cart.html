@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Carrito · Supermercado Ficticio{% endblock %}
+{% block content %}
+<h1>Carrito</h1>
+{% if lines %}
+<table>
+  <thead><tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Total</th></tr></thead>
+  <tbody>
+  {% for line in lines %}
+    <tr>
+      <td>{{ line["product"]["name"] }}</td>
+      <td>${{ line["product"]["price_clp"] }}</td>
+      <td>
+        <form method="post" action="/cart/update" class="inline">
+          <input type="hidden" name="product_id" value="{{ line['product']['id'] }}">
+          <input type="number" name="quantity" value="{{ line['quantity'] }}" min="0" max="{{ line['product']['stock'] }}" class="qty">
+          <button type="submit" class="button">Actualizar</button>
+        </form>
+      </td>
+      <td>${{ line["line_total"] }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="price">Subtotal: ${{ subtotal }}</p>
+<p><a class="button primary" href="/checkout">Continuar al checkout</a></p>
+{% else %}
+<p>Tu carrito está vacío.</p>
+{% endif %}
+{% endblock %}
