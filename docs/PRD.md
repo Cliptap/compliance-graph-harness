@@ -2,7 +2,7 @@
 project_id: "supermercado-ficticio"
 project_name: "Supermercado Ficticio (sistema objetivo del experimento)"
 version: 1
-status: "DRAFT"
+status: "APPROVED"
 project_type: "web_app"
 governance_level: "alto"
 created_at: "2026-10-28"
