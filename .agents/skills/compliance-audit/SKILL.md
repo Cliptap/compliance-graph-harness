@@ -30,7 +30,7 @@ description: Auditoria de cumplimiento normativo sobre codigo existente (Ley 21.
 | `privacy.payment_data_storage` | CVV o numero de tarjeta sin cifrar persistido en un modelo ORM | ECOM-CHECK-003 |
 | `domain.prohibited_deletion` | borrado fisico de fichas clinicas | HEALTH-CHECK-001 |
 
-Limites conocidos y publicados en el corpus (`harness/eval/corpus/cases.json`): no se detectan modelos de respuesta importados de otro archivo, SQL crudo ni datos de tarjeta dentro de una columna JSON. El flujo hacia logs solo resuelve funciones de los archivos evaluados (en la compuerta, los del indice de git); una llamada no resuelta solo propaga el dato desde su receptor o si es una funcion que conserva el valor (`str`, `json.dumps`, `format`), y un diccionario con un RUT queda marcado completo.
+Limites conocidos y publicados en el corpus (`harness/eval/corpus/cases.json`): no se detectan modelos de respuesta importados de otro archivo, SQL crudo ni datos de tarjeta dentro de una columna JSON. El flujo hacia logs solo resuelve funciones de los archivos evaluados (en la compuerta, los del indice de git); una llamada no resuelta solo propaga el dato desde su receptor o si es una funcion que conserva el valor (`str`, `json.dumps`, `format`), y un diccionario con un RUT queda marcado completo. Si un archivo es demasiado profundo para el analisis de flujo, recibe un aviso (`WARNING`) y en ese cambio solo se conserva el flujo dentro de cada archivo, no entre archivos.
 
 ## Evidencia documental que debes pedir
 | Control | Evidencia a solicitar |

@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 
 MAX_STEPS = 8
 MAX_ROUNDS = 10
+LOOP_UNROLL_DEPTH = 3  # deeper loops run their body once, so nested loops stay linear
 VALUE_PRESERVING = frozenset({
     "str", "repr", "format", "dumps", "join", "dict", "list", "tuple", "set", "sorted",
     "upper", "lower", "strip", "lstrip", "rstrip", "replace", "title", "encode", "decode",
@@ -197,6 +198,8 @@ class _Run:
                  func: _Func, hits: dict[tuple[str, int], FlowHit] | None):
         self.an, self.program, self.summaries, self.func, self.hits = analyzer, program, summaries, func, hits
         self.summary = _Summary()
+        self.loop_depth = 0
+        self.assigned: set[str] = set()
         env: dict[str, Taint] = {p: {("param", p): ()} for p in func.params}
         self._stmts(func.body, env)
 
@@ -253,20 +256,17 @@ class _Run:
             env.clear()
             env.update(joined)
             return
+        is_loop = not isinstance(s, ast.If)
+        iterated = self._expr(s.iter, env) if isinstance(s, (ast.For, ast.AsyncFor)) else self._expr(s.test, env)
         body = _copy(env)
-        if isinstance(s, (ast.For, ast.AsyncFor)):
-            iterated = self._expr(s.iter, env)
-            for _ in range(2):
+        rounds = 2 if is_loop and self.loop_depth < LOOP_UNROLL_DEPTH else 1
+        self.loop_depth += is_loop
+        for _ in range(rounds):
+            if isinstance(s, (ast.For, ast.AsyncFor)):
                 self._assign(s.target, iterated, body)
-                self._stmts(s.body, body)
-        elif isinstance(s, ast.While):
-            self._expr(s.test, env)
-            for _ in range(2):
-                self._stmts(s.body, body)
-        else:
-            self._expr(s.test, env)
             self._stmts(s.body, body)
-        other = _copy(env if isinstance(s, ast.If) else _join(env, body))
+        self.loop_depth -= is_loop
+        other = _copy(_join(env, body) if is_loop else env)
         self._stmts(s.orelse, other)
         env.clear()
         env.update(_join(body, other))
@@ -279,6 +279,8 @@ class _Run:
         step = (f"{ast.unparse(target)} ({self.func.file}:{target.lineno})",)
         if isinstance(target, (ast.Name, ast.Attribute)):
             key = target.id if isinstance(target, ast.Name) else ast.unparse(target)
+            if isinstance(target, ast.Name):
+                self.assigned.add(key)
             env[key] = _extend(t, step)
         elif isinstance(target, ast.Subscript):
             key = ast.unparse(target.value)
@@ -301,7 +303,9 @@ class _Run:
         if isinstance(e, ast.Name):
             t = dict(env.get(e.id, {}))
             name = e.id.lower()
-            is_source = name in self.an.tokens and name not in self.an.ambiguous_names
+            # A local variable named like a token carries only what was assigned to it.
+            is_source = (name in self.an.tokens and name not in self.an.ambiguous_names
+                         and e.id not in self.assigned)
             return _merge(t, self._source(e)) if is_source else t
         if isinstance(e, ast.Attribute):
             t = _merge(env.get(ast.unparse(e), {}), self._expr(e.value, env))

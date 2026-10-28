@@ -1,7 +1,10 @@
+import time
+
 import pytest
 
 from src.harness.contracts import TaskSpec
-from src.harness.policy_engine import SensitiveLoggingPolicy
+from src.harness.policy_engine import PolicyEngine, SensitiveLoggingPolicy
+from src.harness.taint_flow import TaintAnalyzer
 
 pytestmark = [pytest.mark.harness]
 
@@ -61,6 +64,49 @@ def test_recursive_calls_terminate():
 def test_run_is_a_source_as_a_field_but_not_as_a_bare_variable():
     assert len(violations({"src/a.py": "def f(p):\n    v = p.run\n    print(v)\n"})) == 1
     assert violations({"src/a.py": "def f(rs):\n    run = rs[0]\n    v = run.get('score')\n    print(v)\n"}) == []
+
+
+def test_walrus_in_a_condition_reaches_the_body():
+    [f] = violations({"src/a.py": "def f(p):\n    if (v := p.rut):\n        logger.info(v)\n"})
+    assert f.line == 3
+
+
+def test_a_local_variable_named_rut_carries_only_what_was_assigned():
+    masked = "def f(p):\n    rut = mask_rut(p.rut)\n    msg = 'patient ' + rut\n    logger.info(msg)\n"
+    assert violations({"src/a.py": masked}) == []
+    assert len(violations({"src/a.py": "def f(rut):\n    msg = 'x' + rut\n    print(msg)\n"})) == 1
+
+
+def test_deeply_nested_loops_stay_fast():
+    depth = 18
+    code = "def f(p, xs):\n" + "".join(f"{'    ' * (i + 1)}for x{i} in xs:\n" for i in range(depth))
+    code += f"{'    ' * (depth + 1)}v = p.rut\n{'    ' * (depth + 1)}print(v)\n"
+    start = time.perf_counter()
+    assert len(violations({"src/a.py": code})) == 1
+    assert time.perf_counter() - start < 5
+
+
+@pytest.mark.parametrize("code", [
+    "def f(p, k):\n    v = p.rut\n    if k == 0:\n        x = 0\n"
+    + "".join(f"    elif k == {i}:\n        x = {i}\n" for i in range(1, 400)) + "    logger.info(v)\n",
+    "def f(p):\n    s = p.rut + " + " + ".join(f"'a{i}'" for i in range(500)) + "\n    logger.info(s)\n",
+], ids=["elif-chain-400", "concat-500"])
+def test_very_deep_valid_python_does_not_crash_the_engine(code):
+    found = PolicyEngine().evaluate_changes(SPEC, {"src/deep.py": code, "src/ok.py": VIA_VARIABLE})
+    assert ("src/ok.py", 3) in {(f.file, f.line) for f in found if f.status == "VIOLATION"}
+
+
+def test_a_file_the_flow_pass_cannot_finish_gets_a_warning_and_others_keep_flows(monkeypatch):
+    original = TaintAnalyzer.analyze
+
+    def analyze(self, trees):
+        if "src/deep.py" in trees:
+            raise RecursionError
+        return original(self, trees)
+
+    monkeypatch.setattr(TaintAnalyzer, "analyze", analyze)
+    found = SensitiveLoggingPolicy().evaluate(SPEC, {"src/deep.py": "x = 1\n", "src/ok.py": VIA_VARIABLE})
+    assert [(f.status, f.file, f.line) for f in found] == [("WARNING", "src/deep.py", 1), ("VIOLATION", "src/ok.py", 3)]
 
 
 def test_without_flow_tracking_the_previous_local_behavior_holds():

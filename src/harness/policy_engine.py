@@ -153,6 +153,20 @@ class SensitiveLoggingPolicy(BasePolicy):
         "(ej: XX.***.***-X) o eliminar el dato sensible de la cadena de registro."
     )
 
+    @staticmethod
+    def _flow_hits(analyzer, trees: dict[str, ast.Module]) -> tuple[list, list[str]]:
+        """Runs the flow pass; on RecursionError retries file by file and returns the files it skipped."""
+        try:
+            return analyzer.analyze(trees), []
+        except RecursionError:
+            hits, skipped = [], []
+            for path, tree in trees.items():
+                try:
+                    hits.extend(analyzer.analyze({path: tree}))
+                except RecursionError:
+                    skipped.append(path)
+            return hits, skipped
+
     def _evaluate_flows(self, trees: dict[str, ast.Module], lines: dict[str, list[str]],
                         reported: set[tuple[str, int]]) -> list[Finding]:
         """Call-level pass: sensitive values that reach a log sink through variables or calls."""
@@ -160,8 +174,21 @@ class SensitiveLoggingPolicy(BasePolicy):
 
         analyzer = TaintAnalyzer(self.SENSITIVE_TOKENS, self._is_log_call, self.MASK_MARKERS,
                                  self.FLOW_AMBIGUOUS_NAMES)
-        findings: list[Finding] = []
-        for hit in analyzer.analyze(trees):
+        hits, skipped = self._flow_hits(analyzer, trees)
+        findings = [
+            Finding(
+                policy_id="privacy.cwe_532",
+                severity="LOW",
+                status="WARNING",
+                file=path,
+                line=1,
+                message=("El análisis de flujo de datos no pudo completarse en este archivo (estructura demasiado "
+                         "profunda); solo se aplicó la inspección local de las llamadas a logs."),
+                remediation_advice="Revisar manualmente si datos personales llegan a logs en este archivo.",
+            )
+            for path in skipped
+        ]
+        for hit in hits:
             if (hit.file, hit.line) in reported:
                 continue
             path = " -> ".join([f"{hit.origin} ({hit.origin_file}:{hit.origin_line})", *hit.steps,
