@@ -88,6 +88,13 @@ def test_marketing_template_with_unsubscribe_is_clean():
     assert not [f for f in findings if f.policy_id == "privacy.consent_transparency"]
 
 
+def test_non_campaign_templates_mentioning_marketing_are_not_flagged():
+    html = "<h1>Mi cuenta</h1><p>Marketing: inactivo</p>"
+    for path in ("templates/account.html", "templates/privacy.html"):
+        findings = PersonalDataDimensionsPolicy().evaluate(SPEC, {path: html})
+        assert not [f for f in findings if f.policy_id == "privacy.consent_transparency"], path
+
+
 def test_raw_biometric_template_is_a_violation():
     code = """
 class BiometricProfile(Base):

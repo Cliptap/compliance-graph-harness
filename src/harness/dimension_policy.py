@@ -75,6 +75,7 @@ HTML_PRETICKED_RE = re.compile(
     r"<input[^>]*(consent|subscribe|accept|marketing)[^>]*\bchecked\b", re.IGNORECASE
 )
 MARKETING_WORDS = ("promo", "oferta", "descuento", "newsletter", "marketing", "cupon", "cupón")
+MARKETING_PATH_HINTS = ("marketing", "newsletter", "promo", "campaign", "email", "mail")
 UNSUBSCRIBE_WORDS = ("unsubscribe", "opt-out", "optout", "baja", "cancelar suscrip", "darse de baja")
 TEMPLATE_EXTS = (".html", ".htm", ".jinja", ".jinja2", ".mjml", ".hbs", ".eta", ".ejs")
 URL_RE = re.compile(r"https?://([a-zA-Z0-9.-]+)")
@@ -326,7 +327,10 @@ class PersonalDataDimensionsPolicy(BasePolicy):
                 ))
             if PurePosixPath(path).suffix.lower() in TEMPLATE_EXTS:
                 lowered = content.lower()
-                if any(w in lowered for w in MARKETING_WORDS) and not any(u in lowered for u in UNSUBSCRIBE_WORDS):
+                stem = PurePosixPath(path).stem.lower()
+                is_campaign = any(hint in stem for hint in MARKETING_PATH_HINTS)
+                if is_campaign and any(w in lowered for w in MARKETING_WORDS) and not any(
+                        u in lowered for u in UNSUBSCRIBE_WORDS):
                     out.append(_finding(
                         "privacy.consent_transparency", path, 1, "MEDIUM", "WARNING",
                         "Marketing template without a visible unsubscribe/opt-out (Ley 19.496 Art. 28 B).",
