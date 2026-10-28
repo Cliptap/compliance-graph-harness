@@ -46,8 +46,10 @@ Recomiendo [X] porque [razón].
 
 ## Estructura del Harness (Antigravity)
 
-- Skills nativas: `.agents/skills/`
+- **Skills Nativas (ÚNICA FUENTE DE VERDAD):** `.agents/skills/<skill-name>/SKILL.md` define formalmente el estándar metodológico normativo universal.
+- **Paquete Portable Sincronizado:** `harness/skills/` es el paquete de distribución portable generado deterministamente y mantenido 100% sincronizado byte a byte mediante `src/harness/sync_skills.py`.
 - Agentes delegados: `.agents/agents/`
 - Reglas detalladas: `.agents/rules/`
 - Hooks de sesión: `.agents/hooks/`
 - Estado y Grafos de Cumplimiento: `.harness/`
+

@@ -1,247 +1,250 @@
 ---
 name: api-design
 version: 2.0.0
-depends_on: [prd-generation, architecture-design]
+depends_on: [prd-generation, architecture-design, data-modeling]
 stage: 3
 project_types: [web_app, api, mobile]
 governance: all
-description: Diseno de API. Define endpoints, metodos HTTP, DTOs, manejo de errores, autenticacion y documentacion.
+description: Diseno de API REST. Define contratos de endpoints (EP-xxx), metodos HTTP, DTOs de transferencia (DTO-xxx), mapeo de errores (ERR-xxx) y linaje de requerimientos respetando el PRD, la Arquitectura y el Modelo de Datos.
 ---
 
-# Skill: Diseno de API
+# Skill 04: Diseño de Contratos de API (API Design)
 
-## Objetivo
-Definir la interfaz de API del sistema: endpoints, schemas de request/response,
-codigos de estado, manejo de errores y documentacion.
+## 1. Overview y Propósito
 
-## Instrucciones
-- Cargar PRD, Arquitectura y Modelo de Datos como contexto.
-- **NO generar codigo de endpoints sin tener el diseno completo.**
-- Preguntar por seccion.
-- Al final, generar la especificacion de API (OpenAPI o similar).
+Esta skill traduce los requerimientos funcionales (`REQ-xxx`) y criterios de aceptación (`AC-xxx`) de `docs/PRD.md`, los componentes (`COMP-xxx`) y decisiones de `docs/ARCHITECTURE.md` (`AD-xxx`) y el modelo de datos de `docs/DATA_MODEL.md` (`ENT-xxx`, `DTO-xxx`, `IDX-xxx`, `INV-xxx`) en una **especificación formal de contratos de interfaz pública y transporte** en `docs/API_DESIGN.md`.
+
+Su propósito fundamental es responder con rigor técnico:
+> **¿Cuáles son los endpoints, métodos HTTP, esquemas de transferencia (DTOs), códigos de estado y formatos de error requeridos para satisfacer los casos de uso aprobados sin inventar endpoints no solicitados ni contradecir la arquitectura?**
+
+La skill opera bajo cuatro principios de interoperabilidad del arnés:
+1. **Regla de Oro Anti-Amnesia:** Está estrictamente prohibido definir endpoints, DTOs o esquemas para conceptos sentenciados como `OUT OF SCOPE` en el PRD (cero autenticación, roles, sesiones de servidor, pagos, pasarelas o recomendaciones).
+2. **Coherencia con Decisiones Previas (Anti-Deriva DAG):**
+   - El estilo de transporte **HTTP REST** síncrono desacoplado viene formalmente sellado desde la arquitectura: queda terminantemente prohibido re-deliberar o preguntar al usuario si prefiere protocolos alternativos no aprobados.
+   - La estrategia de seguridad sin credenciales para visitante anónimo viene sellada desde las decisiones arquitectónicas y el nivel de gobernanza: queda prohibido consultar por esquemas de autenticación o roles no solicitados.
+   - Si la arquitectura delega el estado al almacenamiento en cliente (`AD-xxx`), **queda estrictamente prohibido crear endpoints server-side para persistir o mutar estados asignados al cliente**.
+3. **Regla Estricta de No-Goldplating (Fidelidad a Requisitos Aprobados / Solo Lectura cuando aplique):**
+   - La API debe exponer únicamente los métodos HTTP estrictamente respaldados por requerimientos aprobados (`REQ-xxx`). Si los requerimientos definen únicamente consulta o exploración, la API del servidor debe permanecer como de solo lectura (únicamente métodos `GET` autorizados). Queda prohibido definir métodos de mutación (`POST`, `PUT`, `PATCH`, `DELETE`) sin un requerimiento explícito.
+4. **Principio de Desacoplamiento y Progresión:** La skill define contratos HTTP formales, schemas DTO, códigos de error y respuestas, pero **no genera código ejecutable de backend** (routers, controladores, handlers) ni listas de rutas físicas de archivos (`allowed_paths`), delegadas a `05-backend`.
 
 ---
 
-## Flujo de Interaccion
+## 2. Cuándo Usar (Use When)
 
-### 1. Estilo de API
+- Inmediatamente después de que `docs/DATA_MODEL.md` haya alcanzado el estado `status: APPROVED`.
+- Cuando se requiere definir los contratos formales de comunicación cliente-servidor (endpoints, query parameters, esquemas DTO de request/response y manejo estructurado de errores).
+- Previo a la implementación de código en `05-backend` y `06-frontend` y a la formulación de pruebas de integración de endpoints en `08-testing`.
 
-```
-? Que estilo de API prefieres?
+---
 
-a) REST — endpoints por recurso, HTTP methods, status codes.
-   [RECOMENDADO para la mayoria de APIs]
+## 3. Precondiciones
 
-b) GraphQL — queries flexibles, el cliente pide exactamente lo que necesita.
-   Mejor para: frontends complejos, datos muy relacionados, equipos separados.
+1. **Aprobación de Artefactos Upstream:**
+   - `docs/PRD.md` DEBE existir con `status: APPROVED`.
+   - `docs/ARCHITECTURE.md` DEBE existir con `status: APPROVED`.
+   - `docs/DATA_MODEL.md` DEBE existir con `status: APPROVED`.
+   - Queda terminantemente prohibido diseñar contratos de API si los artefactos previos están en estado `DRAFT` o ausentes.
+2. **Respeto a las Invariantes Heredadas:**
+   - Adoptar `governance_level` normado aguas arriba.
+   - Adoptar `api_style: "REST"` y prefijo canónico `base_path: "/api/v1"`.
+3. **Persistencia Garantizada:** El entorno debe permitir generar y versionar `docs/API_DESIGN.md`.
 
-c) gRPC — alta performance, tipado estricto, streaming.
-   Mejor para: microservicios internos, alta carga, comunicacion server-to-server.
+---
 
-d) RPC-style — endpoints por accion en vez de recurso.
-   Mejor para: operaciones complejas que no mapean bien a CRUD.
+## 4. Entradas (Inputs) desde Upstream
 
-⏳ Esperando tu respuesta.
-```
+La skill extrae deterministamente:
+- **Desde `docs/PRD.md`:**
+  - `project_id`: Identificador canónico del proyecto.
+  - `governance_level`: Nivel de gobernanza (`bajo`, `medio`, `alto`).
+  - `REQ-xxx` e `IN SCOPE`: Requerimientos funcionales y operaciones del dominio en el contexto acotado (bounded context) aprobado.
+  - `AC-xxx`: Criterios de aceptación observables asociados a las operaciones.
+  - `OUT OF SCOPE`: Prohibición explícita de operaciones o conceptos excluidos.
+- **Desde `docs/ARCHITECTURE.md`:**
+  - `COMP-xxx`: Componentes de software y subsistemas (servicios de dominio, interfaces de usuario).
+  - `AD-xxx`: Decisiones arquitectónicas vinculantes:
+    * Estilo de API y transporte (`AD-xxx`: HTTP REST, etc.).
+    * Frontera cliente-servidor (retención de estado en cliente vs endpoints en servidor).
+    * Estrategia de manejo de errores (Fail-Fast, respuestas estructuradas).
+    * Nivel de seguridad y autenticación.
+- **Desde `docs/DATA_MODEL.md`:**
+  - `ENT-xxx`: Entidades de persistencia y sus esquemas de atributos y tipos.
+  - `DTO-xxx`: Esquemas de datos y estructuras de transferencia ya formuladas.
+  - `IDX-xxx` e `INV-xxx`: Índices para parámetros de consulta e invariantes de validación.
 
-### 2. Convenciones de Nombrado
+---
 
-```
-? Que convenciones prefieres para los endpoints REST?
+## 5. Taxonomía Formal de Diseño de API
 
-a) Plural + kebab-case:
-   GET    /api/v1/productos
-   POST   /api/v1/productos
-   GET    /api/v1/productos/{id}
-   PATCH  /api/v1/productos/{id}
-   DELETE /api/v1/productos/{id}
-   [RECOMENDADO]
+Toda definición en esta fase debe utilizar los siguientes prefijos normativos:
 
-b) Singular + camelCase (menos comun):
-   GET    /api/v1/producto/{id}
+| Prefijo | Tipo de Elemento | Definición | Ejemplo Válido | Antipatrón Prohibido |
+| :--- | :--- | :--- | :--- | :--- |
+| **`EP-xxx`** | Endpoint de API | Contrato de operación HTTP expuesto por el backend. | `EP-001 [<operacion_recurso>]: GET /api/v1/<recursos>?q=termino` | `EP-999: POST /api/v1/checkout (OUT OF SCOPE)` o endpoints de mutación sin respaldo |
+| **`DTO-xxx`** | Objeto de Transferencia | Estructura JSON tipada para request o response. | `DTO-001 [<RespuestaRecurso>]: { id, nombre, valor }` | Schemas de credenciales o entidades fuera de alcance |
+| **`ERR-xxx`** | Error Estructurado | Código unívoco y máquina-legible para fallos y validaciones. | `ERR-001 [<RECURSO_NOT_FOUND>]: 404 al consultar ID inexistente.` | Mensajes de error en texto plano sin código estructurado o exposición de stack traces. |
 
-c) Accion + recurso (RPC-style):
-   POST   /api/v1/productos/buscar
-   POST   /api/v1/productos/{id}/activar
+---
 
-⏳ Esperando tu respuesta.
-```
+## 6. Regla de Oro Anti-Amnesia y No-Goldplating
 
-### 3. Versionamiento
+> 🛑 **REGLAS CONTRACTUALES DETERMINISTAS:**
+> 1. **Anti-Amnesia Estricta:** Si un concepto figura en `OUT OF SCOPE` en `docs/PRD.md` (usuarios, autenticación, contraseñas, tokens JWT, roles, pagos, tarjetas, pasarelas, transacciones financieras o recomendaciones), queda **ESTRICTAMENTE PROHIBIDO** definir endpoints, DTOs, headers de autorización o códigos de error asociados.
+> 2. **No-Goldplating (Fidelidad a Requerimientos / Read-Only cuando aplique):** La API de servidor debe exponer exclusivamente las operaciones respaldadas por el PRD. Si los requisitos del actor o caso de uso definen únicamente exploración o consulta (`solo lectura`), queda **ESTRICTAMENTE PROHIBIDO** inventar métodos de mutación (`POST`, `PUT`, `PATCH` o `DELETE`) no solicitados explícitamente.
+> 3. **Respeto a la Frontera Arquitectónica:** Si la arquitectura estableció retención de estado en el cliente (ej. Web Storage / LocalStorage), queda **ESTRICTAMENTE PROHIBIDO** inventar endpoints de persistencia en servidor para dicho estado.
+> 4. **Aislamiento Físico:** Queda **ESTRICTAMENTE PROHIBIDO** emitir listas de rutas físicas (`allowed_paths`) o código ejecutable de frameworks (`FastAPI`, `APIRouter`), delegados a `05-backend`.
 
-```
-? Necesitas versionar la API desde el inicio?
+---
 
-a) Si, con prefijo en URL: /api/v1/..., /api/v2/...
-   Mejor para: APIs publicas o que evolucionaran.
+## 7. Workflow de Elicitación Interactiva
 
-b) Si, con header: Accept: application/vnd.api+v1+json
-   Mejor para: APIs que no quieren exponer version en URL.
+El agente debe guiar al desarrollador respetando las decisiones previas y formulando preguntas con opciones claras ([AGENTS.md](AGENTS.md)):
 
-c) No, por ahora no necesito versionamiento.
-   Mejor para: MVP, APIs internas, prototipos.
+### Paso 1: Confirmación de Convenciones Base y Base Path
+- Validar prefijo unificado `base_path: "/api/v1"`.
+- Convención REST: Recursos en plural, kebab-case, respuestas JSON UTF-8.
 
-⏳ Esperando tu respuesta.
-```
+### Paso 2: Especificación de Endpoints de Colección y Búsqueda (`EP-001`)
+- **Método y Ruta:** `GET /api/v1/<recursos>`
+- **Parámetros de Consulta:** Sellar parámetros de consulta requeridos (ej. parámetro `q` para búsqueda textual).
+- **Códigos HTTP:**
+  - `200 OK`: Retorna colección estructurada en Envelope `DTO-xxx`.
+  - `400 Bad Request`: Si los parámetros exceden la longitud permitida o contienen caracteres inválidos (`ERR-002`).
 
-### 4. Endpoints por Entidad
+### Paso 3: Especificación de Endpoints de Consulta Unitaria (`EP-002`)
+- **Método y Ruta:** `GET /api/v1/<recursos>/{id}`
+- **Parámetro de Ruta:** `id`: Entero estrictamente positivo ($id \ge 1$).
+- **Códigos HTTP:**
+  - `200 OK`: Retorna `DTO-xxx` con los datos del recurso solicitado.
+  - `404 Not Found`: Si no existe un registro con dicho identificador (`ERR-001`).
+  - `400 Bad Request`: Si el identificador provisto no es válido (`ERR-002`).
 
-Para cada entidad del modelo de datos, preguntar:
+### Paso 4: Esquemas DTO de Transferencia de Datos (`DTO-xxx`)
+- **`DTO-001 [<RespuestaRecurso>]`:**
+  - Estructura atómica tipada de respuesta.
+- **`DTO-002 [<ListaRecursosResponse>]` (Envelope Estructurado):**
+  - `items`: Lista de elementos tipados, Not Null.
+  - `total`: Integer, Not Null.
+- **`DTO-ERR-001 [ErrorResponse]`:**
+  - `error_code`: String, Not Null (`ERR-001`, `ERR-002`, etc.).
+  - `message`: String, Not Null (mensaje legible).
+  - `detail`: String, Nullable (detalle técnico de validación).
 
-```
-Para la entidad {Entidad}:
+### Paso 5: Mapeo de Códigos de Estado y Manejo de Errores (`ERR-xxx`)
+- `ERR-001 [<RECURSO_NOT_FOUND>]`: HTTP 404. Recurso no encontrado para el ID provisto.
+- `ERR-002 [INVALID_PARAMETER]`: HTTP 400. Parámetro de ruta o query malformado o fuera de límites.
+- `ERR-500 [INTERNAL_SERVER_ERROR]`: HTTP 500. Falla no controlada del servidor.
 
-? Que operaciones CRUD necesita?
+### Paso 6: Sello de Operaciones Delegadas al Cliente
+- Documentar formalmente las operaciones que no generan endpoints en el servidor por residir en el cliente según las decisiones arquitectónicas.
 
-a) GET /{entidades}        — listar (con paginacion? filtros? orden?)
-b) GET /{entidades}/{id}   — obtener uno
-c) POST /{entidades}       — crear
-d) PATCH /{entidades}/{id} — actualizar parcial
-e) PUT /{entidades}/{id}   — actualizar completo
-f) DELETE /{entidades}/{id} — eliminar (soft o hard delete?)
+### Paso 7: Seguridad de Transporte y Gobernanza
+- Modo de acceso y políticas de cabeceras según el nivel de gobernanza.
+- Sanitización básica de parámetros query contra ataques de inyección.
+- Cabeceras de control CORS restrictivas orientadas a la interfaz cliente autorizada.
 
-? Necesita endpoints adicionales no CRUD?
-  Ej: POST /productos/{id}/activar, GET /usuarios/{id}/reportes
+---
 
-⏳ Vamos entidad por entidad. Empecemos por {primera entidad}.
-```
+## 8. Señales de Alerta (Red Flags)
 
-### 5. Paginacion, Filtros y Ordenamiento
+Si se detecta cualquiera de las siguientes conductas, la ejecución debe detenerse de inmediato:
+- 🚩 **Amnesia de Scope:** Proponer endpoints tipo `/api/v1/auth/**`, `/api/v1/users/**`, `/api/v1/payments/**` o `/api/v1/recommendations/**`.
+- 🚩 **Violación del DAG Arquitectónico:** Proponer estilos de transporte incompatibles con la arquitectura sellada.
+- 🚩 **Violación de Estado en Cliente:** Diseñar endpoints de servidor para entidades formalmente delegadas al almacenamiento del cliente.
+- 🚩 **Goldplating de Mutación:** Definir métodos `POST`, `PUT`, `PATCH`, `DELETE` no respaldados en los requerimientos del PRD.
+- 🚩 **Aislamiento Físico Violado:** Dictar listas `allowed_paths` o emitir código ejecutable de framework.
 
-```
-Para los endpoints que devuelven listas:
+---
 
-? Que tipo de paginacion prefieres?
+## 9. Contrato de Salida Formal (`docs/API_DESIGN.md`)
 
-a) Offset-based: ?page=1&limit=20
-   Simple, familiar. Problema: inconsistencia si se insertan/borran registros.
+El artefacto generado DEBE ubicarse en `docs/API_DESIGN.md` y cumplir con la siguiente estructura:
 
-b) Cursor-based: ?cursor=abc123&limit=20
-   Consistente. Mejor para datos que cambian frecuentemente.
-   [RECOMENDADO para datos en tiempo real o feeds]
+```markdown
+---
+project_id: "<project-id>"
+project_name: "<Nombre del Proyecto>"
+version: 1
+status: "DRAFT"
+governance_level: "bajo" | "medio" | "alto"
+api_style: "REST"
+base_path: "/api/v1"
+created_at: "YYYY-MM-DD"
+updated_at: "YYYY-MM-DD"
+---
 
-c) Sin paginacion — devolver todo (solo si el volumen es muy bajo)
+# Especificación de Diseño de API — [Nombre del Proyecto]
 
-? Que campos se podran filtrar?
-  Ej: ?estado=activo&categoria=electronica&precio_min=1000
+## 1. Contexto e Invariantes Heredadas
+- PRD de Referencia y Nivel de Gobernanza.
+- Arquitectura de Referencia (COMP-xxx, AD-xxx).
+- Modelo de Datos de Referencia (ENT-xxx, DTO-xxx).
+- Restricciones de OUT OF SCOPE.
 
-? Que campos se podran ordenar?
-  Ej: ?order_by=nombre&order_dir=asc
+## 2. Catálogo de Endpoints de Servidor (Server Endpoints)
+- **EP-001 [<operacion_coleccion>]:**
+  - Método: GET
+  - Ruta: /api/v1/<recursos>
+  - Query Params: q (String, opcional)
+  - Respuestas: 200 OK (DTO-002), 400 Bad Request (DTO-ERR-001)
+- **EP-002 [<operacion_unitaria>]:**
+  - Método: GET
+  - Ruta: /api/v1/<recursos>/{id}
+  - Path Params: id (Integer >= 1)
+  - Respuestas: 200 OK (DTO-001), 404 Not Found (DTO-ERR-001), 400 Bad Request
 
-⏳ Esperando tu respuesta.
-```
+## 3. Esquemas de Transferencia de Datos (DTO Schemas)
+- **DTO-001 [<RespuestaRecurso>]:** Estructura unitaria tipada
+- **DTO-002 [<ListaRecursosResponse>]:** Envelope { items: list, total: int }
+- **DTO-ERR-001 [ErrorResponse]:** error_code, message, detail
 
-### 6. Formato de Request/Response
+## 4. Mapeo de Códigos de Estado y Manejo de Errores
+- **ERR-001 [<RECURSO_NOT_FOUND>]:** HTTP 404
+- **ERR-002 [INVALID_PARAMETER]:** HTTP 400
+- **ERR-500 [INTERNAL_SERVER_ERROR]:** HTTP 500
 
-```
-? Como deben verse las respuestas?
+## 5. Gestión de Estado en Cliente y Desacoplamiento de Servidor
+- Explicación formal de las operaciones delegadas al cliente según la arquitectura.
 
-a) Data plana:
-   { "id": 1, "nombre": "Producto X", "precio": 100 }
+## 6. Seguridad de Transporte y Gobernanza
+- Modo de acceso operacional, sanitización de parámetros y CORS.
 
-b) Envelope estandar:
-   {
-     "data": { "id": 1, "nombre": "Producto X" },
-     "meta": { "request_id": "abc" }
-   }
-   [RECOMENDADO para APIs que necesitan metadata]
-
-c) Listas con envelope:
-   {
-     "data": [...],
-     "meta": { "page": 1, "limit": 20, "total": 150 }
-   }
-
-? Incluimos campos de auditoria en la respuesta?
-  (created_at, updated_at — segun gobernanza)
-
-? Las fechas en que formato? ISO 8601? Timestamp Unix?
-
-⏳ Esperando tu respuesta.
-```
-
-### 7. Manejo de Errores
-
-```
-? Como deben reportarse los errores?
-
-a) RFC 7807 (Problem Details):
-   {
-     "type": "https://api.ejemplo.com/errores/validacion",
-     "title": "Error de validacion",
-     "status": 422,
-     "detail": "El campo 'email' no es valido",
-     "instance": "/api/v1/usuarios",
-     "errors": [
-       { "field": "email", "message": "Formato de email invalido" }
-     ]
-   }
-   [RECOMENDADO para APIs publicas o de terceros]
-
-b) Formato simple:
-   { "error": "El campo 'email' no es valido" }
-   Mejor para: APIs internas, MVPs.
-
-? Que codigos HTTP usaremos consistentemente?
-  - 200 OK, 201 Created
-  - 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found
-  - 409 Conflict, 422 Unprocessable Entity
-  - 500 Internal Server Error
-
-⏳ Esperando tu respuesta.
-```
-
-### 8. Autenticacion en Endpoints
-
-Basado en el nivel de gobernanza:
-
-```
-Gobernanza {nivel}. Estrategia de auth:
-
-Bajo: Sin autenticacion en endpoints.
-Medio: JWT en header Authorization: Bearer {token} para endpoints protegidos.
-       Endpoints publicos: login, registro (si aplica).
-Alto: JWT + RBAC. Cada endpoint declara que roles pueden acceder.
-
-? Que endpoints son publicos y cuales requieren autenticacion?
-? Que endpoints requieren roles especificos?
-```
-
-### 9. Documentacion
-
-```
-? Como documentaremos la API?
-
-a) OpenAPI (Swagger) — especificacion YAML/JSON, UI interactiva con Swagger UI
-   [RECOMENDADO]
-
-b) Postman Collection — exportable como JSON
-
-c) Markdown manual — archivo API.md con endpoints documentados
-
-d) Sin documentacion por ahora — MVP
-
-⏳ Esperando tu respuesta.
+## 7. Matriz de Linaje Contractual y Trazabilidad
+- Mapeo bidireccional entre REQ-xxx / AC-xxx <-> COMP-xxx <-> ENT-xxx <-> EP-xxx <-> DTO-xxx.
 ```
 
 ---
 
-## Verificacion Post-Generacion
+## 10. Verificación del Artefacto
 
-- [ ] Todos los endpoints mapean a entidades del modelo de datos
-- [ ] Cada endpoint tiene metodo HTTP, path, request/response schema
-- [ ] Estrategia de paginacion, filtros y orden definida
-- [ ] Formato de respuesta (envelope o plano) definido
-- [ ] Manejo de errores definido (RFC 7807 o simple)
-- [ ] Endpoints publicos vs protegidos claramente marcados
-- [ ] Roles requeridos documentados (si gobernanza media/alta)
-- [ ] Estrategia de documentacion definida
+Antes de considerar concluida la especificación, verificar:
+- [ ] Frontmatter YAML completo con `project_id`, `version: 1`, `status: "DRAFT"`, `governance_level`, `api_style: "REST"`, `base_path: "/api/v1"`.
+- [ ] Todos los endpoints del servidor usan prefijo `EP-xxx` unívoco.
+- [ ] Fidelidad estricta al alcance de requerimientos (sin métodos de mutación no autorizados).
+- [ ] Envelopes estructurados de respuesta (`items` y `total`).
+- [ ] Cero endpoints para conceptos en `OUT OF SCOPE` (usuarios, auth, pagos, recomendaciones).
+- [ ] Cero endpoints de persistencia para estados formalmente delegados al cliente.
+- [ ] Códigos de error `ERR-xxx` y DTOs formalmente definidos.
+- [ ] No se emiten rutas físicas de código (`allowed_paths`) ni código ejecutable de frameworks.
 
-## Condicion de Cierre
+---
 
-```
-Voy a generar la especificacion de API con todos los endpoints.
-¿Confirmas que el diseno es correcto?
+## 11. Criterio de Término
 
-⏳ Esperando tu confirmacion.
-```
+El diseño de API concluye únicamente cuando el usuario aprueba formalmente `docs/API_DESIGN.md`, momento en el cual el frontmatter se actualiza a `status: "APPROVED"` para habilitar la transición a `05-backend` y `06-frontend`.
+
+---
+
+## Reference Context: Demo Implementation (catalogo-carrito-web)
+
+En la implementación de referencia demostrativa (`catalogo-carrito-web`), los principios metodológicos generales de esta skill se instancian en los siguientes contratos:
+- **Endpoints de Catálogo (`EP-xxx`):**
+  - `EP-001 [list_products]`: `GET /api/v1/products?q=termino` retornando `DTO-PROD-LIST-001` con filtrado insensible a mayúsculas y paginación básica (`REQ-001`, `REQ-002`).
+  - `EP-002 [get_product_by_id]`: `GET /api/v1/products/{id}` retornando `DTO-PROD-RES-001` o error 404 estructurado.
+- **Esquemas de Transferencia (`DTO-xxx`):**
+  - `DTO-PROD-RES-001 [ProductResponse]`: `{ id: int, name: str, description: str | None, price: float }`.
+  - `DTO-PROD-LIST-001 [ProductListResponse]`: `{ items: ProductResponse[], total: int }`.
+  - `DTO-ERR-001 [ErrorEnvelope]`: `{ error_code: str, message: str, detail: str }`.
+- **Catálogo de Errores (`ERR-xxx`):** `ERR-001` (404 Not Found), `ERR-002` (400 Bad Request por parámetro inválido o `q > 100`), `ERR-500` (500 Internal Server Error).
+- **Frontera de Carrito (`AD-003`):** Cero endpoints de servidor para el carrito (`/carts`, `/cart-items`), ya que el estado reside en `localStorage` del cliente (`DTO-CART-001`).
+- **Invariante de Solo Lectura:** La API para el MVP de catálogo es 100% de solo lectura (únicamente métodos `GET` autorizados, prohibidos `POST/PUT/PATCH/DELETE` sobre `/products`).

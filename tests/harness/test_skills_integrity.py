@@ -58,17 +58,27 @@ def test_skills_frontmatter_schema_and_yaml_validity():
 
 
 def test_portable_skills_package_synchronized():
-    """Verifica que el paquete portable harness/skills/ contiene las 12 especificaciones correspondientes."""
+    """Verifica que el paquete portable harness/skills/ está 100% sincronizado byte a byte con la fuente de verdad (.agents/skills/)."""
+    import sys
+    if str(ROOT_DIR) not in sys.path:
+        sys.path.insert(0, str(ROOT_DIR))
+    from harness.sync_skills import SKILL_MAPPING
+
+    skills_base = ROOT_DIR / ".agents" / "skills"
     portable_base = ROOT_DIR / "harness" / "skills"
     assert portable_base.exists()
-    
+
     portable_files = list(portable_base.glob("*.md"))
     assert len(portable_files) >= 12, "harness/skills no contiene los 12 archivos de skill portables"
-    
-    for p_file in portable_files:
-        content = p_file.read_text(encoding="utf-8")
-        parts = content.split("---", 2)
-        if len(parts) >= 3:
-            fm = yaml.safe_load(parts[1])
-            assert "name" in fm
-            assert "description" in fm
+
+    for skill_name, portable_name in SKILL_MAPPING.items():
+        native_file = skills_base / skill_name / "SKILL.md"
+        portable_file = portable_base / portable_name
+
+        assert native_file.exists(), f"Fuente de verdad faltante: {native_file}"
+        assert portable_file.exists(), f"Archivo portable faltante: {portable_file}"
+
+        # Validación estricta de paridad byte a byte
+        assert native_file.read_bytes() == portable_file.read_bytes(), (
+            f"Desincronización detectada entre {native_file} y {portable_file}"
+        )

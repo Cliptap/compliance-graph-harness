@@ -647,7 +647,7 @@ Ejecución de la suite completa automatizada sobre el producto *As-Is* mediante 
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.11.x, pytest-9.0.3, pluggy-1.5.0
-rootdir: C:\Users\andre\Documents\VSC Projects\vibecoding
+rootdir: .
 configfile: pyproject.toml
 collected 38 items
 
