@@ -447,7 +447,8 @@ class PolicyEngine:
 
     def __init__(self, policies: list[BasePolicy] | None = None):
         if policies is None:
-            from src.harness.exposure_policy import ApiPersonalDataExposurePolicy  # avoids circular import
+            from src.harness.dimension_policy import PersonalDataDimensionsPolicy  # avoids circular import
+            from src.harness.exposure_policy import ApiPersonalDataExposurePolicy
             from src.harness.payment_policy import PaymentDataStoragePolicy
 
             self.policies: list[BasePolicy] = [
@@ -455,6 +456,7 @@ class PolicyEngine:
                 SensitiveLoggingPolicy(),
                 ApiPersonalDataExposurePolicy(),
                 PaymentDataStoragePolicy(),
+                PersonalDataDimensionsPolicy(),
                 DomainInvariantPolicy(),
                 DependencyPolicy(),
             ]

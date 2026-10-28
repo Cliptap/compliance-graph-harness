@@ -442,9 +442,13 @@ class StatelessAuditor:
             plugin_name=plugin_name,
             law_article=criterion.law_article,
             title=criterion.title,
-            status="PASSED",
+            status="NOT_APPLICABLE",
             severity=criterion.severity,
-            details="Evaluación conforme con los estándares normativos.",
+            details=(
+                "El auditor stateless no tiene un evaluador para este control. Se resuelve en el "
+                "PolicyEngine (detectores de dimensión) o con evidencia documental; nunca se marca "
+                "PASSED por omisión."
+            ),
         )
 
     def _persist_evaluation(self, file_path: str, file_node_id: str, res: ChecklistEvaluationResult) -> None:
