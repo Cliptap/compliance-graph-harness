@@ -61,6 +61,7 @@ class _Func:
     cls: str | None
     params: list[str]
     body: list[ast.stmt]
+    parent: str | None = None
 
 
 @dataclass
@@ -109,6 +110,7 @@ class _Program:
         self.funcs: dict[str, _Func] = {}
         self.module_funcs: dict[tuple[str, str], str] = {}
         self.methods: dict[tuple[str, str, str], str] = {}
+        self.scoped: dict[tuple[str, str], str] = {}
         self.by_name: dict[str, list[str]] = {}
         self.imported: dict[str, dict[str, str]] = {}
         self.modules: dict[str, set[str]] = {}
@@ -124,15 +126,19 @@ class _Program:
         for stmt in tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 key = f"{file}::{stmt.name}"
-                self._add(_Func(key, file, stmt.name, None, _params(stmt, False), stmt.body))
+                func = _Func(key, file, stmt.name, None, _params(stmt, False), stmt.body)
+                self._add(func)
                 self.module_funcs[(file, stmt.name)] = key
                 self.by_name.setdefault(stmt.name, []).append(key)
+                self._index_nested(func, stmt.body)
             elif isinstance(stmt, ast.ClassDef):
                 for item in stmt.body:
                     if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         key = f"{file}::{stmt.name}.{item.name}"
-                        self._add(_Func(key, file, item.name, stmt.name, _params(item, True), item.body))
+                        func = _Func(key, file, item.name, stmt.name, _params(item, True), item.body)
+                        self._add(func)
                         self.methods[(file, stmt.name, item.name)] = key
+                        self._index_nested(func, item.body)
             else:
                 top.append(stmt)
             if isinstance(stmt, ast.ImportFrom):
@@ -142,12 +148,60 @@ class _Program:
                 self.modules[file].update(a.asname or a.name.split(".")[0] for a in stmt.names)
         self._add(_Func(f"{file}::<module>", file, "<module>", None, [], top))
 
+    def _index_nested(self, parent: _Func, body: list[ast.stmt]) -> None:
+        for stmt in self._blocks(body):
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                key = f"{parent.key}.{stmt.name}"
+                child = _Func(key, parent.file, stmt.name, None, _params(stmt, False), stmt.body,
+                              parent=parent.key)
+                self._add(child)
+                self.scoped[(parent.key, stmt.name)] = key
+                self._index_nested(child, stmt.body)
+            elif isinstance(stmt, ast.ClassDef):
+                for item in stmt.body:
+                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        key = f"{parent.key}.{stmt.name}.{item.name}"
+                        child = _Func(key, parent.file, item.name, stmt.name, _params(item, True),
+                                      item.body, parent=parent.key)
+                        self._add(child)
+                        self.methods[(parent.file, stmt.name, item.name)] = key
+                        self._index_nested(child, item.body)
+
+    @staticmethod
+    def _blocks(body: Iterable[ast.stmt]) -> Iterable[ast.stmt]:
+        for stmt in body:
+            yield stmt
+            if isinstance(stmt, (ast.If, ast.For, ast.AsyncFor, ast.While, ast.With, ast.AsyncWith)):
+                yield from _Program._blocks(stmt.body)
+                yield from _Program._blocks(getattr(stmt, "orelse", []))
+            elif isinstance(stmt, ast.Try):
+                yield from _Program._blocks(stmt.body)
+                yield from _Program._blocks(stmt.orelse)
+                yield from _Program._blocks(stmt.finalbody)
+                for handler in stmt.handlers:
+                    yield from _Program._blocks(handler.body)
+            elif isinstance(stmt, ast.Match):
+                for case in stmt.cases:
+                    yield from _Program._blocks(case.body)
+
+    def _scoped(self, caller: _Func, name: str) -> str | None:
+        scope: _Func | None = caller
+        while scope is not None:
+            key = self.scoped.get((scope.key, name))
+            if key:
+                return key
+            scope = self.funcs.get(scope.parent) if scope.parent else None
+        return None
+
     def _elsewhere(self, file: str, name: str) -> str | None:
         found = [k for k in self.by_name.get(name, []) if self.funcs[k].file != file]
         return found[0] if len(found) == 1 else None
 
     def resolve(self, caller: _Func, func: ast.expr) -> str | None:
         if isinstance(func, ast.Name):
+            scoped = self._scoped(caller, func.id)
+            if scoped:
+                return scoped
             local = self.module_funcs.get((caller.file, func.id))
             if local:
                 return local

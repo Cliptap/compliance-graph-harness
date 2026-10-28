@@ -118,3 +118,47 @@ def test_without_flow_tracking_the_previous_local_behavior_holds():
 def test_non_python_files_keep_the_line_scan():
     [f] = violations({"src/a.js": "const msg = user.rut;\nconsole.log(user.rut);\n"})
     assert f.line == 2
+
+
+def test_flow_inside_a_nested_fastapi_route():
+    code = (
+        "def create_app():\n"
+        "    @app.post('/checkout')\n"
+        "    def checkout(customer):\n"
+        "        rut = customer['rut']\n"
+        "        value = rut\n"
+        "        logger.info('value=%s', value)\n"
+        "    return app\n"
+    )
+    [f] = violations({"src/app.py": code})
+    assert (f.file, f.line) == ("src/app.py", 6)
+    assert "customer[rut]" in f.message or "customer['rut']" in f.message
+
+
+def test_a_nested_helper_receives_taint_from_its_parent():
+    code = (
+        "def outer(customer):\n"
+        "    def log_value(value):\n"
+        "        logger.info('value=%s', value)\n"
+        "    rut = customer['rut']\n"
+        "    log_value(rut)\n"
+    )
+    [f] = violations({"src/a.py": code})
+    assert (f.file, f.line) == ("src/a.py", 3)
+
+
+def test_a_sibling_nested_helper_resolves_from_the_same_parent():
+    code = (
+        "def outer():\n"
+        "    def inner(value):\n"
+        "        logger.info(value)\n"
+        "    def caller(customer):\n"
+        "        inner(customer['rut'])\n"
+    )
+    [f] = violations({"src/a.py": code})
+    assert (f.file, f.line) == ("src/a.py", 3)
+
+
+def test_a_nested_function_without_sensitive_data_is_clean():
+    code = "def outer():\n    def inner(value):\n        print(value)\n    inner(42)\n"
+    assert violations({"src/a.py": code}) == []
