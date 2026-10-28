@@ -1,6 +1,6 @@
 ---
 name: compliance-patch
-version: 1.1.0
+version: 1.2.0
 description: Parcheo supervisado de hallazgos de cumplimiento normativo (Ley 21.719, Ley 20.584, CWE-532). Usar para corregir hallazgos confirmados de una auditoria con el cambio minimo, verificando que no se rompa comportamiento existente.
 ---
 
@@ -20,7 +20,7 @@ description: Parcheo supervisado de hallazgos de cumplimiento normativo (Ley 21.
 
 ## Reglas
 - Respeta el alcance: modifica solo los archivos necesarios para el hallazgo.
-- Patrones tipicos: enmascarar o redactar antes de registrar; quitar campos sensibles o credenciales del esquema de respuesta; sustituir borrado fisico de fichas clinicas por bloqueo logico o archivado; reemplazar un numero de tarjeta o CVV persistido por el token de la pasarela y los ultimos cuatro digitos.
+- Patrones tipicos: enmascarar o redactar antes de registrar; quitar campos sensibles o credenciales del esquema de respuesta; sustituir borrado fisico de fichas clinicas por bloqueo logico o archivado; reemplazar un numero de tarjeta o CVV persistido por el token de la pasarela y los ultimos cuatro digitos; cambiar un consentimiento premarcado a `default=False`; reemplazar una plantilla biometrica cruda por un identificador o hash; agregar plazo de conservacion y purga; agregar una ruta de revocacion equiparable al otorgamiento.
 - Si la correccion cambia una API usada por otros (campos de respuesta eliminados) o el esquema de una tabla con datos existentes, senalalo como cambio de contrato y pide confirmacion antes de aplicarlo.
 - Si la unica mitigacion posible es una decision legal o de producto (base de licitud, plazo de conservacion), no la inventes: devuelve la pregunta concreta.
 

@@ -1,6 +1,6 @@
 ---
 name: compliance-dev
-version: 1.1.0
+version: 1.2.0
 description: Desarrollo con cumplimiento normativo (Ley 21.719, Ley 20.584, CWE-532). Usar al crear o modificar codigo que trate datos personales o de salud. Aplica los controles del pack normativo distinguiendo obligacion legal, medida segun riesgo y estandar interno.
 ---
 
@@ -31,6 +31,11 @@ Lee `.harness/packs/cl-ley-21719.json`. Cada control declara `requirement_type`,
 - Brechas de seguridad: registrar la vulneracion; el reporte a la Agencia es "sin dilaciones indebidas" (la ley no fija horas).
 - Datos de menores de 14 anos o sensibles (incluida la situacion socioeconomica): tratarlos con las medidas mas estrictas y preguntar antes de decidir una base de licitud.
 - Minimizar: no pedir ni guardar campos que la finalidad no necesita.
+- Derechos del titular (Arts. 4-11, 10): si el sistema guarda datos personales, expone rutas alcanzables para acceso, rectificacion, cancelacion, oposicion, portabilidad y bloqueo; modela un estado `blocked` que las rutas de procesamiento respeten y registra la fecha de la solicitud (30 dias corridos, 30 de prorroga, 2 dias habiles para el bloqueo).
+- Consentimiento y transparencia (Arts. 12, 14 ter, 8 b): guarda fecha, finalidad y version de la politica; nunca premarcado ni `default=True`; la revocacion debe ser tan alcanzable como el otorgamiento; publica la politica de privacidad con version, fecha y canal de contacto.
+- Menores y datos sensibles (Arts. 2 g, 16, 16 ter, 16 quater, 16 sexies): consentimiento explicito antes de tratar datos sensibles, compuerta de edad en 14 y 16, geolocalizacion solo con aviso y consentimiento, jamas plantillas biometricas crudas (guarda un identificador o hash irreversible).
+- Conservacion (Arts. 3 c, 14 quater, 17-18): declara un plazo por entidad y una rutina de purga o anonimizacion real (no reversible); un `deleted_at` no anonimiza por si solo.
+- Terceros y transferencias (Arts. 15 bis, 27): registra cada SDK, pasarela o API que reciba datos personales y su region; los contratos y la base de transferencia son evidencia documental.
 
 ## Cierre de tarea
 Antes de terminar, si existe la herramienta `compliance_check`, ejecutala con los archivos cambiados y corrige las infracciones. Si el repositorio tiene instalada la compuerta previa al commit (`python -m src.harness.precommit --install`), el commit se bloqueara con el control y el articulo citados si queda una fuga; la compuerta no impide `git commit --no-verify`. Informa en una linea que controles aplicaste y cuales quedaron fuera por no aplicar.

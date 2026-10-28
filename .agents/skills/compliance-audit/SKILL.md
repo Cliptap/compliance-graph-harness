@@ -1,6 +1,6 @@
 ---
 name: compliance-audit
-version: 1.1.0
+version: 1.2.0
 description: Auditoria de cumplimiento normativo sobre codigo existente (Ley 21.719, Ley 20.584, CWE-532). Usar para revisar un repositorio o diff y emitir hallazgos con resultado tipificado y evidencia, sin modificar codigo.
 ---
 
@@ -29,8 +29,15 @@ description: Auditoria de cumplimiento normativo sobre codigo existente (Ley 21.
 | `privacy.api_exposure` | respuestas de API con credenciales o identificadores sin enmascarar | CORE-CHECK-002 |
 | `privacy.payment_data_storage` | CVV o numero de tarjeta sin cifrar persistido en un modelo ORM | ECOM-CHECK-003 |
 | `domain.prohibited_deletion` | borrado fisico de fichas clinicas | HEALTH-CHECK-001 |
+| `privacy.rights_reachability` | rutas alcanzables de acceso, rectificacion, cancelacion, oposicion, portabilidad y bloqueo; estado `blocked` y marcas de tiempo de la solicitud | CORE-CHECK-006 |
+| `privacy.consent_transparency` | consentimiento premarcado o por defecto `True`, registro sin fecha/finalidad/version, revocacion inalcanzable, plantilla promocional sin baja, ausencia de politica de privacidad | CORE-CHECK-005/007, ECOM-CHECK-001 |
+| `privacy.minors_and_sensitive` | campos sensibles sin consentimiento explicito, plantillas biometricas crudas, edad sin compuerta 14/16, geolocalizacion sin aviso | CORE-CHECK-012, ECOM-CHECK-007 |
+| `privacy.retention_minimization` | campo personal persistido sin plazo de conservacion ni rutina de purga/anonimizacion; soft delete que conserva datos personales | CORE-CHECK-013 |
+| `privacy.third_party_transfers` | inventario de hosts/SDK de terceros que pueden recibir datos personales (evidencia parcial; contratos y base de transferencia quedan documentales) | CORE-CHECK-010/011, ECOM-CHECK-005 |
 
-Limites conocidos y publicados en el corpus (`harness/eval/corpus/cases.json`): no se detectan modelos de respuesta importados de otro archivo, SQL crudo ni datos de tarjeta dentro de una columna JSON. El flujo hacia logs solo resuelve funciones de los archivos evaluados (en la compuerta, los del indice de git); una llamada no resuelta solo propaga el dato desde su receptor o si es una funcion que conserva el valor (`str`, `json.dumps`, `format`), y un diccionario con un RUT queda marcado completo. Si un archivo es demasiado profundo para el analisis de flujo, recibe un aviso (`WARNING`) y en ese cambio solo se conserva el flujo dentro de cada archivo, no entre archivos.
+Los detectores de dimension (T16-T20) trabajan sobre artefactos neutrales al lenguaje (rutas, modelos SQL/Prisma, plantillas, configuracion) y estructura Python. Emiten `potential_risk` (`WARNING`) cuando falta un artefacto y `confirmed_violation` solo cuando el codigo contradice una salvaguarda explicita. Un `WARNING` no es una violacion confirmada: no lo reportes como tal.
+
+Limites conocidos y publicados en el corpus (`harness/eval/corpus/cases.json`): no se detectan modelos de respuesta importados de otro archivo, SQL crudo ni datos de tarjeta dentro de una columna JSON. El flujo hacia logs solo resuelve funciones de los archivos evaluados (en la compuerta, los del indice de git); una llamada no resuelta solo propaga el dato desde su receptor o si es una funcion que conserva el valor (`str`, `json.dumps`, `format`), y un diccionario con un RUT queda marcado completo. Si un archivo es demasiado profundo para el analisis de flujo, recibe un aviso (`WARNING`) y en ese cambio solo se conserva el flujo dentro de cada archivo, no entre archivos. Los chequeos de derechos, retencion y terceros son heuristicos de conjunto de cambios: no reemplazan la revision documental y su ausencia no prueba incumplimiento.
 
 ## Evidencia documental que debes pedir
 | Control | Evidencia a solicitar |
