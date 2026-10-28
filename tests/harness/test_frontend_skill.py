@@ -155,40 +155,57 @@ def test_skill_structure_and_contract_sections():
 # TEST 2: Validación del Esquema de TaskSpec y Delimitación Perimetral
 # ==============================================================================
 def test_frontend_skill_contract_schema_and_taskspec_rules():
-    """Valida que la skill define formalmente TaskSpec con allowed_paths, forbidden_paths y prevención de orphan changes."""
+    """Valida que la skill define formalmente TaskSpec agnóstico en el cuerpo normativo y la demo en Reference Context."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        assert "TaskSpec(" in content
-        assert "allowed_paths" in content
-        assert "forbidden_paths" in content
-        assert "orphan_change" in content or "orphan changes" in content.lower()
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
 
-        # Estándar metodológico genérico
-        assert "<bounded_context>" in content or "contexto acotado" in content.lower()
+        # Estándar metodológico en el cuerpo normativo:
+        assert "TaskSpec(" in normative
+        assert "allowed_paths" in normative
+        assert "forbidden_paths" in normative
+        assert "orphan_change" in normative or "orphan changes" in normative.lower()
+        assert "<bounded_context>" in normative or "contexto acotado" in normative.lower()
+        assert "src/frontend/**" in normative
+        assert "tests/frontend/**" in normative
+        assert "src/backend/**" in normative   # Preservación clínica
+        assert "src/database/**" in normative  # Preservación clínica
 
-        # Coexistencia de la sección de contexto de referencia de la demo
-        assert "Reference Context: Demo Implementation" in content
-        assert "src/frontend/**" in content
-        assert "tests/frontend/**" in content
-        assert "src/backend/**" in content   # Preservación clínica
-        assert "src/database/**" in content  # Preservación clínica
-        assert "src/catalog/**" in content   # Preservación de backend sellado
-        assert "src/shared/**" in content    # Preservación de backend sellado
+        # Ausencia de acoplamiento de catálogo en el cuerpo normativo:
+        assert "src/catalog/**" not in normative
+
+        # Sección Reference Context de la demo:
+        assert len(ref_context) > 0
+        assert "src/catalog/**" in ref_context
+        assert "src/shared/**" in ref_context
 
 
 # ==============================================================================
 # TEST 3: Topología del Código Frontend
 # ==============================================================================
 def test_frontend_skill_codebase_layout_compliance():
-    """Valida que la skill prescribe la topología canónica (index.html, styles.css, api.js, cart.js, app.js)."""
+    """Valida que la skill prescribe la topología canónica agnóstica y los archivos demo en Reference Context."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        assert "src/frontend/index.html" in content
-        assert "src/frontend/styles.css" in content
-        assert "src/frontend/api.js" in content
-        assert "src/frontend/cart.js" in content
-        assert "src/frontend/app.js" in content
-        assert "tests/frontend/test_catalog_frontend.py" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        # Topología agnóstica en el cuerpo normativo:
+        assert "index.html" in normative
+        assert "styles.css" in normative
+        assert "api.js" in normative
+        assert "app.js" in normative
+
+        # En la instanciación de referencia demo (Reference Context):
+        assert "src/frontend/index.html" in ref_context
+        assert "src/frontend/styles.css" in ref_context
+        assert "src/frontend/api.js" in ref_context
+        assert "src/frontend/cart.js" in ref_context
+        assert "src/frontend/app.js" in ref_context
+        assert "tests/frontend/test_catalog_frontend.py" in ref_context
 
 
 # ==============================================================================

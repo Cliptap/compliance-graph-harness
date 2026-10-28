@@ -5,7 +5,7 @@ depends_on: [prd-generation, architecture-design]
 stage: 2
 project_types: [web_app, api, data_pipeline, cli_tool, mobile]
 governance: all
-description: Diseno del modelo de datos. Define entidades (ENT-xxx), atributos, tipos, relaciones, indices (IDX-xxx), esquemas de persistencia y almacenamiento cliente (DTO-CART-xxx), invariantes de datos (INV-xxx) y datos semilla (SEED-xxx) respetando el PRD y la Arquitectura.
+description: Diseno del modelo de datos. Define entidades (ENT-xxx), atributos, tipos, relaciones, indices (IDX-xxx), esquemas de persistencia y almacenamiento cliente (DTO-xxx), invariantes de datos (INV-xxx) y datos semilla (SEED-xxx) respetando el PRD y la Arquitectura.
 ---
 
 # Skill 03: Modelado y Diseño de Datos (Data Modeling)
@@ -19,7 +19,7 @@ Su propósito fundamental es responder con rigor técnico:
 
 La skill opera bajo tres principios de interoperabilidad del arnés:
 1. **Regla de Oro Anti-Amnesia:** Está estrictamente prohibido modelar entidades, tablas o esquemas para conceptos sentenciados como `OUT OF SCOPE` en el PRD (cero usuarios, cuentas, credenciales, sesiones de servidor, pagos o recomendaciones).
-2. **Coherencia con Decisiones Arquitectónicas (Anti-Deriva DAG):** El motor de base de datos no se re-delibera si ya fue sellado en `docs/ARCHITECTURE.md` (ej: persistencia relacional SQLite/SQLAlchemy en `AD-005`). Del mismo modo, si la arquitectura estableció que el carrito reside en el almacenamiento del cliente (`AD-003`), la skill **no debe crear tablas relacionales de servidor para el carrito**, sino modelar formalmente la estructura de datos del cliente (LocalStorage).
+2. **Coherencia con Decisiones Arquitectónicas (Anti-Deriva DAG):** El motor de persistencia y base de datos no se re-delibera si ya fue sellado en `docs/ARCHITECTURE.md`. Del mismo modo, si la arquitectura estableció que determinado estado o contexto de usuario reside en el almacenamiento del cliente (`AD-xxx`), la skill **no debe crear tablas relacionales de servidor para entidades delegadas al cliente**, sino modelar formalmente la estructura de datos del cliente (Web Storage / LocalStorage) mediante DTOs formales.
 3. **Principio de Desacoplamiento y Progresión:** La skill define entidades lógicas/físicas, tipos conceptuales, índices e invariantes, pero no adelanta contratos HTTP detallados (delegado a `04-api-design`), ni código de implementación ORM/migraciones o rutas físicas de archivos (`allowed_paths`, delegado a `05-backend`).
 
 ---
@@ -55,8 +55,8 @@ La skill extrae deterministamente:
 - **Desde `docs/ARCHITECTURE.md`:**
   - `COMP-xxx`: Componentes de software y subsistemas (servicios de dominio, persistencia, clientes de datos).
   - `AD-xxx`: Decisiones arquitectónicas vinculantes que determinan:
-    * El motor y tecnología de persistencia del servidor (`AD-005`).
-    * La frontera de almacenamiento entre cliente y servidor (`AD-003`: Web Storage / LocalStorage vs. base relacional).
+    * El motor y tecnología de persistencia del servidor.
+    * La frontera de almacenamiento entre cliente y servidor (Web Storage / LocalStorage vs. base de datos de servidor).
     * La topología y layout de módulos.
 
 ---
@@ -67,11 +67,11 @@ Toda definición técnica en esta fase debe utilizar los siguientes prefijos nor
 
 | Prefijo | Tipo de Elemento | Definición | Ejemplo Válido | Antipatrón Prohibido |
 | :--- | :--- | :--- | :--- | :--- |
-| **`ENT-xxx`** | Entidad de Persistencia | Entidad almacenada en base de datos de servidor con tabla/colección formal. | `ENT-001 [Product]: Entidad de persistencia en base de datos según AD-005.` | `ENT-999 [User]: Tabla de usuarios y contraseñas (OUT OF SCOPE).` |
-| **`DTO-xxx` / `DTO-CART-xxx`** | Esquema de Cliente | Estructura de datos almacenada en cliente (Web Storage) según frontera arquitectónica (`AD-003`). | `DTO-CART-001 [CartItem]: Estructura JSON {product_id, quantity, unit_price}.` | Crear tabla SQL en el servidor contradiciendo `AD-003`. |
-| **`IDX-xxx`** | Índice de Desempeño | Índice en campo justificado por consultas frecuentes del PRD. | `IDX-001 [idx_product_name]: Índice B-tree para búsqueda textual REQ-002.` | Crear 10 índices compuestos especulativos sin justificación en requisitos. |
-| **`INV-xxx`** | Invariante de Datos | Regla dura de integridad y validación a nivel de datos. | `INV-001 [price_non_negative]: price >= 0.0.` | Dejar campos numéricos sin validación de cota inferior o dominio. |
-| **`SEED-xxx`** | Datos Semilla | Conjunto inicial de registros requeridos para el catálogo o inicialización MVP. | `SEED-001: 5 a 10 productos de catálogo inicial demostrativo.` | Depender de inserciones manuales en producción sin semilla reproducible. |
+| **`ENT-xxx`** | Entidad de Persistencia | Entidad almacenada en base de datos de servidor con tabla/colección formal. | `ENT-001 [<EntidadDominio>]: Entidad de persistencia en base de datos según la arquitectura.` | `ENT-999 [User]: Tabla de usuarios y contraseñas (OUT OF SCOPE).` |
+| **`DTO-xxx` / `DTO-CLIENT-xxx`** | Esquema de Cliente | Estructura de datos almacenada en cliente (Web Storage) según frontera arquitectónica (`AD-xxx`). | `DTO-001 [<ContratoDatos>]: Estructura JSON {id, timestamp, valor}.` | Crear tabla SQL en el servidor para entidades expresamente delegadas al cliente. |
+| **`IDX-xxx`** | Índice de Desempeño | Índice en campo justificado por consultas frecuentes del PRD. | `IDX-001 [idx_<entidad>_<campo>]: Índice B-tree para búsqueda o filtrado REQ-xxx.` | Crear 10 índices compuestos especulativos sin justificación en requisitos. |
+| **`INV-xxx`** | Invariante de Datos | Regla dura de integridad y validación a nivel de datos. | `INV-001 [<regla_valor_positivo>]: valor >= 0.0.` | Dejar campos numéricos sin validación de cota inferior o dominio. |
+| **`SEED-xxx`** | Datos Semilla | Conjunto inicial de registros requeridos para inicialización MVP o pruebas deterministas. | `SEED-001: Registros iniciales para el dataset semilla demostrativo (<DatasetSemilla>).` | Depender de inserciones manuales en producción sin semilla reproducible. |
 
 ---
 
@@ -90,15 +90,15 @@ Toda definición técnica en esta fase debe utilizar los siguientes prefijos nor
 El agente debe guiar al desarrollador respetando las decisiones previas y formulando preguntas con opciones claras ([AGENTS.md](AGENTS.md)):
 
 ### Paso 1: Entidades de Persistencia del Servidor (`ENT-xxx`)
-Identificar las entidades necesarias para soportar los requisitos funcionales del contexto acotado (bounded context) aprobado en el PRD de conformidad con el motor de persistencia sellado en `docs/ARCHITECTURE.md` (`AD-005`):
-- Definir las entidades de dominio aprobadas (ej. `ENT-001 [Product]` o entidades nucleares).
+Identificar las entidades necesarias para soportar los requisitos funcionales del contexto acotado (bounded context) aprobado en el PRD de conformidad con el motor de persistencia sellado en `docs/ARCHITECTURE.md`:
+- Definir las entidades de dominio aprobadas (ej. `ENT-001 [<EntidadDominio>]` o entidades nucleares).
 - Atributos requeridos: identificador, denominación, descripción, campos de valor, disponibilidad.
 - Tipos de datos conceptuales y nulabilidad (`NOT NULL` / `NULL`).
 
-### Paso 2: Esquema de Estado en Cliente (`DTO-CART-xxx` / `DTO-CLIENT-xxx`)
-Si la arquitectura estableció retención de estado en cliente (ej. Web Storage / LocalStorage conforme a `AD-003`):
+### Paso 2: Esquema de Estado en Cliente (`DTO-CLIENT-xxx` / `DTO-xxx`)
+Si la arquitectura estableció retención de estado en cliente (ej. Web Storage / LocalStorage conforme a las decisiones arquitectónicas):
 - Definir la estructura del ítem o entidad en cliente: identificadores, atributos volátiles, cantidades y cálculos.
-- Definir la estructura global de retención en `localStorage`: lista de ítems, totales y marca temporal.
+- Definir la estructura global de retención en almacenamiento local: lista de ítems, totales y marca temporal.
 - Dejar explícito que esta estructura reside en el cliente y no genera tablas en la base de datos de servidor.
 
 ### Paso 3: Identificadores y Claves Primarias
@@ -112,8 +112,8 @@ Identificar índices justificados por las consultas requeridas en el PRD:
 
 ### Paso 5: Invariantes y Reglas de Integridad (`INV-xxx`)
 Definir invariantes matemáticas y de negocio:
-- Cotas numéricas no negativas (`price >= 0.0`).
-- Cantidades enteras estrictamente positivas (`quantity > 0`).
+- Cotas numéricas no negativas (`valor >= 0.0`).
+- Cantidades enteras estrictamente positivas (`cantidad > 0`).
 - Longitud acotada y cadenas no vacías.
 
 ### Paso 6: Campos de Auditoría según Gobernanza
@@ -129,9 +129,9 @@ Definir la estructura de datos semilla para precargar el entorno de desarrollo y
 
 Si se detecta cualquiera de las siguientes conductas, la ejecución debe detenerse:
 - 🚩 **Amnesia de Scope:** Proponer tablas para `User`, `Account`, `Credential`, `Role`, `Payment`, `StripeToken` o `Recommendation`.
-- 🚩 **Violación del DAG Arquitectónico:** Preguntar si usar Postgres o MongoDB cuando `AD-005` ya selló SQLite/SQLAlchemy.
-- 🚩 **Violación de Estado de Cliente:** Proponer crear una tabla de base de datos relacional para el carrito en servidor cuando `AD-003` selló almacenamiento en cliente.
-- 🚩 **Pre-especificación de API:** Definir métodos y rutas HTTP tipo `GET /api/v1/products` (delegado a `04-api-design`).
+- 🚩 **Violación del DAG Arquitectónico:** Preguntar por motores de persistencia externos no contemplados en la arquitectura aprobada.
+- 🚩 **Violación de Estado de Cliente:** Proponer crear tablas de persistencia en servidor para entidades expresamente delegadas al cliente en la arquitectura.
+- 🚩 **Pre-especificación de API:** Definir métodos y rutas HTTP detalladas (delegado a `04-api-design`).
 - 🚩 **Aislamiento Físico Violado:** Dictar listas de rutas físicas de código (`allowed_paths`, `forbidden_paths`) antes de los TaskSpecs atómicos.
 - 🚩 **Goldplating de Gobernanza:** Introducir esquemas de auditoría forense o eventos para un proyecto de gobernanza baja.
 
@@ -143,12 +143,12 @@ El artefacto generado DEBE ubicarse en `docs/DATA_MODEL.md` y cumplir con la sig
 
 ```markdown
 ---
-project_id: "catalogo-carrito-web"
-project_name: "Sistema Web Básico de Catálogo y Carrito de Compras"
+project_id: "<project-id>"
+project_name: "<Nombre del Proyecto>"
 version: 1
 status: "DRAFT"
-governance_level: "bajo"
-persistence_target: "sqlite"
+governance_level: "bajo" | "medio" | "alto"
+persistence_target: "sqlite" | "<target>"
 created_at: "YYYY-MM-DD"
 updated_at: "YYYY-MM-DD"
 ---
@@ -157,37 +157,37 @@ updated_at: "YYYY-MM-DD"
 
 ## 1. Contexto e Invariantes Heredadas
 - PRD de Referencia y Nivel de Gobernanza.
-- Arquitectura de Referencia (COMP-001, COMP-002, AD-003, AD-005).
-- Restricciones duras de OUT OF SCOPE (cero usuarios, cero pagos).
+- Arquitectura de Referencia (COMP-xxx, AD-xxx).
+- Restricciones duras de OUT OF SCOPE.
 
 ## 2. Entidades de Persistencia del Servidor (Server Data Model)
-- **ENT-001 [Product]:**
-  - Componente: COMP-001 / COMP-003
-  - Requisitos: REQ-001, REQ-002
-  - Tabla / Persistencia: products (SQLite)
+- **ENT-001 [<EntidadDominio>]:**
+  - Componente: COMP-xxx
+  - Requisitos: REQ-xxx
+  - Tabla / Persistencia: <tabla> (<engine>)
   - Atributos:
     - id: Integer, Primary Key, Autoincrement
-    - name: String(255), Not Null
-    - description: String(1000), Nullable
-    - price: Numeric(10, 2), Not Null
-  - Índices: IDX-001 (name)
+    - <campo_nombre>: String(255), Not Null
+    - <campo_desc>: String(1000), Nullable
+    - <campo_valor>: Numeric(10, 2), Not Null
+  - Índices: IDX-001 (<campo_nombre>)
 
 ## 3. Esquema de Datos del Lado Cliente (Client Storage Model)
-- **DTO-CART-001 [CartItem]:**
-  - Componente: COMP-002
-  - Requisitos: REQ-003, REQ-004
-  - Almacenamiento: Web Storage (LocalStorage) — Conforme a AD-003
-  - Campos: product_id, name, unit_price, quantity, subtotal
+- **DTO-001 [<ContratoDatos>]:**
+  - Componente: COMP-xxx
+  - Requisitos: REQ-xxx
+  - Almacenamiento: Web Storage (LocalStorage) — Conforme a decisiones arquitectónicas
+  - Campos: id, timestamp, valor, detalles
 
 ## 4. Índices y Optimización de Consultas
-- **IDX-001 [idx_product_name]:** Justificación en REQ-002.
+- **IDX-001 [idx_<entidad>_<campo>]:** Justificación en REQ-xxx.
 
 ## 5. Invariantes y Reglas de Integridad
-- **INV-001 (price_positive):** price >= 0.0
-- **INV-002 (quantity_positive):** quantity > 0
+- **INV-001 (<invariante_positiva>):** valor >= 0.0
+- **INV-002 (<invariante_cantidad>):** cantidad > 0
 
 ## 6. Datos Semilla e Inicialización (Seed Data)
-- **SEED-001:** Catálogo inicial de productos demostrativos.
+- **SEED-001:** Registros iniciales del dataset semilla demostrativo (<DatasetSemilla>).
 
 ## 7. Matriz de Linaje y Trazabilidad
 - Tabla que vincula cada REQ-xxx y COMP-xxx con su respectivo ENT-xxx o DTO-xxx.
@@ -201,7 +201,7 @@ Antes de considerar concluida la especificación, verificar:
 - [ ] Frontmatter YAML completo con `project_id`, `version: 1`, `status: "DRAFT"`, `governance_level`, `persistence_target`.
 - [ ] Todas las entidades del servidor usan prefijo `ENT-xxx` unívoco.
 - [ ] No existen entidades para conceptos en `OUT OF SCOPE` (usuarios, auth, pagos).
-- [ ] El carrito está modelado en cliente (`DTO-CART-xxx`) respetando `AD-003`.
+- [ ] El estado en cliente está formalmente modelado (`DTO-xxx`) respetando las decisiones arquitectónicas.
 - [ ] Todos los atributos tienen tipos conceptuales definidos y restricciones de nulabilidad.
 - [ ] Índices `IDX-xxx` e invariantes `INV-xxx` explícitamente formulados.
 - [ ] No se emiten rutas físicas de código (`allowed_paths`) ni endpoints HTTP detallados.

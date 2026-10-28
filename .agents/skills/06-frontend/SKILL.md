@@ -5,7 +5,7 @@ depends_on: [prd-generation, architecture-design, data-modeling, api-design, bac
 stage: 5
 project_types: [web_app]
 governance: all
-description: Implementacion de la interfaz de usuario en Vanilla HTML/CSS/JS. Define estructura modular de componentes, consumo de API de solo lectura (EP-001, EP-002), gestion reactiva del carrito en Web Storage (DTO-CART-001) y manejo de estados UI respetando el PRD y la Arquitectura.
+description: Implementacion modular de interfaz de usuario. Define estructura de componentes, consumo de API, gestion del estado en cliente y manejo de estados UI respetando el PRD y la Arquitectura.
 ---
 
 # Skill 06: Implementación de Frontend (Frontend Implementation)
@@ -82,13 +82,14 @@ TaskSpec(
         "tests/frontend/**",
     ],
     forbidden_paths=[
-        "src/backend/**",       # Preservación de código de backend
-        "src/database/**",      # Preservación de esquemas de datos
-        "src/catalog/**",       # Preservación de módulos backend sellados
-        "src/shared/**",        # Preservación de infraestructura compartida
-        "package.json",         # Prohibición de manifiestos no autorizados en stack Vanilla
-        "node_modules/**",      # Prohibición de dependencias pesadas no autorizadas
+        "src/backend/**",            # Preservación de código de backend
+        "src/database/**",           # Preservación de esquemas de datos
+        "src/<bounded_context>/**",  # Preservación de módulos backend sellados
+        "src/shared/**",             # Preservación de infraestructura compartida
+        "package.json",              # Prohibición de manifiestos no autorizados en stack Vanilla
+        "node_modules/**",           # Prohibición de dependencias pesadas no autorizadas
     ],
+
     constraints=[
         "Stack tecnológico alineado estrictamente con las decisiones arquitectónicas (AD-xxx)",
         "Persistencia y estado cliente alineados con el diseño arquitectónico y de datos",

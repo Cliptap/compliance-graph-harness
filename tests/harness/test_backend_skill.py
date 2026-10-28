@@ -182,46 +182,67 @@ def test_skill_structure_and_contract_sections():
 # TEST 2: Validación del Esquema de TaskSpec y Delimitación Perimetral
 # ==============================================================================
 def test_backend_skill_contract_schema_and_taskspec_rules():
-    """Valida que la skill define formalmente TaskSpec con allowed_paths, forbidden_paths y prevención de orphan changes."""
+    """Valida que la skill define formalmente TaskSpec agnóstico en el cuerpo normativo y la demo en Reference Context."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        assert "TaskSpec(" in content
-        assert "allowed_paths" in content
-        assert "forbidden_paths" in content
-        assert "orphan_change" in content or "orphan changes" in content.lower()
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
 
-        # Estándar metodológico genérico
-        assert "<bounded_context>" in content or "contexto acotado" in content.lower()
+        # Estándar metodológico en el cuerpo normativo:
+        assert "TaskSpec(" in normative
+        assert "allowed_paths" in normative
+        assert "forbidden_paths" in normative
+        assert "orphan_change" in normative or "orphan changes" in normative.lower()
+        assert "<bounded_context>" in normative or "contexto acotado" in normative.lower()
+        assert "src/<bounded_context>/**" in normative
+        assert "src/shared/**" in normative
 
-        # Coexistencia de la sección de contexto de referencia de la demo
-        assert "Reference Context: Demo Implementation" in content
-        assert "src/catalog/**" in content
-        assert "src/shared/**" in content
-        assert "src/backend/**" in content  # Prohibición de tocar código clínico
-        assert "src/database/**" in content  # Prohibición de tocar esquemas clínicos
+        # Ausencia de acoplamiento de catálogo en el cuerpo normativo:
+        assert "src/catalog/**" not in normative
+
+        # Sección Reference Context de la demo:
+        assert len(ref_context) > 0
+        assert "src/catalog/**" in ref_context
+        assert "src/backend/**" in ref_context   # Prohibición de tocar código clínico
+        assert "src/database/**" in ref_context  # Prohibición de tocar esquemas clínicos
 
 
 # ==============================================================================
 # TEST 3: Topología del Código y Aislamiento de Base de Datos en Pruebas
 # ==============================================================================
 def test_backend_skill_codebase_layout_compliance():
-    """Valida que la skill prescribe la topología canónica (src/catalog/, src/shared/) y SQLite en memoria para tests."""
+    """Valida que la skill prescribe la topología canónica agnóstica y SQLite en memoria para tests."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        # Topología modular en src/
-        assert "src/catalog/models.py" in content
-        assert "src/catalog/schemas.py" in content
-        assert "src/catalog/repository.py" in content
-        assert "src/catalog/service.py" in content
-        assert "src/catalog/router.py" in content
-        assert "src/catalog/seed.py" in content
-        assert "src/shared/database.py" in content
-        assert "src/shared/config.py" in content
-        assert "src/main.py" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
 
-        # Aislamiento de base de datos en tests
-        assert "sqlite:///:memory:" in content
-        assert "test_catalog_backend.py" in content
+        # Topología modular agnóstica en el estándar normativo:
+        assert "models.py" in normative
+        assert "schemas.py" in normative
+        assert "repository.py" in normative
+        assert "service.py" in normative
+        assert "router.py" in normative
+        assert "src/shared/database.py" in normative
+        assert "src/shared/config.py" in normative
+        assert "src/main.py" in normative
+        assert "sqlite:///:memory:" in normative
+        assert "<bounded_context>" in normative
+
+        # Ausencia de acoplamiento de archivos demo en el cuerpo normativo:
+        assert "src/catalog/models.py" not in normative
+        assert "test_catalog_backend.py" not in normative
+
+        # En la instanciación de referencia demo (Reference Context):
+        assert "src/catalog/models.py" in ref_context
+        assert "src/catalog/schemas.py" in ref_context
+        assert "src/catalog/repository.py" in ref_context
+        assert "src/catalog/service.py" in ref_context
+        assert "src/catalog/router.py" in ref_context
+        assert "src/catalog/seed.py" in ref_context
+        assert "test_catalog_backend.py" in ref_context
 
 
 # ==============================================================================

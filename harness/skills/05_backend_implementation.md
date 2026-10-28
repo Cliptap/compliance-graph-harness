@@ -5,7 +5,7 @@ depends_on: [prd-generation, architecture-design, data-modeling, api-design]
 stage: 4
 project_types: [web_app, api, data_pipeline, mobile]
 governance: all
-description: Implementacion del backend. Define estructura modular del proyecto (TaskSpec), modelos ORM, servicios, routers REST de solo lectura y configuracion en Python con SQLite y SQLAlchemy respetando el PRD, la Arquitectura, el Modelo de Datos y el Diseno de API.
+description: Implementacion modular del backend. Define arquitectura por capas (TaskSpec), modelos ORM, servicios, repositorios, routers REST y configuracion paramétrica según el PRD, la Arquitectura y el Modelo de Datos.
 ---
 
 # Skill 05: Implementación de Backend (Backend Implementation)
@@ -60,13 +60,13 @@ La skill extrae deterministamente:
 - **Desde `docs/ARCHITECTURE.md`:**
   - `COMP-xxx`: Componentes asignados a la capa de backend.
   - `AD-xxx`: Decisiones arquitectónicas vinculantes:
-    * Patrón y estilo macro (`AD-001`).
-    * Transporte y estilo de comunicación (`AD-002`).
-    * Frontera cliente-servidor y localización de estado (`AD-003`).
-    * Organización de código por módulos (`AD-004`).
-    * Stack tecnológico y motor de persistencia (`AD-005`).
-    * Estrategia de manejo de errores (`AD-006`).
-    * Nivel de seguridad y autenticación (`AD-007`).
+    * Patrón y estilo macro (`AD-xxx`).
+    * Transporte y estilo de comunicación (`AD-xxx`).
+    * Frontera cliente-servidor y localización de estado (`AD-xxx`).
+    * Organización de código por módulos (`AD-xxx`).
+    * Stack tecnológico y motor de persistencia (`AD-xxx`).
+    * Estrategia de manejo de errores (`AD-xxx`).
+    * Nivel de seguridad y autenticación (`AD-xxx`).
 - **Desde `docs/DATA_MODEL.md`:**
   - `ENT-xxx`: Entidades relacionales o de persistencia asignadas al componente.
   - `IDX-xxx`: Índices para optimización de consultas.
@@ -119,11 +119,11 @@ Cualquier archivo fuera de `allowed_paths` o no justificable en la cadena de lin
 ## 6. Regla de Oro Anti-Amnesia y No-Goldplating
 
 > 🛑 **REGLAS CONTRACTUALES DE IMPLEMENTACIÓN:**
-> 1. **Anti-Amnesia Estricta:** Queda **ESTRICTAMENTE PROHIBIDO** crear modelos, tablas, routers, middlewares o dependencias de usuarios, login, contraseñas, tokens JWT, roles, pagos o recomendaciones.
-> 2. **No-Goldplating (API de Solo Lectura):** La API de backend para este MVP es **100% de solo lectura**. Queda **ESTRICTAMENTE PROHIBIDO** implementar métodos `POST`, `PUT`, `PATCH`, `DELETE` en routers o repositorios de productos (`create_product`, `update_product`, `delete_product`).
-> 3. **Respeto a AD-003 (Carrito en Cliente):** El carrito reside en `localStorage`. Queda **ESTRICTAMENTE PROHIBIDO** implementar modelos, tablas relacionales o routers para carritos en el servidor.
-> 4. **Aislamiento de Pruebas:** Los tests unitarios en `test_catalog_backend.py` deben operar sobre SQLite en memoria (`sqlite:///:memory:`) para evitar la creación de archivos binarios `.db` en el repositorio.
-> 5. **Preservación de Manifiestos:** Queda **ESTRICTAMENTE PROHIBIDO** agregar dependencias no autorizadas en `requirements.txt`. El stack se sustenta en `fastapi`, `sqlalchemy`, `pydantic` y `uvicorn`.
+> 1. **Anti-Amnesia Estricta:** Queda **ESTRICTAMENTE PROHIBIDO** crear modelos, tablas, routers, middlewares o dependencias de usuarios, login, contraseñas, tokens JWT, roles, pagos o recomendaciones declarados `OUT OF SCOPE`.
+> 2. **No-Goldplating y Fidelidad a Contratos:** La API de backend debe implementar estrictamente los métodos y operaciones autorizados en `docs/API_DESIGN.md`. Queda **ESTRICTAMENTE PROHIBIDO** implementar métodos de mutación (`POST`, `PUT`, `PATCH`, `DELETE`) no contemplados en la especificación de API aprobada.
+> 3. **Respeto a la Localización de Estado:** Si la arquitectura delegó el almacenamiento de determinado estado o entidad al cliente, queda **ESTRICTAMENTE PROHIBIDO** implementar modelos, tablas relacionales o routers en el servidor para dicho estado.
+> 4. **Aislamiento de Pruebas:** Los tests unitarios deben operar sobre SQLite en memoria (`sqlite:///:memory:`) o base de datos descartable aislada para evitar polución del repositorio.
+> 5. **Preservación de Manifiestos:** Queda **ESTRICTAMENTE PROHIBIDO** agregar dependencias no autorizadas en `requirements.txt`. El stack se sustenta en las dependencias normadas en la arquitectura.
 
 ---
 
@@ -133,35 +133,31 @@ El agente debe proceder siguiendo la secuencia de construcción modular:
 
 ### Paso 1: Configuración de Capa Compartida (`src/shared/`)
 - `src/shared/database.py`: Creación del motor SQLAlchemy (`create_engine`) para SQLite, sesión local (`sessionmaker`) y clase base declarativa (`Base`).
-- `src/shared/config.py`: Definición de configuración tipada para `DATABASE_URL` (`sqlite:///./catalog.db`) y directivas CORS locales.
+- `src/shared/config.py`: Definición de configuración tipada para variables de base de datos y directivas CORS locales.
 
-### Paso 2: Modelo de Persistencia y Datos Semilla (`src/catalog/`)
-- `src/catalog/models.py`: Declaración del modelo ORM `Product` mapeado a la tabla `products` con columnas `id`, `name`, `description`, `price` e índice `IDX-001` sobre `name` (`ENT-001`).
-- `src/catalog/seed.py`: Función de inicialización `seed_initial_catalog(db)` que precarga de forma idempotente los 5 registros declarativos de `SEED-001`.
+### Paso 2: Modelo de Persistencia y Datos Semilla (`src/<bounded_context>/`)
+- `src/<bounded_context>/models.py`: Declaración del modelo ORM mapeado a la tabla relacional con columnas e índices normados (`ENT-xxx`).
+- `src/<bounded_context>/seed.py`: Función de inicialización que precarga de forma idempotente los registros declarativos de datos semilla (`SEED-xxx`).
 
-### Paso 3: Esquemas DTO de Validación Pydantic (`src/catalog/`)
-- `src/catalog/schemas.py`:
-  - `ProductResponse` (`DTO-PROD-RES-001`): `{ id: int, name: str, description: str | null, price: float }` con modo `from_attributes = True`.
-  - `ProductListResponse` (`DTO-PROD-LIST-001`): Envelope estructurado `{ items: list[ProductResponse], total: int }`.
-  - `ErrorResponse` (`DTO-ERR-001`): `{ error_code: str, message: str, detail: str | null }`.
+### Paso 3: Esquemas DTO de Validación Pydantic (`src/<bounded_context>/`)
+- `src/<bounded_context>/schemas.py`:
+  - Esquema DTO unitario con modo `from_attributes = True`.
+  - Envelope estructurado de colección `{ items: list, total: int }`.
+  - Esquema estándar de error estructurado (`DTO-ERR-001`).
 
-### Paso 4: Capa de Acceso a Datos y Servicio de Dominio (`src/catalog/`)
-- `src/catalog/repository.py`: Consultas SQLAlchemy para listar productos, filtrar por coincidencia insensible a mayúsculas (`func.lower(Product.name).contains(q.lower())`) y obtener por clave primaria.
-- `src/catalog/service.py`: Lógica de dominio (`COMP-001`) encapsulando las operaciones de lectura y formateo de respuestas.
+### Paso 4: Capa de Acceso a Datos y Servicio de Dominio (`src/<bounded_context>/`)
+- `src/<bounded_context>/repository.py`: Consultas SQLAlchemy para listar, filtrar y obtener por clave primaria.
+- `src/<bounded_context>/service.py`: Lógica de dominio (`COMP-xxx`) encapsulando las operaciones de lectura y formateo de respuestas.
 
 ### Paso 5: Router REST y Aplicación Principal
-- `src/catalog/router.py`: Router FastAPI con prefijo `/products`:
-  - `EP-001`: `GET /` con parámetro query `q: str | None = None`. Retorna `ProductListResponse`.
-  - `EP-002`: `GET /{id}` con parámetro de ruta `id: int`. Retorna `ProductResponse` o lanza excepción HTTP 404 estructurada.
+- `src/<bounded_context>/router.py`: Router FastAPI con endpoints de colección y unitarios según contratos `EP-xxx`.
 - `src/main.py`: Instancia de FastAPI, configuración de CORS, inclusión del router con prefijo `/api/v1` y hook de inicialización de base de datos/seed.
 
-### Paso 6: Suite de Pruebas Unitarias de Backend (`tests/catalog/`)
-- `tests/catalog/test_catalog_backend.py`: Pruebas con `TestClient` sobre base de datos en memoria (`sqlite:///:memory:`):
-  - Consulta exitosa de catálogo completo (`EP-001` -> 200 OK, 5 ítems).
-  - Búsqueda filtrada insensible a mayúsculas (`EP-001?q=cuaderno` -> 200 OK, 1 ítem).
-  - Búsqueda sin coincidencias (`EP-001?q=inexistente` -> 200 OK, 0 ítems).
-  - Consulta de producto existente por ID (`EP-002` -> 200 OK).
-  - Consulta de producto inexistente por ID (`EP-002` -> 404 estructurado con `ERR-001`).
+### Paso 6: Suite de Pruebas Unitarias de Backend (`tests/<bounded_context>/`)
+- `tests/<bounded_context>/test_<bounded_context>_backend.py`: Pruebas con `TestClient` sobre base de datos en memoria (`sqlite:///:memory:`):
+  - Consulta exitosa de colección.
+  - Búsqueda filtrada y casos sin coincidencias.
+  - Consulta de registro existente e inexistente por ID con error estructurado.
 
 ---
 
@@ -169,10 +165,10 @@ El agente debe proceder siguiendo la secuencia de construcción modular:
 
 Si se detecta cualquiera de las siguientes conductas, la ejecución debe detenerse de inmediato:
 - 🚩 **Amnesia de Scope:** Crear módulos de usuarios, autenticación, contraseñas, JWT o pagos.
-- 🚩 **Invasión Perimetral:** Modificar archivos en `src/backend/` o `src/database/` del sistema clínico preexistente.
-- 🚩 **Violación de Carrito en Cliente:** Codificar persistencia o endpoints para carritos en servidor (`AD-003`).
-- 🚩 **Goldplating de Mutación:** Implementar métodos `POST`, `PUT`, `PATCH`, `DELETE` en el router de productos.
-- 🚩 **Polución de Base de Datos:** Generar archivos binarios `.db` al correr pruebas en lugar de usar `sqlite:///:memory:`.
+- 🚩 **Invasión Perimetral:** Modificar archivos en capas o contextos preexistentes protegidos.
+- 🚩 **Violación de Estado en Cliente:** Codificar persistencia o endpoints para estados delegados al cliente.
+- 🚩 **Goldplating de Mutación:** Implementar métodos `POST`, `PUT`, `PATCH`, `DELETE` sin respaldo en contratos de API.
+- 🚩 **Polución de Base de Datos:** Generar archivos binarios de base de datos local al correr pruebas en lugar de usar `sqlite:///:memory:`.
 - 🚩 **Dependencias No Autorizadas:** Agregar paquetes nuevos a `requirements.txt`.
 
 ---
@@ -183,22 +179,22 @@ La implementación backend DEBE ubicarse estrictamente dentro de los siguientes 
 
 ```text
 src/
-├── catalog/
+├── <bounded_context>/
 │   ├── __init__.py
-│   ├── models.py        # ENT-001 [Product]
-│   ├── schemas.py       # DTO-PROD-RES-001, DTO-PROD-LIST-001, DTO-ERR-001
-│   ├── repository.py    # Consultas SQLAlchemy a SQLite
-│   ├── service.py       # Lógica de dominio COMP-001
-│   ├── router.py        # Endpoints EP-001 y EP-002
-│   └── seed.py          # Precarga SEED-001
+│   ├── models.py        # Modelos ORM (<EntidadDominio>)
+│   ├── schemas.py       # DTOs Pydantic
+│   ├── repository.py    # Consultas SQLAlchemy a base de datos
+│   ├── service.py       # Lógica de dominio COMP-xxx
+│   ├── router.py        # Endpoints EP-xxx
+│   └── seed.py          # Precarga SEED-xxx
 ├── shared/
 │   ├── __init__.py
 │   ├── database.py      # Engine y SessionLocal SQLite/SQLAlchemy
 │   └── config.py        # Typed settings
 └── main.py              # Aplicación FastAPI y montaje de router /api/v1
 tests/
-└── catalog/
-    └── test_catalog_backend.py # Tests con TestClient y SQLite en memoria
+└── <bounded_context>/
+    └── test_<bounded_context>_backend.py # Tests con TestClient y SQLite en memoria
 ```
 
 ---
@@ -207,10 +203,10 @@ tests/
 
 Antes de considerar concluida la implementación de backend, verificar:
 - [ ] Todos los archivos creados están dentro de `allowed_paths` del `TaskSpec`.
-- [ ] Cero archivos modificados en `src/backend/` o `src/database/` (cero regresiones clínicas).
-- [ ] La API es 100% de solo lectura (`GET` únicamente). Cero métodos de mutación.
-- [ ] Los modelos ORM reflejan estrictamente la entidad `ENT-001` podada en `docs/DATA_MODEL.md`.
-- [ ] Cero lógica o persistencia de carrito en servidor (`AD-003`).
+- [ ] Cero archivos modificados en rutas de código preexistente protegido (cero regresiones).
+- [ ] Fidelidad estricta al contrato de API (métodos y endpoints autorizados).
+- [ ] Los modelos ORM reflejan estrictamente las entidades aprobadas en `docs/DATA_MODEL.md`.
+- [ ] Cero lógica o persistencia de servidor para estados formalmente delegados al cliente.
 - [ ] Los tests unitarios operan sobre `sqlite:///:memory:` y pasan 100% en verde en `pytest`.
 - [ ] Cero dependencias añadidas a `requirements.txt`.
 
@@ -220,7 +216,7 @@ Antes de considerar concluida la implementación de backend, verificar:
 
 La etapa de implementación backend concluye cuando:
 1. Todos los archivos requeridos existen en disco y compilan limpiamente sin errores sintácticos ni tracebacks.
-2. La suite `pytest tests/catalog/test_catalog_backend.py` finaliza con código de salida 0 (100% verde).
+2. La suite `pytest tests/<bounded_context>/test_<bounded_context>_backend.py` finaliza con código de salida 0 (100% verde).
 3. El `ValidationEngine` del arnés emite `PASS` en `ScopePolicy` y `DependencyPolicy`.
 
 ---
@@ -228,11 +224,12 @@ La etapa de implementación backend concluye cuando:
 ## Reference Context: Demo Implementation (catalogo-carrito-web)
 
 En la implementación de referencia demostrativa (`catalogo-carrito-web`), los principios metodológicos generales de esta skill se instancian en la siguiente arquitectura de backend:
-- **TaskSpec de la Demo:**
+
+### 1. TaskSpec Concreto de la Demo
 ```python
 TaskSpec(
     task_id="TS-BACKEND-001",
-    goal="Implementar el backend ligero de catálogo de productos y búsqueda en SQLite/FastAPI",
+    goal="Implementar el backend de catálogo en FastAPI y SQLite",
     category="feature",
     allowed_paths=[
         "src/catalog/**",
@@ -243,35 +240,36 @@ TaskSpec(
     forbidden_paths=[
         "src/backend/**",      # Preserva código clínico preexistente
         "src/database/**",     # Preserva esquemas clínicos preexistentes
-        "src/frontend/**",     # Aislamiento estricto de frontend
-        "src/cart/**",         # Blindaje AD-003: el carrito no reside en backend
-        "src/auth/**",         # Blindaje OUT OF SCOPE: sin autenticación
-        "src/users/**",        # Blindaje OUT OF SCOPE: sin usuarios
-        "src/payments/**",     # Blindaje OUT OF SCOPE: sin pagos
+        "src/cart/**",         # Blindaje AD-003: cero servidor para carrito
+        "src/auth/**",         # Blindaje Anti-Amnesia: sin autenticación
+        "src/users/**",        # Blindaje Anti-Amnesia: sin usuarios
+        "src/payments/**",     # Blindaje Anti-Amnesia: sin pasarelas de pago
+        "src/frontend/**",     # Blindaje de separación de capas
     ],
     constraints=[
-        "Read-Only API: Únicamente métodos GET autorizados en routers",
-        "SQLite con SQLAlchemy como motor ORM exclusivo (AD-005)",
+        "API 100% de solo lectura (únicamente endpoints GET para catálogo)",
+        "Respeto a AD-003: Cero tablas o endpoints para carritos en backend (almacenamiento en Web Storage / localStorage del cliente)",
+        "Stack: Python 3.12, FastAPI, SQLite con SQLAlchemy (AD-005)",
         "Zero new external dependencies en requirements.txt",
-        "Sin credenciales, contraseñas ni tokens de sesión (AD-007)",
-        "Base de datos en pruebas desacoplada usando SQLite en memoria (sqlite:///:memory:)",
+        "Aislamiento de base de datos en tests (sqlite:///:memory:)",
     ],
     acceptance_criteria=[
-        "GET /api/v1/products retorna Envelope { items, total } con SEED-001",
-        "GET /api/v1/products?q= filtra insensible a mayúsculas sobre name",
-        "GET /api/v1/products/{id} retorna producto o 404 estructurado",
+        "GET /api/v1/products retorna 200 con lista de productos y total (AC-001, REQ-001)",
+        "GET /api/v1/products?q=... filtra insensible a mayúsculas o retorna [] (AC-002, AC-003, REQ-002)",
+        "GET /api/v1/products/{id} retorna 200 o 404 estructurado (DTO-ERR-001)",
     ],
     test_targets=["tests/catalog/test_catalog_backend.py"]
 )
 ```
-- **Contexto Acotado y Topología Física:**
-  - `src/catalog/models.py`: Modelo SQLAlchemy `Product` para `ENT-001` con tabla `products`.
-  - `src/catalog/schemas.py`: Esquemas Pydantic `ProductResponse` y `ProductListResponse` para `DTO-PROD-RES-001` y `DTO-PROD-LIST-001`.
-  - `src/catalog/repository.py`: Consultas de lectura a SQLite con filtrado insensible a mayúsculas sobre `name` (`IDX-001`).
-  - `src/catalog/service.py`: Lógica de dominio de catálogo.
-  - `src/catalog/router.py`: Endpoints REST `GET /api/v1/products` (`EP-001`) y `GET /api/v1/products/{id}` (`EP-002`) con manejo Fail-Fast (`DTO-ERR-001`, `ERR-001`, `ERR-002`, `ERR-500`).
-  - `src/catalog/seed.py`: Inicialización de 5 productos semilla de papelería (`SEED-001`).
-  - `src/shared/database.py` y `src/shared/config.py`: Conexión SQLAlchemy y configuración general.
-  - `src/main.py`: Entrypoint FastAPI montando `/health` (`HC-001`) y `/api/v1/products`.
-- **Aislamiento de Pruebas:** Pruebas unitarias en `tests/catalog/test_catalog_backend.py` ejecutadas contra `sqlite:///:memory:`.
-- **Invariante de Solo Lectura y AD-003:** Backend 100% de solo lectura (cero mutaciones POST/PUT/DELETE) y cero persistencia de carrito en servidor (reside en Web Storage del cliente).
+
+### 2. Topología de Archivos de la Demo
+- `src/catalog/models.py`: Declaración del modelo ORM `Product` mapeado a la tabla `products` con columnas `id`, `name`, `description`, `price` e índice `IDX-001` sobre `name` (`ENT-001`).
+- `src/catalog/schemas.py`: DTOs Pydantic `ProductResponse` (`DTO-PROD-RES-001`), `ProductListResponse` (`DTO-PROD-LIST-001`) y `ErrorResponse` (`DTO-ERR-001`).
+- `src/catalog/repository.py`: Consultas SQLAlchemy a SQLite con filtrado insensible a mayúsculas sobre `Product.name`.
+- `src/catalog/service.py`: Lógica de dominio `COMP-001` encapsulando operaciones de lectura.
+- `src/catalog/router.py`: Endpoints REST `EP-001` y `EP-002`.
+- `src/catalog/seed.py`: Función `seed_initial_catalog` que precarga los 5 productos demostrativos de `SEED-001`.
+- `src/shared/database.py`: Engine y SessionLocal para SQLite (`sqlite:///./catalog.db`).
+- `src/shared/config.py`: Configuración tipada de base de datos y CORS.
+- `src/main.py`: Aplicación FastAPI y montaje del router en `/api/v1`.
+- `tests/catalog/test_catalog_backend.py`: Suite de pruebas unitarias sobre `sqlite:///:memory:`.
