@@ -155,11 +155,21 @@ def test_transversal_acceptance_coverage_specification():
     """Valida que la skill define la fórmula matemática y la función transversal de testing."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        assert "Acceptance Coverage" in content
-        assert "transversal" in content.lower()
-        assert "AC-001" in content
-        assert "AC-006" in content
-        assert "Matriz Bidireccional de Trazabilidad" in content or "AC-xxx" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        # Estándar metodológico en el cuerpo normativo:
+        assert "Acceptance Coverage" in normative
+        assert "(AC con test aprobado / AC totales)" in normative
+        assert "transversal" in normative.lower()
+        assert "Matriz Bidireccional de Trazabilidad" in normative
+        assert "AC-xxx" in normative
+
+        # La lista concreta de criterios de la demo solo vive en Reference Context:
+        assert "AC-006" not in normative
+        assert "AC-001" in ref_context
+        assert "AC-006" in ref_context
 
 
 # ==============================================================================
@@ -187,10 +197,55 @@ def test_tautological_and_uncovered_ac_detection_rules():
     """Valida que la skill prescribe la prevención de tests tautológicos y AC huérfanos."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        assert "tautológico" in content.lower() or "tautologicos" in content.lower()
-        assert "huérfano" in content.lower() or "huerfano" in content.lower()
-        assert "INV-002" in content
-        assert "INV-004" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        assert "tautológico" in normative.lower() or "tautologicos" in normative.lower()
+        assert "huérfano" in normative.lower() or "huerfano" in normative.lower()
+
+        # Regla genérica de invariantes en el cuerpo normativo:
+        assert "INV-xxx" in normative
+        assert "docs/DATA_MODEL.md" in normative
+
+        # Invariantes concretas del carrito de la demo solo en Reference Context:
+        assert "INV-002" not in normative
+        assert "INV-004" not in normative
+        assert "INV-002" in ref_context
+        assert "INV-004" in ref_context
+
+
+# ==============================================================================
+# TEST 5b: Separación entre Cuerpo Normativo Genérico y Reference Context Demo
+# ==============================================================================
+def test_normative_body_is_decoupled_from_demo():
+    """Valida que el cuerpo normativo es agnóstico y la instanciación demo vive en Reference Context."""
+    demo_strings = [
+        "catalogo-carrito-web",
+        "tests/catalog",
+        "carrito",
+        "SEED-001",
+        "localStorage",
+        "AD-003",
+        "test_catalog_backend.py",
+        "test_cart_invariants_and_storage_contract",
+    ]
+    normative_only_forbidden = ["src/catalog"]
+    for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
+        content = path.read_text(encoding="utf-8")
+        assert "## Reference Context: Demo Implementation (catalogo-carrito-web)" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        assert len(parts) == 2, f"Se esperaba exactamente una sección Reference Context en {path.name}"
+        normative, ref_context = parts
+
+        # Placeholders genéricos en el cuerpo normativo:
+        assert "tests/<bounded_context>/" in normative
+
+        for demo in demo_strings:
+            assert demo not in normative, f"Acoplamiento demo '{demo}' en el cuerpo normativo de {path.name}"
+            assert demo in ref_context, f"Hecho demo '{demo}' perdido en Reference Context de {path.name}"
+        for demo in normative_only_forbidden:
+            assert demo not in normative, f"Acoplamiento demo '{demo}' en el cuerpo normativo de {path.name}"
 
 
 # ==============================================================================

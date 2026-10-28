@@ -141,16 +141,96 @@ def test_skill_structure_and_contract_sections():
 # TEST 2: Validación del Esquema de TaskSpec y Delimitación Perimetral
 # ==============================================================================
 def test_auth_skill_contract_schema_and_taskspec():
-    """Valida que la skill define formalmente TaskSpec con allowed_paths y forbidden_paths."""
+    """Valida que la skill define TaskSpec agnóstico en el cuerpo normativo y la demo en Reference Context."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        assert "TaskSpec" in content or "TS-AUTH-001" in content
-        assert "allowed_paths" in content
-        assert "forbidden_paths" in content
-        assert "docs/SECURITY.md" in content
-        assert "src/auth/**" in content
-        assert "src/users/**" in content
-        assert "src/tokens/**" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        # Estándar metodológico en el cuerpo normativo:
+        assert "TaskSpec" in normative or "TS-AUTH-001" in normative
+        assert "allowed_paths" in normative
+        assert "forbidden_paths" in normative
+        assert "docs/SECURITY.md" in normative
+        assert "src/auth/**" in normative
+        assert "src/users/**" in normative
+        assert "src/tokens/**" in normative
+        assert "src/<out_of_scope_module>/**" in normative
+
+        # Ausencia de módulos excluidos propios de la demo en el cuerpo normativo:
+        assert "src/cart/**" not in normative
+        assert "src/payments/**" not in normative
+
+        # Sección Reference Context de la demo:
+        assert len(ref_context) > 0
+        assert "src/cart/**" in ref_context
+        assert "src/payments/**" in ref_context
+        assert "TS-AUTH-001" in ref_context
+
+
+# ==============================================================================
+# TEST 2b: Desacoplamiento del Cuerpo Normativo respecto de la Demo
+# ==============================================================================
+def test_auth_skill_normative_body_is_demo_agnostic():
+    """Valida que el cuerpo normativo es genérico y que la instanciación demo vive en Reference Context."""
+    for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
+        content = path.read_text(encoding="utf-8")
+        assert "## Reference Context: Demo Implementation (catalogo-carrito-web)" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        assert len(parts) == 2, f"{path.name} debe tener exactamente una sección Reference Context"
+        normative, ref_context = parts
+
+        # Placeholders genéricos en el cuerpo normativo:
+        assert "src/<bounded_context>/" in normative
+        assert "EP-xxx" in normative
+        assert "ENT-xxx" in normative
+        assert "AD-xxx" in normative
+        assert "COMP-xxx" in normative
+
+        # Ausencia de acoplamiento demo en el cuerpo normativo:
+        demo_strings = [
+            "src/catalog",
+            "tests/catalog",
+            "catalogo-carrito",
+            "Web Storage",
+            "localStorage",
+            "SEED-0",
+            "NUESTRO CASO",
+            "fastapi-jwt-auth",
+            "Ley 21.719",
+            "Vanilla",
+            "carrito",
+            "catálogo público",
+            "AD-003",
+            "AD-005",
+            "EP-001",
+            "ENT-001",
+            "COMP-001",
+        ]
+        for demo in demo_strings:
+            assert demo not in normative, f"Contenido demo '{demo}' filtrado al cuerpo normativo de {path.name}"
+        assert not re.search(r"(?i)\b(catalog|cart|product)", normative)
+
+        # Instanciación demo preservada en Reference Context:
+        for demo in [
+            "src/catalog/**",
+            "src/frontend/**",
+            "src/main.py",
+            "AD-001",
+            "AD-003",
+            "AD-005",
+            "Web Storage",
+            "COMP-001",
+            "ENT-001",
+            "EP-001",
+            "EP-002",
+            "FastAPI",
+            "fastapi-jwt-auth",
+            "Ley 21.719",
+            "Vanilla",
+        ]:
+            assert demo in ref_context, f"Instanciación demo '{demo}' ausente en Reference Context de {path.name}"
 
 
 # ==============================================================================
@@ -236,7 +316,7 @@ last_audit: "2026-10-21"
 # docs/SECURITY.md — Postura de Seguridad y Gobernanza de Identidades
 
 ## 1. Identidad del Sistema y Alcance
-Catálogo comercial ligero bajo nivel de gobernanza bajo.
+Sistema informativo de acceso público bajo nivel de gobernanza bajo.
 
 ## 2. Dictamen de Derivación Condicional (SEC-DEC-xxx)
 - SEC-DEC-001: Autenticación formalmente excluida del alcance MVP según PRD.md (OUT OF SCOPE).

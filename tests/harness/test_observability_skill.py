@@ -193,13 +193,31 @@ def test_observability_skill_anti_amnesia_rules():
     """Verifica que la skill prohíbe re-preguntar decisiones ya cerradas aguas arriba."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        # Prohibición explícita de amnesia sobre SQLite, /health, modo anónimo y gobernanza
-        assert "AD-005" in content or "SQLite" in content
-        assert "HC-001" in content or "/health" in content
-        assert "AD-007" in content or "anónimo" in content
-        assert "EP-001" in content
-        assert "EP-002" in content
-        assert "SEC-CTRL-004" in content or "CWE-532" in content
+        assert "## Reference Context: Demo Implementation" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        # Regla anti-amnesia agnóstica en el cuerpo normativo:
+        assert "re-preguntar" in normative
+        assert "AD-xxx" in normative
+        assert "EP-xxx" in normative
+        assert "HC-xxx" in normative
+        assert "governance_level" in normative
+        assert "SEC-CTRL-004" in normative or "CWE-532" in normative
+
+        # Ausencia de decisiones demo en el cuerpo normativo:
+        for demo_string in ["AD-005", "SQLite", "AD-007", "EP-001", "EP-002", "/api/v1/products"]:
+            assert demo_string not in normative, f"Acoplamiento demo en cuerpo normativo de {path.name}: {demo_string}"
+
+        # Instanciación de la demo en Reference Context:
+        assert "AD-005" in ref_context
+        assert "SQLite" in ref_context
+        assert "HC-001" in ref_context and "/health" in ref_context
+        assert "AD-007" in ref_context
+        assert "EP-001" in ref_context
+        assert "EP-002" in ref_context
+        assert "/api/v1/products" in ref_context
 
 
 # ==============================================================================
@@ -228,14 +246,29 @@ def test_observability_task_spec_boundary_control():
     """Valida la delimitación perimetral de TaskSpec en la skill y en el linter."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        assert "TaskSpec" in content or "task_spec" in content
-        assert "allowed_paths" in content
-        assert "forbidden_paths" in content
-        assert "docs/OBSERVABILITY.md" in content
-        assert "src/main.py" in content
-        assert "tests/catalog/**" in content
-        assert "src/backend/**" in content
-        assert "src/frontend/**" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        # Perímetro agnóstico en el cuerpo normativo:
+        assert "TaskSpec" in normative or "task_spec" in normative
+        assert "allowed_paths" in normative
+        assert "forbidden_paths" in normative
+        assert "docs/OBSERVABILITY.md" in normative
+        assert "src/main.py" in normative
+        assert "tests/<bounded_context>/**" in normative
+        assert ".github/**" in normative
+        assert "Dockerfile" in normative
+
+        # Ausencia de rutas demo en el cuerpo normativo:
+        assert "tests/catalog" not in normative
+        assert "src/catalog" not in normative
+
+        # TaskSpec concreto de la demo en Reference Context:
+        assert len(ref_context) > 0
+        assert "tests/catalog/**" in ref_context
+        assert "src/backend/**" in ref_context
+        assert "src/frontend/**" in ref_context
 
     # Verificación en el linter: invasión perimetral debe ser detectada ante rutas prohibidas
     perimeter_violations = lint_observability_contract(

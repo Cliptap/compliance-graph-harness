@@ -253,13 +253,59 @@ def test_documentation_skill_anti_amnesia_rules():
     """Verifica que la skill prohíbe revivir tecnologías descartadas o inventar requisitos."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
-        # Prohibición explícita de amnesia sobre BD externas, auth, Vue y Stripe
-        assert "PostgreSQL" in content or "postgresql" in content
-        assert "AD-005" in content or "SQLite" in content
-        assert "AD-007" in content or "anónimo" in content
-        assert "EP-001" in content
-        assert "EP-002" in content
-        assert "CWE-532" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        # Regla genérica en el cuerpo normativo: nada ausente en artefactos APPROVED o en el código
+        assert "APPROVED" in normative
+        assert "OUT OF SCOPE" in normative
+        assert "alternativas descartadas" in normative.lower()
+        assert "EP-xxx" in normative
+        assert "CWE-532" in normative
+
+        # Prohibiciones instanciadas de la demo (BD externas, auth, endpoints inventados)
+        assert "PostgreSQL" in ref_context
+        assert "AD-005" in ref_context and "SQLite" in ref_context
+        assert "AD-007" in ref_context
+        assert "EP-001" in ref_context
+        assert "EP-002" in ref_context
+        assert "/checkout" in ref_context
+
+
+# ==============================================================================
+# TEST 4b: Cuerpo Normativo Agnóstico y Demo Aislada en Reference Context
+# ==============================================================================
+def test_documentation_skill_normative_body_is_project_agnostic():
+    """Verifica que la instanciación de la demo vive solo en la sección Reference Context."""
+    demo_tokens = [
+        "catalogo-carrito-web",
+        "src/catalog",
+        "tests/catalog",
+        "Product",
+        "ENT-001",
+        "SEED-001",
+        "localStorage",
+        "Carrito",
+        "REQ-001",
+        "AD-003",
+        "/carts",
+        "uvicorn src.main:app",
+        "135 tests",
+    ]
+    for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
+        content = path.read_text(encoding="utf-8")
+        assert "## Reference Context: Demo Implementation (catalogo-carrito-web)" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        assert len(parts) == 2, f"{path.name} debe contener exactamente una sección Reference Context"
+        normative, ref_context = parts
+
+        for token in demo_tokens:
+            assert token not in normative, f"Acoplamiento a la demo en el cuerpo normativo de {path.name}: {token}"
+            assert token in ref_context, f"Instanciación de la demo perdida en Reference Context de {path.name}: {token}"
+
+        assert 'project_id: "<project_id>"' in normative
+        assert "file:///" not in content
 
 
 # ==============================================================================

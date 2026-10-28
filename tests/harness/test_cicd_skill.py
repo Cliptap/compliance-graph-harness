@@ -205,21 +205,72 @@ def test_reproducible_pipeline_and_quality_gates_specification():
     """Valida que la skill prescribe el flujo reproducible y los 3 Quality Gates obligatorios."""
     for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
         content = path.read_text(encoding="utf-8")
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
         # Quality Gates
-        assert "GATE-001" in content
-        assert "GATE-002" in content
-        assert "GATE-003" in content
-        assert "Zero Failure" in content
-        assert "Acceptance Coverage" in content
-        assert "ScopePolicy" in content or "Scope Policy" in content
+        assert "GATE-001" in normative
+        assert "GATE-002" in normative
+        assert "GATE-003" in normative
+        assert "Zero Failure" in normative
+        assert "Acceptance Coverage" in normative
+        assert "ScopePolicy" in normative or "Scope Policy" in normative
 
         # Flujo y entorno
-        assert "ubuntu-latest" in content
-        assert "3.12" in content
-        assert "init_harness_db" in content
-        assert "contents: read" in content
-        assert "push" in content
-        assert "pull_request" in content
+        assert "ubuntu-latest" in normative
+        assert "init_harness_db" in normative
+        assert "contents: read" in normative
+        assert "push" in normative
+        assert "pull_request" in normative
+
+        # Runtimes y versiones concretas de la demo solo en Reference Context:
+        assert "3.12" in ref_context
+
+
+# ==============================================================================
+# TEST 4b: Cuerpo Normativo Agnóstico y Reference Context de la Demo
+# ==============================================================================
+def test_normative_body_is_project_agnostic_and_demo_in_reference_context():
+    """Valida que el cuerpo normativo deriva suites/runtimes de artefactos sellados y la demo vive en Reference Context."""
+    for path in [SKILL_PATH, PORTABLE_SKILL_PATH]:
+        content = path.read_text(encoding="utf-8")
+        assert "## Reference Context: Demo Implementation" in content
+        parts = content.split("## Reference Context: Demo Implementation")
+        normative = parts[0]
+        ref_context = parts[1] if len(parts) > 1 else ""
+
+        # Reglas de derivación genéricas en el cuerpo normativo:
+        assert "docs/TEST_PLAN.md" in normative
+        assert "docs/ARCHITECTURE.md" in normative
+        assert "tests/<bounded_context>/" in normative
+        assert "<python_version>" in normative
+
+        # Ausencia de acoplamiento de la demo en el cuerpo normativo:
+        demo_strings = [
+            "tests/catalog",
+            "test_catalog_frontend.py",
+            "CartManager",
+            "catalogo-carrito-web",
+            "AC-006",
+            "INV-004",
+            "EP-002",
+            "SEC-DEC-001",
+            "110+",
+        ]
+        for demo in demo_strings:
+            assert demo not in normative, f"Contenido demo filtrado al cuerpo normativo de {path.name}: {demo}"
+
+        # Instanciación concreta de la demo en Reference Context:
+        assert len(ref_context) > 0
+        assert "catalogo-carrito-web" in ref_context
+        assert "tests/catalog/" in ref_context
+        assert "tests/frontend/test_catalog_frontend.py" in ref_context
+        assert "CartManager" in ref_context
+        assert 'node-version: "20"' in ref_context
+        assert 'python-version: "3.12"' in ref_context
+        assert "pytest tests/harness/ tests/catalog/ tests/frontend/ -v" in ref_context
+        assert "AC-001" in ref_context and "AC-006" in ref_context
 
 
 # ==============================================================================
