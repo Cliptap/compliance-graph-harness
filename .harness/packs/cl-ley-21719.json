@@ -282,7 +282,9 @@
           "console.error",
           "AuditLog.new_value",
           "AuditLog.old_value"
-        ]
+        ],
+        "implemented": true,
+        "policy_id": "privacy.cwe_532"
       },
       "remediation": {
         "mitigations": [
@@ -342,7 +344,9 @@
           "redis.set",
           "cache.put",
           "memcached.set"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: cache encryptor sinks (redis.set/cache.put) are not analyzed yet."
       },
       "remediation": {
         "mitigations": [
@@ -399,7 +403,9 @@
         "sensitive_category": "SENSITIVE_HEALTH",
         "sinks": [
           "unencrypted_column_storage"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: ORM encryption-transformer coverage is not statically verifiable yet."
       },
       "remediation": {
         "mitigations": [
@@ -469,7 +475,9 @@
           "delete().where",
           "hard_delete",
           "DROP"
-        ]
+        ],
+        "implemented": true,
+        "policy_id": "domain.prohibited_deletion"
       },
       "remediation": {
         "mitigations": [
@@ -537,7 +545,9 @@
         "sinks": [
           "unprotected_route",
           "public_endpoint"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: route authorization coverage needs the T16 rights reachability work; only CORE-CHECK-003 indicators exist."
       },
       "remediation": {
         "mitigations": [
@@ -584,7 +594,9 @@
         "sinks": [
           "auto_resolve_diagnosis",
           "unreviewed_triage_decision"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "Manual assessment: automated clinical decisions need human review evidence."
       },
       "remediation": {
         "mitigations": [
@@ -653,7 +665,9 @@
           "raw_json_dump",
           "csv_export",
           "unstructured_pdf"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: export format (FHIR/raw) is not verified by code."
       },
       "remediation": {
         "mitigations": [
@@ -714,7 +728,9 @@
           "encrypt",
           "identifier",
           "rut"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "Only the legacy stateless auditor heuristic masks identifiers; not a PolicyEngine detector and not counted in the score."
       },
       "remediation": {
         "mitigations": [
@@ -779,7 +795,9 @@
           "logging.",
           "log.info(",
           "log.debug("
-        ]
+        ],
+        "implemented": true,
+        "policy_id": "privacy.cwe_532"
       },
       "remediation": {
         "mitigations": [
@@ -838,7 +856,9 @@
           "scopes",
           "security",
           "permission"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "Only access-control indicators (current_user/rbac); T16 covers data-subject rights, not authentication."
       },
       "remediation": {
         "mitigations": [
@@ -890,7 +910,9 @@
           "physician_review",
           "pending_review",
           "automated_gate"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "Human-in-the-loop review is documentary; the legacy auditor has a heuristic only."
       },
       "remediation": {
         "mitigations": [
@@ -960,7 +982,9 @@
           "delete().where",
           "hard_delete",
           "DROP TABLE"
-        ]
+        ],
+        "implemented": true,
+        "policy_id": "domain.prohibited_deletion"
       },
       "remediation": {
         "mitigations": [
@@ -1029,7 +1053,9 @@
           "bundle",
           "cl_core",
           "patient_resource"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "FHIR interoperability is documentary/format review; the legacy auditor has a heuristic only."
       },
       "remediation": {
         "mitigations": [
@@ -1089,7 +1115,9 @@
           "clinical_notes",
           "medical_record",
           "encrypted"
-        ]
+        ],
+        "implemented": false,
+        "gap_reason": "Health-data isolation is documentary; the legacy auditor has a heuristic only."
       },
       "remediation": {
         "mitigations": [
@@ -1150,9 +1178,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "LAWFUL_BASIS_AND_CONSENT",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.consent_transparency",
+        "indicators": [
+          "consent",
+          "lawful_basis",
+          "consent_record",
+          "withdrawn_at"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1170,7 +1206,7 @@
       "applicability": {
         "when": "The system processes personal data for any purpose; consent-based purposes need consent records."
       },
-      "validation_mode": "manual_assessment",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Which lawful basis fits a purpose (e.g. legitimate-interest balancing) is a case-by-case judgment.",
       "validation_note": "Art. 12 states the consent requirements, revocation by similar or equivalent means, the controller's burden of proof and the bundling presumption; Art. 13 lists the other lawful bases and requires the controller to prove lawfulness; Art. 2 let. p) defines consent as a free, specific, unequivocal and informed declaration or clear affirmative action. The control claims only these requirements."
@@ -1193,9 +1229,19 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "DATA_SUBJECT_RIGHTS_HANDLING",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.rights_reachability",
+        "indicators": [
+          "access",
+          "rectification",
+          "erasure",
+          "opposition",
+          "portability",
+          "block"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1212,7 +1258,7 @@
       "applicability": {
         "when": "The system holds personal data of data subjects who can exercise their rights."
       },
-      "validation_mode": "manual_assessment",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Identity-verification procedure is defined by the Agency and was not located.",
       "validation_note": "Art. 4 lists the rights, Art. 8 ter the blocking right, Art. 10 the means and gratuity, and Art. 11 the 30 calendar days extendable once by 30, the 2 business days for blocking, the processing freeze while blocking is pending and the proof of reply. The control restates these rules without adding deadlines."
@@ -1245,9 +1291,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "TRANSPARENCY_DUTY_OF_INFORMATION",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.consent_transparency",
+        "indicators": [
+          "privacy_policy",
+          "policy_version",
+          "contact_channel",
+          "notice"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1263,7 +1317,7 @@
       "applicability": {
         "when": "The system collects personal data from the public (web or app)."
       },
-      "validation_mode": "document_review",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Differentiated minimum standards may be set by the Agency (Art. 14 septies); none was located.",
       "validation_note": "Art. 14 ter lists the minimum information items a) to l) that must be permanently available to the public and Art. 3 let. g) requires precise, clear, unequivocal and free access. The control lists only those items."
@@ -1298,7 +1352,9 @@
       "detection": {
         "type": "manual",
         "category": "SECURITY_INCIDENT_REGISTER_AND_NOTIFICATION",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": false,
+        "gap_reason": "Incident register and breach notification are documentary evidence only."
       },
       "remediation": {
         "mitigations": [
@@ -1349,7 +1405,9 @@
       "detection": {
         "type": "manual",
         "category": "DATA_PROTECTION_IMPACT_ASSESSMENT",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": false,
+        "gap_reason": "Impact assessment (EIPD) is documentary evidence only."
       },
       "remediation": {
         "mitigations": [
@@ -1397,9 +1455,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "PROCESSORS_AND_DATA_SHARING",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.third_party_transfers",
+        "indicators": [
+          "processor",
+          "dpa",
+          "subprocessor",
+          "third_party"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1416,7 +1482,7 @@
       "applicability": {
         "when": "A third party receives personal data from the controller (processor or assignee)."
       },
-      "validation_mode": "document_review",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "The Agency's model processor contracts were not located.",
       "validation_note": "Art. 15 bis lists the contract content, the written authorisation for sub-processing, the duty to comply with Arts. 14 bis and 14 quinquies, breach reporting to the controller and deletion or return at the end; Art. 15 regulates cession with its lawful bases and written form. The control restates only these duties."
@@ -1459,9 +1525,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "INTERNATIONAL_TRANSFERS",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.third_party_transfers",
+        "indicators": [
+          "transfer_basis",
+          "adequacy",
+          "international_transfer",
+          "region"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1477,7 +1551,7 @@
       "applicability": {
         "when": "Personal data are sent to or hosted in another country (cloud, SaaS, payment or analytics providers)."
       },
-      "validation_mode": "document_review",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "The Agency's list of adequate countries was not located; Art. 29 is not cited because its text was not extracted.",
       "validation_note": "Art. 27 states the adequacy and safeguard routes and the exceptions for specific, non-habitual transfers (e.g. express consent, contract); Art. 28 assigns the list of adequate countries and model clauses to the Agency and the burden of proof to the controller; Art. 14 ter let. h) requires public disclosure."
@@ -1500,9 +1574,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "CHILDREN_AND_ADOLESCENTS",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.minors_and_sensitive",
+        "indicators": [
+          "birth_date",
+          "age_gate",
+          "guardian",
+          "parental_consent"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1519,7 +1601,7 @@
       "applicability": {
         "when": "The system may process data of persons under eighteen."
       },
-      "validation_mode": "manual_assessment",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Exceptions to parental consent provided by law, if any, must be checked per case.",
       "validation_note": "Art. 16 quáter sets the best interest and progressive autonomy principle, the thresholds (under fourteen, fourteen to seventeen), parental consent for children and for sensitive data of adolescents under sixteen. The parental-consent rule for children was taken from the source map summary; the other statements are verbatim."
@@ -1572,9 +1654,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "RETENTION_AND_PURPOSE_LIMITATION",
-        "plugin": "core"
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.retention_minimization",
+        "indicators": [
+          "retention_days",
+          "ttl",
+          "purge",
+          "anonymise"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1590,7 +1680,7 @@
       "applicability": {
         "when": "The system stores personal data beyond a single transaction."
       },
-      "validation_mode": "document_review",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Retention periods per purpose are the controller's decision within these limits.",
       "validation_note": "Art. 3 let. b) limits processing to explicit purposes, Art. 3 let. c) limits retention to the time needed and requires deletion or anonymisation, Art. 14 let. d) covers pre-contractual data and Art. 7 inc. 2 N° ii excludes erasure for legal obligations or contract performance. The control quotes these rules only."
@@ -1644,9 +1734,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "MARKETING_COMMUNICATIONS",
-        "plugin": "ecommerce_retail"
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.consent_transparency",
+        "indicators": [
+          "consent",
+          "unsubscribe",
+          "opt_out",
+          "suppression_list"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1663,7 +1761,7 @@
       "applicability": {
         "when": "The e-commerce system sends promotional communications or processes data for direct marketing."
       },
-      "validation_mode": "manual_assessment",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Whether marketing email may rely on legitimate interest (Art. 13 let. d)) plus the Art. 28 B opt-out is not settled by the text checked.",
       "validation_note": "Ley 19.496 Art. 28 B sets the subject, sender and opt-out address for promotional email and an expedite opt-out for other channels; Ley 19.628 Arts. 12 and 13 require a lawful basis and Art. 8 let. b) grants the right to object to direct marketing and profiling. The control does not claim that prior consent is always required."
@@ -1728,7 +1826,9 @@
       "detection": {
         "type": "manual",
         "category": "PROFILING_AND_RECOMMENDATIONS",
-        "plugin": "ecommerce_retail"
+        "plugin": "ecommerce_retail",
+        "implemented": false,
+        "gap_reason": "Profiling and recommendation notices are documentary evidence only."
       },
       "remediation": {
         "mitigations": [
@@ -1789,9 +1889,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "PAYMENT_CARD_DATA",
-        "plugin": "ecommerce_retail"
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.payment_data_storage",
+        "indicators": [
+          "card_number",
+          "cvv",
+          "pan",
+          "payment_token"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1808,7 +1916,7 @@
       "applicability": {
         "when": "The e-commerce system receives, stores or transmits payment card data."
       },
-      "validation_mode": "manual_assessment",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Whether card numbers are 'datos relativos a obligaciones de carácter económico, financiero, bancario o comercial' is unresolved.",
       "validation_note": "Art. 14 bis imposes secrecy, Art. 14 quinquies requires security adequate to the risk with pseudonymisation and encryption 'en su caso', and Art. 14 sexies requires notifying the Agency and, for economic, financial, banking or commercial data, the data subjects. The open question on card numbers is stated, not decided."
@@ -1844,7 +1952,9 @@
       "detection": {
         "type": "manual",
         "category": "PCI_DSS_CONTRACTUAL",
-        "plugin": "ecommerce_retail"
+        "plugin": "ecommerce_retail",
+        "implemented": false,
+        "gap_reason": "PCI DSS is contractual evidence, never code evidence."
       },
       "remediation": {
         "mitigations": [
@@ -1892,9 +2002,17 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "ECOMMERCE_PROCESSORS",
-        "plugin": "ecommerce_retail"
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.third_party_transfers",
+        "indicators": [
+          "processor",
+          "payment_gateway",
+          "transbank",
+          "dpa"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -1911,7 +2029,7 @@
       "applicability": {
         "when": "The e-commerce system shares customer data with payment gateways, couriers or other providers."
       },
-      "validation_mode": "document_review",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "The processor or assignee role of each provider is a case-by-case judgment.",
       "validation_note": "Art. 15 bis lists the processor contract content, written sub-processing authorisation and deletion or return at the end; Art. 15 regulates cession to another controller in writing. Whether a courier is a processor or an assignee depends on its own use of the data, as stated."
@@ -1979,7 +2097,9 @@
       "detection": {
         "type": "manual",
         "category": "BILLING_RECORD_RETENTION",
-        "plugin": "ecommerce_retail"
+        "plugin": "ecommerce_retail",
+        "implemented": false,
+        "gap_reason": "Billing-record retention is documentary (DL 825 Art. 58, Código Tributario)."
       },
       "remediation": {
         "mitigations": [
@@ -2028,9 +2148,16 @@
         }
       ],
       "detection": {
-        "type": "manual",
+        "type": "indicator",
         "category": "SOCIOECONOMIC_SENSITIVE_DATA",
-        "plugin": "ecommerce_retail"
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.minors_and_sensitive",
+        "indicators": [
+          "socioeconomic_status",
+          "socioeconomic_level",
+          "explicit_consent"
+        ]
       },
       "remediation": {
         "mitigations": [
@@ -2046,7 +2173,7 @@
       "applicability": {
         "when": "The e-commerce system collects or infers income, socioeconomic level or credit scores."
       },
-      "validation_mode": "manual_assessment",
+      "validation_mode": "static_analysis",
       "legal_review": "validated",
       "legal_review_note": "Whether a given inferred segment reveals the socioeconomic situation is a case-by-case judgment.",
       "validation_note": "Art. 2 let. g) lists 'la situación socioeconómica' among sensitive data and Art. 16 requires express consent or a closed exception. Treating inferred scores that reveal that situation as sensitive is the harness authors' reading of the literal term, stated as such in the description."

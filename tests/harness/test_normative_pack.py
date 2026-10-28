@@ -95,7 +95,56 @@ def test_existing_detection_and_remediation_are_unchanged():
     fingerprint = {cid: [by_id[cid]["severity"], by_id[cid]["detection"], by_id[cid]["remediation"]]
                    for cid in ORIGINAL_IDS}
     digest = hashlib.sha256(json.dumps(fingerprint, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-    assert digest == "e4a247ce7497264291483e5289b8bf7e7f2b2c3b988023fb29cd86ceb29a59ab"
+    assert digest == "6f632dd76a60367997f3187ff28425d7ab8af72146d62ca5d3e7bb80fe6c2549"
+
+
+def test_every_control_declares_detector_traceability():
+    for c in load_pack(PACK)["controls"]:
+        det = c["detection"]
+        assert isinstance(det["implemented"], bool), c["id"]
+        if det["implemented"]:
+            assert det["policy_id"], c["id"]
+            assert det["type"] != "manual", c["id"]
+        elif det["type"] != "manual":
+            assert det["gap_reason"].strip(), c["id"]
+
+
+def test_implemented_control_needs_a_known_policy():
+    from src.harness.normative_pack import KNOWN_POLICY_IDS
+
+    for c in load_pack(PACK)["controls"]:
+        if c["detection"]["implemented"]:
+            assert c["detection"]["policy_id"] in KNOWN_POLICY_IDS, c["id"]
+
+
+def test_manual_control_cannot_declare_a_detector():
+    pack = _validated_copy()
+    control = pack["controls"][0]
+    control["detection"] = {"type": "manual", "implemented": True, "policy_id": "privacy.cwe_532"}
+    with pytest.raises(PackError, match="manual control cannot declare a detector"):
+        validate_pack(pack)
+
+
+def test_unknown_policy_id_is_rejected():
+    pack = _validated_copy()
+    pack["controls"][0]["detection"]["policy_id"] = "privacy.invented"
+    with pytest.raises(PackError, match="unknown detection.policy_id"):
+        validate_pack(pack)
+
+
+def test_unimplemented_automated_control_needs_a_gap_reason():
+    pack = _validated_copy()
+    control = next(c for c in pack["controls"] if c["id"] == "CL-DATAPROT-002")
+    control["detection"].pop("gap_reason")
+    with pytest.raises(PackError, match="needs detection.gap_reason"):
+        validate_pack(pack)
+
+
+def test_payment_control_is_wired_to_its_detector():
+    control = _controls()["ECOM-CHECK-003"]
+    assert control["detection"]["implemented"] is True
+    assert control["detection"]["policy_id"] == "privacy.payment_data_storage"
+    assert control["detection"]["type"] != "manual"
 
 
 @pytest.mark.parametrize("cid,absent,present", [
@@ -152,9 +201,14 @@ def test_internal_standards_say_they_are_a_project_choice():
 ])
 def test_core_dimension_control(cid, articles, phrases, validation_mode):
     control = _controls()[cid]
-    assert control["detection"] == {"type": "manual", "category": control["detection"]["category"],
-                                    "plugin": "core"}
-    assert control["validation_mode"] == validation_mode
+    det = control["detection"]
+    assert det["plugin"] == "core"
+    if det["implemented"]:
+        assert det["type"] != "manual" and det["policy_id"]
+        assert control["validation_mode"] == "static_analysis"
+    else:
+        assert det["type"] == "manual"
+        assert control["validation_mode"] == validation_mode
     assert control["evidence"]["kind"] in ("document_present", "procedure_documented")
     assert control["requirement_type"] == "legal_obligation"
     cited = _articles(control)
@@ -219,10 +273,10 @@ def test_legacy_view_feeds_existing_consumers():
     assert len(view["sectorial_plugins"]["health_clinical"]["criteria"]) == 3
     assert [c["id"] for c in view["sectorial_plugins"]["ecommerce_retail"]["criteria"]] == list(ECOM_IDS)
     manual = {c["id"]: c for c in view["core_checklist"] if c["detection_type"] == "manual"}
-    assert set(manual) == set(NEW_CORE_IDS)
+    assert set(manual) == {"CORE-CHECK-008", "CORE-CHECK-009"}
     assert manual["CORE-CHECK-008"]["evidence_kind"] in ("document_present", "procedure_documented")
     assert all(c["detection_type"] in ("pattern", "indicator") for c in view["core_checklist"]
-               if c["id"] not in NEW_CORE_IDS)
+               if c["detection_type"] != "manual")
     assert "SENSITIVE_HEALTH" in view["data_categories"]
     assert view["rules"] == to_legacy_rules(load_pack(PACK))
 
@@ -338,10 +392,15 @@ def test_duplicate_ids_rejected():
 ])
 def test_ecommerce_control(cid, articles, phrases, requirement_type, validation_mode):
     control = _controls()[cid]
-    assert control["detection"]["type"] == "manual"
-    assert control["detection"]["plugin"] == "ecommerce_retail"
+    det = control["detection"]
+    assert det["plugin"] == "ecommerce_retail"
+    if det["implemented"]:
+        assert det["type"] != "manual" and det["policy_id"]
+        assert control["validation_mode"] == "static_analysis"
+    else:
+        assert det["type"] == "manual"
+        assert control["validation_mode"] == validation_mode
     assert control["requirement_type"] == requirement_type
-    assert control["validation_mode"] == validation_mode
     assert control["evidence"]["kind"] in ("document_present", "procedure_documented")
     assert articles and set(articles) <= _articles(control), (cid, _articles(control))
     for phrase in phrases:

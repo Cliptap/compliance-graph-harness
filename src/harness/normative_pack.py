@@ -40,6 +40,17 @@ VALIDATION_MODES = ("static_analysis", "integration_test", "document_review", "m
 LEGAL_REVIEW = ("pending", "validated")
 SOURCE_CHECK_STATUSES = ("verified", "partially_supported", "wrong_article", "not_found")
 SOURCE_TYPES = ("statute", "guidance", "contract")
+KNOWN_POLICY_IDS = frozenset({
+    "privacy.cwe_532",
+    "privacy.api_exposure",
+    "privacy.payment_data_storage",
+    "domain.prohibited_deletion",
+    "privacy.rights_reachability",
+    "privacy.consent_transparency",
+    "privacy.minors_and_sensitive",
+    "privacy.retention_minimization",
+    "privacy.third_party_transfers",
+})
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 OUTCOMES = ("confirmed_violation", "potential_risk", "not_applicable", "insufficient_evidence")
 CONTROL_ID = re.compile(r"^[A-Z]+(-[A-Z]+)*-\d{3}$")
@@ -86,6 +97,20 @@ def _check_self_validation(errors: list[str], cid: str, control: dict) -> None:
         errors.append(f"{cid}: validated control needs every source verified")
     if not str(control.get("validation_note", "")).strip():
         errors.append(f"{cid}: validated control needs a validation_note")
+
+
+def _check_detector(errors: list[str], cid: str, det: dict) -> None:
+    implemented = det.get("implemented")
+    if not isinstance(implemented, bool):
+        errors.append(f"{cid}: detection.implemented must be a boolean")
+        return
+    if implemented:
+        if det.get("type") == "manual":
+            errors.append(f"{cid}: manual control cannot declare a detector")
+        if det.get("policy_id") not in KNOWN_POLICY_IDS:
+            errors.append(f"{cid}: unknown detection.policy_id {det.get('policy_id')!r}")
+    elif det.get("type") != "manual" and not str(det.get("gap_reason", "")).strip():
+        errors.append(f"{cid}: non-manual control without a detector needs detection.gap_reason")
 
 
 def _check_pack_review(errors: list[str], pack: dict) -> None:
@@ -140,6 +165,7 @@ def validate_pack(pack: dict) -> None:
         det = control.get("detection", {})
         if det.get("type") not in DETECTION_TYPES:
             errors.append(f"{cid}: invalid detection type {det.get('type')!r}")
+        _check_detector(errors, cid, det)
         if det.get("type") == "taint_sink" and not (det.get("sinks") and det.get("sensitive_category")):
             errors.append(f"{cid}: taint_sink needs sinks and sensitive_category")
         if det.get("type") == "pattern" and not det.get("patterns"):
