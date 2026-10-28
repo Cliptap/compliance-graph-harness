@@ -25,12 +25,12 @@ description: Auditoria de cumplimiento normativo sobre codigo existente (Ley 21.
 ## Detectores en codigo (evidencia directa)
 | Politica | Que detecta | Control |
 |---|---|---|
-| `privacy.cwe_532` | RUT o datos de salud hacia logs o consola | CORE-CHECK-002 |
+| `privacy.cwe_532` | RUT o datos de salud hacia logs o consola, directo o por flujo de datos (variables, contenedores, valores de retorno y llamadas entre los archivos evaluados) | CORE-CHECK-002 |
 | `privacy.api_exposure` | respuestas de API con credenciales o identificadores sin enmascarar | CORE-CHECK-002 |
 | `privacy.payment_data_storage` | CVV o numero de tarjeta sin cifrar persistido en un modelo ORM | ECOM-CHECK-003 |
 | `domain.prohibited_deletion` | borrado fisico de fichas clinicas | HEALTH-CHECK-001 |
 
-Limites conocidos y publicados en el corpus (`harness/eval/corpus/cases.json`): no se detectan datos que viajan por una variable intermedia, modelos de respuesta importados de otro archivo, SQL crudo ni datos de tarjeta dentro de una columna JSON.
+Limites conocidos y publicados en el corpus (`harness/eval/corpus/cases.json`): no se detectan modelos de respuesta importados de otro archivo, SQL crudo ni datos de tarjeta dentro de una columna JSON. El flujo hacia logs solo resuelve funciones de los archivos evaluados (en la compuerta, los del indice de git); una llamada no resuelta solo propaga el dato desde su receptor o si es una funcion que conserva el valor (`str`, `json.dumps`, `format`), y un diccionario con un RUT queda marcado completo.
 
 ## Evidencia documental que debes pedir
 | Control | Evidencia a solicitar |

@@ -138,14 +138,51 @@ class SensitiveLoggingPolicy(BasePolicy):
         "sys.stdout",
     }
 
-    def __init__(self):
+    def __init__(self, track_flows: bool = True):
         super().__init__(
             policy_id="privacy.cwe_532_logging",
             description="Prohibición de emisión de identificadores y datos de salud en canales de logging/consola.",
             severity="CRITICAL",
         )
+        self.track_flows = track_flows
 
     MASK_MARKERS = ("mask", "redact", "hash", "anon", "seudon", "[redacted]")
+    FLOW_AMBIGUOUS_NAMES = frozenset({"run"})
+    REMEDIATION = (
+        "No emitir RUT ni datos médicos en texto plano. Aplicar función de enmascaramiento "
+        "(ej: XX.***.***-X) o eliminar el dato sensible de la cadena de registro."
+    )
+
+    def _evaluate_flows(self, trees: dict[str, ast.Module], lines: dict[str, list[str]],
+                        reported: set[tuple[str, int]]) -> list[Finding]:
+        """Call-level pass: sensitive values that reach a log sink through variables or calls."""
+        from src.harness.taint_flow import TaintAnalyzer
+
+        analyzer = TaintAnalyzer(self.SENSITIVE_TOKENS, self._is_log_call, self.MASK_MARKERS,
+                                 self.FLOW_AMBIGUOUS_NAMES)
+        findings: list[Finding] = []
+        for hit in analyzer.analyze(trees):
+            if (hit.file, hit.line) in reported:
+                continue
+            path = " -> ".join([f"{hit.origin} ({hit.origin_file}:{hit.origin_line})", *hit.steps,
+                                f"{hit.sink} ({hit.file}:{hit.line})"])
+            file_lines = lines[hit.file]
+            findings.append(
+                Finding(
+                    policy_id="privacy.cwe_532",
+                    severity="CRITICAL",
+                    status="VIOLATION",
+                    file=hit.file,
+                    line=hit.line,
+                    message=(
+                        "Posible fuga de datos personales o clínicos hacia sumideros de depuración (CWE-532 / Ley 21.719) "
+                        f"por flujo de datos: {path}."
+                    ),
+                    evidence=file_lines[hit.line - 1].strip() if hit.line <= len(file_lines) else "",
+                    remediation_advice=self.REMEDIATION,
+                )
+            )
+        return findings
 
     def _is_log_call(self, call: ast.Call) -> bool:
         sink = ast.unparse(call.func).lower()
@@ -200,6 +237,8 @@ class SensitiveLoggingPolicy(BasePolicy):
         diff: str | None = None,
     ) -> list[Finding]:
         findings: list[Finding] = []
+        trees: dict[str, ast.Module] = {}
+        py_lines: dict[str, list[str]] = {}
 
         for file_path, content in modified_files.items():
             normalized_path = file_path.replace("\\", "/")
@@ -212,6 +251,7 @@ class SensitiveLoggingPolicy(BasePolicy):
                     tree = None
                 if tree is not None:
                     findings.extend(self._evaluate_ast(normalized_path, tree, lines))
+                    trees[normalized_path], py_lines[normalized_path] = tree, lines
                     continue
 
             # Inspección línea por línea para capturar llamadas a logging y patrones sensibles
@@ -252,6 +292,9 @@ class SensitiveLoggingPolicy(BasePolicy):
                     )
                 )
 
+        if self.track_flows and trees:
+            reported = {(f.file, f.line) for f in findings}
+            findings.extend(self._evaluate_flows(trees, py_lines, reported))
         return findings
 
 

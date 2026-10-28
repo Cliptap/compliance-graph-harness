@@ -63,6 +63,18 @@ def test_leak_in_logs_blocks_with_control_and_article():
     assert "Art. 14° bis" in report and "no es asesoría legal" in report
 
 
+def test_leak_through_a_call_across_staged_files_blocks_with_control():
+    files = {
+        "src/audit.py": "def audit(value):\n    logger.info('value=%s', value)\n",
+        "src/service.py": "from audit import audit\n\ndef create(p):\n    audit(p.rut)\n",
+    }
+    result = evaluate(files, PACK)
+    assert result.blocked
+    assert [(f.policy_id, f.file, f.line) for f in result.findings] == [("privacy.cwe_532", "src/audit.py", 2)]
+    report = format_report(result, PACK)
+    assert "src/audit.py:2" in report and "CORE-CHECK-002" in report and "src/service.py:4" in report
+
+
 def test_api_exposure_blocks():
     result = evaluate({"src/api.py": API_LEAK}, PACK)
     assert result.blocked
