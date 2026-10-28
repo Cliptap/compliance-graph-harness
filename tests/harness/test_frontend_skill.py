@@ -141,6 +141,15 @@ def test_skill_structure_and_contract_sections():
         for header in required_headers:
             assert header.lower() in body.lower(), f"Sección faltante en {path.name}: {header}"
 
+        # Verificación del estándar metodológico genérico y sección de contexto de referencia
+        assert "bounded context" in body.lower() or "contexto acotado" in body.lower(), (
+            f"Falta estándar de delimitación de bounded context en {path.name}"
+        )
+        assert "upstream" in body.lower(), f"Falta referencia a trazabilidad upstream en {path.name}"
+        assert "Reference Context: Demo Implementation" in body, (
+            f"Falta sección de contexto de referencia de demo en {path.name}"
+        )
+
 
 # ==============================================================================
 # TEST 2: Validación del Esquema de TaskSpec y Delimitación Perimetral
@@ -152,13 +161,19 @@ def test_frontend_skill_contract_schema_and_taskspec_rules():
         assert "TaskSpec(" in content
         assert "allowed_paths" in content
         assert "forbidden_paths" in content
+        assert "orphan_change" in content or "orphan changes" in content.lower()
+
+        # Estándar metodológico genérico
+        assert "<bounded_context>" in content or "contexto acotado" in content.lower()
+
+        # Coexistencia de la sección de contexto de referencia de la demo
+        assert "Reference Context: Demo Implementation" in content
         assert "src/frontend/**" in content
         assert "tests/frontend/**" in content
         assert "src/backend/**" in content   # Preservación clínica
         assert "src/database/**" in content  # Preservación clínica
         assert "src/catalog/**" in content   # Preservación de backend sellado
         assert "src/shared/**" in content    # Preservación de backend sellado
-        assert "orphan_change" in content or "orphan changes" in content.lower()
 
 
 # ==============================================================================

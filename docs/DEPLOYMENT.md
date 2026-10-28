@@ -15,9 +15,9 @@ last_audit: "2026-10-22"
 El sistema **Catálogo Comercial y Carrito de Compras Desacoplado** (`catalogo-carrito-web`) formaliza su empaquetado de producción bajo la directiva **`DEP-001` (Unidad Desplegable Monolítica Contenerizada)**.
 
 En total coherencia con el nivel `governance_level: "bajo"` y la decisión arquitectónica `AD-001`, el sistema se empaqueta como un monolito desacoplado y autónomo. Esta unidad contiene la totalidad de los componentes operativos del sistema:
-- El servidor web y API REST FastAPI ([`src/main.py`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/main.py)).
-- El motor de catálogo y datos relacionales embebidos en SQLite ([`src/catalog/`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/catalog/)).
-- La interfaz gráfica estática en HTML5, CSS y JavaScript Vanilla ([`src/frontend/`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/frontend/)).
+- El servidor web y API REST FastAPI ([`src/main.py`](src/main.py)).
+- El motor de catálogo y datos relacionales embebidos en SQLite ([`src/catalog/`](src/catalog/)).
+- La interfaz gráfica estática en HTML5, CSS y JavaScript Vanilla ([`src/frontend/`](src/frontend/)).
 
 Esta aproximación elimina por completo la necesidad de orquestadores distribuidos, servidores proxy auxiliares o componentes intermedios de red, garantizando un despliegue inmediato con un solo comando.
 
@@ -107,9 +107,9 @@ La operatividad física del contenedor fue validada de forma determinista en el 
 
 | Directiva de Despliegue | Requisito / Decisión Upstream | Documento Fuente | Propósito y Cumplimiento Técnico |
 | :--- | :--- | :--- | :--- |
-| **`DEP-001`** | `AD-001` (Monolito modular liviano) | [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) | Empaqueta frontend, backend y datos en una única unidad sin sobrecarga de microservicios. |
-| **`DEP-001`** | `AD-005` (Stack tecnológico) | [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) | Utiliza Python 3.12, FastAPI, SQLite y Vanilla JS en imagen ligera `python:3.12-slim`. |
-| **Non-Root User** | `SEC-CTRL-001`, Defensa en Profundidad | [docs/SECURITY.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md) | Mitiga riesgos de elevación de privilegios ejecutando como `appuser` (UID 1000). |
-| **Zero Secrets** | `AD-007`, `SEC-DEC-001` | [docs/SECURITY.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md) | Modo visitante anónimo sin credenciales ni dependencias de bóvedas externas. |
-| **`HC-001`** | `TP-001`, `GATE-001` | [docs/CICD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/CICD.md), [docs/TEST_PLAN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md) | Sondeo de salud en `/health` verificable por el arnés y por motores de contenedores. |
-| **Multi-Stage Build** | `PIPE-001` | [docs/CICD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/CICD.md) | Aislamiento de compilación vs runtime para imágenes finales pequeñas (< 200 MB). |
+| **`DEP-001`** | `AD-001` (Monolito modular liviano) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Empaqueta frontend, backend y datos en una única unidad sin sobrecarga de microservicios. |
+| **`DEP-001`** | `AD-005` (Stack tecnológico) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Utiliza Python 3.12, FastAPI, SQLite y Vanilla JS en imagen ligera `python:3.12-slim`. |
+| **Non-Root User** | `SEC-CTRL-001`, Defensa en Profundidad | [docs/SECURITY.md](docs/SECURITY.md) | Mitiga riesgos de elevación de privilegios ejecutando como `appuser` (UID 1000). |
+| **Zero Secrets** | `AD-007`, `SEC-DEC-001` | [docs/SECURITY.md](docs/SECURITY.md) | Modo visitante anónimo sin credenciales ni dependencias de bóvedas externas. |
+| **`HC-001`** | `TP-001`, `GATE-001` | [docs/CICD.md](docs/CICD.md), [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Sondeo de salud en `/health` verificable por el arnés y por motores de contenedores. |
+| **Multi-Stage Build** | `PIPE-001` | [docs/CICD.md](docs/CICD.md) | Aislamiento de compilación vs runtime para imágenes finales pequeñas (< 200 MB). |

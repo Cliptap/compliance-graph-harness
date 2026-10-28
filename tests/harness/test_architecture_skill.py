@@ -91,6 +91,15 @@ def test_skill_structure_and_contract_sections():
         for header in required_headers:
             assert header.lower() in body.lower(), f"Sección faltante en {path.name}: {header}"
 
+        # Verificación del estándar metodológico genérico y sección de contexto de referencia
+        assert "bounded context" in body.lower() or "contexto acotado" in body.lower(), (
+            f"Falta estándar de delimitación de bounded context en {path.name}"
+        )
+        assert "upstream" in body.lower(), f"Falta referencia a trazabilidad upstream en {path.name}"
+        assert "Reference Context: Demo Implementation" in body, (
+            f"Falta sección de contexto de referencia de demo en {path.name}"
+        )
+
 
 # ==============================================================================
 # TEST 2: Validación del Esquema de Salida (ARCHITECTURE Output Contract)

@@ -23,12 +23,12 @@ Bajo el nivel de gobernanza asignado (`governance_level: "bajo"`) y los principi
 - Captura métricas operacionales mínimas calculadas en memoria por petición: latencia de endpoints en milisegundos (`MET-001`, `duration_ms`), distribución de códigos de estado HTTP y códigos de negocio (`MET-002`, `ERR-xxx`).
 - Integra el sondeo de liveness del servicio mediante el endpoint nativo `/health` (`HC-001`).
 - Prohíbe de forma tajante el goldplating de plataformas externas (Prometheus, Grafana, OpenTelemetry, Jaeger, Datadog o canales de alerta).
-- Emite como artefacto canónico de gobernanza la especificación formal [`docs/OBSERVABILITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/OBSERVABILITY.md).
+- Emite como artefacto canónico de gobernanza la especificación formal [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md).
 
 ---
 
 ## 2. Cuándo Usar
-- Se activa en la **Etapa 10** del pipeline de desarrollo, inmediatamente después de que el sistema ha formalizado su empaquetado y estrategia de despliegue en `10-deployment` ([`docs/DEPLOYMENT.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md) y [`Dockerfile`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/Dockerfile)).
+- Se activa en la **Etapa 10** del pipeline de desarrollo, inmediatamente después de que el sistema ha formalizado su empaquetado y estrategia de despliegue en `10-deployment` ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) y [`Dockerfile`](Dockerfile)).
 - Se utiliza para establecer el estándar de instrumentación y emisión de evidencia reproducible del sistema antes de pasar a la consolidación documental final en `12-documentation`.
 - Aplica a la verificación de peticiones REST, monitoreo de liveness en contenedores y auditoría de seguridad en bitácoras.
 
@@ -36,17 +36,17 @@ Bajo el nivel de gobernanza asignado (`governance_level: "bajo"`) y los principi
 
 ## 3. Precondiciones
 1. **Artefactos Previos Formalmente Aprobados:**
-   - [`docs/PRD.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) en estado `APPROVED`, clasificando el proyecto con `governance_level: "bajo"` y modo visitante anónimo.
-   - [`docs/ARCHITECTURE.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) en estado `APPROVED`, con las decisiones vinculantes: Monolito modular (`AD-001`), transporte HTTP REST en `/api/v1` (`AD-002`), almacenamiento cliente (`AD-003`), base relacional SQLite embebida (`AD-005`), Fail-Fast (`AD-006`) y modo anónimo (`AD-007`).
-   - [`docs/DATA_MODEL.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md) en estado `APPROVED`, con invariantes de catálogo (`INV-001` a `INV-004`).
-   - [`docs/API_DESIGN.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/API_DESIGN.md) en estado `APPROVED`, con contratos de endpoints (`EP-001`, `EP-002`), esquema de error estructurado (`DTO-ERR-001`) y catálogo de códigos de negocio (`ERR-001`, `ERR-002`, `ERR-500`).
-   - [`docs/SECURITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md) en estado `APPROVED`, especificando el control de prevención de fugas CWE-532 (`SEC-CTRL-004`) y cero secrets hardcodeados (`SEC-CTRL-003`, `SEC-DEC-001`).
-   - [`docs/DEPLOYMENT.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md) en estado `APPROVED`, formalizando la directiva `DEP-001` y el sondeo de liveness `HC-001` en `/health`.
+   - [`docs/PRD.md`](docs/PRD.md) en estado `APPROVED`, clasificando el proyecto con `governance_level: "bajo"` y modo visitante anónimo.
+   - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) en estado `APPROVED`, con las decisiones vinculantes: Monolito modular (`AD-001`), transporte HTTP REST en `/api/v1` (`AD-002`), almacenamiento cliente (`AD-003`), base relacional SQLite embebida (`AD-005`), Fail-Fast (`AD-006`) y modo anónimo (`AD-007`).
+   - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) en estado `APPROVED`, con invariantes de catálogo (`INV-001` a `INV-004`).
+   - [`docs/API_DESIGN.md`](docs/API_DESIGN.md) en estado `APPROVED`, con contratos de endpoints (`EP-001`, `EP-002`), esquema de error estructurado (`DTO-ERR-001`) y catálogo de códigos de negocio (`ERR-001`, `ERR-002`, `ERR-500`).
+   - [`docs/SECURITY.md`](docs/SECURITY.md) en estado `APPROVED`, especificando el control de prevención de fugas CWE-532 (`SEC-CTRL-004`) y cero secrets hardcodeados (`SEC-CTRL-003`, `SEC-DEC-001`).
+   - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) en estado `APPROVED`, formalizando la directiva `DEP-001` y el sondeo de liveness `HC-001` en `/health`.
 2. **Políticas Deterministas del Arnés Habilitadas:**
-   - Evaluador [`SensitiveLoggingPolicy`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/harness/policy_engine.py#L107-L199) operativo en el motor de políticas del arnés.
+   - Evaluador [`SensitiveLoggingPolicy`](src/harness/policy_engine.py#L107-L199) operativo en el motor de políticas del arnés.
 3. **Código Base Operativo y Estable:**
    - Suite de 126 tests deterministas ejecutándose 100% en verde.
-   - Servidor FastAPI en [`src/main.py`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/main.py) con endpoint `/health` y routers de catálogo montados.
+   - Servidor FastAPI en [`src/main.py`](src/main.py) con endpoint `/health` y routers de catálogo montados.
 
 ---
 

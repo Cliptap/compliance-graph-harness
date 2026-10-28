@@ -87,7 +87,7 @@ La aplicación estará disponible inmediatamente en:
 - **API REST Base:** `http://localhost:8000/api/v1/products`
 - **Health Check:** `http://localhost:8000/health`
 - **Documentación Interactiva Swagger:** `http://localhost:8000/docs`
-- **Interfaz Gráfica Frontend:** Abrir directamente [`src/frontend/index.html`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/frontend/index.html) en cualquier navegador web moderno.
+- **Interfaz Gráfica Frontend:** Abrir directamente [`src/frontend/index.html`](src/frontend/index.html) en cualquier navegador web moderno.
 
 ---
 
@@ -136,13 +136,13 @@ docker logs catalogo-app
 ## 9. Índice y Navegación hacia las Especificaciones Formales en `docs/`
 El sistema cuenta con 10 especificaciones formales aprobadas y sincronizadas:
 
-1. **[docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md):** Documento de Requisitos de Producto y alcance funcional.
-2. **[docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md):** Decisiones arquitectónicas estructurales y diseño modular.
-3. **[docs/DATA_MODEL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md):** Modelo relacional, invariantes y datos semilla.
-4. **[docs/API_DESIGN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/API_DESIGN.md):** Contrato REST, esquemas DTO y catálogo de errores.
-5. **[docs/SECURITY.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md):** Postura de seguridad baseline, modo visitante y prevención CWE-532.
-6. **[docs/TEST_PLAN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md):** Plan de pruebas, Quality Gates y matriz de cobertura AC -> Test.
-7. **[docs/CICD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/CICD.md):** Automatización de pipeline y compuertas deterministas.
-8. **[docs/DEPLOYMENT.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md):** Empaquetado en contenedor Docker multi-stage y directiva de salud.
-9. **[docs/OBSERVABILITY.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/OBSERVABILITY.md):** Arquitectura de logging estructurado JSON y trazabilidad.
-10. **[docs/SYSTEM_GUIDE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SYSTEM_GUIDE.md):** Guía integral consolidada y Matriz de Trazabilidad End-to-End.
+1. **[docs/PRD.md](docs/PRD.md):** Documento de Requisitos de Producto y alcance funcional.
+2. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):** Decisiones arquitectónicas estructurales y diseño modular.
+3. **[docs/DATA_MODEL.md](docs/DATA_MODEL.md):** Modelo relacional, invariantes y datos semilla.
+4. **[docs/API_DESIGN.md](docs/API_DESIGN.md):** Contrato REST, esquemas DTO y catálogo de errores.
+5. **[docs/SECURITY.md](docs/SECURITY.md):** Postura de seguridad baseline, modo visitante y prevención CWE-532.
+6. **[docs/TEST_PLAN.md](docs/TEST_PLAN.md):** Plan de pruebas, Quality Gates y matriz de cobertura AC -> Test.
+7. **[docs/CICD.md](docs/CICD.md):** Automatización de pipeline y compuertas deterministas.
+8. **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md):** Empaquetado en contenedor Docker multi-stage y directiva de salud.
+9. **[docs/OBSERVABILITY.md](docs/OBSERVABILITY.md):** Arquitectura de logging estructurado JSON y trazabilidad.
+10. **[docs/SYSTEM_GUIDE.md](docs/SYSTEM_GUIDE.md):** Guía integral consolidada y Matriz de Trazabilidad End-to-End.

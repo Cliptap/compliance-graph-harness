@@ -27,22 +27,22 @@ Bajo esta premisa y respetando el nivel de gobernanza (**`governance_level: "baj
 ---
 
 ## 2. Cuándo Usar
-- Se activa en la **Etapa 11** del pipeline de desarrollo, inmediatamente después de haber validado y aprobado la estrategia de observabilidad y captura de evidencia en `11-observability` ([`docs/OBSERVABILITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/OBSERVABILITY.md)).
+- Se activa en la **Etapa 11** del pipeline de desarrollo, inmediatamente después de haber validado y aprobado la estrategia de observabilidad y captura de evidencia en `11-observability` ([`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md)).
 - Se utiliza para consolidar el conocimiento técnico acumulado y entregar las guías definitivas de operación y mantenimiento del sistema antes de certificar la finalización completa del ciclo de desarrollo.
 
 ---
 
 ## 3. Precondiciones
 Para que esta skill pueda activarse, el repositorio debe contar con la totalidad de los 9 artefactos contractuales previos en estado formalmente aprobado (**`status: "APPROVED"`**):
-1. [`docs/PRD.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md): Requisitos funcionales (`REQ-001` a `REQ-003`), criterios de aceptación (`AC-001` a `AC-006`) y alcance `OUT OF SCOPE`.
-2. [`docs/ARCHITECTURE.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md): Decisiones estructurales (`AD-001` a `AD-007`) y topología monolítica modular.
-3. [`docs/DATA_MODEL.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md): Entidad `Product` (`ENT-001`), invariantes (`INV-001` a `INV-004`) y datos semilla (`SEED-001`).
-4. [`docs/API_DESIGN.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/API_DESIGN.md): Endpoints `EP-001` y `EP-002`, esquema `DTO-ERR-001` y catálogo `ERR-001`, `ERR-002`, `ERR-500`.
-5. [`docs/SECURITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md): Controles mínimos (`SEC-CTRL-001` a `SEC-CTRL-005`), prevención CWE-532 y modo anónimo (`SEC-DEC-001`).
-6. [`docs/TEST_PLAN.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md): Estrategia de pruebas transversal, matriz bidireccional AC -> Test y cobertura al 100.0%.
-7. [`docs/CICD.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/CICD.md): Flujo continuo GitHub Actions (`PIPE-001`) y compuertas de bloqueo `GATE-001` a `GATE-003`.
-8. [`docs/DEPLOYMENT.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md): Unidad monolítica en Docker (`DEP-001`), usuario no-root `appuser` y sondeo `/health` (`HC-001`).
-9. [`docs/OBSERVABILITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/OBSERVABILITY.md): Logging JSON a stdout (`LOG-001`), correlación `X-Request-ID` (`OBS-001`), cero PII (`OBS-002`) y métricas (`MET-001`, `MET-002`).
+1. [`docs/PRD.md`](docs/PRD.md): Requisitos funcionales (`REQ-001` a `REQ-003`), criterios de aceptación (`AC-001` a `AC-006`) y alcance `OUT OF SCOPE`.
+2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): Decisiones estructurales (`AD-001` a `AD-007`) y topología monolítica modular.
+3. [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): Entidad `Product` (`ENT-001`), invariantes (`INV-001` a `INV-004`) y datos semilla (`SEED-001`).
+4. [`docs/API_DESIGN.md`](docs/API_DESIGN.md): Endpoints `EP-001` y `EP-002`, esquema `DTO-ERR-001` y catálogo `ERR-001`, `ERR-002`, `ERR-500`.
+5. [`docs/SECURITY.md`](docs/SECURITY.md): Controles mínimos (`SEC-CTRL-001` a `SEC-CTRL-005`), prevención CWE-532 y modo anónimo (`SEC-DEC-001`).
+6. [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md): Estrategia de pruebas transversal, matriz bidireccional AC -> Test y cobertura al 100.0%.
+7. [`docs/CICD.md`](docs/CICD.md): Flujo continuo GitHub Actions (`PIPE-001`) y compuertas de bloqueo `GATE-001` a `GATE-003`.
+8. [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): Unidad monolítica en Docker (`DEP-001`), usuario no-root `appuser` y sondeo `/health` (`HC-001`).
+9. [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md): Logging JSON a stdout (`LOG-001`), correlación `X-Request-ID` (`OBS-001`), cero PII (`OBS-002`) y métricas (`MET-001`, `MET-002`).
 10. **Suite de Pruebas 100% en Verde:** Ejecución certificada de 135 tests deterministas en memoria.
 
 ---

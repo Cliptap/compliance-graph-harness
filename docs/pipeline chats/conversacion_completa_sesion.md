@@ -10,34 +10,62 @@
 
 ## Turno 1 — Usuario (Prompt)
 
-Hola. Estamos trabajando en el refinamiento y validación incremental de las Agent Skills del arnés de gobernanza, siguiendo la metodología de plan.md.
-
-El objetivo inmediato es ejecutar la "Validación con Agente Real" (Nivel 3) para la skill de generación de PRD (01-prd / prd-generation).
-
-Por favor, realiza lo siguiente:
-1. Inspecciona en el repositorio dónde está ubicada la skill de PRD (revisa .agents/skills/, skills/ o la ruta correspondiente) y lee su SKILL.md junto con sus instrucciones y contratos.
-2. Activa y ejecuta dicha skill para procesar la siguiente solicitud de usuario en un caso de prueba controlado:
-
----
-SOLICITUD DE USUARIO:
-"Necesito definir el PRD para un sistema web básico de catálogo y carrito de compras.
-Requerimientos principales:
-- Catálogo de productos con visualización básica.
-- Búsqueda de productos por texto/nombre.
-- Carrito de compras que permita agregar productos y modificar cantidades.
-
-Restricciones estrictas (Fuera de alcance):
-- No incluir pasarelas ni procesamiento de pagos.
-- No incluir autenticación ni registro de usuarios.
-- No incluir motores de recomendaciones."
----
-
-3. Genera el artefacto resultante del PRD respetando estrictamente el contrato de la skill (IDs formales, IN/OUT Scope funcional, supuestos, criterios de aceptación y preguntas abiertas OPEN-*).
-4. Recuerda las restricciones metodológicas:
-   - El PRD debe quedar en estado DRAFT (no APPROVED sin confirmación explícita).
-   - No tomes decisiones técnicas prematuras (no inventes frameworks, bases de datos, ORMs ni arquitectura física).
-   - No confundas el alcance funcional con allowed_paths del repositorio.
-
+Hola. Estamos trabajando en el refinamiento y validación incremental de las Agent Skills del arnés de gobernanza, siguiendo la metodología de plan.md.
+
+
+
+El objetivo inmediato es ejecutar la "Validación con Agente Real" (Nivel 3) para la skill de generación de PRD (01-prd / prd-generation).
+
+
+
+Por favor, realiza lo siguiente:
+
+1. Inspecciona en el repositorio dónde está ubicada la skill de PRD (revisa .agents/skills/, skills/ o la ruta correspondiente) y lee su SKILL.md junto con sus instrucciones y contratos.
+
+2. Activa y ejecuta dicha skill para procesar la siguiente solicitud de usuario en un caso de prueba controlado:
+
+
+
+---
+
+SOLICITUD DE USUARIO:
+
+"Necesito definir el PRD para un sistema web básico de catálogo y carrito de compras.
+
+Requerimientos principales:
+
+- Catálogo de productos con visualización básica.
+
+- Búsqueda de productos por texto/nombre.
+
+- Carrito de compras que permita agregar productos y modificar cantidades.
+
+
+
+Restricciones estrictas (Fuera de alcance):
+
+- No incluir pasarelas ni procesamiento de pagos.
+
+- No incluir autenticación ni registro de usuarios.
+
+- No incluir motores de recomendaciones."
+
+---
+
+
+
+3. Genera el artefacto resultante del PRD respetando estrictamente el contrato de la skill (IDs formales, IN/OUT Scope funcional, supuestos, criterios de aceptación y preguntas abiertas OPEN-*).
+
+4. Recuerda las restricciones metodológicas:
+
+   - El PRD debe quedar en estado DRAFT (no APPROVED sin confirmación explícita).
+
+   - No tomes decisiones técnicas prematuras (no inventes frameworks, bases de datos, ORMs ni arquitectura física).
+
+   - No confundas el alcance funcional con allowed_paths del repositorio.
+
+
+
 Entrégame el contenido completo del PRD generado y la ruta donde fue creado.
 
 
@@ -56,8 +84,8 @@ He completado la **Validación con Agente Real (Nivel 3)** para la skill de espe
 ### 1. Inspección y Activación de la Skill
 
 - **Ubicación de la Skill:**
-  - Definición principal del arnés: [.agents/skills/01-prd/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/01-prd/SKILL.md)
-  - Paquete portable: [harness/skills/01_prd.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/harness/skills/01_prd.md)
+  - Definición principal del arnés: [.agents/skills/01-prd/SKILL.md](.agents/skills/01-prd/SKILL.md)
+  - Paquete portable: [harness/skills/01_prd.md](harness/skills/01_prd.md)
 - **Contratos e Invariantes Verificados:**
   1. **Separación Funcional vs. Física:** El PRD delimita capacidades y criterios observables; **no genera `allowed_paths`**, ni rutas de archivos (`src/**`), ni extensiones.
   2. **Diferimiento Técnico:** No se seleccionan frameworks (React, Vue, FastAPI), ORMs, bases de datos ni endpoints HTTP. Las dudas de diseño técnico se formalizan como `OPEN-xxx` para ser resueltas en `02-architecture` y `03-data-modeling`.
@@ -69,7 +97,7 @@ He completado la **Validación con Agente Real (Nivel 3)** para la skill de espe
 ### 2. Ruta del Artefacto Generado
 
 - **Ruta Relativa:** `docs/PRD.md`
-- **Ruta Absoluta:** [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md)
+- **Ruta Absoluta:** [docs/PRD.md](docs/PRD.md)
 
 ---
 
@@ -160,12 +188,12 @@ Se ejecutó la suite de validación determinista confirmando:
 - Frontmatter YAML válido y conforme.
 - Todos los identificadores (`REQ-001`..`004`, `AC-001`..`006`, `CONST-001`..`003`, `ASSUMP-001`..`003`, `OPEN-001`..`003`) son estables, únicos y están vinculados bidireccionalmente.
 - Ausencia total de `allowed_paths`, `forbidden_paths` y rutas físicas (`src/`).
-- Las 5 pruebas automatizadas de interoperabilidad en [tests/harness/test_prd_skill.py](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/tests/harness/test_prd_skill.py) pasan al 100%.
+- Las 5 pruebas automatizadas de interoperabilidad en [tests/harness/test_prd_skill.py](tests/harness/test_prd_skill.py) pasan al 100%.
 
 ---
 
 > **Paso de Aprobación Formal (Paso 6 del SKILL.md y Regla 1 de AGENTS.md):**  
-> He redactado el PRD formal en [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) con versión 1 en estado **`DRAFT`**.  
+> He redactado el PRD formal en [docs/PRD.md](docs/PRD.md) con versión 1 en estado **`DRAFT`**.  
 > ¿Confirmas que el alcance, requisitos y criterios de aceptación son correctos para proceder a la transición hacia la fase de Arquitectura (`02-architecture`)?  
 > ⏳ *Esperando tu confirmación.*
 
@@ -182,8 +210,8 @@ La ejecución de 01-prd produjo correctamente docs/PRD.md y los tests determinis
 # Informe de Revisión Crítica: Validación de `01-prd` contra Fire Tests
 
 > **Fecha:** 7 de octubre de 2026  
-> **Artefacto Evaluado:** [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) (v1 DRAFT)  
-> **Marco Contractual:** [.agents/skills/01-prd/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/01-prd/SKILL.md) v2.0, [docs/SKILL_INTEROPERABILITY_CONTRACT.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SKILL_INTEROPERABILITY_CONTRACT.md) y [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md).  
+> **Artefacto Evaluado:** [docs/PRD.md](docs/PRD.md) (v1 DRAFT)  
+> **Marco Contractual:** [.agents/skills/01-prd/SKILL.md](.agents/skills/01-prd/SKILL.md) v2.0, [docs/SKILL_INTEROPERABILITY_CONTRACT.md](docs/SKILL_INTEROPERABILITY_CONTRACT.md) y [AGENTS.md](AGENTS.md).  
 > **Estado:** Revisión completada — **No se modificó el archivo `docs/PRD.md`**.
 
 ---
@@ -215,7 +243,7 @@ A continuación se desglosa el origen de cada bloque generado en el artefacto fr
 * **Origen:** Inferencia pura del agente.
 * **Justificación contractual en `01-prd`:** Parcial. El contrato indica que los supuestos evitan que las hipótesis se conviertan en "hechos silenciosos".
 * **Juicio crítico:**  
-  La cifra `< 200` es un **número mágico arbitrario**. Viola la Regla 1 de [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md) (*"Ante cualquier ambigüedad, PREGUNTÁ"*) y la Regla 4 (*"sin números mágicos"*).  
+  La cifra `< 200` es un **número mágico arbitrario**. Viola la Regla 1 de [AGENTS.md](AGENTS.md) (*"Ante cualquier ambigüedad, PREGUNTÁ"*) y la Regla 4 (*"sin números mágicos"*).  
   Si la volumetría del catálogo es crítica para las decisiones del sistema, debe **preguntarse en el proceso de elicitación** o expresarse de forma puramente cualitativa (ej: *"Volumen de datos representativo de escala MVP"*), sin fijar un umbral numérico inventado por el LLM.
 * **Veredicto:** **Debe eliminarse el número mágico o consultarse formalmente al usuario.**
 
@@ -246,7 +274,7 @@ A continuación se desglosa el origen de cada bloque generado en el artefacto fr
 ### D. Preguntas Abiertas (`OPEN-001` a `OPEN-003`) de Carácter Arquitectónico
 * **Origen:** Inferencia técnica.
 * **Justificación contractual en `01-prd`:**  
-  El archivo [.agents/skills/01-prd/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/01-prd/SKILL.md) (y la prueba conceptual en `docs/prd_skill_integration_test.md`) alienta colocar decisiones técnicas pendientes bajo la etiqueta `[Delegado a 02-architecture / 03-data-modeling]`.
+  El archivo [.agents/skills/01-prd/SKILL.md](.agents/skills/01-prd/SKILL.md) (y la prueba conceptual en `docs/prd_skill_integration_test.md`) alienta colocar decisiones técnicas pendientes bajo la etiqueta `[Delegado a 02-architecture / 03-data-modeling]`.
 * **Juicio crítico (Conflicto con los Fire Tests):**  
   Aunque el contrato de la skill lo permite, **desde la perspectiva de los Fire Tests y la pureza metodológica existe una contradicción**:
   1. **Contaminación de Dominio:** `OPEN-001` (localStorage vs backend session), `OPEN-002` (SPA desacoplado vs SSR) y `OPEN-003` (JSON vs base de datos relacional) ya nombran patrones, tecnologías y componentes físicos específicos.
@@ -298,55 +326,104 @@ Tampoco se puede **APROBAR 01** en su estado actual, porque la ejecución eviden
 
 ## Turno 5 — Usuario (Prompt)
 
-Tomando como evidencia el informe de revisión crítica que acabas de producir sobre `01-prd`, procede ahora únicamente con el **refinamiento del contrato de la skill**, sin modificar todavía `docs/PRD.md` y sin comenzar `02-architecture`.
-
-El objetivo es corregir las causas contractuales que permitieron los hallazgos detectados durante la validación con agente real.
-
-Realiza lo siguiente:
-
-1. Inspecciona nuevamente `.agents/skills/01-prd/SKILL.md`, sus tests y `docs/SKILL_INTEROPERABILITY_CONTRACT.md`.
-
-2. Para cada uno de estos hallazgos determina si corresponde a:
-
-   * bug de implementación de la skill,
-   * ambigüedad contractual,
-   * comportamiento no deseado del agente,
-   * o una combinación de los anteriores:
-
-   a. `governance_level: "medio"` asumido sin confirmación;
-   b. incorporación de elementos no mencionados en `OUT OF SCOPE`;
-   c. creación del supuesto cuantitativo `< 200 productos`;
-   d. generación de `OPEN-*` con alternativas arquitectónicas prematuras.
-
-3. Modifica `01-prd/SKILL.md` únicamente en lo necesario para evitar esos comportamientos.
-
-4. Las nuevas reglas deben conservar la filosofía del workflow:
-
-   * no inventar decisiones;
-   * preguntar ante ambigüedades relevantes;
-   * distinguir requisitos, restricciones, supuestos y preguntas abiertas;
-   * no convertir el alcance funcional en `allowed_paths`;
-   * mantener el PRD en `DRAFT`;
-   * no introducir decisiones técnicas prematuras.
-
-5. En particular, evalúa y, si corresponde según el contrato existente:
-
-   * hacer obligatorio preguntar `governance_level` cuando no esté definido;
-   * prohibir agregar elementos a `OUT OF SCOPE` que no hayan sido explícitamente descartados/postergados o acordados durante la elicitación;
-   * prohibir introducir umbrales numéricos en `ASSUMP-*` que no provengan del usuario o de una fuente contractual explícita;
-   * separar las preguntas funcionales/de negocio de las decisiones arquitectónicas. Si una incertidumbre técnica debe conservarse para etapas posteriores, utiliza una referencia genérica a la siguiente skill en lugar de preseleccionar alternativas técnicas.
-
-6. Agrega o modifica tests deterministas para que estos casos queden protegidos contra regresiones.
-
-7. NO ejecutes todavía una nueva validación completa con agente real. Primero entrega:
-
-   * cambios realizados en `SKILL.md`;
-   * cambios realizados en los tests;
-   * qué comportamiento previo queda ahora prohibido;
-   * qué comportamiento nuevo se espera;
-   * resultado de los tests deterministas;
-   * cualquier ambigüedad del contrato que todavía requiera decisión humana.
-
+Tomando como evidencia el informe de revisión crítica que acabas de producir sobre `01-prd`, procede ahora únicamente con el **refinamiento del contrato de la skill**, sin modificar todavía `docs/PRD.md` y sin comenzar `02-architecture`.
+
+
+
+El objetivo es corregir las causas contractuales que permitieron los hallazgos detectados durante la validación con agente real.
+
+
+
+Realiza lo siguiente:
+
+
+
+1. Inspecciona nuevamente `.agents/skills/01-prd/SKILL.md`, sus tests y `docs/SKILL_INTEROPERABILITY_CONTRACT.md`.
+
+
+
+2. Para cada uno de estos hallazgos determina si corresponde a:
+
+
+
+   * bug de implementación de la skill,
+
+   * ambigüedad contractual,
+
+   * comportamiento no deseado del agente,
+
+   * o una combinación de los anteriores:
+
+
+
+   a. `governance_level: "medio"` asumido sin confirmación;
+
+   b. incorporación de elementos no mencionados en `OUT OF SCOPE`;
+
+   c. creación del supuesto cuantitativo `< 200 productos`;
+
+   d. generación de `OPEN-*` con alternativas arquitectónicas prematuras.
+
+
+
+3. Modifica `01-prd/SKILL.md` únicamente en lo necesario para evitar esos comportamientos.
+
+
+
+4. Las nuevas reglas deben conservar la filosofía del workflow:
+
+
+
+   * no inventar decisiones;
+
+   * preguntar ante ambigüedades relevantes;
+
+   * distinguir requisitos, restricciones, supuestos y preguntas abiertas;
+
+   * no convertir el alcance funcional en `allowed_paths`;
+
+   * mantener el PRD en `DRAFT`;
+
+   * no introducir decisiones técnicas prematuras.
+
+
+
+5. En particular, evalúa y, si corresponde según el contrato existente:
+
+
+
+   * hacer obligatorio preguntar `governance_level` cuando no esté definido;
+
+   * prohibir agregar elementos a `OUT OF SCOPE` que no hayan sido explícitamente descartados/postergados o acordados durante la elicitación;
+
+   * prohibir introducir umbrales numéricos en `ASSUMP-*` que no provengan del usuario o de una fuente contractual explícita;
+
+   * separar las preguntas funcionales/de negocio de las decisiones arquitectónicas. Si una incertidumbre técnica debe conservarse para etapas posteriores, utiliza una referencia genérica a la siguiente skill en lugar de preseleccionar alternativas técnicas.
+
+
+
+6. Agrega o modifica tests deterministas para que estos casos queden protegidos contra regresiones.
+
+
+
+7. NO ejecutes todavía una nueva validación completa con agente real. Primero entrega:
+
+
+
+   * cambios realizados en `SKILL.md`;
+
+   * cambios realizados en los tests;
+
+   * qué comportamiento previo queda ahora prohibido;
+
+   * qué comportamiento nuevo se espera;
+
+   * resultado de los tests deterministas;
+
+   * cualquier ambigüedad del contrato que todavía requiera decisión humana.
+
+
+
 No modifiques `docs/PRD.md`, no normalices `02-architecture` y no declares `01-prd` aprobada todavía.
 
 ---
@@ -367,16 +444,16 @@ Conforme a las restricciones solicitadas:
 
 | Hallazgo | Clasificación | Justificación y Causa Raíz |
 | :--- | :--- | :--- |
-| **a. `governance_level: "medio"` asumido sin confirmación** | **Combinación:** Ambigüedad Contractual + Comportamiento No Deseado del Agente | El Paso 0 del SKILL.md listaba la pregunta sobre gobernanza, pero **carecía de una compuerta bloqueante explícita** que detuviera al agente. Además, la plantilla de salida mostraba `governance_level: "medio"` como valor de ejemplo, induciendo al agente a tratarlo como un *default* en lugar de una pregunta obligatoria, vulnerando la Regla 1 de [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md). |
+| **a. `governance_level: "medio"` asumido sin confirmación** | **Combinación:** Ambigüedad Contractual + Comportamiento No Deseado del Agente | El Paso 0 del SKILL.md listaba la pregunta sobre gobernanza, pero **carecía de una compuerta bloqueante explícita** que detuviera al agente. Además, la plantilla de salida mostraba `governance_level: "medio"` como valor de ejemplo, induciendo al agente a tratarlo como un *default* en lugar de una pregunta obligatoria, vulnerando la Regla 1 de [AGENTS.md](AGENTS.md). |
 | **b. Incorporación de elementos no mencionados en `OUT OF SCOPE`** | **Combinación:** Ambigüedad Contractual + Comportamiento No Deseado del Agente | La redacción previa del Paso 3 ("Registrar todo lo mencionado pero descartado...") incluía ejemplos como `ej: 'Soporte multi-moneda'` sin prohibir taxativamente agregar exclusiones no planteadas por el usuario. El agente incurrió en sobre-especificación negativa (*hallucinated negative scope*), inventando exclusiones (multi-almacén, push) que congelan indebidamente el ciclo de vida del producto bajo la regla dura de *Change Request*. |
-| **c. Creación del supuesto cuantitativo `< 200 productos`** | **Combinación:** Ambigüedad Contractual + Comportamiento No Deseado del Agente | El contrato definía los supuestos de forma amplia ("Hipótesis de trabajo explícitas") y los ejemplos canónicos históricos de integración (`docs/prd_skill_integration_test.md`) usaban cotas como `< 1.000 productos`. No existía una regla que prohibiera números mágicos inventados, lo que llevó al agente a alucinar un umbral numérico arbitrario violando la Regla 4 de [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md). |
+| **c. Creación del supuesto cuantitativo `< 200 productos`** | **Combinación:** Ambigüedad Contractual + Comportamiento No Deseado del Agente | El contrato definía los supuestos de forma amplia ("Hipótesis de trabajo explícitas") y los ejemplos canónicos históricos de integración (`docs/prd_skill_integration_test.md`) usaban cotas como `< 1.000 productos`. No existía una regla que prohibiera números mágicos inventados, lo que llevó al agente a alucinar un umbral numérico arbitrario violando la Regla 4 de [AGENTS.md](AGENTS.md). |
 | **d. Generación de `OPEN-*` con alternativas arquitectónicas prematuras** | **Ambigüedad Contractual (Diseño de Interfaz entre Fases)** | La Sección 5 y la plantilla de salida de `SKILL.md` autorizaban expresamente colocar `[Decisión técnica delegada a 02-architecture]`. Esto llevó al modelo a redactar disyuntivas técnicas concretas (*SPA vs SSR*, *localStorage vs backend session*), contaminando el PRD funcional con conceptos de implementación física y sesgando la fase de arquitectura antes de tiempo. |
 
 ---
 
 ## 2. Cambios Realizados en el Contrato de la Skill
 
-Se modificaron de manera sincronizada tanto [.agents/skills/01-prd/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/01-prd/SKILL.md) como su versión portable [harness/skills/01_prd.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/harness/skills/01_prd.md):
+Se modificaron de manera sincronizada tanto [.agents/skills/01-prd/SKILL.md](.agents/skills/01-prd/SKILL.md) como su versión portable [harness/skills/01_prd.md](harness/skills/01_prd.md):
 
 1. **Sección 5 (Distinción Fundamental):**
    - Se actualizó la fila de *Decisión Técnica* para prohibir explícitamente formular preguntas como "SPA vs SSR" o "SQL vs NoSQL" en el PRD, restringiéndolas a una delegación genérica.
@@ -400,7 +477,7 @@ Se modificaron de manera sincronizada tanto [.agents/skills/01-prd/SKILL.md](fil
 
 ## 3. Cambios Realizados en la Suite de Tests
 
-En [tests/harness/test_prd_skill.py](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/tests/harness/test_prd_skill.py) se agregaron 3 nuevos tests deterministas (pasando de 5 a 8 pruebas):
+En [tests/harness/test_prd_skill.py](tests/harness/test_prd_skill.py) se agregaron 3 nuevos tests deterministas (pasando de 5 a 8 pruebas):
 
 * **`test_skill_contract_governance_and_anti_drift_rules` (TEST 6):**  
   Valida deterministamente en ambos archivos (`SKILL.md` y `01_prd.md`) la presencia obligatoria de:
@@ -465,132 +542,258 @@ Antes de proceder con una nueva validación o re-emisión del artefacto, se iden
 
 ## Turno 7 — Usuario (Prompt)
 
-Necesito que ejecutes una segunda validación con un agente real de la Skill `01-prd` / `prd-generation`.
-
-El objetivo de esta prueba es verificar si la versión refinada de la Skill puede gobernar correctamente la generación de un PRD a partir de una solicitud real, sin que yo te indique de antemano qué decisiones debes tomar ni qué errores debes evitar.
-
-### 1. Preparación
-
-Antes de ejecutar la tarea:
-
-1. Inspecciona el repositorio.
-2. Lee la implementación actual de:
-
-   * `.agents/skills/01-prd/SKILL.md`
-   * `harness/skills/01_prd.md`
-3. Lee los contratos y documentación de interoperabilidad que la Skill indique como relevantes.
-4. Revisa los tests existentes de `01-prd`.
-5. No modifiques ningún archivo todavía.
-
-No quiero que deduzcas el comportamiento esperado únicamente de este prompt. La Skill y sus contratos son la fuente principal de las reglas que debes aplicar.
-
-### 2. Solicitud controlada del usuario
-
-Activa `01-prd` para la siguiente solicitud:
-
-> Necesito definir el PRD para un sistema web básico de catálogo y carrito de compras.
->
-> * Catálogo de productos con visualización básica.
-> * Búsqueda de productos por texto/nombre.
-> * Carrito de compras que permita agregar productos y modificar cantidades.
->
-> Restricciones estrictas (Fuera de alcance):
->
-> * No incluir pasarelas ni procesamiento de pagos.
-> * No incluir autenticación ni registro de usuarios.
-> * No incluir motores de recomendaciones.
-
-Trata este texto como la solicitud real del usuario.
-
-### 3. Reglas de la prueba
-
-Durante la ejecución:
-
-* No recibas instrucciones adicionales sobre cómo resolver ambigüedades, salvo que la propia Skill las solicite.
-* No inventes información para completar el PRD.
-* No conviertas decisiones técnicas en decisiones funcionales.
-* No avances a otra Skill.
-* No modifiques `02-architecture`.
-* No modifiques los tests ni el contrato durante esta ejecución.
-* No intentes "hacer pasar" los tests cambiando las reglas mientras ejecutas la prueba.
-* Si necesitas una decisión del usuario, detente y formula la pregunta correspondiente.
-* Si la Skill permite continuar legítimamente sin una decisión, continúa y documenta cómo resolviste la situación.
-
-### 4. Artefacto esperado
-
-Si la Skill puede generar el PRD con la información disponible, genera el artefacto correspondiente siguiendo estrictamente su contrato.
-
-El PRD debe conservar el estado que determine la Skill para un documento que todavía requiere validación/confirmación humana.
-
-No realices una aprobación automática del PRD.
-
-### 5. Evidencia obligatoria
-
-Al terminar la ejecución, NO te limites a decir "la prueba pasó".
-
-Entrega un informe de validación con:
-
-1. **Estado de la ejecución**
-
-   * completada / bloqueada / requiere intervención humana.
-
-2. **Preguntas realizadas al usuario**
-
-   * lista exacta de preguntas que hiciste antes o durante la generación.
-   * si no hiciste ninguna, indícalo explícitamente.
-
-3. **Decisiones asumidas**
-
-   * enumera cada supuesto que hayas realizado.
-   * indica por qué estaba permitido realizarlo según la Skill.
-   * si no realizaste ninguno, indícalo explícitamente.
-
-4. **Artefactos generados**
-
-   * ruta exacta.
-   * estado del PRD.
-   * resumen de su contenido.
-
-5. **Verificación del contrato**
-   Comprueba específicamente, pero sin alterar el artefacto para conseguir el resultado:
-
-   * IDs formales.
-   * relación entre requisitos y criterios de aceptación.
-   * IN SCOPE / OUT OF SCOPE.
-   * restricciones.
-   * supuestos.
-   * OPEN-*.
-   * ausencia de decisiones técnicas prematuras.
-   * ausencia de información de `allowed_paths` o equivalente técnico de repositorio, salvo que el contrato explícitamente lo requiera.
-   * estado DRAFT/APPROVED según corresponda.
-
-6. **Comportamientos observados**
-   Describe qué hizo realmente el agente, incluyendo cualquier comportamiento inesperado.
-
-7. **Problemas encontrados**
-   Para cada problema, clasifícalo como corresponda entre:
-
-   * A — Bug.
-   * B — Ambigüedad contractual.
-   * C — Problema de interoperabilidad.
-   * D — Comportamiento del agente.
-   * E — Limitación experimental.
-
-8. **Conclusión**
-   Indica una única recomendación:
-
-   * `APROBAR 01-prd`
-   * `REFINAR 01-prd`
-   * `BLOQUEAR Y REVISAR CONTRATO`
-
-No avances a `02-architecture` aunque consideres que el resultado es correcto. La decisión de avance se realizará después de revisar tu evidencia.
-
-### 6. Importante
-
-Esta es una prueba de validación del comportamiento real de la Skill.
-
-No me des una explicación teórica de cómo debería funcionar `01-prd`. Quiero evidencia de cómo funcionó realmente frente a la solicitud anterior.
-
+Necesito que ejecutes una segunda validación con un agente real de la Skill `01-prd` / `prd-generation`.
+
+
+
+El objetivo de esta prueba es verificar si la versión refinada de la Skill puede gobernar correctamente la generación de un PRD a partir de una solicitud real, sin que yo te indique de antemano qué decisiones debes tomar ni qué errores debes evitar.
+
+
+
+### 1. Preparación
+
+
+
+Antes de ejecutar la tarea:
+
+
+
+1. Inspecciona el repositorio.
+
+2. Lee la implementación actual de:
+
+
+
+   * `.agents/skills/01-prd/SKILL.md`
+
+   * `harness/skills/01_prd.md`
+
+3. Lee los contratos y documentación de interoperabilidad que la Skill indique como relevantes.
+
+4. Revisa los tests existentes de `01-prd`.
+
+5. No modifiques ningún archivo todavía.
+
+
+
+No quiero que deduzcas el comportamiento esperado únicamente de este prompt. La Skill y sus contratos son la fuente principal de las reglas que debes aplicar.
+
+
+
+### 2. Solicitud controlada del usuario
+
+
+
+Activa `01-prd` para la siguiente solicitud:
+
+
+
+> Necesito definir el PRD para un sistema web básico de catálogo y carrito de compras.
+
+>
+
+> * Catálogo de productos con visualización básica.
+
+> * Búsqueda de productos por texto/nombre.
+
+> * Carrito de compras que permita agregar productos y modificar cantidades.
+
+>
+
+> Restricciones estrictas (Fuera de alcance):
+
+>
+
+> * No incluir pasarelas ni procesamiento de pagos.
+
+> * No incluir autenticación ni registro de usuarios.
+
+> * No incluir motores de recomendaciones.
+
+
+
+Trata este texto como la solicitud real del usuario.
+
+
+
+### 3. Reglas de la prueba
+
+
+
+Durante la ejecución:
+
+
+
+* No recibas instrucciones adicionales sobre cómo resolver ambigüedades, salvo que la propia Skill las solicite.
+
+* No inventes información para completar el PRD.
+
+* No conviertas decisiones técnicas en decisiones funcionales.
+
+* No avances a otra Skill.
+
+* No modifiques `02-architecture`.
+
+* No modifiques los tests ni el contrato durante esta ejecución.
+
+* No intentes "hacer pasar" los tests cambiando las reglas mientras ejecutas la prueba.
+
+* Si necesitas una decisión del usuario, detente y formula la pregunta correspondiente.
+
+* Si la Skill permite continuar legítimamente sin una decisión, continúa y documenta cómo resolviste la situación.
+
+
+
+### 4. Artefacto esperado
+
+
+
+Si la Skill puede generar el PRD con la información disponible, genera el artefacto correspondiente siguiendo estrictamente su contrato.
+
+
+
+El PRD debe conservar el estado que determine la Skill para un documento que todavía requiere validación/confirmación humana.
+
+
+
+No realices una aprobación automática del PRD.
+
+
+
+### 5. Evidencia obligatoria
+
+
+
+Al terminar la ejecución, NO te limites a decir "la prueba pasó".
+
+
+
+Entrega un informe de validación con:
+
+
+
+1. **Estado de la ejecución**
+
+
+
+   * completada / bloqueada / requiere intervención humana.
+
+
+
+2. **Preguntas realizadas al usuario**
+
+
+
+   * lista exacta de preguntas que hiciste antes o durante la generación.
+
+   * si no hiciste ninguna, indícalo explícitamente.
+
+
+
+3. **Decisiones asumidas**
+
+
+
+   * enumera cada supuesto que hayas realizado.
+
+   * indica por qué estaba permitido realizarlo según la Skill.
+
+   * si no realizaste ninguno, indícalo explícitamente.
+
+
+
+4. **Artefactos generados**
+
+
+
+   * ruta exacta.
+
+   * estado del PRD.
+
+   * resumen de su contenido.
+
+
+
+5. **Verificación del contrato**
+
+   Comprueba específicamente, pero sin alterar el artefacto para conseguir el resultado:
+
+
+
+   * IDs formales.
+
+   * relación entre requisitos y criterios de aceptación.
+
+   * IN SCOPE / OUT OF SCOPE.
+
+   * restricciones.
+
+   * supuestos.
+
+   * OPEN-*.
+
+   * ausencia de decisiones técnicas prematuras.
+
+   * ausencia de información de `allowed_paths` o equivalente técnico de repositorio, salvo que el contrato explícitamente lo requiera.
+
+   * estado DRAFT/APPROVED según corresponda.
+
+
+
+6. **Comportamientos observados**
+
+   Describe qué hizo realmente el agente, incluyendo cualquier comportamiento inesperado.
+
+
+
+7. **Problemas encontrados**
+
+   Para cada problema, clasifícalo como corresponda entre:
+
+
+
+   * A — Bug.
+
+   * B — Ambigüedad contractual.
+
+   * C — Problema de interoperabilidad.
+
+   * D — Comportamiento del agente.
+
+   * E — Limitación experimental.
+
+
+
+8. **Conclusión**
+
+   Indica una única recomendación:
+
+
+
+   * `APROBAR 01-prd`
+
+   * `REFINAR 01-prd`
+
+   * `BLOQUEAR Y REVISAR CONTRATO`
+
+
+
+No avances a `02-architecture` aunque consideres que el resultado es correcto. La decisión de avance se realizará después de revisar tu evidencia.
+
+
+
+### 6. Importante
+
+
+
+Esta es una prueba de validación del comportamiento real de la Skill.
+
+
+
+No me des una explicación teórica de cómo debería funcionar `01-prd`. Quiero evidencia de cómo funcionó realmente frente a la solicitud anterior.
+
+
+
 Si la ejecución queda bloqueada porque falta información del usuario, eso también es un resultado válido de la prueba. En ese caso, documenta exactamente qué información faltó y por qué la Skill exigió esa información.
 
 ---
@@ -601,9 +804,9 @@ Si la ejecución queda bloqueada porque falta información del usuario, eso tamb
 ## Evaluación Empírica de la Skill `01-prd` / `prd-generation` (Versión Refinada)
 
 > **Fecha:** 7 de octubre de 2026  
-> **Artefacto Normativo:** [.agents/skills/01-prd/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/01-prd/SKILL.md) y [harness/skills/01_prd.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/harness/skills/01_prd.md)  
-> **Suite de Pruebas Deterministas:** [tests/harness/test_prd_skill.py](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/tests/harness/test_prd_skill.py) (8/8 PASSED)  
-> **Reglas Always-On:** [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md) (Regla 1: Preguntar, Nunca Asumir; Regla 2: Sin Goldplating)
+> **Artefacto Normativo:** [.agents/skills/01-prd/SKILL.md](.agents/skills/01-prd/SKILL.md) y [harness/skills/01_prd.md](harness/skills/01_prd.md)  
+> **Suite de Pruebas Deterministas:** [tests/harness/test_prd_skill.py](tests/harness/test_prd_skill.py) (8/8 PASSED)  
+> **Reglas Always-On:** [AGENTS.md](AGENTS.md) (Regla 1: Preguntar, Nunca Asumir; Regla 2: Sin Goldplating)
 
 ---
 
@@ -619,7 +822,7 @@ Conforme al refinamiento del **Paso 0 del SKILL.md** (*Compuerta de Bloqueo — 
 
 ### 2. Preguntas Realizadas al Usuario
 
-Conforme a la sintaxis obligatoria de elicitación de [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md) y las opciones del Paso 0 de `01-prd`:
+Conforme a la sintaxis obligatoria de elicitación de [AGENTS.md](AGENTS.md) y las opciones del Paso 0 de `01-prd`:
 
 ```text
 ¿Qué nivel de gobernanza requiere el sistema web de catálogo y carrito de compras?
@@ -655,7 +858,7 @@ Recomiendo a) bajo porque la solicitud describe un "sistema web básico de catá
 
 ### 4. Artefactos Generados
 
-- **Ruta Física:** [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md)
+- **Ruta Física:** [docs/PRD.md](docs/PRD.md)
 - **Estado en Disco:** **No sobrescrito todavía con datos inventados.** El archivo anterior se mantiene intacto a la espera de la resolución humana del `governance_level`.
 - **Previsualización del Contenido Preparado para Emisión:**
 
@@ -791,26 +994,46 @@ Se analizó la especificación contra las invariantes del arnés y el linter det
 
 ## Turno 9 — Usuario (Prompt)
 
-Excelente. La validación empírica de la Ronda 2 demostró que el refinamiento contractual de 01-prd resolvió con éxito los 4 antipatrones previos: se respetó la compuerta de bloqueo, se eliminó el scope negativo inventado, se suprimieron los números mágicos y se desacoplaron las decisiones técnicas prematuras.
-
-Para cerrar formalmente el ciclo de 01-prd e iniciar 02-architecture según plan.md:
-
-1. Resolución de Gobernanza:
-   - Fijo el nivel de gobernanza en: "bajo" (conforme a tu recomendación para este MVP básico).
-   - Genera y persiste definitivamente el archivo docs/PRD.md con governance_level: "bajo" y status: "APPROVED".
-
-2. Verificación de Cierre:
-   - Ejecuta la suite de tests deterministas (pytest tests/harness/test_prd_skill.py) para certificar que el artefacto en disco sea 100% conforme.
-
-3. Transición a 02-architecture (Etapa A — Auditoría):
-   - Con 01-prd en estado "APROBADA PARA SIGUIENTE SKILL", inicia la Etapa A (Auditoría y Diagnóstico) de 02-architecture.
-   - NO implementes cambios ni modifiques código de arquitectura todavía.
-   - Inspecciona su SKILL.md actual, sus tests y define su Contrato formal:
-     * Inputs que consumirá desde docs/PRD.md (REQ, AC, Scope, OPEN-*).
-     * Outputs que deberá producir (componentes, responsabilidades, decisiones arquitectónicas).
-     * Invariantes y clasificación obligatoria de decisiones (Inherited vs Proposed vs Open Question).
-     * Tests existentes asociados a arquitectura.
-
+Excelente. La validación empírica de la Ronda 2 demostró que el refinamiento contractual de 01-prd resolvió con éxito los 4 antipatrones previos: se respetó la compuerta de bloqueo, se eliminó el scope negativo inventado, se suprimieron los números mágicos y se desacoplaron las decisiones técnicas prematuras.
+
+
+
+Para cerrar formalmente el ciclo de 01-prd e iniciar 02-architecture según plan.md:
+
+
+
+1. Resolución de Gobernanza:
+
+   - Fijo el nivel de gobernanza en: "bajo" (conforme a tu recomendación para este MVP básico).
+
+   - Genera y persiste definitivamente el archivo docs/PRD.md con governance_level: "bajo" y status: "APPROVED".
+
+
+
+2. Verificación de Cierre:
+
+   - Ejecuta la suite de tests deterministas (pytest tests/harness/test_prd_skill.py) para certificar que el artefacto en disco sea 100% conforme.
+
+
+
+3. Transición a 02-architecture (Etapa A — Auditoría):
+
+   - Con 01-prd en estado "APROBADA PARA SIGUIENTE SKILL", inicia la Etapa A (Auditoría y Diagnóstico) de 02-architecture.
+
+   - NO implementes cambios ni modifiques código de arquitectura todavía.
+
+   - Inspecciona su SKILL.md actual, sus tests y define su Contrato formal:
+
+     * Inputs que consumirá desde docs/PRD.md (REQ, AC, Scope, OPEN-*).
+
+     * Outputs que deberá producir (componentes, responsabilidades, decisiones arquitectónicas).
+
+     * Invariantes y clasificación obligatoria de decisiones (Inherited vs Proposed vs Open Question).
+
+     * Tests existentes asociados a arquitectura.
+
+
+
 Entrégame la confirmación de escritura de docs/PRD.md y el reporte de diagnóstico de 02-architecture para su revisión crítica.
 
 ---
@@ -819,9 +1042,9 @@ Entrégame la confirmación de escritura de docs/PRD.md y el reporte de diagnós
 
 ### 1. Confirmación de Cierre y Persistencia de `01-prd`
 
-El archivo [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) ha sido generado y persistido con éxito en el disco con la resolución de gobernanza acordada:
+El archivo [docs/PRD.md](docs/PRD.md) ha sido generado y persistido con éxito en el disco con la resolución de gobernanza acordada:
 
-* **Ruta:** [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md)
+* **Ruta:** [docs/PRD.md](docs/PRD.md)
 * **Estado:** **`APPROVED`**
 * **Nivel de Gobernanza:** **`bajo`** (aprobado formalmente por el usuario para este MVP)
 * **Versión:** `1`
@@ -854,14 +1077,14 @@ tests/harness/test_prd_linter_accepts_conforming_spec PASSED                    
 
 # Reporte de Diagnóstico y Auditoría: Skill `02-architecture` (Etapa A)
 
-Siguiendo la metodología de `plan.md`, se realiza la auditoría estructural y el diagnóstico de interfaz de la segunda etapa del pipeline: [.agents/skills/02-architecture/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/02-architecture/SKILL.md) y [harness/skills/02_architecture.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/harness/skills/02_architecture.md).
+Siguiendo la metodología de `plan.md`, se realiza la auditoría estructural y el diagnóstico de interfaz de la segunda etapa del pipeline: [.agents/skills/02-architecture/SKILL.md](.agents/skills/02-architecture/SKILL.md) y [harness/skills/02_architecture.md](harness/skills/02_architecture.md).
 
 ---
 
 ## 1. Diagnóstico del Estado Actual de `02-architecture/SKILL.md`
 
 ### Fortalezas actuales:
-1. **Flujo interactivo con opciones:** Estipula preguntas por sección con alternativas claras y recomendación explícita (cumpliendo la forma de [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md)).
+1. **Flujo interactivo con opciones:** Estipula preguntas por sección con alternativas claras y recomendación explícita (cumpliendo la forma de [AGENTS.md](AGENTS.md)).
 2. **Precondición explícita:** Contiene la instrucción: *"NO empezar a diseñar sin tener el PRD completo"*.
 3. **Cobertura de dimensiones:** Cubre patrón, capas, comunicación, layout de directorios, stack, errores y seguridad.
 
@@ -869,7 +1092,7 @@ Siguiendo la metodología de `plan.md`, se realiza la auditoría estructural y e
 1. **Falta de Contrato de Salida Formal y Esquema de Documento:**  
    A diferencia de `01-prd` (que define exactamente `docs/PRD.md` con frontmatter estructurado), `02-architecture` indica vagamente *"generar el Documento de Arquitectura"* sin especificar la ruta canónica (`docs/ARCHITECTURE.md`), sin esquema YAML de salida, ni versionado lógico (`version: 1`, `status: DRAFT/APPROVED`).
 2. **Ausencia de Identificadores Formales de Decisión (`AD-xxx`):**  
-   El contrato macro ([docs/SKILL_INTEROPERABILITY_CONTRACT.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SKILL_INTEROPERABILITY_CONTRACT.md)) exige que la arquitectura selle variables de decisión tipadas con identificadores estables (`AD-001`, `AD-002`, `AD-003`). El `SKILL.md` actual no contiene la taxonomía `AD-xxx`.
+   El contrato macro ([docs/SKILL_INTEROPERABILITY_CONTRACT.md](docs/SKILL_INTEROPERABILITY_CONTRACT.md)) exige que la arquitectura selle variables de decisión tipadas con identificadores estables (`AD-001`, `AD-002`, `AD-003`). El `SKILL.md` actual no contiene la taxonomía `AD-xxx`.
 3. **Ausencia de Identificadores de Componentes (`COMP-xxx`):**  
    No exige catalogar formalmente los subsistemas exportados (`COMP-001: catalog_service`, `COMP-002: cart_service`, etc.) que luego consumirán `03-data-modeling`, `04-api-design` y `05-backend`.
 4. **Vulnerabilidad a la Amnesia en Seguridad:**  
@@ -921,7 +1144,7 @@ Siguiendo la metodología de `plan.md`, se realiza la auditoría estructural y e
 
 ### B. Outputs que Debe Producir `02-architecture`
 
-El artefacto de salida formal debe ser [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) cumpliendo la siguiente taxonomía:
+El artefacto de salida formal debe ser [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) cumpliendo la siguiente taxonomía:
 
 1. **Frontmatter YAML:**
    - `project_id: "catalogo-carrito-web"`
@@ -953,7 +1176,7 @@ Para evitar que el agente mezcle lo que ya está decidido con lo que debe delibe
   - Ejemplos: `governance_level: "bajo"`, exclusión de pasarelas de pago, exclusión de login/auth.
 * **2. Proposed Architectural Decisions (`AD-xxx`) (Bajo Deliberación):**
   - Decisiones de competencia exclusiva de `02-architecture`.
-  - Deben preguntarse al usuario mediante opciones de acuerdo a [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md).
+  - Deben preguntarse al usuario mediante opciones de acuerdo a [AGENTS.md](AGENTS.md).
   - Ejemplos: Elección de monolito vs modular, lenguaje/runtime, estrategia de renderizado.
 * **3. Downstream Delegated Questions (Diferidas):**
   - Decisiones técnicas que **NO** deben cerrarse prematuramente en arquitectura macro.
@@ -982,33 +1205,60 @@ Quedo a la espera de tu revisión de este diagnóstico para proceder con el **re
 
 ## Turno 11 — Usuario (Prompt)
 
-Diagnóstico y auditoría de 02-architecture APROBADOS. La delimitación de interfaces, la taxonomía (Inherited vs Proposed vs Delegated) y la identificación de las 5 brechas contractuales son correctas.
-
-Procederemos con la Etapa B (Definición e Implementación del Contrato) y la creación de la suite de validación técnica:
-
-1. Refinamiento Contractual de la Skill:
-   - Actualiza de forma sincronizada .agents/skills/02-architecture/SKILL.md y harness/skills/02_architecture.md.
-   - Especifica la ruta canónica de salida en docs/ARCHITECTURE.md con frontmatter YAML (project_id, version: 1, status: "DRAFT", architecture_style).
-   - Incorpora la taxonomía formal obligatoria:
-     * Identificadores de Componentes: COMP-001, COMP-002, etc.
-     * Decisiones Arquitectónicas Tipadas: AD-001, AD-002, etc.
-   - Aplica la regla estricta de Anti-Amnesia: Prohíbe explícitamente proponer o re-preguntar sobre temas en OUT OF SCOPE del PRD (pagos, autenticación, recomendaciones).
-   - Bloquea la pre-especificación prematura: Prohíbe definir DDLs de tablas (delegado a 03) y endpoints HTTP detallados (delegado a 04).
-   - Actualiza las Red Flags y los checklists de verificación de la skill.
-
-2. Suite de Pruebas Deterministas:
-   - Crea el archivo tests/harness/test_architecture_skill.py con cobertura homóloga a la de PRD:
-     * test_skill_structure_and_contract_sections: Valida que SKILL.md y 02_architecture.md tengan las secciones requeridas.
-     * test_architecture_output_contract_schema: Valida el schema de frontmatter y estructura de docs/ARCHITECTURE.md.
-     * test_architecture_unique_stable_ids: Valida unicidad y formato de COMP-xxx y AD-xxx.
-     * test_architecture_anti_amnesia_rules: Verifica que un linter rechace arquitecturas que reintroduzcan elementos del OUT OF SCOPE del PRD.
-     * test_architecture_delegation_rules: Verifica que no se adelanten esquemas DDL ni rutas HTTP.
-
-3. Restricciones de esta fase:
-   - NO generes todavía docs/ARCHITECTURE.md para el caso de prueba.
-   - NO inicies la deliberación de diseño con el usuario todavía.
-   - Ejecuta pytest tests/harness/test_architecture_skill.py y tests/harness/test_prd_skill.py para garantizar no-regresión.
-
+Diagnóstico y auditoría de 02-architecture APROBADOS. La delimitación de interfaces, la taxonomía (Inherited vs Proposed vs Delegated) y la identificación de las 5 brechas contractuales son correctas.
+
+
+
+Procederemos con la Etapa B (Definición e Implementación del Contrato) y la creación de la suite de validación técnica:
+
+
+
+1. Refinamiento Contractual de la Skill:
+
+   - Actualiza de forma sincronizada .agents/skills/02-architecture/SKILL.md y harness/skills/02_architecture.md.
+
+   - Especifica la ruta canónica de salida en docs/ARCHITECTURE.md con frontmatter YAML (project_id, version: 1, status: "DRAFT", architecture_style).
+
+   - Incorpora la taxonomía formal obligatoria:
+
+     * Identificadores de Componentes: COMP-001, COMP-002, etc.
+
+     * Decisiones Arquitectónicas Tipadas: AD-001, AD-002, etc.
+
+   - Aplica la regla estricta de Anti-Amnesia: Prohíbe explícitamente proponer o re-preguntar sobre temas en OUT OF SCOPE del PRD (pagos, autenticación, recomendaciones).
+
+   - Bloquea la pre-especificación prematura: Prohíbe definir DDLs de tablas (delegado a 03) y endpoints HTTP detallados (delegado a 04).
+
+   - Actualiza las Red Flags y los checklists de verificación de la skill.
+
+
+
+2. Suite de Pruebas Deterministas:
+
+   - Crea el archivo tests/harness/test_architecture_skill.py con cobertura homóloga a la de PRD:
+
+     * test_skill_structure_and_contract_sections: Valida que SKILL.md y 02_architecture.md tengan las secciones requeridas.
+
+     * test_architecture_output_contract_schema: Valida el schema de frontmatter y estructura de docs/ARCHITECTURE.md.
+
+     * test_architecture_unique_stable_ids: Valida unicidad y formato de COMP-xxx y AD-xxx.
+
+     * test_architecture_anti_amnesia_rules: Verifica que un linter rechace arquitecturas que reintroduzcan elementos del OUT OF SCOPE del PRD.
+
+     * test_architecture_delegation_rules: Verifica que no se adelanten esquemas DDL ni rutas HTTP.
+
+
+
+3. Restricciones de esta fase:
+
+   - NO generes todavía docs/ARCHITECTURE.md para el caso de prueba.
+
+   - NO inicies la deliberación de diseño con el usuario todavía.
+
+   - Ejecuta pytest tests/harness/test_architecture_skill.py y tests/harness/test_prd_skill.py para garantizar no-regresión.
+
+
+
 Entrégame el resumen de cambios contractuales y el resultado de la suite de tests deterministas en verde.
 
 ---
@@ -1021,10 +1271,10 @@ Se ha completado la **Etapa B (Definición e Implementación del Contrato)** par
 
 ### 1. Resumen de Cambios Contractuales Implementados
 
-Se actualizaron de forma sincronizada [.agents/skills/02-architecture/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/02-architecture/SKILL.md) y su versión portable [harness/skills/02_architecture.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/harness/skills/02_architecture.md):
+Se actualizaron de forma sincronizada [.agents/skills/02-architecture/SKILL.md](.agents/skills/02-architecture/SKILL.md) y su versión portable [harness/skills/02_architecture.md](harness/skills/02_architecture.md):
 
 1. **Ruta Canónica y Frontmatter YAML Formal:**
-   - Se estableció la salida exclusiva en [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md).
+   - Se estableció la salida exclusiva en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
    - Frontmatter obligatorio con metadatos: `project_id`, `version`, `status` (`DRAFT` durante diseño, `APPROVED` tras confirmación), `architecture_style` (`monolith`, `modular_monolith`, etc.) y `governance_level` (heredado estrictamente del PRD).
 2. **Taxonomía Formal de Identificadores:**
    - **Componentes (`COMP-xxx`):** Descomposición funcional obligatoria con identificadores secuenciales (`COMP-001`, `COMP-002`, etc.), propósito, responsabilidades y trazabilidad hacia `REQ-xxx`.
@@ -1042,7 +1292,7 @@ Se actualizaron de forma sincronizada [.agents/skills/02-architecture/SKILL.md](
 
 ### 2. Suite de Pruebas Deterministas Creada
 
-Se creó el archivo [tests/harness/test_architecture_skill.py](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/tests/harness/test_architecture_skill.py) con 6 pruebas deterministas y un linter de contrato:
+Se creó el archivo [tests/harness/test_architecture_skill.py](tests/harness/test_architecture_skill.py) con 6 pruebas deterministas y un linter de contrato:
 
 * **`test_skill_structure_and_contract_sections`:** Verifica que ambos archivos de la skill contengan todas las secciones obligatorias del arnés v2.0.
 * **`test_architecture_output_contract_schema`:** Valida que una especificación de arquitectura cumpla el esquema de frontmatter y contenga las secciones funcionales obligatorias.
@@ -1096,37 +1346,55 @@ tests/harness/test_portable_skills_package_synchronized PASSED [100%]
 
 ## Turno 13 — Usuario (Prompt)
 
-La Etapa B queda formalmente APROBADA (Validación Técnica Superada con 17/17 tests en verde).
-
-Ahora procederemos a ejecutar la "Validación con Agente Real" (Nivel 3) para la skill 02-architecture (architecture-design), aplicando la metodología estricta de plan.md.
-
-Por favor, realiza lo siguiente:
-1. Activa y ejecuta la skill 02-architecture para diseñar la arquitectura del sistema especificado en docs/PRD.md (catálogo y carrito de compras básico, governance_level: bajo).
-2. Consume estrictamente la información aprobada en docs/PRD.md:
-   - Mantén las restricciones de OUT OF SCOPE (cero pagos, cero autenticación/cuentas, cero recomendaciones).
-   - Aborda las decisiones técnicas delegadas en OPEN-001 y OPEN-002.
-3. Conduce la deliberación de diseño arquitectónico respetando las reglas de interacción:
-   - Presenta las decisiones arquitectónicas principales (patrón estructural, estrategia de manejo de estado del carrito, topología modular y stack) mediante opciones claras (a, b, c) con su recomendación justificada.
-4. Genera el artefacto resultante en docs/ARCHITECTURE.md cumpliendo estrictamente el nuevo contrato:
-   - Frontmatter YAML formal con status: "DRAFT" y version: 1.
-   - Catálogo de componentes identificados formalmente con COMP-xxx vinculados a los requisitos (REQ-xxx).
-   - Registro de decisiones arquitectónicas tipadas formalmente con AD-xxx.
-   - Delegación explícita hacia 03-data-modeling (sin emitir DDL SQL ni tipos columnares) y hacia 04-api-design (sin emitir rutas de endpoints HTTP detalladas).
-   - Cero allowed_paths o rutas físicas fijas para el código.
-
+La Etapa B queda formalmente APROBADA (Validación Técnica Superada con 17/17 tests en verde).
+
+
+
+Ahora procederemos a ejecutar la "Validación con Agente Real" (Nivel 3) para la skill 02-architecture (architecture-design), aplicando la metodología estricta de plan.md.
+
+
+
+Por favor, realiza lo siguiente:
+
+1. Activa y ejecuta la skill 02-architecture para diseñar la arquitectura del sistema especificado en docs/PRD.md (catálogo y carrito de compras básico, governance_level: bajo).
+
+2. Consume estrictamente la información aprobada en docs/PRD.md:
+
+   - Mantén las restricciones de OUT OF SCOPE (cero pagos, cero autenticación/cuentas, cero recomendaciones).
+
+   - Aborda las decisiones técnicas delegadas en OPEN-001 y OPEN-002.
+
+3. Conduce la deliberación de diseño arquitectónico respetando las reglas de interacción:
+
+   - Presenta las decisiones arquitectónicas principales (patrón estructural, estrategia de manejo de estado del carrito, topología modular y stack) mediante opciones claras (a, b, c) con su recomendación justificada.
+
+4. Genera el artefacto resultante en docs/ARCHITECTURE.md cumpliendo estrictamente el nuevo contrato:
+
+   - Frontmatter YAML formal con status: "DRAFT" y version: 1.
+
+   - Catálogo de componentes identificados formalmente con COMP-xxx vinculados a los requisitos (REQ-xxx).
+
+   - Registro de decisiones arquitectónicas tipadas formalmente con AD-xxx.
+
+   - Delegación explícita hacia 03-data-modeling (sin emitir DDL SQL ni tipos columnares) y hacia 04-api-design (sin emitir rutas de endpoints HTTP detalladas).
+
+   - Cero allowed_paths o rutas físicas fijas para el código.
+
+
+
 Al finalizar, entrégame el contenido de docs/ARCHITECTURE.md generado o las preguntas de deliberación si te detienes a consultar, junto con la ejecución del linter determinista.
 
 ---
 
 ## Turno 14 — Asistente (Respuesta y Ejecución)
 
-Se ha ejecutado la **Validación con Agente Real (Nivel 3)** para la Skill `02-architecture` (`architecture-design`), consumiendo estrictamente el PRD aprobado ([docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md)), aplicando las reglas de Anti-Amnesia y generando el artefacto formal en estado `DRAFT`.
+Se ha ejecutado la **Validación con Agente Real (Nivel 3)** para la Skill `02-architecture` (`architecture-design`), consumiendo estrictamente el PRD aprobado ([docs/PRD.md](docs/PRD.md)), aplicando las reglas de Anti-Amnesia y generando el artefacto formal en estado `DRAFT`.
 
 ---
 
 ## 1. Conducción de la Deliberación de Diseño Arquitectónico
 
-Siguiendo las reglas de interacción de [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md) y `02-architecture/SKILL.md`, se formulan las decisiones técnicas estructurales evaluadas para este sistema web básico:
+Siguiendo las reglas de interacción de [AGENTS.md](AGENTS.md) y `02-architecture/SKILL.md`, se formulan las decisiones técnicas estructurales evaluadas para este sistema web básico:
 
 ### Decisión 1 (`AD-001`): Patrón Arquitectónico Principal
 * **a) Monolito modular desacoplado:** Toda la lógica reside en un único deployable con módulos internos bien separados (`catalog`, `cart`).
@@ -1170,7 +1438,7 @@ Siguiendo las reglas de interacción de [AGENTS.md](file:///c:/Users/oyana/OneDr
 
 ## 2. Contenido Completo del Artefacto Generado
 
-El documento formal ha sido creado en [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) en estado **`DRAFT`**:
+El documento formal ha sido creado en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) en estado **`DRAFT`**:
 
 ```markdown
 ---
@@ -1338,7 +1606,7 @@ tests/harness/test_portable_skills_package_synchronized PASSED [100%]
 ---
 
 > **Paso de Aprobación Formal (Paso 8 del SKILL.md y Regla 1 de AGENTS.md):**  
-> He generado la propuesta formal de arquitectura en [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) en versión 1 (`status: DRAFT`).  
+> He generado la propuesta formal de arquitectura en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) en versión 1 (`status: DRAFT`).  
 > ¿Confirmas que las decisiones adoptadas (`AD-001` a `AD-007`) y los componentes (`COMP-001` a `COMP-003`) son correctos para actualizar el estado a **`status: APPROVED`** y habilitar la transición hacia `03-data-modeling`?  
 > ⏳ *Esperando tu confirmación.*
 
@@ -1346,23 +1614,40 @@ tests/harness/test_portable_skills_package_synchronized PASSED [100%]
 
 ## Turno 15 — Usuario (Prompt)
 
-Aprobación formal confirmada: La especificación en docs/ARCHITECTURE.md cumple rigurosamente con los contratos de interoperabilidad, anti-amnesia y no-regresión de plan.md.
-
-Por favor, procede con los siguientes pasos:
-
-1. Cierre Formal de 02-architecture:
-   - Actualiza el frontmatter de docs/ARCHITECTURE.md estableciendo status: "APPROVED".
-   - Ejecuta pytest para confirmar que la suite determinista (18 tests) permanezca en verde tras la aprobación.
-
-2. Transición a 03-data-modeling (Etapa A — Auditoría):
-   - Con 02-architecture en estado "APROBADA PARA SIGUIENTE SKILL", inicia la Etapa A (Auditoría y Diagnóstico) para la skill 03-data-modeling.
-   - NO implementes cambios ni modifiques código de modelos todavía.
-   - Inspecciona su SKILL.md actual en .agents/skills/03-data-modeling/ y harness/skills/03_data_modeling.md, sus tests existentes y define su Contrato formal:
-     * Inputs que consumirá desde docs/PRD.md y docs/ARCHITECTURE.md (COMP-001, COMP-002, REQ-xxx, AD-003, AD-005, governance_level: bajo).
-     * Outputs que deberá producir en docs/DATA_MODEL.md (identificadores ENT-xxx, atributos, tipos conceptuales, invariantes de negocio).
-     * Restricciones e Invariantes: Prohibición de inventar entidades huérfanas (ej: usuarios, credenciales, tarjetas, pagos), coherencia con el catálogo acotado y persistencia ligera del MVP.
-     * Identificación de brechas del SKILL.md actual y diseño de la suite determinista requerida en tests/harness/test_data_model_skill.py.
-
+Aprobación formal confirmada: La especificación en docs/ARCHITECTURE.md cumple rigurosamente con los contratos de interoperabilidad, anti-amnesia y no-regresión de plan.md.
+
+
+
+Por favor, procede con los siguientes pasos:
+
+
+
+1. Cierre Formal de 02-architecture:
+
+   - Actualiza el frontmatter de docs/ARCHITECTURE.md estableciendo status: "APPROVED".
+
+   - Ejecuta pytest para confirmar que la suite determinista (18 tests) permanezca en verde tras la aprobación.
+
+
+
+2. Transición a 03-data-modeling (Etapa A — Auditoría):
+
+   - Con 02-architecture en estado "APROBADA PARA SIGUIENTE SKILL", inicia la Etapa A (Auditoría y Diagnóstico) para la skill 03-data-modeling.
+
+   - NO implementes cambios ni modifiques código de modelos todavía.
+
+   - Inspecciona su SKILL.md actual en .agents/skills/03-data-modeling/ y harness/skills/03_data_modeling.md, sus tests existentes y define su Contrato formal:
+
+     * Inputs que consumirá desde docs/PRD.md y docs/ARCHITECTURE.md (COMP-001, COMP-002, REQ-xxx, AD-003, AD-005, governance_level: bajo).
+
+     * Outputs que deberá producir en docs/DATA_MODEL.md (identificadores ENT-xxx, atributos, tipos conceptuales, invariantes de negocio).
+
+     * Restricciones e Invariantes: Prohibición de inventar entidades huérfanas (ej: usuarios, credenciales, tarjetas, pagos), coherencia con el catálogo acotado y persistencia ligera del MVP.
+
+     * Identificación de brechas del SKILL.md actual y diseño de la suite determinista requerida en tests/harness/test_data_model_skill.py.
+
+
+
 Entrégame la confirmación de aprobación de docs/ARCHITECTURE.md y el reporte de diagnóstico de 03-data-modeling para su revisión metodológica.
 
 ---
@@ -1372,7 +1657,7 @@ Entrégame la confirmación de aprobación de docs/ARCHITECTURE.md y el reporte 
 ### 1. Cierre Formal de `02-architecture`
 
 Se procedió al sellado formal de la especificación de arquitectura:
-- **Actualización de Frontmatter:** Se modificó [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md#L1-L10) estableciendo `status: "APPROVED"`.
+- **Actualización de Frontmatter:** Se modificó [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#L1-L10) estableciendo `status: "APPROVED"`.
 - **Verificación de No-Regresión Determinista:** Se ejecutó la suite de 18 tests automatizados (`test_prd_skill.py`, `test_architecture_skill.py` y `test_skills_integrity.py`), verificando que todos permanezcan en verde:
 
 ```text
@@ -1413,7 +1698,7 @@ En estricto cumplimiento metodológico de `plan.md`, **no se ha modificado códi
 
 ### A. Inputs Consumidos (Upstream Contracts)
 La skill debe consumir de forma obligatoria los artefactos aprobados:
-1. **Desde [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md):**
+1. **Desde [docs/PRD.md](docs/PRD.md):**
    - **`project_id`:** `"catalogo-carrito-web"`.
    - **`governance_level`:** `"bajo"` (determina ausencia de campos forenses pesados tipo `created_by`, `updated_by`, auditorías de eventos o soft-delete obligatorio).
    - **Requisitos de Negocio:**
@@ -1421,7 +1706,7 @@ La skill debe consumir de forma obligatoria los artefactos aprobados:
      - `REQ-003` (Gestión de Carrito) y `REQ-004` (Cálculo de Totales): Demandan estructura para ítems de carrito (producto referenciado, cantidad, subtotal).
    - **Frontera Inmutable de Alcance:**
      - `OUT OF SCOPE`: Cero pasarelas de pago, cero autenticación/usuarios/cuentas, cero recomendaciones algorítmicas.
-2. **Desde [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md):**
+2. **Desde [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):**
    - **Componentes Afectados:**
      - `COMP-001` (Catálogo de Productos — Backend/Servidor).
      - `COMP-002` (Carrito de Compras — Cliente/Frontend).
@@ -1474,7 +1759,7 @@ La skill debe consumir de forma obligatoria los artefactos aprobados:
 
 ## 2. Diagnóstico de Brechas en la Implementación Actual de `03-data-modeling`
 
-Revisando [.agents/skills/03-data-modeling/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/03-data-modeling/SKILL.md) y [harness/skills/03_data_modeling.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/harness/skills/03_data_modeling.md):
+Revisando [.agents/skills/03-data-modeling/SKILL.md](.agents/skills/03-data-modeling/SKILL.md) y [harness/skills/03_data_modeling.md](harness/skills/03_data_modeling.md):
 
 | # | Brecha Detectada | Impacto / Riesgo | Corrección Requerida |
 |---|---|---|---|
@@ -1509,29 +1794,52 @@ Quedo a la espera de tu revisión de este informe de auditoría para proceder fo
 
 ## Turno 17 — Usuario (Prompt)
 
-Diagnóstico y auditoría de 03-data-modeling APROBADOS. La delimitación de responsabilidades, la erradicación de las 6 brechas (B1 a B6), el respeto al motor sellado en AD-005 (SQLite/SQLAlchemy) y la preservación del estado de cliente según AD-003 son completamente correctos.
-
-Procederemos con la Etapa B (Definición e Implementación del Contrato) y la creación de su suite técnica determinista:
-
-1. Refinamiento Contractual de la Skill:
-   - Actualiza de forma sincronizada .agents/skills/03-data-modeling/SKILL.md y harness/skills/03_data_modeling.md.
-   - Especifica la ruta canónica de salida en docs/DATA_MODEL.md con frontmatter YAML (project_id, version: 1, status: "DRAFT", governance_level, persistence_target: "sqlite").
-   - Reemplaza los ejemplos tóxicos (B1) por entidades alineadas al dominio (Product, CatalogItem).
-   - Elimina la re-deliberación del motor de base de datos (B2): la skill hereda el motor desde AD-005 y se enfoca en el modelado relacional e invariantes.
-   - Incorpora la distinción explícita de persistencia (B3): entidad de servidor para el catálogo (ENT-001) vs esquema conceptual de almacenamiento de cliente para el carrito (DTO-CART-001 / LocalStorage).
-   - Incorpora la taxonomía formal (B4): ENT-xxx, IDX-xxx, INV-xxx, SEED-xxx.
-   - Aplica la regla estricta de Anti-Amnesia: Prohíbe terminantemente la creación de modelos de User, Account, Credential, Payment, Card, Recommendation.
-   - Bloquea la pre-especificación prematura: Prohíbe dictar rutas HTTP detalladas (delegado a 04) y rutas físicas de archivos (allowed_paths).
-   - Actualiza las Red Flags y los checklists de verificación.
-
-2. Suite de Pruebas Deterministas:
-   - Crea tests/harness/test_data_model_skill.py con los 7 tests proyectados en la auditoría y un linter determinista riguroso.
-
-3. Restricciones de esta fase:
-   - NO generes todavía docs/DATA_MODEL.md para el caso de prueba.
-   - NO inicies la deliberación de modelado todavía.
-   - Ejecuta pytest en tests/harness/ para certificar no-regresión (deben pasar los tests de PRD, Architecture, Data Model e Integrity).
-
+Diagnóstico y auditoría de 03-data-modeling APROBADOS. La delimitación de responsabilidades, la erradicación de las 6 brechas (B1 a B6), el respeto al motor sellado en AD-005 (SQLite/SQLAlchemy) y la preservación del estado de cliente según AD-003 son completamente correctos.
+
+
+
+Procederemos con la Etapa B (Definición e Implementación del Contrato) y la creación de su suite técnica determinista:
+
+
+
+1. Refinamiento Contractual de la Skill:
+
+   - Actualiza de forma sincronizada .agents/skills/03-data-modeling/SKILL.md y harness/skills/03_data_modeling.md.
+
+   - Especifica la ruta canónica de salida en docs/DATA_MODEL.md con frontmatter YAML (project_id, version: 1, status: "DRAFT", governance_level, persistence_target: "sqlite").
+
+   - Reemplaza los ejemplos tóxicos (B1) por entidades alineadas al dominio (Product, CatalogItem).
+
+   - Elimina la re-deliberación del motor de base de datos (B2): la skill hereda el motor desde AD-005 y se enfoca en el modelado relacional e invariantes.
+
+   - Incorpora la distinción explícita de persistencia (B3): entidad de servidor para el catálogo (ENT-001) vs esquema conceptual de almacenamiento de cliente para el carrito (DTO-CART-001 / LocalStorage).
+
+   - Incorpora la taxonomía formal (B4): ENT-xxx, IDX-xxx, INV-xxx, SEED-xxx.
+
+   - Aplica la regla estricta de Anti-Amnesia: Prohíbe terminantemente la creación de modelos de User, Account, Credential, Payment, Card, Recommendation.
+
+   - Bloquea la pre-especificación prematura: Prohíbe dictar rutas HTTP detalladas (delegado a 04) y rutas físicas de archivos (allowed_paths).
+
+   - Actualiza las Red Flags y los checklists de verificación.
+
+
+
+2. Suite de Pruebas Deterministas:
+
+   - Crea tests/harness/test_data_model_skill.py con los 7 tests proyectados en la auditoría y un linter determinista riguroso.
+
+
+
+3. Restricciones de esta fase:
+
+   - NO generes todavía docs/DATA_MODEL.md para el caso de prueba.
+
+   - NO inicies la deliberación de modelado todavía.
+
+   - Ejecuta pytest en tests/harness/ para certificar no-regresión (deben pasar los tests de PRD, Architecture, Data Model e Integrity).
+
+
+
 Entrégame el resumen de cambios contractuales y el resultado de la suite de tests deterministas en verde.
 
 ---
@@ -1546,7 +1854,7 @@ En estricto cumplimiento metodológico de `plan.md`, se ha completado la **Etapa
 
 ### 1. Resumen de Cambios Contractuales Aplicados
 
-Se actualizaron de forma estrictamente sincronizada [.agents/skills/03-data-modeling/SKILL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/.agents/skills/03-data-modeling/SKILL.md) y [harness/skills/03_data_modeling.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/harness/skills/03_data_modeling.md) erradicando las 6 brechas diagnosticadas:
+Se actualizaron de forma estrictamente sincronizada [.agents/skills/03-data-modeling/SKILL.md](.agents/skills/03-data-modeling/SKILL.md) y [harness/skills/03_data_modeling.md](harness/skills/03_data_modeling.md) erradicando las 6 brechas diagnosticadas:
 
 1. **Ruta Canónica de Salida y Frontmatter Formal (B5):**
    - Se estableció la salida exclusiva en `docs/DATA_MODEL.md` con frontmatter YAML v2.0 (`project_id: "catalogo-carrito-web"`, `version: 1`, `status: "DRAFT"`, `governance_level: "bajo"`, `persistence_target: "sqlite"`).
@@ -1574,7 +1882,7 @@ Se actualizaron de forma estrictamente sincronizada [.agents/skills/03-data-mode
 
 ### 2. Suite de Validación Técnica Determinista (`tests/harness/test_data_model_skill.py`)
 
-Se implementó el archivo [tests/harness/test_data_model_skill.py](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/tests/harness/test_data_model_skill.py) con el analizador estático `lint_data_model_contract` y la suite de pruebas:
+Se implementó el archivo [tests/harness/test_data_model_skill.py](tests/harness/test_data_model_skill.py) con el analizador estático `lint_data_model_contract` y la suite de pruebas:
 
 | Test | Función y Verificación Contractual | Resultado |
 |---|---|:---:|
@@ -1596,7 +1904,7 @@ Se ejecutó la suite completa de gobernanza de skills (`01-prd`, `02-architectur
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.12.5, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\oyana\OneDrive\Documentos\GitHub\compliance-graph-harness
+rootdir: .
 collected 26 items
 
 tests/harness/test_prd_skill.py::test_skill_structure_and_contract_sections PASSED [  3%]
@@ -1639,26 +1947,46 @@ La **Etapa B** queda formalmente implementada y blindada. Cuando lo indiques, es
 
 ## Turno 19 — Usuario (Prompt)
 
-La Etapa B queda formalmente APROBADA (Validación Técnica Superada con 25/25 tests en verde).
-
-Ahora procederemos a ejecutar la "Validación con Agente Real" (Nivel 3) para la skill 03-data-modeling (data-modeling), aplicando la metodología estricta de plan.md.
-
-Por favor, realiza lo siguiente:
-1. Activa y ejecuta la skill 03-data-modeling para modelar los datos del sistema especificado en docs/PRD.md y docs/ARCHITECTURE.md.
-2. Consume estrictamente la información aprobada de los artefactos previos:
-   - Hereda el motor de base de datos relacional para el servidor: SQLite / SQLAlchemy (AD-005).
-   - Respeta estrictamente la persistencia del carrito en el cliente: Web Storage / LocalStorage (AD-003). NO crees tablas de servidor para carts o cart_items.
-   - Mantén la frontera inmutable de OUT OF SCOPE: Prohibido definir tablas o modelos de usuarios, autenticación, credenciales, sesiones o pagos.
-3. Genera el artefacto formal en docs/DATA_MODEL.md cumpliendo estrictamente el contrato v2.0:
-   - Frontmatter YAML con status: "DRAFT", version: 1, governance_level: "bajo", persistence_target: "sqlite".
-   - Entidad de Servidor: ENT-001 [Product] vinculada a COMP-001 y REQ-001/REQ-002, con tipos de datos conceptuales, nulabilidad, PK e índice de búsqueda textual (IDX-001).
-   - Invariantes de Negocio: INV-xxx (ej. precio >= 0.0, nombre no vacío, cantidad > 0).
-   - Esquema de Almacenamiento en Cliente: DTO-CART-001 (estructura JSON de los ítems en Web Storage).
-   - Datos Semilla (Seed): SEED-001 con productos iniciales representativos en formato structured/declarativo.
-   - Cero endpoints HTTP detallados y cero allowed_paths de archivos.
-
-4. Al finalizar, ejecuta la suite completa de pruebas deterministas en pytest (debe activarse y pasar el test del archivo físico test_docs_data_model_file_passes_linter_if_exists).
-
+La Etapa B queda formalmente APROBADA (Validación Técnica Superada con 25/25 tests en verde).
+
+
+
+Ahora procederemos a ejecutar la "Validación con Agente Real" (Nivel 3) para la skill 03-data-modeling (data-modeling), aplicando la metodología estricta de plan.md.
+
+
+
+Por favor, realiza lo siguiente:
+
+1. Activa y ejecuta la skill 03-data-modeling para modelar los datos del sistema especificado en docs/PRD.md y docs/ARCHITECTURE.md.
+
+2. Consume estrictamente la información aprobada de los artefactos previos:
+
+   - Hereda el motor de base de datos relacional para el servidor: SQLite / SQLAlchemy (AD-005).
+
+   - Respeta estrictamente la persistencia del carrito en el cliente: Web Storage / LocalStorage (AD-003). NO crees tablas de servidor para carts o cart_items.
+
+   - Mantén la frontera inmutable de OUT OF SCOPE: Prohibido definir tablas o modelos de usuarios, autenticación, credenciales, sesiones o pagos.
+
+3. Genera el artefacto formal en docs/DATA_MODEL.md cumpliendo estrictamente el contrato v2.0:
+
+   - Frontmatter YAML con status: "DRAFT", version: 1, governance_level: "bajo", persistence_target: "sqlite".
+
+   - Entidad de Servidor: ENT-001 [Product] vinculada a COMP-001 y REQ-001/REQ-002, con tipos de datos conceptuales, nulabilidad, PK e índice de búsqueda textual (IDX-001).
+
+   - Invariantes de Negocio: INV-xxx (ej. precio >= 0.0, nombre no vacío, cantidad > 0).
+
+   - Esquema de Almacenamiento en Cliente: DTO-CART-001 (estructura JSON de los ítems en Web Storage).
+
+   - Datos Semilla (Seed): SEED-001 con productos iniciales representativos en formato structured/declarativo.
+
+   - Cero endpoints HTTP detallados y cero allowed_paths de archivos.
+
+
+
+4. Al finalizar, ejecuta la suite completa de pruebas deterministas en pytest (debe activarse y pasar el test del archivo físico test_docs_data_model_file_passes_linter_if_exists).
+
+
+
 Entrégame el contenido completo de docs/DATA_MODEL.md generado y el resultado de los 26 tests deterministas en verde.
 
 ---
@@ -1667,13 +1995,13 @@ Entrégame el contenido completo de docs/DATA_MODEL.md generado y el resultado d
 
 ### Validación con Agente Real (Nivel 3) Ejecutada: `03-data-modeling`
 
-Se activó y ejecutó la Skill `03-data-modeling` consumiendo estrictamente los contratos inmutables de [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) y [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md):
+Se activó y ejecutó la Skill `03-data-modeling` consumiendo estrictamente los contratos inmutables de [docs/PRD.md](docs/PRD.md) y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):
 - **Motor de persistencia de servidor heredado:** SQLite / SQLAlchemy (`AD-005`).
 - **Almacenamiento de carrito blindado en el cliente:** Web Storage / LocalStorage (`AD-003`). Cero tablas relacionales server-side para `carts` o `cart_items`.
 - **Regla estricta de Anti-Amnesia respetada:** Cero modelos, tablas o columnas para usuarios, credenciales, sesiones o pagos.
 - **Desacoplamiento y Progresión:** Cero rutas HTTP detalladas (delegado a `04-api-design`) y cero rutas físicas de archivos (`allowed_paths`).
 
-A continuación se presenta el contenido íntegro del artefacto generado en [docs/DATA_MODEL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md):
+A continuación se presenta el contenido íntegro del artefacto generado en [docs/DATA_MODEL.md](docs/DATA_MODEL.md):
 
 ---
 
@@ -1802,7 +2130,7 @@ Tras la persistencia física de `docs/DATA_MODEL.md`, se ejecutó la suite compl
 ============================= test session starts =============================
 platform win32 -- Python 3.12.5, pytest-9.1.1, pluggy-1.6.0 -- Python312\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\oyana\OneDrive\Documentos\GitHub\compliance-graph-harness
+rootdir: .
 configfile: pytest.ini
 plugins: anyio-4.11.0, asyncio-1.4.0
 collected 26 items
@@ -1837,20 +2165,28 @@ tests/harness/test_skills_integrity.py::test_portable_skills_package_synchronize
 ============================= 26 passed in 0.26s ==============================
 ```
 
-Quedo a la espera de tu revisión de [docs/DATA_MODEL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md) para confirmar su aprobación formal o acordar ajustes previos al cierre de la Skill.
+Quedo a la espera de tu revisión de [docs/DATA_MODEL.md](docs/DATA_MODEL.md) para confirmar su aprobación formal o acordar ajustes previos al cierre de la Skill.
 
 ---
 
 ## Turno 21 — Usuario (Prompt)
 
-Aprobación formal confirmada: La especificación en docs/DATA_MODEL.md cumple rigurosamente con los contratos de trazabilidad, anti-amnesia, persistencia en cliente (AD-003) y no-regresión de plan.md.
-
-Por favor, realiza únicamente las siguientes acciones de cierre:
-
-1. Actualiza el frontmatter de docs/DATA_MODEL.md estableciendo status: "APPROVED".
-2. Ejecuta la suite completa de pruebas en pytest (tests/harness/test_prd_skill.py, tests/harness/test_architecture_skill.py, tests/harness/test_data_model_skill.py y tests/harness/test_skills_integrity.py) para certificar que los 26 tests permanezcan 100% en verde tras el cambio de estado.
-3. No inicies la auditoría ni modifiques nada de 04-api-design por hoy.
-
+Aprobación formal confirmada: La especificación en docs/DATA_MODEL.md cumple rigurosamente con los contratos de trazabilidad, anti-amnesia, persistencia en cliente (AD-003) y no-regresión de plan.md.
+
+
+
+Por favor, realiza únicamente las siguientes acciones de cierre:
+
+
+
+1. Actualiza el frontmatter de docs/DATA_MODEL.md estableciendo status: "APPROVED".
+
+2. Ejecuta la suite completa de pruebas en pytest (tests/harness/test_prd_skill.py, tests/harness/test_architecture_skill.py, tests/harness/test_data_model_skill.py y tests/harness/test_skills_integrity.py) para certificar que los 26 tests permanezcan 100% en verde tras el cambio de estado.
+
+3. No inicies la auditoría ni modifiques nada de 04-api-design por hoy.
+
+
+
 Entrégame la confirmación de la actualización y el resultado de la ejecución de pytest.
 
 ---
@@ -1862,7 +2198,7 @@ Entrégame la confirmación de la actualización y el resultado de la ejecución
 Se han completado con éxito las acciones solicitadas:
 
 1. **Aprobación de Artefacto:**
-   - Se actualizó el frontmatter de [docs/DATA_MODEL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md#L1-L10) estableciendo formalmente `status: "APPROVED"`.
+   - Se actualizó el frontmatter de [docs/DATA_MODEL.md](docs/DATA_MODEL.md#L1-L10) estableciendo formalmente `status: "APPROVED"`.
 
 2. **Certificación de No-Regresión en Pytest:**
    - Se ejecutó la suite completa de gobernanza (PRD, Architecture, Data Model e Integrity), verificando que los **26 tests permanezcan 100% en verde**:
@@ -1870,7 +2206,7 @@ Se han completado con éxito las acciones solicitadas:
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.12.5, pytest-9.1.1, pluggy-1.6.0 -- Python312\python.exe
-rootdir: C:\Users\oyana\OneDrive\Documentos\GitHub\compliance-graph-harness
+rootdir: .
 configfile: pytest.ini
 plugins: anyio-4.11.0, asyncio-1.4.0
 collected 26 items

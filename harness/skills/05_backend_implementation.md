@@ -12,17 +12,17 @@ description: Implementacion del backend. Define estructura modular del proyecto 
 
 ## 1. Overview y Propósito
 
-Esta skill gobierna la **transición crítica desde la especificación documental hacia la construcción física de código ejecutable** en `src/`. Traduce los requerimientos de `docs/PRD.md` (`REQ-001`, `REQ-002`), las directivas arquitectónicas de `docs/ARCHITECTURE.md` (`AD-001` a `AD-007`), el esquema relacional de `docs/DATA_MODEL.md` (`ENT-001`, `SEED-001`, `INV-xxx`) y los contratos de transporte de `docs/API_DESIGN.md` (`EP-001`, `EP-002`, `DTO-xxx`, `ERR-xxx`) en código fuente modular, tipado y testeable.
+Esta skill gobierna la **transición crítica desde la especificación documental hacia la construcción física de código ejecutable** en `src/`. Traduce los requerimientos de `docs/PRD.md`, las directivas arquitectónicas de `docs/ARCHITECTURE.md`, el esquema relacional de `docs/DATA_MODEL.md` y los contratos de transporte de `docs/API_DESIGN.md` en código fuente modular, tipado y testeable.
 
 Su propósito fundamental es responder con rigor de ingeniería:
 > **¿Cómo implementar los componentes de backend del sistema de forma limpia, modular y desacoplada, garantizando que cada archivo y línea de código tenga linaje causal estricto, sin introducir dependencias no autorizadas ni realizar cambios fuera de alcance?**
 
 La skill opera bajo cuatro principios fundamentales de gobernanza:
-1. **Linaje Contractual Causal y Cero Cambios Huérfanos (*No Orphan Changes*):** Todo archivo, modelo, router o función en `src/` debe responder directamente a un componente arquitectónico (`COMP-001`), una entidad de datos (`ENT-001`) o un contrato de endpoint (`EP-001`, `EP-002`). El arnés rechaza terminantemente cualquier archivo accesorio no justificado.
-2. **Delimitación Perimetral Estricta mediante `TaskSpec`:** La codificación nunca se realiza de forma libre sobre todo el repositorio. Requiere la definición formal de `allowed_paths` y `forbidden_paths` para aislar el trabajo y prevenir la modificación de código ajeno (como los módulos clínicos preexistentes en `src/backend/` o `src/database/`).
-3. **Regla de Oro Anti-Amnesia:** Queda estrictamente prohibido implementar modelos, tablas, routers o dependencias para conceptos sentenciados en `OUT OF SCOPE` (usuarios, autenticación, sesiones con credenciales, tokens JWT, pasarelas de pago, checkout o recomendaciones).
-4. **No-Goldplating (Backend de Solo Lectura):** Dado que el PRD y la API aprobada definen un catálogo de consulta y búsqueda para visitante anónimo (`ACT-01`, `REQ-001`, `REQ-002`), el backend para este MVP es **100% de solo lectura (únicamente endpoints GET)**. Prohibido codificar repositorios, servicios o endpoints de mutación (`create_product`, `update_product`, `delete_product`).
-5. **Respeto Estricto a `AD-003` (Carrito en Cliente):** El estado del carrito reside íntegramente en Web Storage (`localStorage`) en el navegador. Queda terminantemente prohibido codificar controladores, servicios o persistencia en base de datos para el carrito en el servidor.
+1. **Linaje Contractual Causal y Cero Cambios Huérfanos (*No Orphan Changes*):** Todo archivo, modelo, router o función en `src/` debe responder directamente a un componente arquitectónico (`COMP-xxx`), una entidad de datos (`ENT-xxx`) o un contrato de endpoint (`EP-xxx`). El arnés rechaza terminantemente cualquier archivo accesorio no justificado (`orphan changes`).
+2. **Delimitación Perimetral Estricta mediante `TaskSpec`:** La codificación nunca se realiza de forma libre sobre todo el repositorio. Requiere la definición formal de `allowed_paths` y `forbidden_paths` para aislar el trabajo en el contexto acotado (bounded context) aprobado y prevenir la modificación de código ajeno o preexistente.
+3. **Regla de Oro Anti-Amnesia:** Queda estrictamente prohibido implementar modelos, tablas, routers o dependencias para conceptos sentenciados en `OUT OF SCOPE`.
+4. **No-Goldplating y Fidelidad a Contratos:** El backend solo codifica las operaciones y métodos respaldados por los requerimientos del PRD y los contratos de API aprobados. Si el contrato de API sellado es de solo lectura, queda prohibido codificar repositorios, servicios o endpoints de mutación.
+5. **Respeto a Fronteras Arquitectónicas:** Respetar la localización de estado (cliente vs servidor) sellada en la arquitectura.
 
 ---
 
@@ -53,70 +53,62 @@ La skill opera bajo cuatro principios fundamentales de gobernanza:
 
 La skill extrae deterministamente:
 - **Desde `docs/PRD.md`:**
-  - `project_id: "catalogo-carrito-web"`, `governance_level: "bajo"`.
-  - `REQ-001` (Catálogo comercial básico: id, name, description, price) y `REQ-002` (Búsqueda textual insensible a mayúsculas).
-  - `AC-001`, `AC-002`, `AC-003`: Criterios de aceptación observables del catálogo.
-  - `OUT OF SCOPE`: Cero autenticación, roles, pagos o recomendaciones.
+  - `project_id`, `governance_level`.
+  - `REQ-xxx` e `IN SCOPE`: Requerimientos funcionales asignados al contexto acotado (bounded context).
+  - `AC-xxx`: Criterios de aceptación observables del contexto acotado.
+  - `OUT OF SCOPE`: Conceptos expresamente excluidos que no deben codificarse.
 - **Desde `docs/ARCHITECTURE.md`:**
-  - `COMP-001 [catalog_service]`: Servicio de catálogo en backend.
-  - `COMP-002 [cart_service]`: Lógica de carrito en cliente.
-  - `AD-001`: Monolito modular desacoplado.
-  - `AD-002`: Transporte HTTP REST síncrono con base `/api/v1`.
-  - `AD-003`: Carrito en Web Storage (`localStorage`) de cliente con validación de precios por backend. Cero tablas en servidor.
-  - `AD-004`: Organización de código por dominio (`src/catalog/`, `src/shared/`).
-  - `AD-005`: Backend en Python 3.12+ con persistencia SQLite / SQLAlchemy y framework FastAPI liviano.
-  - `AD-006`: Fail-Fast con respuestas estructuradas.
-  - `AD-007`: Nivel de seguridad mínimo: modo visitante anónimo sin tokens.
+  - `COMP-xxx`: Componentes asignados a la capa de backend.
+  - `AD-xxx`: Decisiones arquitectónicas vinculantes:
+    * Patrón y estilo macro (`AD-001`).
+    * Transporte y estilo de comunicación (`AD-002`).
+    * Frontera cliente-servidor y localización de estado (`AD-003`).
+    * Organización de código por módulos (`AD-004`).
+    * Stack tecnológico y motor de persistencia (`AD-005`).
+    * Estrategia de manejo de errores (`AD-006`).
+    * Nivel de seguridad y autenticación (`AD-007`).
 - **Desde `docs/DATA_MODEL.md`:**
-  - `ENT-001 [Product]`: Modelo relacional en tabla `products` (`id`, `name`, `description`, `price`).
-  - `IDX-001`: Índice sobre `name` para optimización de búsqueda.
-  - `INV-001` (`price >= 0.0`), `INV-003` (`LENGTH(TRIM(name)) > 0`).
-  - `SEED-001`: Registros semilla declarativos de catálogo general y neutro de papelería.
+  - `ENT-xxx`: Entidades relacionales o de persistencia asignadas al componente.
+  - `IDX-xxx`: Índices para optimización de consultas.
+  - `INV-xxx`: Invariantes y reglas de validación en modelos y servicios.
+  - `SEED-xxx`: Registros semilla declarativos de inicialización.
 - **Desde `docs/API_DESIGN.md`:**
-  - `EP-001 [list_products]`: `GET /api/v1/products?q=termino` retornando `DTO-PROD-LIST-001` (Envelope estructurado `{ items, total }`).
-  - `EP-002 [get_product_by_id]`: `GET /api/v1/products/{id}` retornando `DTO-PROD-RES-001` o 404 estructurado.
-  - `DTO-ERR-001`: Envelope de error `{ error_code, message, detail }`.
-  - `ERR-001 [PRODUCT_NOT_FOUND]`, `ERR-002 [INVALID_PARAMETER]`, `ERR-500`.
+  - `EP-xxx`: Endpoints con métodos, rutas y parámetros query/path.
+  - `DTO-xxx`: Esquemas de datos para request y response (Envelope estructurado).
+  - `ERR-xxx`: Códigos de error y excepciones estructuradas (`DTO-ERR-001`).
 
 ---
 
 ## 5. Taxonomía Formal y Mecanismo `TaskSpec`
 
-Toda tarea de implementación física en backend debe estar formalmente delimitada bajo el contrato `TaskSpec` del arnés:
+Toda tarea de implementación física en backend debe estar formalmente delimitada bajo el contrato `TaskSpec` del arnés según el contexto acotado (bounded context) aprobado:
 
 ```python
 TaskSpec(
-    task_id="TS-BACKEND-001",
-    goal="Implementar el backend ligero de catálogo de productos y búsqueda en SQLite/FastAPI",
+    task_id="TS-BACKEND-xxx",
+    goal="Implementar los componentes de backend del contexto acotado (bounded context) aprobado",
     category="feature",
     allowed_paths=[
-        "src/catalog/**",
+        "src/<bounded_context>/**",
         "src/shared/**",
         "src/main.py",
-        "tests/catalog/**",
+        "tests/<bounded_context>/**",
     ],
     forbidden_paths=[
-        "src/backend/**",      # Preserva código clínico preexistente
-        "src/database/**",     # Preserva esquemas clínicos preexistentes
-        "src/frontend/**",     # Aislamiento estricto de frontend
-        "src/cart/**",         # Blindaje AD-003: el carrito no reside en backend
-        "src/auth/**",         # Blindaje OUT OF SCOPE: sin autenticación
-        "src/users/**",        # Blindaje OUT OF SCOPE: sin usuarios
-        "src/payments/**",     # Blindaje OUT OF SCOPE: sin pagos
+        "src/<other_context>/**",  # Preserva contextos acotados ajenos o preexistentes
+        "src/frontend/**",         # Aislamiento estricto de frontend
+        # Rutas de conceptos excluidos en OUT OF SCOPE o fronteras arquitectónicas
     ],
     constraints=[
-        "Read-Only API: Únicamente métodos GET autorizados en routers",
-        "SQLite con SQLAlchemy como motor ORM exclusivo (AD-005)",
-        "Zero new external dependencies en requirements.txt",
-        "Sin credenciales, contraseñas ni tokens de sesión (AD-007)",
-        "Base de datos en pruebas desacoplada usando SQLite en memoria",
+        "Fidelidad estricta a los contratos de API aprobados en docs/API_DESIGN.md",
+        "Persistencia y ORM conformes a las decisiones estructurales de docs/ARCHITECTURE.md",
+        "Zero new external dependencies no autorizadas",
+        "Aislamiento de base de datos en pruebas (ej. SQLite en memoria)",
     ],
     acceptance_criteria=[
-        "GET /api/v1/products retorna Envelope { items, total } con SEED-001",
-        "GET /api/v1/products?q= filtra insensible a mayúsculas sobre name",
-        "GET /api/v1/products/{id} retorna producto o 404 estructurado",
+        "Trazabilidad 100% de los criterios de aceptación del contexto acotado",
     ],
-    test_targets=["tests/catalog/test_catalog_backend.py"]
+    test_targets=["tests/<bounded_context>/..."]
 )
 ```
 
@@ -230,3 +222,56 @@ La etapa de implementación backend concluye cuando:
 1. Todos los archivos requeridos existen en disco y compilan limpiamente sin errores sintácticos ni tracebacks.
 2. La suite `pytest tests/catalog/test_catalog_backend.py` finaliza con código de salida 0 (100% verde).
 3. El `ValidationEngine` del arnés emite `PASS` en `ScopePolicy` y `DependencyPolicy`.
+
+---
+
+## Reference Context: Demo Implementation (catalogo-carrito-web)
+
+En la implementación de referencia demostrativa (`catalogo-carrito-web`), los principios metodológicos generales de esta skill se instancian en la siguiente arquitectura de backend:
+- **TaskSpec de la Demo:**
+```python
+TaskSpec(
+    task_id="TS-BACKEND-001",
+    goal="Implementar el backend ligero de catálogo de productos y búsqueda en SQLite/FastAPI",
+    category="feature",
+    allowed_paths=[
+        "src/catalog/**",
+        "src/shared/**",
+        "src/main.py",
+        "tests/catalog/**",
+    ],
+    forbidden_paths=[
+        "src/backend/**",      # Preserva código clínico preexistente
+        "src/database/**",     # Preserva esquemas clínicos preexistentes
+        "src/frontend/**",     # Aislamiento estricto de frontend
+        "src/cart/**",         # Blindaje AD-003: el carrito no reside en backend
+        "src/auth/**",         # Blindaje OUT OF SCOPE: sin autenticación
+        "src/users/**",        # Blindaje OUT OF SCOPE: sin usuarios
+        "src/payments/**",     # Blindaje OUT OF SCOPE: sin pagos
+    ],
+    constraints=[
+        "Read-Only API: Únicamente métodos GET autorizados en routers",
+        "SQLite con SQLAlchemy como motor ORM exclusivo (AD-005)",
+        "Zero new external dependencies en requirements.txt",
+        "Sin credenciales, contraseñas ni tokens de sesión (AD-007)",
+        "Base de datos en pruebas desacoplada usando SQLite en memoria (sqlite:///:memory:)",
+    ],
+    acceptance_criteria=[
+        "GET /api/v1/products retorna Envelope { items, total } con SEED-001",
+        "GET /api/v1/products?q= filtra insensible a mayúsculas sobre name",
+        "GET /api/v1/products/{id} retorna producto o 404 estructurado",
+    ],
+    test_targets=["tests/catalog/test_catalog_backend.py"]
+)
+```
+- **Contexto Acotado y Topología Física:**
+  - `src/catalog/models.py`: Modelo SQLAlchemy `Product` para `ENT-001` con tabla `products`.
+  - `src/catalog/schemas.py`: Esquemas Pydantic `ProductResponse` y `ProductListResponse` para `DTO-PROD-RES-001` y `DTO-PROD-LIST-001`.
+  - `src/catalog/repository.py`: Consultas de lectura a SQLite con filtrado insensible a mayúsculas sobre `name` (`IDX-001`).
+  - `src/catalog/service.py`: Lógica de dominio de catálogo.
+  - `src/catalog/router.py`: Endpoints REST `GET /api/v1/products` (`EP-001`) y `GET /api/v1/products/{id}` (`EP-002`) con manejo Fail-Fast (`DTO-ERR-001`, `ERR-001`, `ERR-002`, `ERR-500`).
+  - `src/catalog/seed.py`: Inicialización de 5 productos semilla de papelería (`SEED-001`).
+  - `src/shared/database.py` y `src/shared/config.py`: Conexión SQLAlchemy y configuración general.
+  - `src/main.py`: Entrypoint FastAPI montando `/health` (`HC-001`) y `/api/v1/products`.
+- **Aislamiento de Pruebas:** Pruebas unitarias en `tests/catalog/test_catalog_backend.py` ejecutadas contra `sqlite:///:memory:`.
+- **Invariante de Solo Lectura y AD-003:** Backend 100% de solo lectura (cero mutaciones POST/PUT/DELETE) y cero persistencia de carrito en servidor (reside en Web Storage del cliente).

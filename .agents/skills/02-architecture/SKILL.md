@@ -39,7 +39,7 @@ La skill opera bajo dos principios de interoperabilidad del arnés:
 
 ---
 
-## 4. Entradas (Inputs) desde `docs/PRD.md`
+## 4. Entradas (Inputs) desde Upstream (`docs/PRD.md`)
 
 La skill extrae deterministamente desde `docs/PRD.md`:
 - **`project_id` y `project_type`:** Define el contexto y la topología macro (ej: `web_app`, `api`, `cli_tool`).
@@ -75,7 +75,7 @@ Para evitar el acoplamiento prematuro y la pérdida de foco de gobernanza, toda 
 
 ## 7. Workflow de Elicitación Interactiva
 
-El agente debe guiar al desarrollador a través de las siguientes etapas consultando paso a paso mediante opciones estructuradas (según [AGENTS.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md)), recomendando la alternativa más simple (KISS/YAGNI) y esperando la respuesta antes de avanzar.
+El agente debe guiar al desarrollador a través de las siguientes etapas consultando paso a paso mediante opciones estructuradas (según [AGENTS.md](AGENTS.md)), recomendando la alternativa más simple (KISS/YAGNI) y esperando la respuesta antes de avanzar.
 
 ### Paso 1: Patrón Arquitectónico Principal (`AD-001`)
 Elicitar el estilo macro del sistema según `project_type` y la escala definida en los supuestos del PRD:
@@ -85,9 +85,9 @@ Elicitar el estilo macro del sistema según `project_type` y la escala definida 
 - **d) Serverless / Event-driven:** Funciones bajo demanda.
 
 ### Paso 2: Descomposición de Componentes de Software (`COMP-xxx`)
-Identificar los componentes necesarios para cubrir los `REQ-xxx` comprometidos en `IN SCOPE`, asignando un ID formal y responsabilidades precisas:
+Identificar los componentes necesarios para cubrir los `REQ-xxx` comprometidos en `IN SCOPE` de acuerdo con los contextos acotados (bounded contexts) del PRD, asignando un ID formal y responsabilidades precisas:
 - Cada componente debe identificarse como `COMP-001`, `COMP-002`, etc.
-- Definir responsabilidades observables y fronteras lógicas claras (ej: componente de catálogo, componente de carrito, interfaz web).
+- Definir responsabilidades observables y fronteras lógicas claras acordes a los contextos acotados aprobados (ej: gestión de entidades del dominio, lógica de interacción, interfaz web).
 - No inventar componentes para funcionalidades fuera de alcance.
 
 ### Paso 3: Estilo de Comunicación entre Componentes (`AD-002`)
@@ -98,7 +98,7 @@ Determinar cómo interactúan los componentes definidos:
 
 ### Paso 4: Layout y Organización del Código (`AD-003`)
 Definir la organización lógica de directorios que adoptará el proyecto:
-- **a) Por feature / dominio:** Módulos autónomos (`catalog/`, `cart/`). [Recomendado para mantenibilidad].
+- **a) Por feature / dominio:** Módulos autónomos organizados por contextos acotados (bounded contexts). [Recomendado para mantenibilidad].
 - **b) Por tipo técnico / capas clásicas:** `services/`, `models/`, `views/`.
 - **c) Hexagonal / Clean Architecture:** Puertos y adaptadores (solo si la complejidad del dominio lo amerita).
 - 🛑 **Aislamiento Físico:** Esta definición es un lineamiento estructural conceptual; **no genera ni fija `allowed_paths`** para tareas individuales de codificación.
@@ -131,8 +131,8 @@ Verificar que las directivas de seguridad se ajusten estrictamente al `governanc
 
 | ID | Tipo | Formulación Incorrecta (Rechazada) | Formulación Correcta (Aceptada) |
 | :--- | :--- | :--- | :--- |
-| `COMP-001` | Componente | "Módulo de compras con tabla SQL `orders` y Stripe." *(Acoplado y con scope inventado)* | `COMP-001 [cart_service]`: Encapsula la gestión de ítems en el carrito, cálculo de subtotales y total general para la sesión activa del usuario. |
-| `AD-001` | Decisión | "Usaremos React y Docker porque es moderno." *(Goldplating / no justificado)* | `AD-001 (architecture.pattern)`: Monolito modular simple. *Rationale:* Maximiza la simplicidad operativa para un MVP de catálogo básico sin incurrir en costos de red ni orquestación de servicios independientes. |
+| `COMP-001` | Componente | "Módulo de compras con tabla SQL `orders` y Stripe." *(Acoplado y con scope inventado)* | `COMP-001 [domain_service]`: Encapsula las operaciones del contexto acotado principal aprobado en el PRD. |
+| `AD-001` | Decisión | "Usaremos React y Docker porque es moderno." *(Goldplating / no justificado)* | `AD-001 (architecture.pattern)`: Monolito modular simple. *Rationale:* Maximiza la simplicidad operativa para un MVP acorde a la escala del PRD sin incurrir en costos de red ni orquestación de servicios independientes. |
 | `AD-002` | Decisión | "Endpoints `GET /items` y `POST /items` con FastAPI." *(Prematuro / delegado a 04)* | `AD-002 (communication.style)`: Comunicación cliente-servidor síncrona vía HTTP REST básico. Los contratos de payload y códigos de estado específicos se delegan a `04-api-design`. |
 
 ---
@@ -245,3 +245,17 @@ La ejecución de la Skill 02 concluye exitosamente **únicamente cuando**:
 2. El desarrollador humano ha confirmado explícitamente el diseño y el archivo tiene `status: APPROVED`.
 3. Todos los aspectos de modelado de datos y diseño de API han quedado formalmente delegados a las etapas 03 y 04.
 4. El agente **SE DETIENE** antes de iniciar `03-data-modeling`.
+
+---
+
+## Reference Context: Demo Implementation (catalogo-carrito-web)
+
+En el proyecto de referencia demostrativo (`catalogo-carrito-web`), los principios metodológicos generales de esta skill se instancian en las siguientes decisiones y componentes:
+- **Estilo Arquitectónico (`AD-001`):** Monolito modular desacoplado.
+- **Componentes (`COMP-xxx`):**
+  - `COMP-001 [catalog_service]`: Gestión de catálogo comercial y búsqueda textual por nombre.
+  - `COMP-002 [cart_service]`: Gestión de estado de carrito en cliente.
+  - `COMP-003 [web_ui]`: Interfaz gráfica interactiva y presentación en navegador.
+- **Comunicación y Layout (`AD-002`, `AD-003`):** Transporte HTTP REST síncrono bajo `/api/v1` y retención de estado de carrito en Web Storage (`localStorage`) en el cliente sin persistencia de sesión en servidor.
+- **Stack Tecnológico y Persistencia (`AD-004`, `AD-005`):** Runtime en Python 3.12 con FastAPI, base de datos relacional SQLite embebida con SQLAlchemy para el catálogo y Vanilla HTML5/CSS/JS en frontend.
+- **Límites de Alcance:** Exclusión formal de pasarelas de pago (Stripe), autenticación de usuarios, tokens JWT y modelos relacionales de servidor para el carrito.

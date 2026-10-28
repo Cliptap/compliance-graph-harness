@@ -14,7 +14,7 @@ El sistema **Catálogo Comercial y Carrito de Compras Desacoplado** (`catalogo-c
 
 ### Objetivos Estratégicos de Calidad (TP-xxx)
 - **`TP-001` (Determinismo Absoluto):** El 100% de las suites de prueba deben ser reproducibles, ejecutarse en memoria (`sqlite:///:memory:`, Web Storage simulado) y no depender de servicios externos de red ni latencias no controladas.
-- **`TP-002` (Aislamiento de Perímetro y Anti-Amnesia):** Garantizar que ninguna prueba introduzca o valide funcionalidades prohibidas por la cláusula `OUT OF SCOPE` de [docs/PRD.md](file:///c:/Users/Bastian/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) (cero pruebas de autenticación, usuarios, tokens o pasarelas de pago).
+- **`TP-002` (Aislamiento de Perímetro y Anti-Amnesia):** Garantizar que ninguna prueba introduzca o valide funcionalidades prohibidas por la cláusula `OUT OF SCOPE` de [docs/PRD.md](docs/PRD.md) (cero pruebas de autenticación, usuarios, tokens o pasarelas de pago).
 - **`TP-003` (Trazabilidad Extremo a Extremo):** Todo Criterio de Aceptación (`AC-xxx`) debe contar con al menos una prueba física verificable que impida la presencia de requisitos huérfanos.
 - **`TP-004` (Velocidad de Feedback para CI/CD):** La suite completa debe ejecutarse en menos de 3.0 segundos, permitiendo su integración como Quality Gate obligatorio previo al despliegue.
 
@@ -22,7 +22,7 @@ El sistema **Catálogo Comercial y Carrito de Compras Desacoplado** (`catalogo-c
 
 ## 2. Matriz Bidireccional de Trazabilidad (AC-xxx -> Test-xxx)
 
-Cada Criterio de Aceptación definido en [docs/PRD.md](file:///c:/Users/Bastian/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) se encuentra rigurosamente vinculado a pruebas automatizadas en disco:
+Cada Criterio de Aceptación definido en [docs/PRD.md](docs/PRD.md) se encuentra rigurosamente vinculado a pruebas automatizadas en disco:
 
 | Criterio de Aceptación | Requisito Origen | Componente y Archivo de Prueba | Función de Prueba (Test-xxx) | Tipo de Verificación | Estado |
 | :--- | :--- | :--- | :--- | :--- | :--- |

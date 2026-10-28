@@ -23,7 +23,7 @@ Bajo la clasificación formal de `governance_level: "bajo"`, la estrategia de in
 
 ## 2. Matriz de Quality Gates Contractuales (GATE-xxx)
 
-El pipeline automatizado hace cumplir obligatoriamente tres compuertas de calidad deterministas (`GATE-001` a `GATE-003`), formalizadas contractualmente en la Sección 6.2 de [docs/TEST_PLAN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md):
+El pipeline automatizado hace cumplir obligatoriamente tres compuertas de calidad deterministas (`GATE-001` a `GATE-003`), formalizadas contractualmente en la Sección 6.2 de [docs/TEST_PLAN.md](docs/TEST_PLAN.md):
 
 | Quality Gate | Nombre de la Compuerta | Criterio Técnico de Aprobación | Mecanismo de Verificación | Política de Fallo |
 | :--- | :--- | :--- | :--- | :--- |
@@ -115,7 +115,7 @@ El pipeline se ejecuta de forma autosuficiente utilizando las dependencias decla
 
 ## 5. Política de Seguridad en CI/CD
 
-De acuerdo con la postura sellada en [docs/SECURITY.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md), el pipeline de CI implementa las siguientes medidas de defensa en profundidad:
+De acuerdo con la postura sellada en [docs/SECURITY.md](docs/SECURITY.md), el pipeline de CI implementa las siguientes medidas de defensa en profundidad:
 
 1. **Principio de Menor Privilegio (Least Privilege):**
    - Se declara taxativamente el bloque de permisos de solo lectura a nivel raíz del workflow:
@@ -136,9 +136,9 @@ De acuerdo con la postura sellada en [docs/SECURITY.md](file:///c:/Users/oyana/O
 
 | Elemento de CI/CD | Identificador Origen | Documento Upstream | Relación y Justificación Contractual |
 | :--- | :--- | :--- | :--- |
-| **`PIPE-001`** | `TP-004` | [docs/TEST_PLAN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md) | Automatización del feedback de pruebas en menos de 3.0s de cómputo neto. |
-| **`GATE-001`** | `TP-001`, Gate 1 | [docs/TEST_PLAN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md) | Certificación de determinismo absoluto: 118/118 tests en verde en memoria. |
-| **`GATE-002`** | `TP-003`, Gate 2, `AC-001`..`AC-006` | [docs/TEST_PLAN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md), [docs/PRD.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) | Trazabilidad E2E: 100% de los criterios del PRD cubiertos formalmente. |
-| **`GATE-003`** | `TP-002`, Gate 3, `SEC-CTRL-003` | [docs/TEST_PLAN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/TEST_PLAN.md), [docs/SECURITY.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md) | Cumplimiento perimetral de ScopePolicy y cero credenciales hardcodeadas. |
-| **`STAGE-001`** | `AD-005` | [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) | Configuración dual Python/Node requerida para probar el frontend Vanilla. |
-| **`STAGE-002`** | `COMP-003`, `SEED-001` | [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md), [docs/DATA_MODEL.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DATA_MODEL.md) | Inicialización de SQLite para dar soporte a la persistencia de catálogo y arnés. |
+| **`PIPE-001`** | `TP-004` | [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Automatización del feedback de pruebas en menos de 3.0s de cómputo neto. |
+| **`GATE-001`** | `TP-001`, Gate 1 | [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Certificación de determinismo absoluto: 118/118 tests en verde en memoria. |
+| **`GATE-002`** | `TP-003`, Gate 2, `AC-001`..`AC-006` | [docs/TEST_PLAN.md](docs/TEST_PLAN.md), [docs/PRD.md](docs/PRD.md) | Trazabilidad E2E: 100% de los criterios del PRD cubiertos formalmente. |
+| **`GATE-003`** | `TP-002`, Gate 3, `SEC-CTRL-003` | [docs/TEST_PLAN.md](docs/TEST_PLAN.md), [docs/SECURITY.md](docs/SECURITY.md) | Cumplimiento perimetral de ScopePolicy y cero credenciales hardcodeadas. |
+| **`STAGE-001`** | `AD-005` | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Configuración dual Python/Node requerida para probar el frontend Vanilla. |
+| **`STAGE-002`** | `COMP-003`, `SEED-001` | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Inicialización de SQLite para dar soporte a la persistencia de catálogo y arnés. |

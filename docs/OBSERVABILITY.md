@@ -95,13 +95,13 @@ curl -v -H "X-Request-ID: 8c7e1b42-12f4-419b-a320-f4b6d059012a" http://localhost
 ---
 
 ## 4. Auditoría de Seguridad y Cero Fuga de Datos Sensibles (CWE-532)
-En estricto cumplimiento del control de seguridad **`SEC-CTRL-004`** establecido en [`docs/SECURITY.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md), el sistema implementa la directiva **`OBS-002` (Política de Cero Fuga de Datos Sensibles en Bitácoras)** para prevenir de forma determinista vulnerabilidades clasificadas como **CWE-532 (Insertion of Sensitive Information into Log File)**.
+En estricto cumplimiento del control de seguridad **`SEC-CTRL-004`** establecido en [`docs/SECURITY.md`](docs/SECURITY.md), el sistema implementa la directiva **`OBS-002` (Política de Cero Fuga de Datos Sensibles en Bitácoras)** para prevenir de forma determinista vulnerabilidades clasificadas como **CWE-532 (Insertion of Sensitive Information into Log File)**.
 
 ### 4.1 Reglas Deterministas de Prevención
 1. **Prohibición de Emisión de Identificadores y Credenciales:**
    - Queda estrictamente prohibido registrar números de identificación personal (RUT, RUN, DNI, cédulas), claves de acceso, contraseñas, secretos, tokens de autenticación o diagnósticos de salud en sumideros de depuración (`print`, `logger.*`, `console.*`, `sys.stdout`).
 2. **Evaluación de Conformidad con `SensitiveLoggingPolicy`:**
-   - Todo módulo o middleware de observabilidad debe ser validado por el evaluador determinista [`SensitiveLoggingPolicy`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/harness/policy_engine.py#L107-L199) del arnés, garantizando cero hallazgos de severidad crítica (`policy_id: privacy.cwe_532`).
+   - Todo módulo o middleware de observabilidad debe ser validado por el evaluador determinista [`SensitiveLoggingPolicy`](src/harness/policy_engine.py#L107-L199) del arnés, garantizando cero hallazgos de severidad crítica (`policy_id: privacy.cwe_532`).
 3. **Política de Enmascaramiento Dinámico:**
    - En caso fortuito de requerir la captura de cargas que contengan identificadores de depuración, se aplicará una política de sustitución explícita (`[redacted]`) previo a la serialización JSON.
 4. **Sanitización de Parámetros de Consulta:**
@@ -127,9 +127,9 @@ En concordancia con el principio de proporcionalidad del MVP, el monitoreo del s
   - Tasa de error del servidor (`ERR-500`): Frecuencia de excepciones internas no recuperables (umbral operacional esperado: 0.0%).
 
 ### 5.3 Sondeo de Salud Operativa (`HC-001`)
-- **Definición:** Endpoint nativo de verificación de liveness expuesto en `GET /health` ([`src/main.py`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/src/main.py#L57-L61)).
+- **Definición:** Endpoint nativo de verificación de liveness expuesto en `GET /health` ([`src/main.py`](src/main.py#L57-L61)).
 - **Respuesta Estándar:** `{"status": "healthy", "database": "connected"}` con código HTTP 200 (o `503 Service Unavailable` con `{"status": "unhealthy", "database": "disconnected"}` si SQLite falla).
-- **Integración con Despliegue:** Consumido por la directiva `HEALTHCHECK` del contenedor Docker formalizada en [`docs/DEPLOYMENT.md`](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md#L68-L72):
+- **Integración con Despliegue:** Consumido por la directiva `HEALTHCHECK` del contenedor Docker formalizada en [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#L68-L72):
   ```dockerfile
   HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
@@ -143,10 +143,10 @@ La siguiente matriz documenta la trazabilidad biunívoca entre las directivas de
 
 | Identificador Formal | Concepto de Observabilidad | Directiva Upstream | Documento Fuente | Justificación y Cumplimiento Técnico |
 | :--- | :--- | :--- | :--- | :--- |
-| **`OBS-001`** | Correlación por Request-ID | `AD-002`, `AD-006` | [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) | Propaga `X-Request-ID` para asociar deterministamente peticiones, logs y respuestas. |
-| **`OBS-002`** | Prevención de Fugas CWE-532 | `SEC-CTRL-004`, `CONST-003` | [docs/SECURITY.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/SECURITY.md) | Garantiza cero PII y cero credenciales en logs; auditado por `SensitiveLoggingPolicy`. |
-| **`OBS-003`** | Logging JSON a stdout | `DEP-001`, Doce Factores | [docs/DEPLOYMENT.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md) | Flujo unilínea hacia `sys.stdout` consumible de forma transparente por `docker logs`. |
-| **`LOG-001`** | Esquema Canónico de Log | `DTO-ERR-001`, `EP-001`, `EP-002` | [docs/API_DESIGN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/API_DESIGN.md) | Estructura homogénea que captura `timestamp`, `level`, `duration_ms` y `error_code`. |
-| **`MET-001`** | Latencia de Endpoints (`duration_ms`) | `AD-006` (Fail-Fast) | [docs/ARCHITECTURE.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) | Métricas en memoria calculadas por petición sin intermediarios ni agentes pesados. |
-| **`MET-002`** | Conteo de Estados y Errores | `ERR-001`, `ERR-002`, `ERR-500` | [docs/API_DESIGN.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/API_DESIGN.md) | Supervisa la distribución de respuestas para detectar anomalías operacionales. |
-| **`HC-001`** | Sondeo de Liveness `/health` | `DEP-001`, `HEALTHCHECK` | [docs/DEPLOYMENT.md](file:///c:/Users/oyana/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/DEPLOYMENT.md) | Endpoint de disponibilidad utilizado por Docker para certificar el estado saludable del servicio. |
+| **`OBS-001`** | Correlación por Request-ID | `AD-002`, `AD-006` | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Propaga `X-Request-ID` para asociar deterministamente peticiones, logs y respuestas. |
+| **`OBS-002`** | Prevención de Fugas CWE-532 | `SEC-CTRL-004`, `CONST-003` | [docs/SECURITY.md](docs/SECURITY.md) | Garantiza cero PII y cero credenciales en logs; auditado por `SensitiveLoggingPolicy`. |
+| **`OBS-003`** | Logging JSON a stdout | `DEP-001`, Doce Factores | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Flujo unilínea hacia `sys.stdout` consumible de forma transparente por `docker logs`. |
+| **`LOG-001`** | Esquema Canónico de Log | `DTO-ERR-001`, `EP-001`, `EP-002` | [docs/API_DESIGN.md](docs/API_DESIGN.md) | Estructura homogénea que captura `timestamp`, `level`, `duration_ms` y `error_code`. |
+| **`MET-001`** | Latencia de Endpoints (`duration_ms`) | `AD-006` (Fail-Fast) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Métricas en memoria calculadas por petición sin intermediarios ni agentes pesados. |
+| **`MET-002`** | Conteo de Estados y Errores | `ERR-001`, `ERR-002`, `ERR-500` | [docs/API_DESIGN.md](docs/API_DESIGN.md) | Supervisa la distribución de respuestas para detectar anomalías operacionales. |
+| **`HC-001`** | Sondeo de Liveness `/health` | `DEP-001`, `HEALTHCHECK` | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Endpoint de disponibilidad utilizado por Docker para certificar el estado saludable del servicio. |

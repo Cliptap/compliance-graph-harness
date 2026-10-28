@@ -9,7 +9,7 @@ last_audit: "2026-10-21"
 # docs/SECURITY.md — Postura de Seguridad y Gobernanza de Identidades
 
 ## 1. Identidad del Sistema y Alcance
-El sistema **Catálogo Comercial y Carrito de Compras Desacoplado** (`catalogo-carrito-web`) es una aplicación web transaccional ligera diseñada bajo los principios de arquitectura KISS y YAGNI. De acuerdo con lo establecido en [docs/PRD.md](file:///c:/Users/Bastian/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md), el proyecto opera bajo un nivel de gobernanza formalmente clasificado como:
+El sistema **Catálogo Comercial y Carrito de Compras Desacoplado** (`catalogo-carrito-web`) es una aplicación web transaccional ligera diseñada bajo los principios de arquitectura KISS y YAGNI. De acuerdo con lo establecido en [docs/PRD.md](docs/PRD.md), el proyecto opera bajo un nivel de gobernanza formalmente clasificado como:
 
 $$\text{governance\_level} = \text{"bajo"}$$
 
@@ -22,9 +22,9 @@ El modelo de acceso al sistema es **100% público y anónimo**: cualquier usuari
 ### SEC-DEC-001: Exclusión Formal de Autenticación y Cero Goldplating
 * **Decisión:** Se dictamina formalmente la **omisión y exclusión total** de mecanismos de autenticación (login, registro, contraseñas, hashing criptográfico), autorización basada en roles (RBAC), gestión de sesiones en servidor y emisión de tokens (JWT o API keys).
 * **Fundamentación Contractual:**
-  1. **Trazabilidad con PRD.md:** La cláusula `OUT OF SCOPE` de [docs/PRD.md](file:///c:/Users/Bastian/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/PRD.md) sentencia taxativamente:
+  1. **Trazabilidad con PRD.md:** La cláusula `OUT OF SCOPE` de [docs/PRD.md](docs/PRD.md) sentencia taxativamente:
      > *"Autenticación y autorización: No habrá registro de usuarios, login, passwords, tokens JWT, OAuth ni perfiles de usuario. Todo el acceso es público y anónimo."*
-  2. **Trazabilidad con ARCHITECTURE.md:** La decisión `AD-003` sellada en [docs/ARCHITECTURE.md](file:///c:/Users/Bastian/OneDrive/Documentos/GitHub/compliance-graph-harness/docs/ARCHITECTURE.md) establece que el carrito reside íntegramente en Web Storage (`localStorage`) en el cliente, eliminando la necesidad de persistencia transaccional en backend o correlación de identidades de usuario.
+  2. **Trazabilidad con ARCHITECTURE.md:** La decisión `AD-003` sellada en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) establece que el carrito reside íntegramente en Web Storage (`localStorage`) en el cliente, eliminando la necesidad de persistencia transaccional en backend o correlación de identidades de usuario.
   3. **Principio Anti-Amnesia y No-Goldplating:** Introducir capas de autenticación "por si acaso" o "por buenas prácticas estándar" en un sistema de catálogo público viola la Regla 1 y Regla 2 de `AGENTS.md`, añadiendo complejidad accidental y superficies de ataque innecesarias.
 
 ---

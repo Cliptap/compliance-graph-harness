@@ -56,26 +56,22 @@ La skill opera bajo cuatro principios de interoperabilidad del arnés:
 
 La skill extrae deterministamente:
 - **Desde `docs/PRD.md`:**
-  - `project_id`: Identificador canónico del proyecto (`catalogo-carrito-web`).
-  - `governance_level`: Nivel de gobernanza (`bajo`).
-  - `REQ-001` (Catálogo de productos con datos comerciales básicos) y `REQ-002` (Búsqueda textual insensible a mayúsculas).
-  - `AC-001`, `AC-002`, `AC-003`: Criterios de aceptación observables del catálogo y búsqueda.
-  - `OUT OF SCOPE`: Prohibición explícita de pasarelas de pago, autenticación/cuentas y recomendaciones.
+  - `project_id`: Identificador canónico del proyecto.
+  - `governance_level`: Nivel de gobernanza (`bajo`, `medio`, `alto`).
+  - `REQ-xxx` e `IN SCOPE`: Requerimientos funcionales y operaciones del dominio en el contexto acotado (bounded context) aprobado.
+  - `AC-xxx`: Criterios de aceptación observables asociados a las operaciones.
+  - `OUT OF SCOPE`: Prohibición explícita de operaciones o conceptos excluidos.
 - **Desde `docs/ARCHITECTURE.md`:**
-  - `COMP-001 [catalog_service]`: Servicio de catálogo en backend.
-  - `COMP-002 [cart_service]`: Operaciones de carrito en cliente.
-  - `COMP-003 [web_ui]`: Interfaz gráfica visitante.
-  - `AD-001`: Monolito modular desacoplado.
-  - `AD-002`: Transporte HTTP REST síncrono desacoplado.
-  - `AD-003`: **Carrito en Web Storage (`localStorage`) en cliente** (sin tablas ni endpoints en servidor).
-  - `AD-005`: Backend en Python 3.12+ con persistencia en SQLite / SQLAlchemy.
-  - `AD-006`: Fail Fast con respuestas estructuradas ante operaciones inválidas.
-  - `AD-007`: Nivel de seguridad mínimo: modo visitante anónimo sin tokens.
+  - `COMP-xxx`: Componentes de software y subsistemas (servicios de dominio, interfaces de usuario).
+  - `AD-xxx`: Decisiones arquitectónicas vinculantes:
+    * Estilo de API y transporte (`AD-002`: HTTP REST, etc.).
+    * Frontera cliente-servidor (`AD-003`: retención de estado en cliente vs endpoints en servidor).
+    * Estrategia de manejo de errores (`AD-006`: Fail-Fast, respuestas estructuradas).
+    * Nivel de seguridad y autenticación (`AD-007`).
 - **Desde `docs/DATA_MODEL.md`:**
-  - `ENT-001 [Product]`: Entidad de persistencia en SQLite con atributos `id`, `name`, `description`, `price`.
-  - `DTO-CART-001 [CartItem]`: Estructura en Web Storage del cliente (`product_id`, `name`, `unit_price`, `quantity`, `subtotal`).
-  - `IDX-001 [idx_product_name]`: Índice para optimización de búsqueda textual.
-  - `INV-001` (`price >= 0.0`), `INV-003` (`name` no vacío ni nulo).
+  - `ENT-xxx`: Entidades de persistencia y sus esquemas de atributos y tipos.
+  - `DTO-xxx`: Esquemas de datos y estructuras de transferencia ya formuladas.
+  - `IDX-xxx` e `INV-xxx`: Índices para parámetros de consulta e invariantes de validación.
 
 ---
 
@@ -95,15 +91,15 @@ Toda definición en esta fase debe utilizar los siguientes prefijos normativos:
 
 > 🛑 **REGLAS CONTRACTUALES DETERMINISTAS:**
 > 1. **Anti-Amnesia Estricta:** Si un concepto figura en `OUT OF SCOPE` en `docs/PRD.md` (usuarios, autenticación, contraseñas, tokens JWT, roles, pagos, tarjetas, pasarelas, transacciones financieras o recomendaciones), queda **ESTRICTAMENTE PROHIBIDO** definir endpoints, DTOs, headers de autorización o códigos de error asociados.
-> 2. **No-Goldplating (Read-Only API para MVP):** Dado que el actor es visitante anónimo (`ACT-01`) y el sistema solo contempla consulta y búsqueda (`REQ-001`, `REQ-002`), la API del servidor debe ser **estrictamente de solo lectura (únicamente métodos GET)**. Queda **ESTRICTAMENTE PROHIBIDO** definir métodos `POST`, `PUT`, `PATCH` o `DELETE` sobre el catálogo sin un requerimiento de negocio explícito.
-> 3. **Respeto a AD-003 (Carrito en Cliente):** El estado del carrito reside en el navegador (`localStorage`, `DTO-CART-001`). Queda **ESTRICTAMENTE PROHIBIDO** definir endpoints de persistencia de carritos en el servidor (`/carts`, `/cart-items`).
-> 4. **Aislamiento Físico:** Queda **ESTRICTAMENTE PROHIBIDO** emitir listas de rutas físicas (`allowed_paths`) o código ejecutable de frameworks (`FastAPI`, `APIRouter`).
+> 2. **No-Goldplating (Fidelidad a Requerimientos / Read-Only cuando aplique):** La API de servidor debe exponer exclusivamente las operaciones respaldadas por el PRD. Si los requisitos del actor o caso de uso definen únicamente exploración o consulta (`solo lectura`), queda **ESTRICTAMENTE PROHIBIDO** inventar métodos de mutación (`POST`, `PUT`, `PATCH` o `DELETE`) no solicitados explícitamente.
+> 3. **Respeto a la Frontera Arquitectónica (`AD-003`):** Si la arquitectura estableció retención de estado en el cliente (ej. Web Storage / `localStorage`), queda **ESTRICTAMENTE PROHIBIDO** inventar endpoints de persistencia en servidor para dicho estado.
+> 4. **Aislamiento Físico:** Queda **ESTRICTAMENTE PROHIBIDO** emitir listas de rutas físicas (`allowed_paths`) o código ejecutable de frameworks (`FastAPI`, `APIRouter`), delegados a `05-backend`.
 
 ---
 
 ## 7. Workflow de Elicitación Interactiva
 
-El agente debe guiar al desarrollador respetando las decisiones previas y formulando preguntas con opciones claras ([AGENTS.md](file:///c:/Users/Bastian/OneDrive/Documentos/GitHub/compliance-graph-harness/AGENTS.md)):
+El agente debe guiar al desarrollador respetando las decisiones previas y formulando preguntas con opciones claras ([AGENTS.md](AGENTS.md)):
 
 ### Paso 1: Confirmación de Convenciones Base y Base Path
 - Validar prefijo unificado `base_path: "/api/v1"`.
@@ -243,3 +239,19 @@ Antes de considerar concluida la especificación, verificar:
 ## 11. Criterio de Término
 
 El diseño de API concluye únicamente cuando el usuario aprueba formalmente `docs/API_DESIGN.md`, momento en el cual el frontmatter se actualiza a `status: "APPROVED"` para habilitar la transición a `05-backend` y `06-frontend`.
+
+---
+
+## Reference Context: Demo Implementation (catalogo-carrito-web)
+
+En la implementación de referencia demostrativa (`catalogo-carrito-web`), los principios metodológicos generales de esta skill se instancian en los siguientes contratos:
+- **Endpoints de Catálogo (`EP-xxx`):**
+  - `EP-001 [list_products]`: `GET /api/v1/products?q=termino` retornando `DTO-PROD-LIST-001` con filtrado insensible a mayúsculas y paginación básica (`REQ-001`, `REQ-002`).
+  - `EP-002 [get_product_by_id]`: `GET /api/v1/products/{id}` retornando `DTO-PROD-RES-001` o error 404 estructurado.
+- **Esquemas de Transferencia (`DTO-xxx`):**
+  - `DTO-PROD-RES-001 [ProductResponse]`: `{ id: int, name: str, description: str | None, price: float }`.
+  - `DTO-PROD-LIST-001 [ProductListResponse]`: `{ items: ProductResponse[], total: int }`.
+  - `DTO-ERR-001 [ErrorEnvelope]`: `{ error_code: str, message: str, detail: str }`.
+- **Catálogo de Errores (`ERR-xxx`):** `ERR-001` (404 Not Found), `ERR-002` (400 Bad Request por parámetro inválido o `q > 100`), `ERR-500` (500 Internal Server Error).
+- **Frontera de Carrito (`AD-003`):** Cero endpoints de servidor para el carrito (`/carts`, `/cart-items`), ya que el estado reside en `localStorage` del cliente (`DTO-CART-001`).
+- **Invariante de Solo Lectura:** La API para el MVP de catálogo es 100% de solo lectura (únicamente métodos `GET` autorizados, prohibidos `POST/PUT/PATCH/DELETE` sobre `/products`).
