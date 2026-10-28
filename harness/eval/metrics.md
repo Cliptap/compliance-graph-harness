@@ -175,7 +175,9 @@ El diff se mide con `git diff --no-renames -z` contra el commit base del workspa
 - Cuenta un hallazgo por (politica, archivo, linea); los hallazgos de alcance (`scope.*`) se excluyen y se reportan aparte como `scope_violations`.
 - El score nunca se publica solo: se reportan siempre sus componentes (`findings` por severidad y por politica, `privacy_findings`).
 - La formula y los pesos quedan fijos antes del experimento formal (T7); cambiarlos exige una nueva version (v2) y reportar ambas.
-- Politicas de privacidad activas: `privacy.cwe_532` (logs) y `privacy.api_exposure` (respuestas de API con credenciales o identificadores sin enmascarar).
+- Politicas de privacidad activas: `privacy.cwe_532` (logs), `privacy.api_exposure` (respuestas de API con credenciales o identificadores sin enmascarar) y `privacy.payment_data_storage` (CVV o numero de tarjeta sin cifrar persistido en un modelo ORM). Todas se cuentan en `privacy_findings` por el prefijo `privacy.`.
+- Alcance del score: mide solo lo que el codigo puede probar. Los controles documentales del pack (`detection.type: manual`: licitud, derechos, transparencia, incidentes, evaluacion de impacto, encargados, transferencias, menores, conservacion y los del plugin `ecommerce_retail`) devuelven `NOT_APPLICABLE` en la auditoria y **no suman ni restan**. Un score de 100 significa "ningun hallazgo detectable en codigo", no "cumple la ley". Se reporta aparte la lista de controles documentales aplicables sin evidencia.
+- Precision y recall de cada detector se publican con el corpus etiquetado (`python -m harness.eval.corpus`); los falsos negativos conocidos estan en `harness/eval/corpus/cases.json` como `seeded-hard`.
 
 Las metricas aun no medibles se reportan `null` y su motivo queda
 en `metadata.null_reasons`.
