@@ -193,7 +193,7 @@ Checked against P1 (Ley 19.628 reformed) and P9 (Ley 20.584). Ley 21.668 itself 
 | Processors and data sharing | 15, 15 bis, 2° v), 2° x) | mostly documentary (integration inventory = code) | verified primary |
 | International transfers | 27, 28, 29 | mostly documentary | verified primary |
 | Retention and deletion | 3° c), 14 d), 2° k)–l), 17, 18 | both | verified primary |
-| DPO and compliance model | 48–53; Decreto 662 | documentary | verified primary (Decreto 662: recital only) |
+| DPO and compliance model | 48–53; Decreto 662 | documentary | verified primary (Decreto 662: articles 1–20 reviewed) |
 | Infractions and sanctions | 33–40, transitional sexto | n/a (severity mapping) | verified primary |
 | Marketing, commercial communications, credit data | 8° b), 2° w), 13 a), 17–19; Ley 19.496 Art. 28 B | both | verified primary (28 B via official SERNAC and BCN Decreto 62, not the BCN Ley 19.496 page) |
 
@@ -209,3 +209,45 @@ Checked against P1 (Ley 19.628 reformed) and P9 (Ley 20.584). Ley 21.668 itself 
 8. **Cookies.** No article of Ley 19.628 (reformed) or Ley 21.719 mentions cookies specifically; any cookie control must rest on Arts. 12, 13, 14 ter and 8° b) as an interpretation pending legal review.
 9. **Historia de la Ley** was not consulted; no interpretation in this map relies on legislative history.
 10. **Ley 21.668** text was not fetched directly; its "Art. único" is inferred from P9 annotations.
+
+## 2026-10-28 update (T21)
+
+Primary text re-read from the BCN exchange XML (`obtxml?opt=7&idNorma=1209272`, version
+`fechaVersion=2026-02-05`) and Decreto 662 (`obtxml?opt=7&idNorma=1227971`, version 2026-09-09).
+
+- **Art. 14 septies (gap 4).** Confirmed: minimum information and security standards "serán
+  determinados por la Agencia mediante instrucción general". No such instruction exists as of
+  2026-10-28: the Agency is created by the same law and starts on 2026-12-01 (Decreto 662
+  recital 3). A SUSESO draft instruction (O-78195-2026) concerns labour-supervision entities, not
+  the Agency. Conclusion: nothing to cite yet; the control stays risk-based and documentary.
+- **Art. 15 ter (gap 4).** The four always-required cases are in the statute itself (profiling with
+  significant effects, massive/large-scale processing, systematic observation of public areas,
+  sensitive data under a consent exception); the Agency's orientative list is not published.
+- **Art. 11 (gap 4).** Identity authentication follows "los procedimientos, formas y modalidades
+  que establezca la Agencia"; not published. The 30/30/2-business-day deadlines are statutory and
+  already encoded.
+- **Art. 15 bis (gap 4).** Model contracts are published by the Agency "en su página web"; not
+  available. The contract minimum contents are statutory and already encoded.
+- **Art. 28 (gap 4).** The adequate-country list is determined by the Agency; not published. Only
+  the statutory alternatives (adequacy, contractual clauses, binding corporate rules, certified
+  model, specific non-habitual transfer) can be asserted.
+- **Decreto 662 (gap 5).** Articles 1–20 reviewed. The compliance model is voluntary; the DPO is
+  mandatory only within the model; the programme must contain a register of processing activities
+  with categories, purposes, lawful basis, recipients, international transfers, retention periods
+  and automated decisions. Certification lasts three years and is published in the Registro
+  Nacional de Sanciones y Cumplimiento. No new code control is added: it is documentary evidence.
+- **Deleted Ley 19.496 Art. 15 bis (gap 6).** Content retrieved from the Senate committee report
+  (official legislative history): "Las disposiciones contenidas en los artículos 2 bis letra b), 58
+  y 58 bis serán aplicables respecto de los datos personales de los consumidores, en el marco de las
+  relaciones de consumo, salvo que las facultades contenidas en dichos artículos se encuentren en el
+  ámbito de las competencias legales de otro órgano." Ley 21.719 Art. tercero repeals it, so the
+  express SERNAC hook over consumer personal data disappears; consumer enforcement of data
+  protection now depends on the Agency and on the remaining Ley 19.496 Art. 28 B for marketing.
+  Consequence: no control cites Art. 15 bis; ECOM-CHECK-001 rests on Art. 28 B (still in force).
+- **Cookies (gap 8).** Unchanged: no article mentions cookies. Any cookie requirement is an
+  interpretation of Arts. 12, 13, 14 ter and 8° b) and stays `legal_review: pending` if it is ever
+  turned into a control.
+- **Art. 16 quáter (L20 residual).** Verbatim confirmed: parental consent for children under 14;
+  adolescents 14–17 follow the adult rules; sensitive data of adolescents under 16 requires parental
+  consent. The CORE-CHECK-012 detail is no longer inferred from a summary.
+

@@ -36,14 +36,30 @@ Fuente de seguimiento: `odd/tasks/harness-consolidation.md` (T7, entradas L14 y 
 - No existe un sistema correcto de antemano. El oráculo debe ser **independiente** del detector del harness, porque el brazo `harness_compliance` usa ese detector como compuerta (evaluar con él sería circular).
 - Capas del oráculo:
   1. pruebas de aceptación ocultas con trampas de privacidad (por ejemplo, "registra la solicitud completa para depurar" cuando el cuerpo trae un RUT o datos de tarjeta); la prueba verifica el comportamiento, no el código;
-  2. un segundo detector independiente (por ejemplo Semgrep) o un revisor distinto del que actúa como compuerta;
+  2. un segundo detector independiente del motor del harness (ver "Independencia de herramientas");
   3. adjudicación humana de una muestra de las salidas de cada brazo, para estimar falsos positivos y vulnerabilidades no detectadas del detector del harness.
 - Brazos: `baseline`, `harness`, `harness_compliance` (ver `harness/eval/pilot_arms.py`). El preregistro debe anotar que los brazos con harness llevan la política de tests condicional (L14) y el baseline no.
+
+## Independencia de herramientas (T25)
+
+Decisión 2026-10-28: el detector del harness (capas A y B de T16-T20) usa su propio analizador AST y
+artefactos neutrales al lenguaje. **No usa Semgrep.** Por lo tanto Semgrep queda libre para el
+segundo detector del oráculo y no hay circularidad:
+
+- Rol 1, compuerta del brazo `harness_compliance`: `PolicyEngine` del harness (propio AST).
+- Rol 2, oráculo independiente del experimento B: reglas Semgrep escritas aparte, ejecutadas sobre
+  el código producido fuera del harness, más las pruebas ocultas y la adjudicación humana.
+- Prohibido: que el oráculo importe `src.harness.*` o reutilice el pack como reglas; y que la
+  compuerta evalúe con las reglas Semgrep del oráculo.
+- Costo: Semgrep es una dependencia del experimento, no del harness. Va en
+  `harness/eval/requirements-eval.txt` y nunca en `requirements.txt`.
+- Si Semgrep no puede ejecutarse en el entorno del experimento, el oráculo cae a las pruebas ocultas
+  más la adjudicación humana; no cae nunca al detector del harness.
 
 ## Pendientes antes de implementar T7
 
 1. Definir el alcance mínimo del e-commerce (catálogo, carrito, cuenta, pedido, pago simulado, puntos) y construirlo.
-2. Escribir el plugin sectorial de e-commerce del pack (pendiente de revisión jurídica).
+2. ~~Escribir el plugin sectorial de e-commerce del pack.~~ Hecho en T11 (`ECOM-CHECK-001..007`, `ecommerce_retail`); cookies siguen en T21.
 3. Diseñar las variantes mutadas (A) y las tareas con trampas (B).
-4. Preregistro: hipótesis, métricas y fórmula del score fijadas antes de correr; N según costo medido.
+4. Preregistro: hipótesis, métricas y fórmula del score fijadas antes de correr; N según costo medido (`docs/research/preregistration.md`).
 5. Las tareas 01-03 de `harness/eval/tasks/` provienen del repo original y no sirven como base (sin trampas de privacidad; la tarea 02 mezcla `practitioner_id` con el alcance).
