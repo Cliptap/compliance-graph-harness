@@ -1,4 +1,4 @@
-# Supermercado Ficticio — sistema objetivo del experimento
+# Dumbo — sistema objetivo del experimento
 
 Aplicación web ficticia de supermercado en línea, construida **sin el harness**. Es la base común
 de los tres brazos del experimento T7. No usa marcas, textos ni imágenes de un comercio real y no

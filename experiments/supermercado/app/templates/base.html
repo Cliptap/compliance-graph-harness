@@ -3,32 +3,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Supermercado Ficticio{% endblock %}</title>
+  <title>{% block title %}Dumbo · Tu súper en línea{% endblock %}</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="/">Supermercado Ficticio</a>
-  <nav>
-    <a href="/">Catálogo</a>
-    <a href="/cart">Carrito ({{ cart_count }})</a>
-    {% if customer %}
-      <a href="/account">Mi cuenta</a>
-      <form method="post" action="/logout" class="inline"><button type="submit" class="link">Salir</button></form>
-    {% else %}
-      <a href="/login">Ingresar</a>
-      <a href="/register">Crear cuenta</a>
-    {% endif %}
-    <a href="/privacy">Privacidad</a>
-    <a href="/cookies">Cookies</a>
+<div class="topline">
+  <div class="wrap topline-inner">
+    <span>Despacho el mismo día en Santiago</span>
+    <div class="topline-links">
+      <a href="/privacy">Privacidad</a>
+      <a href="/privacy/third-parties">Terceros</a>
+      <a href="/cookies">Cookies</a>
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="wrap header-main">
+    <a class="logo" href="/" aria-label="Dumbo inicio"><span>dumbo</span><i>.</i></a>
+    <form class="search" method="get" action="/">
+      <input type="search" name="q" value="{{ q or '' }}" placeholder="Busca productos, marcas o categorías" aria-label="Buscar productos">
+      <button type="submit" aria-label="Buscar">Buscar</button>
+    </form>
+    <div class="header-actions">
+      <a class="action" href="/account"><span class="action-icon">◍</span><span>Mi cuenta</span></a>
+      <a class="action cart" href="/cart"><span class="action-icon">▤</span><span>Carrito</span><b>{{ cart_count }}</b></a>
+    </div>
+  </div>
+  <nav class="wrap cats" aria-label="Categorías">
+    <a href="/">Inicio</a>
+    {% for item in categories %}
+      <a href="/?category={{ item.name|urlencode }}">{{ item.name }}</a>
+    {% endfor %}
+    <a href="/?ofertas=1">Ofertas</a>
   </nav>
 </header>
 
 {% if not cookie_prefs %}
 <div class="cookie-banner" role="region" aria-label="Aviso de cookies">
-  <p>Usamos cookies necesarias para operar. Las categorías opcionales están desactivadas por defecto.</p>
   <div>
-    <a class="button" href="/cookies">Configurar</a>
+    <strong>Cookies con criterio.</strong>
+    <p>Usamos cookies necesarias para operar. Las categorías opcionales están desactivadas por defecto.</p>
+  </div>
+  <div class="cookie-actions">
+    <a class="button ghost" href="/cookies">Configurar</a>
     <form method="post" action="/cookies/necessary" class="inline">
       <button type="submit" class="button primary">Aceptar solo necesarias</button>
     </form>
@@ -36,12 +54,39 @@
 </div>
 {% endif %}
 
-<main>
+<main class="wrap">
 {% block content %}{% endblock %}
 </main>
 
-<footer>
-  <p>Supermercado Ficticio · Sistema de prueba · Política v{{ policy_version }} · {{ contact_channel }}</p>
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div>
+      <a class="logo logo-footer" href="/">dumbo<i>.</i></a>
+      <p>Tu súper en línea, sin vueltas. Precios claros y despacho cuando lo necesitas.</p>
+    </div>
+    <div>
+      <h3>Ayuda</h3>
+      <a href="/orders">Mis pedidos</a>
+      <a href="/rights">Derechos sobre mis datos</a>
+      <a href="/privacy">Política de privacidad</a>
+    </div>
+    <div>
+      <h3>Tu cuenta</h3>
+      <a href="/account">Mi cuenta</a>
+      <a href="/addresses">Direcciones</a>
+      <a href="/consent/marketing">Comunicaciones</a>
+    </div>
+    <div>
+      <h3>Legal</h3>
+      <a href="/privacy/third-parties">Terceros y transferencias</a>
+      <a href="/cookies">Preferencias de cookies</a>
+      <a href="/privacy">Versión {{ policy_version }}</a>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>Dumbo · Sistema de prueba · {{ contact_channel }}</span>
+    <span>Pago simulado: no se solicitan datos de tarjeta.</span>
+  </div>
 </footer>
 </body>
 </html>

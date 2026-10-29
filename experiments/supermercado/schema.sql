@@ -30,7 +30,9 @@ CREATE TABLE IF NOT EXISTS products (
     category TEXT NOT NULL,
     brand TEXT,
     price_clp INTEGER NOT NULL,
-    stock INTEGER NOT NULL DEFAULT 0
+    stock INTEGER NOT NULL DEFAULT 0,
+    unit TEXT NOT NULL DEFAULT 'un',
+    old_price_clp INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS orders (

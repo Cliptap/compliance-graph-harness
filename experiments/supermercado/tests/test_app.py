@@ -19,6 +19,25 @@ def test_catalog_and_search(client):
     assert "Bebida" in client.get("/?category=Bebidas").text
 
 
+def test_seed_catalog_has_varied_categories_and_offers(client):
+    page = client.get("/").text
+    assert "dumbo" in page
+    assert "Ofertas de la semana" in page and "Lo más vendido" in page
+    with _db(client.app) as conn:
+        total = conn.execute("SELECT COUNT(*) AS n FROM products").fetchone()["n"]
+        categories = conn.execute("SELECT COUNT(DISTINCT category) AS n FROM products").fetchone()["n"]
+        offers = conn.execute("SELECT COUNT(*) AS n FROM products WHERE old_price_clp IS NOT NULL").fetchone()["n"]
+    assert total >= 24
+    assert categories >= 6
+    assert offers >= 3
+
+
+def test_offers_filter_returns_only_discounted_products(client):
+    page = client.get("/?ofertas=1").text
+    assert "Leche Entera 1 L" in page
+    assert "Arroz Grado 1 1 kg" not in page
+
+
 def test_register_rejects_invalid_rut(client):
     response = client.post("/register", data={"rut": "12345678-0", "email": "x@example.cl",
                                              "password": "secret123"}, follow_redirects=False)

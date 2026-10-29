@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
+import unicodedata
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -57,13 +59,28 @@ def _email_norm(email: str) -> str:
     return email.strip().lower()
 
 
+def _slug(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text)
+    plain = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")
+
+
+def _decorate(row) -> dict:
+    product = dict(row)
+    product["category_slug"] = _slug(product["category"])
+    product["initial"] = product["name"][:1].upper()
+    old = product.get("old_price_clp")
+    product["discount_pct"] = round((old - product["price_clp"]) * 100 / old) if old else 0
+    return product
+
+
 def create_app(db_path: Path | str | None = None, secret: str | None = None) -> FastAPI:
     path = Path(db_path) if db_path is not None else db.default_db_path()
     db.init_db(path)
     signer = _serializer(secret or os.environ.get("APP_SECRET", SECRET_DEFAULT))
     templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-    app = FastAPI(title="Supermercado Ficticio", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Dumbo", docs_url=None, redoc_url=None)
     app.state.db_path = path
     app.state.secret = secret or os.environ.get("APP_SECRET", SECRET_DEFAULT)
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
@@ -175,7 +192,8 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
         return response
 
     @app.get("/", response_class=HTMLResponse)
-    def catalog(request: Request, q: str = "", category: str = ""):
+    def catalog(request: Request, q: str = "", category: str = "", ofertas: int = 0):
+        search_mode = bool(q.strip() or category.strip() or ofertas)
         query = "SELECT * FROM products WHERE 1=1"
         params: list = []
         if q.strip():
@@ -185,12 +203,32 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
         if category.strip():
             query += " AND category = ?"
             params.append(category.strip())
+        if ofertas:
+            query += " AND old_price_clp IS NOT NULL"
         query += " ORDER BY name"
         with conn() as connection:
-            products = connection.execute(query, params).fetchall()
-            categories = [r["category"] for r in connection.execute(
-                "SELECT DISTINCT category FROM products ORDER BY category").fetchall()]
-        return render(request, "index.html", products=products, categories=categories, q=q, category=category)
+            products = [_decorate(row) for row in connection.execute(query, params).fetchall()]
+            categories = [
+                {"name": row["category"], "count": row["n"], "slug": _slug(row["category"])}
+                for row in connection.execute(
+                    "SELECT category, COUNT(*) AS n FROM products GROUP BY category ORDER BY category"
+                ).fetchall()
+            ]
+            offers, featured, newest = [], [], []
+            if not search_mode:
+                offers = [_decorate(row) for row in connection.execute(
+                    "SELECT * FROM products WHERE old_price_clp IS NOT NULL "
+                    "ORDER BY (old_price_clp - price_clp) DESC LIMIT 8"
+                ).fetchall()]
+                featured = [_decorate(row) for row in connection.execute(
+                    "SELECT * FROM products ORDER BY stock DESC, name LIMIT 8"
+                ).fetchall()]
+                newest = [_decorate(row) for row in connection.execute(
+                    "SELECT * FROM products ORDER BY id DESC LIMIT 4"
+                ).fetchall()]
+        return render(request, "index.html", products=products, categories=categories, offers=offers,
+                      featured=featured, newest=newest, search_mode=search_mode, ofertas=ofertas,
+                      q=q, category=category, total=len(products))
 
     @app.post("/cart/add/{product_id}")
     def cart_add(request: Request, product_id: int, quantity: int = Form(1)):
