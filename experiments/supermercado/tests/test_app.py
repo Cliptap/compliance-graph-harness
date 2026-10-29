@@ -64,6 +64,31 @@ def test_category_catalog_filters_products(client):
     assert "Leche Entera" in page and "Plátano Extra Granel" not in page
 
 
+def test_protected_views_redirect_to_login(client):
+    for path in ("/account", "/orders", "/addresses", "/rights", "/checkout", "/consent/marketing"):
+        response = client.get(path, follow_redirects=False)
+        assert response.status_code == 303, path
+        assert response.headers["location"].startswith("/login?next="), path
+
+
+def test_login_returns_to_the_requested_page(client):
+    register(client)
+    client.post("/logout", follow_redirects=False)
+    page = client.get("/login?next=/orders")
+    assert 'name="next" value="/orders"' in page.text
+    response = client.post("/login", data={"identifier": "ana@example.cl", "password": "secret123",
+                                           "next": "/orders"}, follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/orders"
+
+
+def test_unknown_product_renders_an_html_error(client):
+    response = client.get("/product/99999")
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("text/html")
+    assert "No se pudo completar" in response.text
+
+
 def test_register_rejects_invalid_rut(client):
     response = client.post("/register", data={"rut": "12345678-0", "email": "x@example.cl",
                                              "password": "secret123"}, follow_redirects=False)

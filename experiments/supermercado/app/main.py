@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from html import escape
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -48,6 +49,29 @@ PALETTE = [
     ("#9a3412", "#fdba74"), ("#0f766e", "#5eead4"), ("#7c2d12", "#fca5a5"),
     ("#3f3f46", "#a1a1aa"),
 ]
+CATEGORY_ICONS = {
+    "Frutas y verduras": '<circle cx="30" cy="38" r="14"/><path d="M30 24c0-7 5-11 12-11 0 7-4 11-12 11Z"/><path d="M30 24c-2-4-5-6-9-6"/>',
+    "Lácteos": '<path d="M22 22h20l4 8v20H18V30l4-8Z"/><path d="M18 30h28"/><path d="M32 22v-6l8 6"/>',
+    "Panadería": '<path d="M14 40c0-10 8-16 18-16s18 6 18 16c0 6-4 8-9 8H23c-5 0-9-2-9-8Z"/><path d="M24 30l-3 8M32 28l-3 10M40 30l-3 8"/>',
+    "Bebidas": '<path d="M28 12h8v8l5 6v26H23V26l5-6V12Z"/><path d="M23 32h18"/><path d="M27 12h10"/>',
+    "Despensa": '<rect x="20" y="20" width="24" height="30" rx="4"/><path d="M18 20h28v-6H18z"/><path d="M26 30h12"/>',
+    "Carnes": '<path d="M16 36c0-12 9-20 20-20 8 0 12 5 12 12 0 11-9 20-20 20-7 0-12-5-12-12Z"/><circle cx="34" cy="32" r="4"/><path d="M20 48l-4 4"/>',
+    "Limpieza": '<path d="M26 28h14v24H26z"/><path d="M30 28v-6h8V14h6"/><path d="M44 14v6M48 18h4M48 24h4"/><path d="M22 34h-6"/>',
+    "Cuidado personal": '<path d="M32 12c8 10 12 16 12 22a12 12 0 0 1-24 0c0-6 4-12 12-22Z"/><path d="M26 38c0 3 2 5 5 5"/>',
+    "Congelados": '<path d="M32 10v44M14 21l36 22M50 21L14 43"/><path d="M25 14l7 6 7-6M25 50l7-6 7 6"/>',
+    "Snacks": '<path d="M22 14h20l6 38H16l6-38Z"/><path d="M22 14l5 8h10l5-8"/><path d="M22 30h20"/>',
+    "Infantil": '<circle cx="32" cy="24" r="10"/><circle cx="24" cy="18" r="4"/><circle cx="40" cy="18" r="4"/><path d="M20 48c0-8 5-14 12-14s12 6 12 14"/>',
+    "Mascotas": '<circle cx="24" cy="26" r="4"/><circle cx="40" cy="26" r="4"/><circle cx="20" cy="38" r="4"/><circle cx="44" cy="38" r="4"/><path d="M32 34c-8 0-12 10-6 14 3 2 9 2 12 0 6-4 2-14-6-14Z"/>',
+    "Hogar": '<path d="M14 30l18-16 18 16"/><path d="M20 28v20h24V28"/><path d="M28 48V36h8v12"/>',
+    "Belleza": '<path d="M22 46h20"/><path d="M26 46V28h12v18"/><path d="M28 28V16l8-4v16"/>',
+    "Desayuno": '<path d="M18 26h24v10a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10V26Z"/><path d="M42 30h4a6 6 0 0 1 0 12h-4"/><path d="M22 20h2M30 18h2M38 20h2"/>',
+    "Comidas preparadas": '<path d="M12 40h40"/><path d="M18 40a14 14 0 0 1 28 0"/><path d="M32 20v6"/>',
+    "Bebés": '<path d="M28 18h8v6l4 6v24H24V30l4-6v-6Z"/><path d="M24 36h16"/><path d="M28 12h8"/>',
+    "Licores": '<path d="M22 12h20l-3 14a8 8 0 0 1-14 0L22 12Z"/><path d="M32 34v14M24 48h16"/>',
+    "Conservas": '<rect x="20" y="22" width="24" height="28" rx="4"/><path d="M18 22h28v-6H18z"/><path d="M26 34h12"/>',
+    "Salsas": '<path d="M28 14h8v8l5 6v22H23V28l5-6v-8Z"/><path d="M23 34h18"/><path d="M30 14h4"/>',
+}
+DEFAULT_ICON = '<circle cx="32" cy="32" r="18"/><path d="M32 14v36M14 32h36"/>'
 
 
 def _product_svg(product) -> str:
@@ -55,6 +79,7 @@ def _product_svg(product) -> str:
     category = product["category"]
     index = sum(ord(ch) for ch in f"{name}{category}") % len(PALETTE)
     start, end = PALETTE[index]
+    icon = CATEGORY_ICONS.get(category, DEFAULT_ICON)
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" '
         f'aria-label="{escape(name)}">'
@@ -62,11 +87,11 @@ def _product_svg(product) -> str:
         f'<stop offset="0" stop-color="{start}"/><stop offset="1" stop-color="{end}"/>'
         '</linearGradient></defs>'
         '<rect width="400" height="300" fill="url(#g)"/>'
-        '<circle cx="200" cy="138" r="86" fill="rgba(255,255,255,0.12)"/>'
-        '<text x="200" y="172" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" '
-        f'font-size="92" font-weight="800" fill="#ffffff">{escape(name[:1].upper())}</text>'
-        '<text x="200" y="252" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" '
-        f'font-size="20" font-weight="600" fill="rgba(255,255,255,0.9)">{escape(category)}</text>'
+        '<circle cx="200" cy="126" r="92" fill="rgba(255,255,255,0.12)"/>'
+        f'<g transform="translate(136 52) scale(2)" fill="none" stroke="#ffffff" '
+        f'stroke-width="3" stroke-linecap="round" stroke-linejoin="round">{icon}</g>'
+        '<text x="200" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" '
+        f'font-size="19" font-weight="600" fill="rgba(255,255,255,0.92)">{escape(category)}</text>'
         '</svg>'
     )
 
@@ -173,6 +198,17 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
     def render(request: Request, name: str, **context) -> HTMLResponse:
         payload = {**base_context(request), **context}
         return templates.TemplateResponse(request=request, name=name, context=payload)
+
+    @app.exception_handler(HTTPException)
+    async def http_error(request: Request, exc: HTTPException):
+        if exc.status_code == 401:
+            return RedirectResponse(f"/login?next={quote(request.url.path, safe='/')}", status_code=303)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={**base_context(request), "message": exc.detail},
+            status_code=exc.status_code,
+        )
 
     def require_customer(request: Request) -> sqlite3.Row:
         customer = session_customer(request)
@@ -387,11 +423,12 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
         return response
 
     @app.get("/login", response_class=HTMLResponse)
-    def login_form(request: Request):
-        return render(request, "login.html")
+    def login_form(request: Request, next: str = ""):
+        return render(request, "login.html", next_url=next)
 
     @app.post("/login", response_class=HTMLResponse)
-    def login(request: Request, identifier: str = Form(""), password: str = Form("")):
+    def login(request: Request, identifier: str = Form(""), password: str = Form(""), next: str = Form("")):
+        target = next if next.startswith("/") and not next.startswith("//") else "/account"
         rut = normalize_rut(identifier)
         with conn() as connection:
             customer = connection.execute(
@@ -399,11 +436,12 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
                 (_email_norm(identifier), rut),
             ).fetchone()
         if customer is None or not verify_password(password, customer["password_hash"]):
-            return render(request, "login.html", errors=["Credenciales inválidas."])
+            return render(request, "login.html", errors=["Credenciales inválidas."], next_url=target)
         if customer["blocked"]:
             return render(request, "login.html", errors=["La cuenta está bloqueada; escribe a "
-                                                          f"{CONTACT_CHANNEL} para revisar tu caso."])
-        response = RedirectResponse("/account", status_code=303)
+                                                          f"{CONTACT_CHANNEL} para revisar tu caso."],
+                          next_url=target)
+        response = RedirectResponse(target, status_code=303)
         set_session(response, customer["id"])
         return response
 
