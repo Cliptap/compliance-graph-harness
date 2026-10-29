@@ -99,6 +99,12 @@ def test_favicon_and_asset_version_are_served(client):
     assert "/static/style.css?v=" in home.text
 
 
+def test_product_art_is_rendered_inline(client):
+    home = client.get("/").text
+    assert 'class="product-icon"' in home
+    assert 'class="media-category"' in home
+
+
 def test_register_rejects_invalid_rut(client):
     response = client.post("/register", data={"rut": "12345678-0", "email": "x@example.cl",
                                              "password": "secret123"}, follow_redirects=False)

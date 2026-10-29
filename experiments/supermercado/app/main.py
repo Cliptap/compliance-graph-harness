@@ -43,7 +43,7 @@ RIGHT_TYPES = ("access", "rectification", "erasure", "opposition", "portability"
 PICKUP_STORES = ("Sucursal Centro", "Sucursal Providencia", "Sucursal Ñuñoa")
 SECRET_DEFAULT = "dev-only-secret-change-me"
 PER_PAGE = 24
-ASSET_VERSION = "3"
+ASSET_VERSION = "5"
 PALETTE = [
     ("#0d4f49", "#1fbf9c"), ("#b45309", "#f6c177"), ("#9f1239", "#ff7a8a"),
     ("#1e3a8a", "#60a5fa"), ("#5b21b6", "#c4b5fd"), ("#166534", "#4ade80"),
@@ -124,6 +124,7 @@ def _decorate(row) -> dict:
     product = dict(row)
     product["category_slug"] = _slug(product["category"])
     product["initial"] = product["name"][:1].upper()
+    product["icon"] = CATEGORY_ICONS.get(product["category"], DEFAULT_ICON)
     old = product.get("old_price_clp")
     product["discount_pct"] = round((old - product["price_clp"]) * 100 / old) if old else 0
     return product

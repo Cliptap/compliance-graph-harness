@@ -8,8 +8,8 @@
 </nav>
 
 <section class="product-detail">
-  <div class="product-detail-media">
-    <img src="/img/{{ product.id }}.svg?v={{ asset_version }}" alt="{{ product.name }}">
+  <div class="product-detail-media cat-{{ product.category_slug }}">
+    <svg class="product-detail-icon" viewBox="0 0 64 64" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ product.icon|safe }}</svg>
   </div>
   <div class="product-detail-info">
     <span class="product-brand">{{ product.brand }}</span>

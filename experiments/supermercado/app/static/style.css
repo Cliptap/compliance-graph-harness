@@ -88,7 +88,7 @@ img { max-width: 100%; }
 .product-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
 .product-media { position: relative; display: flex; align-items: center; justify-content: center; height: 150px; }
 .product-icon { width: 74px; height: 74px; }
-.badge { position: absolute; top: .6rem; left: .6rem; background: var(--coral); color: #fff; font-weight: 800; font-size: .78rem; padding: .2rem .5rem; border-radius: 999px; }
+.badge { position: absolute; top: .6rem; left: .6rem; background: var(--coral); color: #fff; font-weight: 800; font-size: .78rem; padding: .2rem .5rem; border-radius: 999px; z-index: 2; }
 .product-body { padding: .85rem; display: flex; flex-direction: column; gap: .25rem; flex: 1; }
 .product-brand { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
 .product-body h3 { font-size: .98rem; margin: 0; line-height: 1.3; }
@@ -106,6 +106,18 @@ img { max-width: 100%; }
 .cat-carnes { background: linear-gradient(145deg, #ff7a8a, #9f1239); }
 .cat-limpieza { background: linear-gradient(145deg, #6ee7d8, #0f766e); }
 .cat-cuidado-personal { background: linear-gradient(145deg, #c4b5fd, #5b21b6); }
+.cat-congelados { background: linear-gradient(145deg, #3ea8ff, #1e3a8a); }
+.cat-snacks { background: linear-gradient(145deg, #ffd166, #b45309); }
+.cat-infantil { background: linear-gradient(145deg, #f9a8d4, #9d174d); }
+.cat-mascotas { background: linear-gradient(145deg, #fbbf24, #92400e); }
+.cat-hogar { background: linear-gradient(145deg, #38bdf8, #0e7490); }
+.cat-belleza { background: linear-gradient(145deg, #c4b5fd, #6d28d9); }
+.cat-desayuno { background: linear-gradient(145deg, #f6c177, #9a3412); }
+.cat-comidas-preparadas { background: linear-gradient(145deg, #fca5a5, #991b1b); }
+.cat-bebes { background: linear-gradient(145deg, #7dd3fc, #0369a1); }
+.cat-licores { background: linear-gradient(145deg, #a78bfa, #4c1d95); }
+.cat-conservas { background: linear-gradient(145deg, #86efac, #166534); }
+.cat-salsas { background: linear-gradient(145deg, #fda4af, #9f1239); }
 
 .button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: .55rem .95rem; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
 .button:hover { border-color: var(--mint); }
@@ -146,13 +158,16 @@ th { background: #f2ece1; font-size: .8rem; text-transform: uppercase; letter-sp
 .footer p { color: #a9c8c1; font-size: .9rem; max-width: 20rem; }
 .footer-bottom { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; border-top: 1px solid rgba(255, 255, 255, .12); margin-top: 1.5rem; padding-top: 1rem; color: #9fbdb6; font-size: .8rem; }
 
-.product-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.product-icon { width: 74px; height: 74px; }
+.product-media::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: linear-gradient(transparent, rgba(0, 0, 0, .22)); pointer-events: none; z-index: 1; }
+.media-category { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; color: #fff; font-size: .75rem; font-weight: 600; letter-spacing: .02em; z-index: 2; }
 .product-body h3 a { color: var(--ink); }
 .product-body h3 a:hover { color: var(--teal-700); }
 .breadcrumb { font-size: .85rem; color: var(--muted); margin: 1rem 0; }
 .breadcrumb a { color: var(--muted); }
 .product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.5rem; margin: 1rem 0 2rem; }
-.product-detail-media img { width: 100%; border-radius: 12px; display: block; }
+.product-detail-media { display: flex; align-items: center; justify-content: center; min-height: 320px; border-radius: 12px; }
+.product-detail-icon { width: 168px; height: 168px; }
 .product-detail-info h1 { margin: .3rem 0 .4rem; font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.6px; }
 .detail-price strong { font-size: 2rem; }
 .detail-description { color: var(--ink); max-width: 34rem; }
