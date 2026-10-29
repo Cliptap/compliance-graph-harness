@@ -19,7 +19,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, URLSafeSerializer
@@ -43,6 +43,7 @@ RIGHT_TYPES = ("access", "rectification", "erasure", "opposition", "portability"
 PICKUP_STORES = ("Sucursal Centro", "Sucursal Providencia", "Sucursal Ñuñoa")
 SECRET_DEFAULT = "dev-only-secret-change-me"
 PER_PAGE = 24
+ASSET_VERSION = "3"
 PALETTE = [
     ("#0d4f49", "#1fbf9c"), ("#b45309", "#f6c177"), ("#9f1239", "#ff7a8a"),
     ("#1e3a8a", "#60a5fa"), ("#5b21b6", "#c4b5fd"), ("#166534", "#4ade80"),
@@ -145,6 +146,8 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["Referrer-Policy"] = "same-origin"
             response.headers["Content-Security-Policy"] = "default-src 'self'; form-action 'self'"
+            if response.headers.get("content-type", "").startswith("text/html"):
+                response.headers["Cache-Control"] = "no-store"
             return response
 
     app.add_middleware(SecurityHeaders)
@@ -193,6 +196,7 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
             "policy_date": POLICY_DATE,
             "contact_channel": CONTACT_CHANNEL,
             "categories": categories,
+            "asset_version": ASSET_VERSION,
         }
 
     def render(request: Request, name: str, **context) -> HTMLResponse:
@@ -797,6 +801,10 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
         with conn() as connection:
             create_right(connection, customer["id"], "block")
         return RedirectResponse("/rights", status_code=303)
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon():
+        return FileResponse(BASE_DIR / "static" / "favicon.ico", media_type="image/x-icon")
 
     @app.get("/health")
     def health():

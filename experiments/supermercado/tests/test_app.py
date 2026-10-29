@@ -89,6 +89,16 @@ def test_unknown_product_renders_an_html_error(client):
     assert "No se pudo completar" in response.text
 
 
+def test_favicon_and_asset_version_are_served(client):
+    icon = client.get("/favicon.ico")
+    assert icon.status_code == 200
+    assert icon.headers["content-type"].startswith("image/")
+    assert client.get("/static/favicon.svg").status_code == 200
+    home = client.get("/")
+    assert 'rel="icon"' in home.text
+    assert "/static/style.css?v=" in home.text
+
+
 def test_register_rejects_invalid_rut(client):
     response = client.post("/register", data={"rut": "12345678-0", "email": "x@example.cl",
                                              "password": "secret123"}, follow_redirects=False)
