@@ -1,16 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Dumbo · Tu súper en línea{% endblock %}
 {% block content %}
-
-{% if not search_mode %}
 <section class="hero">
   <div class="hero-copy">
     <span class="eyebrow">Despacho o retiro</span>
     <h1>Lo que necesitas,<br>a tu puerta hoy.</h1>
-    <p>Frutas, despensa y limpieza en un solo lugar. Elige despacho a domicilio o retira en tienda.</p>
+    <p>Más de {{ total }} productos en 20 categorías: frutas, despensa, limpieza y todo lo que tu casa necesita.</p>
     <div class="hero-actions">
       <a class="button primary big" href="#ofertas">Ver ofertas</a>
-      <a class="button ghost big" href="#catalogo">Explorar catálogo</a>
+      <a class="button ghost big" href="/catalog">Explorar catálogo</a>
     </div>
     <ul class="hero-points">
       <li>Precios claros</li>
@@ -27,7 +25,7 @@
 
 <section class="quick-cats">
   {% for item in categories %}
-  <a class="quick-cat" href="/?category={{ item.name|urlencode }}">{{ item.name }} <small>{{ item.count }}</small></a>
+  <a class="quick-cat" href="/catalog?category={{ item.name|urlencode }}">{{ item.name }} <small>{{ item.count }}</small></a>
   {% endfor %}
 </section>
 
@@ -37,10 +35,19 @@
   <div class="benefit"><strong>Pago simulado</strong><span>Sin datos de tarjeta reales.</span></div>
 </section>
 
+<section class="brands">
+  <span class="muted">Marcas que encuentras en Dumbo</span>
+  <div class="brand-row">
+    {% for brand in ["Dumbo", "Campo", "Cocina", "Brisa", "Andino", "Casa", "Fresco", "Sol"] %}
+      <a class="brand-chip" href="/catalog?q={{ brand|urlencode }}">{{ brand }}</a>
+    {% endfor %}
+  </div>
+</section>
+
 <section id="ofertas" class="section">
   <div class="section-head">
     <h2>Ofertas de la semana</h2>
-    <a href="/?ofertas=1">Ver más</a>
+    <a href="/catalog?ofertas=1">Ver más</a>
   </div>
   <div class="product-row">
     {% for product in offers %}{% include "partials/card.html" %}{% endfor %}
@@ -50,7 +57,7 @@
 <section class="section">
   <div class="section-head">
     <h2>Lo más vendido</h2>
-    <a href="#catalogo">Ver todo</a>
+    <a href="/catalog">Ver todo</a>
   </div>
   <div class="product-grid">
     {% for product in featured %}{% include "partials/card.html" %}{% endfor %}
@@ -60,32 +67,39 @@
 <section class="section">
   <div class="section-head">
     <h2>Nuevos ingresos</h2>
-    <a href="#catalogo">Ver todo</a>
+    <a href="/catalog">Ver todo</a>
   </div>
   <div class="product-grid">
     {% for product in newest %}{% include "partials/card.html" %}{% endfor %}
   </div>
 </section>
-{% endif %}
 
-<section id="catalogo" class="section">
+<section class="promo-band">
+  <div>
+    <span class="eyebrow light">Despacho gratis</span>
+    <h2>En compras sobre $30.000</h2>
+    <p>Válido en comunas seleccionadas. Elige despacho al confirmar tu pedido.</p>
+  </div>
+  <a class="button light-button big" href="/catalog">Comprar ahora</a>
+</section>
+
+{% for showcase in showcases %}
+<section class="section">
   <div class="section-head">
-    <h2>{% if ofertas %}Ofertas{% elif search_mode %}Resultados{% else %}Todo el catálogo{% endif %}</h2>
-    <span class="muted">{{ total }} productos</span>
+    <h2>{{ showcase.title }}</h2>
+    <a href="/catalog?category={{ showcase.category|urlencode }}">Ver todo</a>
   </div>
-  <form method="get" action="/" class="filters">
-    <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o marca">
-    <select name="category">
-      <option value="">Todas las categorías</option>
-      {% for item in categories %}
-        <option value="{{ item.name }}" {% if item.name == category %}selected{% endif %}>{{ item.name }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="button">Filtrar</button>
-  </form>
   <div class="product-grid">
-    {% for product in products %}{% include "partials/card.html" %}{% endfor %}
+    {% for product in showcase.products %}{% include "partials/card.html" %}{% endfor %}
   </div>
-  {% if not products %}<p class="muted">No encontramos productos con ese criterio.</p>{% endif %}
+</section>
+{% endfor %}
+
+<section class="catalog-cta">
+  <div>
+    <h2>Todo el catálogo</h2>
+    <p>{{ total }} productos en 20 categorías, con filtros y búsqueda.</p>
+  </div>
+  <a class="button primary big" href="/catalog">Ver catálogo completo</a>
 </section>
 {% endblock %}

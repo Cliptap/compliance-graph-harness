@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{% if ofertas %}Ofertas{% elif category %}{{ category }}{% elif q %}Resultados{% else %}Catálogo{% endif %} · Dumbo{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="/">Inicio</a> / <span>{% if ofertas %}Ofertas{% elif category %}{{ category }}{% elif q %}Búsqueda{% else %}Catálogo completo{% endif %}</span></nav>
+
+<div class="section-head">
+  <h1>{% if ofertas %}Ofertas{% elif category %}{{ category }}{% elif q %}Resultados para "{{ q }}"{% else %}Catálogo completo{% endif %}</h1>
+  <span class="muted">{{ total }} productos</span>
+</div>
+
+<form method="get" action="/catalog" class="filters">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o marca">
+  <select name="category">
+    <option value="">Todas las categorías</option>
+    {% for item in categories %}
+      <option value="{{ item.name }}" {% if item.name == category %}selected{% endif %}>{{ item.name }}</option>
+    {% endfor %}
+  </select>
+  <label class="check filter-check"><input type="checkbox" name="ofertas" value="1" {% if ofertas %}checked{% endif %}> Solo ofertas</label>
+  <button type="submit" class="button">Filtrar</button>
+</form>
+
+<div class="product-grid">
+  {% for product in products %}{% include "partials/card.html" %}{% endfor %}
+</div>
+{% if not products %}<p class="muted">No encontramos productos con ese criterio.</p>{% endif %}
+
+{% if pages > 1 %}
+<nav class="pagination" aria-label="Paginación">
+  {% if page > 1 %}
+    <a class="button" href="/catalog?q={{ q|urlencode }}&category={{ category|urlencode }}&ofertas={{ ofertas }}&page={{ page - 1 }}">Anterior</a>
+  {% endif %}
+  <span>Página {{ page }} de {{ pages }}</span>
+  {% if page < pages %}
+    <a class="button" href="/catalog?q={{ q|urlencode }}&category={{ category|urlencode }}&ofertas={{ ofertas }}&page={{ page + 1 }}">Siguiente</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

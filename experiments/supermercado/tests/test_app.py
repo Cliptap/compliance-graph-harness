@@ -13,29 +13,55 @@ def _db(app):
 
 
 def test_catalog_and_search(client):
-    assert "Plátano" in client.get("/").text
-    response = client.get("/?q=palta")
+    assert client.get("/catalog").status_code == 200
+    assert "Plátano" in client.get("/catalog?q=plátano").text
+    response = client.get("/catalog?q=palta")
     assert "Palta" in response.text and "Plátano" not in response.text
-    assert "Bebida" in client.get("/?category=Bebidas").text
+    assert "Bebida" in client.get("/catalog?category=Bebidas").text
 
 
 def test_seed_catalog_has_varied_categories_and_offers(client):
     page = client.get("/").text
     assert "dumbo" in page
     assert "Ofertas de la semana" in page and "Lo más vendido" in page
+    assert "Nuevos ingresos" in page and "Frescos de la semana" in page
     with _db(client.app) as conn:
         total = conn.execute("SELECT COUNT(*) AS n FROM products").fetchone()["n"]
         categories = conn.execute("SELECT COUNT(DISTINCT category) AS n FROM products").fetchone()["n"]
         offers = conn.execute("SELECT COUNT(*) AS n FROM products WHERE old_price_clp IS NOT NULL").fetchone()["n"]
-    assert total >= 24
-    assert categories >= 6
-    assert offers >= 3
+    assert total >= 120
+    assert categories >= 18
+    assert offers >= 10
 
 
 def test_offers_filter_returns_only_discounted_products(client):
-    page = client.get("/?ofertas=1").text
+    page = client.get("/catalog?ofertas=1").text
     assert "Leche Entera 1 L" in page
     assert "Arroz Grado 1 1 kg" not in page
+
+
+def test_product_detail_image_and_description(client):
+    page = client.get("/product/1")
+    assert page.status_code == 200
+    assert "Plátano Extra Granel" in page.text
+    assert "Fresco y seleccionado" in page.text
+    image = client.get("/img/1.svg")
+    assert image.status_code == 200
+    assert image.headers["content-type"].startswith("image/svg+xml")
+    assert image.text.startswith("<svg")
+
+
+def test_catalog_pagination(client):
+    first = client.get("/catalog?page=1")
+    second = client.get("/catalog?page=2")
+    assert first.status_code == 200 and second.status_code == 200
+    assert "Página 1 de" in first.text
+    assert "Página 2 de" in second.text
+
+
+def test_category_catalog_filters_products(client):
+    page = client.get("/catalog?category=Lácteos").text
+    assert "Leche Entera" in page and "Plátano Extra Granel" not in page
 
 
 def test_register_rejects_invalid_rut(client):

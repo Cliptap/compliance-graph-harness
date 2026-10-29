@@ -29,7 +29,9 @@ python -m pytest tests -q -p no:cacheprovider
 
 ## Superficie funcional
 
-- Catálogo y búsqueda (`/`).
+- Home curado con ofertas, más vendidos, novedades y vitrinas por categoría (`/`).
+- Catálogo completo con búsqueda, filtros y paginación (`/catalog`); 152 productos en 20 categorías.
+- Ficha de producto con descripción, precio, stock y relacionados (`/product/{id}`), más imagen SVG generada (`/img/{id}.svg`).
 - Carrito (`/cart`).
 - Registro y login con RUT o correo (`/register`, `/login`).
 - Cuenta, direcciones y pedidos (`/account`, `/addresses`, `/orders`).

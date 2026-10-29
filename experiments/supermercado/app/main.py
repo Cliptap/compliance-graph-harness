@@ -14,6 +14,7 @@ import unicodedata
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from html import escape
 from pathlib import Path
 
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -40,6 +41,34 @@ CONTACT_CHANNEL = "privacidad@supermercado-ficticio.cl"
 RIGHT_TYPES = ("access", "rectification", "erasure", "opposition", "portability", "block")
 PICKUP_STORES = ("Sucursal Centro", "Sucursal Providencia", "Sucursal Ñuñoa")
 SECRET_DEFAULT = "dev-only-secret-change-me"
+PER_PAGE = 24
+PALETTE = [
+    ("#0d4f49", "#1fbf9c"), ("#b45309", "#f6c177"), ("#9f1239", "#ff7a8a"),
+    ("#1e3a8a", "#60a5fa"), ("#5b21b6", "#c4b5fd"), ("#166534", "#4ade80"),
+    ("#9a3412", "#fdba74"), ("#0f766e", "#5eead4"), ("#7c2d12", "#fca5a5"),
+    ("#3f3f46", "#a1a1aa"),
+]
+
+
+def _product_svg(product) -> str:
+    name = product["name"]
+    category = product["category"]
+    index = sum(ord(ch) for ch in f"{name}{category}") % len(PALETTE)
+    start, end = PALETTE[index]
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" '
+        f'aria-label="{escape(name)}">'
+        f'<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+        f'<stop offset="0" stop-color="{start}"/><stop offset="1" stop-color="{end}"/>'
+        '</linearGradient></defs>'
+        '<rect width="400" height="300" fill="url(#g)"/>'
+        '<circle cx="200" cy="138" r="86" fill="rgba(255,255,255,0.12)"/>'
+        '<text x="200" y="172" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" '
+        f'font-size="92" font-weight="800" fill="#ffffff">{escape(name[:1].upper())}</text>'
+        '<text x="200" y="252" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" '
+        f'font-size="20" font-weight="600" fill="rgba(255,255,255,0.9)">{escape(category)}</text>'
+        '</svg>'
+    )
 
 
 def _serializer(secret: str) -> URLSafeSerializer:
@@ -124,6 +153,13 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
 
     def base_context(request: Request) -> dict:
         cart = read_cart(request)
+        with conn() as connection:
+            categories = [
+                {"name": row["category"], "count": row["n"], "slug": _slug(row["category"])}
+                for row in connection.execute(
+                    "SELECT category, COUNT(*) AS n FROM products GROUP BY category ORDER BY category"
+                ).fetchall()
+            ]
         return {
             "customer": session_customer(request),
             "cart_count": sum(cart.values()),
@@ -131,6 +167,7 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
             "policy_version": POLICY_VERSION,
             "policy_date": POLICY_DATE,
             "contact_channel": CONTACT_CHANNEL,
+            "categories": categories,
         }
 
     def render(request: Request, name: str, **context) -> HTMLResponse:
@@ -191,44 +228,82 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
             response.delete_cookie("cart")
         return response
 
-    @app.get("/", response_class=HTMLResponse)
-    def catalog(request: Request, q: str = "", category: str = "", ofertas: int = 0):
-        search_mode = bool(q.strip() or category.strip() or ofertas)
-        query = "SELECT * FROM products WHERE 1=1"
-        params: list = []
+    def catalog_filter(q: str, category: str, ofertas: int) -> tuple[str, list]:
+        where, params = " WHERE 1=1", []
         if q.strip():
-            query += " AND (name LIKE ? OR brand LIKE ?)"
+            where += " AND (name LIKE ? OR brand LIKE ?)"
             like = f"%{q.strip()}%"
             params.extend([like, like])
         if category.strip():
-            query += " AND category = ?"
+            where += " AND category = ?"
             params.append(category.strip())
         if ofertas:
-            query += " AND old_price_clp IS NOT NULL"
-        query += " ORDER BY name"
+            where += " AND old_price_clp IS NOT NULL"
+        return where, params
+
+    @app.get("/", response_class=HTMLResponse)
+    def home(request: Request):
         with conn() as connection:
-            products = [_decorate(row) for row in connection.execute(query, params).fetchall()]
-            categories = [
-                {"name": row["category"], "count": row["n"], "slug": _slug(row["category"])}
-                for row in connection.execute(
-                    "SELECT category, COUNT(*) AS n FROM products GROUP BY category ORDER BY category"
-                ).fetchall()
-            ]
-            offers, featured, newest = [], [], []
-            if not search_mode:
-                offers = [_decorate(row) for row in connection.execute(
-                    "SELECT * FROM products WHERE old_price_clp IS NOT NULL "
-                    "ORDER BY (old_price_clp - price_clp) DESC LIMIT 8"
-                ).fetchall()]
-                featured = [_decorate(row) for row in connection.execute(
-                    "SELECT * FROM products ORDER BY stock DESC, name LIMIT 8"
-                ).fetchall()]
-                newest = [_decorate(row) for row in connection.execute(
-                    "SELECT * FROM products ORDER BY id DESC LIMIT 4"
-                ).fetchall()]
-        return render(request, "index.html", products=products, categories=categories, offers=offers,
-                      featured=featured, newest=newest, search_mode=search_mode, ofertas=ofertas,
-                      q=q, category=category, total=len(products))
+            total = connection.execute("SELECT COUNT(*) AS n FROM products").fetchone()["n"]
+            offers = [_decorate(row) for row in connection.execute(
+                "SELECT * FROM products WHERE old_price_clp IS NOT NULL "
+                "ORDER BY (old_price_clp - price_clp) DESC LIMIT 8").fetchall()]
+            featured = [_decorate(row) for row in connection.execute(
+                "SELECT * FROM products ORDER BY stock DESC, name LIMIT 12").fetchall()]
+            newest = [_decorate(row) for row in connection.execute(
+                "SELECT * FROM products ORDER BY id DESC LIMIT 8").fetchall()]
+            showcases = []
+            for title, category in (("Frescos de la semana", "Frutas y verduras"),
+                                    ("Para tu despensa", "Despensa"),
+                                    ("Cuidado del hogar", "Limpieza"),
+                                    ("Para tu mascota", "Mascotas"),
+                                    ("Snacks y dulces", "Snacks"),
+                                    ("Bebés e infantil", "Infantil"),
+                                    ("Desayuno y café", "Desayuno"),
+                                    ("Congelados", "Congelados")):
+                rows = connection.execute(
+                    "SELECT * FROM products WHERE category = ? ORDER BY stock DESC, id LIMIT 4",
+                    (category,)).fetchall()
+                showcases.append({"title": title, "category": category,
+                                  "products": [_decorate(row) for row in rows]})
+        return render(request, "index.html", offers=offers, featured=featured, newest=newest,
+                      showcases=showcases, total=total)
+
+    @app.get("/catalog", response_class=HTMLResponse)
+    def catalog(request: Request, q: str = "", category: str = "", ofertas: int = 0, page: int = 1):
+        page = max(1, page)
+        where, params = catalog_filter(q, category, ofertas)
+        with conn() as connection:
+            total = connection.execute(f"SELECT COUNT(*) AS n FROM products{where}", params).fetchone()["n"]
+            pages = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+            page = min(page, pages)
+            rows = connection.execute(
+                f"SELECT * FROM products{where} ORDER BY id LIMIT ? OFFSET ?",
+                [*params, PER_PAGE, (page - 1) * PER_PAGE],
+            ).fetchall()
+        return render(request, "catalog.html", products=[_decorate(row) for row in rows], total=total,
+                      page=page, pages=pages, q=q, category=category, ofertas=ofertas)
+
+    @app.get("/product/{product_id}", response_class=HTMLResponse)
+    def product_detail(request: Request, product_id: int):
+        with conn() as connection:
+            row = connection.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="Producto no encontrado.")
+            product = _decorate(row)
+            related = [_decorate(item) for item in connection.execute(
+                "SELECT * FROM products WHERE category = ? AND id != ? ORDER BY stock DESC, id LIMIT 4",
+                (product["category"], product_id)).fetchall()]
+        return render(request, "product.html", product=product, related=related)
+
+    @app.get("/img/{product_id}.svg")
+    def product_image(product_id: int):
+        with conn() as connection:
+            row = connection.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Producto no encontrado.")
+        return Response(content=_product_svg(row), media_type="image/svg+xml",
+                        headers={"Cache-Control": "public, max-age=86400"})
 
     @app.post("/cart/add/{product_id}")
     def cart_add(request: Request, product_id: int, quantity: int = Form(1)):

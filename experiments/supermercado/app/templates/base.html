@@ -21,7 +21,7 @@
 <header class="header">
   <div class="wrap header-main">
     <a class="logo" href="/" aria-label="Dumbo inicio"><span>dumbo</span><i>.</i></a>
-    <form class="search" method="get" action="/">
+    <form class="search" method="get" action="/catalog">
       <input type="search" name="q" value="{{ q or '' }}" placeholder="Busca productos, marcas o categorías" aria-label="Buscar productos">
       <button type="submit" aria-label="Buscar">Buscar</button>
     </form>
@@ -32,10 +32,11 @@
   </div>
   <nav class="wrap cats" aria-label="Categorías">
     <a href="/">Inicio</a>
+    <a href="/catalog">Catálogo</a>
     {% for item in categories %}
-      <a href="/?category={{ item.name|urlencode }}">{{ item.name }}</a>
+      <a href="/catalog?category={{ item.name|urlencode }}">{{ item.name }}</a>
     {% endfor %}
-    <a href="/?ofertas=1">Ofertas</a>
+    <a href="/catalog?ofertas=1">Ofertas</a>
   </nav>
 </header>
 
@@ -66,6 +67,8 @@
     </div>
     <div>
       <h3>Ayuda</h3>
+      <a href="/catalog">Catálogo completo</a>
+      <a href="/catalog?ofertas=1">Ofertas</a>
       <a href="/orders">Mis pedidos</a>
       <a href="/rights">Derechos sobre mis datos</a>
       <a href="/privacy">Política de privacidad</a>
@@ -75,6 +78,15 @@
       <a href="/account">Mi cuenta</a>
       <a href="/addresses">Direcciones</a>
       <a href="/consent/marketing">Comunicaciones</a>
+    </div>
+    <div>
+      <h3>Categorías</h3>
+      <a href="/catalog?category=Frutas%20y%20verduras">Frutas y verduras</a>
+      <a href="/catalog?category=L%C3%A1cteos">Lácteos</a>
+      <a href="/catalog?category=Despensa">Despensa</a>
+      <a href="/catalog?category=Bebidas">Bebidas</a>
+      <a href="/catalog?category=Limpieza">Limpieza</a>
+      <a href="/catalog?category=Mascotas">Mascotas</a>
     </div>
     <div>
       <h3>Legal</h3>

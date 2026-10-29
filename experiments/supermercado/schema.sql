@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS products (
     price_clp INTEGER NOT NULL,
     stock INTEGER NOT NULL DEFAULT 0,
     unit TEXT NOT NULL DEFAULT 'un',
-    old_price_clp INTEGER
+    old_price_clp INTEGER,
+    description TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS orders (

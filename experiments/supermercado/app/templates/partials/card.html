@@ -1,11 +1,11 @@
 <article class="product-card">
-  <a class="product-media cat-{{ product['category_slug'] }}" href="/?category={{ product['category']|urlencode }}" aria-label="{{ product['name'] }}">
-    <img class="product-icon" src="/static/icons/{{ product['category_slug'] }}.svg" alt="" loading="lazy">
+  <a class="product-media" href="/product/{{ product['id'] }}" aria-label="{{ product['name'] }}">
+    <img src="/img/{{ product['id'] }}.svg" alt="{{ product['name'] }}" loading="lazy">
     {% if product["discount_pct"] %}<span class="badge">-{{ product["discount_pct"] }}%</span>{% endif %}
   </a>
   <div class="product-body">
     <span class="product-brand">{{ product["brand"] }}</span>
-    <h3>{{ product["name"] }}</h3>
+    <h3><a href="/product/{{ product['id'] }}">{{ product["name"] }}</a></h3>
     <span class="product-unit">{{ product["unit"] }}</span>
     <div class="product-price">
       {% if product["old_price_clp"] %}<s>${{ product["old_price_clp"] }}</s>{% endif %}
