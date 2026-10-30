@@ -1,0 +1,64 @@
+rules:
+  - id: dumbo.card-persist
+    languages: [python]
+    severity: ERROR
+    message: "Card data is persisted in a model field."
+    patterns:
+      - pattern-either:
+          - pattern: $FIELD = Column(...)
+          - pattern: $FIELD = mapped_column(...)
+          - pattern: '$FIELD: $TYPE = Column(...)'
+          - pattern: '$FIELD: $TYPE = mapped_column(...)'
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: (?i)(card_number|card_pan|pan|cvv|cvc|security_code)
+
+  - id: dumbo.card-persist-sql
+    languages: [generic]
+    severity: ERROR
+    message: "Card data column in a SQL schema."
+    pattern-regex: (?i)(card_number|card_pan|cvv|cvc|security_code)\s+(text|varchar|char|integer|bigint)
+
+  - id: dumbo.log-sensitive
+    languages: [generic]
+    severity: ERROR
+    message: "A log or console call mentions personal or payment data."
+    pattern-regex: (?i)(print|logger\.[a-z]+|logging\.[a-z]+|console\.log)\([^\n]*(rut|run|email|phone|card|cvv|password|token)[^\n]*\)
+
+  - id: dumbo.password-response
+    languages: [python]
+    severity: ERROR
+    message: "A response exposes the password hash."
+    patterns:
+      - pattern-either:
+          - pattern: 'return {..., "password": $V, ...}'
+          - pattern: 'return {..., "password_hash": $V, ...}'
+          - pattern: 'jsonify({..., "password": $V, ...})'
+          - pattern: 'jsonify({..., "password_hash": $V, ...})'
+
+  - id: dumbo.hard-delete
+    languages: [generic]
+    severity: ERROR
+    message: "Physical deletion of customer data."
+    pattern-regex: (?i)(delete\s+from\s+customers|session\.delete\([^)]*customer|hard_delete)
+
+  - id: dumbo.prechecked-consent
+    languages: [generic]
+    severity: ERROR
+    message: "Consent checkbox rendered as checked by default."
+    pattern-regex: (?i)<input[^>]*(consent|subscribe|newsletter)[^>]*checked
+
+  - id: dumbo.third-party
+    languages: [generic]
+    severity: WARNING
+    message: "External host referenced by the target."
+    pattern-regex: https?://(?!localhost|127\.0\.0\.1|www\.w3\.org|schema\.org|json-schema\.org)[a-z0-9.-]+
+
+  - id: dumbo.unmasked-rut
+    languages: [python]
+    severity: ERROR
+    message: "A response exposes the full RUT."
+    patterns:
+      - pattern-either:
+          - pattern: 'return {..., "rut": $V, ...}'
+          - pattern: 'return {..., "run": $V, ...}'
