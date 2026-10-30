@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
+import stat
 import subprocess
 from pathlib import Path
 
@@ -33,13 +35,15 @@ def task_by_id(manifest: dict, task_id: str) -> dict:
 
 def build(task: dict, dest: Path, git: bool = True) -> Path:
     if dest.exists():
-        shutil.rmtree(dest)
+        def _onexc(func, target, _exc):
+            os.chmod(target, stat.S_IWRITE)
+            func(target)
+        shutil.rmtree(dest, onexc=_onexc)
     shutil.copytree(BASE, dest, ignore=IGNORE)
     (dest / "TASK.md").write_text(
         f"# {task['id']} — {task['title']}\n\n{task['prompt']}\n\n"
         f"## Scope\n\nAllowed paths: {', '.join(task['allowed_paths'])}.\n"
-        "Do not modify files outside the allowed paths. Do not change the privacy controls that "
-        "already exist in the base.\n",
+        "Do not modify files outside the allowed paths.\n",
         encoding="utf-8",
         newline="\n",
     )

@@ -1,0 +1,161 @@
+{
+  "task": "T05-account-delete",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T05-account-delete-baseline",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 47.25,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-61b29622-6f13-467a-82ee-efb2f02acbdc",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 43071,
+        "wall_s": 43.09,
+        "usage": {
+          "input_tokens": 442801,
+          "output_tokens": 4694,
+          "cache_read_tokens": 411936,
+          "cache_write_tokens": 0,
+          "total_tokens": 859431,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T05-account-delete",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.26s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.hard-delete"
+    ],
+    "expected_control": "CORE-CHECK-006"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 47.25,
+      "latency_ms": 43071,
+      "rounds": 1,
+      "tool_calls": 37,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 411936,
+        "cache_write_tokens": 0,
+        "input_tokens": 442801,
+        "output_tokens": 4694,
+        "reasoning_tokens": 0,
+        "total_tokens": 859431
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 4,
+      "lines_added": 54,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "schema.sql",
+        "app/db.py",
+        "app/main.py",
+        "app/retention.py",
+        "tests/test_app.py",
+        "app/templates/account.html",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/test_t05_account_delete.py",
+        "tests/conftest.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/conftest.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T05-account-delete-harness_compliance/app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T05-account-delete-harness_compliance/tests/test_app.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T05-account-delete-harness/app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T05-account-delete-harness_compliance/app/db.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T05-account-delete-harness_compliance/app/templates/account_deleted.html"
+      ],
+      "files_read_count": 15,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.2
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-61b29622-6f13-467a-82ee-efb2f02acbdc",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 43071,
+        "wall_s": 43.09,
+        "usage": {
+          "input_tokens": 442801,
+          "output_tokens": 4694,
+          "cache_read_tokens": 411936,
+          "cache_write_tokens": 0,
+          "total_tokens": 859431,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 4,
+      "grep": 10,
+      "read": 17,
+      "edit": 4,
+      "shell": 2
+    },
+    "changed_files": {
+      "app/db.py": [
+        15,
+        0
+      ],
+      "app/main.py": [
+        11,
+        0
+      ],
+      "app/templates/account_deleted.html": [
+        10,
+        0
+      ],
+      "tests/test_app.py": [
+        18,
+        0
+      ]
+    }
+  }
+}

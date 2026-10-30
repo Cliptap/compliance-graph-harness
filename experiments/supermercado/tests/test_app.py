@@ -1,9 +1,14 @@
 import json
 import sqlite3
 from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
 
 from app.retention import purge_expired
 from conftest import add_address, register
+
+PHOTOS_DIR = Path(__file__).resolve().parents[1] / "app" / "static" / "photos"
 
 
 def _db(app):
@@ -105,6 +110,7 @@ def test_product_art_is_rendered_inline(client):
     assert 'class="media-category"' in home
 
 
+@pytest.mark.skipif(not PHOTOS_DIR.exists(), reason="photo assets not included in this workspace")
 def test_photos_are_served_and_credited(client):
     home = client.get("/").text
     assert "/static/photos/" in home

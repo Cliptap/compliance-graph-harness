@@ -90,9 +90,13 @@ next to the harness results, not pooled with the confirmed-violation corpus.
    `N = ceil((z_{0.975} + z_{0.80})^2 * sd(d)^2 / delta^2)`, with `delta = 0.5 * sd(d)` (medium
    effect), `alpha = 0.05` two-sided, power `0.80`. Minimum `N = 12` pairs; the value is frozen in
    the run manifest before the first formal task.
-3. If the measured cost exceeds the declared budget, reduce `N` and report the achieved power
+3. Cost pilot result (2026-10-30, 5 tasks × 3 arms, `composer-2.5`): paired compliance − baseline
+   mean `-6.27s`, SD `24.81s`; **N frozen at 32 pairs**. The formal run uses 12 tasks × 3
+   repetitions (36 pairs). Mean cycle time ~52s; estimated 80–90 minutes of agent time for 96 runs.
+   See `docs/research/cost-pilot.md`.
+4. If the measured cost exceeds the declared budget, reduce `N` and report the achieved power
    instead of silently underpowering.
-4. Binary outcomes (violation present/absent) use McNemar's paired test on discordant pairs.
+5. Binary outcomes (violation present/absent) use McNemar's paired test on discordant pairs.
 
 ## Analysis plan
 
