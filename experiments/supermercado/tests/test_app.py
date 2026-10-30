@@ -105,6 +105,23 @@ def test_product_art_is_rendered_inline(client):
     assert 'class="media-category"' in home
 
 
+def test_photos_are_served_and_credited(client):
+    home = client.get("/").text
+    assert "/static/photos/" in home
+    assert "/static/photos/products/" in home
+    assert "/credits" in home
+    credits = client.get("/credits")
+    assert credits.status_code == 200
+    assert "Wikimedia Commons" in credits.text
+    assert "ATTRIBUTION_PRODUCTS" in credits.text
+    photo = client.get("/static/photos/carnes.jpg")
+    assert photo.status_code == 200
+    assert photo.headers["content-type"].startswith("image/jpeg")
+    product = client.get("/static/photos/products/palta-hass-chilena.jpg")
+    assert product.status_code == 200
+    assert product.headers["content-type"].startswith("image/jpeg")
+
+
 def test_register_rejects_invalid_rut(client):
     response = client.post("/register", data={"rut": "12345678-0", "email": "x@example.cl",
                                              "password": "secret123"}, follow_redirects=False)

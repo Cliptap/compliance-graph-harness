@@ -1,6 +1,7 @@
 <article class="product-card">
   <a class="product-media cat-{{ product['category_slug'] }}" href="/product/{{ product['id'] }}" aria-label="{{ product['name'] }}">
     <svg class="product-icon" viewBox="0 0 64 64" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ product["icon"]|safe }}</svg>
+    {% if product["photo"] %}<img class="product-photo" src="/static/photos/{{ product['photo'] }}?v={{ asset_version }}" alt="" loading="eager">{% endif %}
     <span class="media-category">{{ product["category"] }}</span>
     {% if product["discount_pct"] %}<span class="badge">-{{ product["discount_pct"] }}%</span>{% endif %}
   </a>

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Créditos de fotos · Dumbo{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="/">Inicio</a> / <span>Créditos de fotos</span></nav>
+<h1>Créditos de fotos</h1>
+<p class="muted">Las fotos provienen de Wikimedia Commons y se usan bajo la licencia indicada.
+  Algunas fueron redimensionadas; se mantiene su licencia original.</p>
+<p class="muted">
+  <a href="/static/photos/ATTRIBUTION.md">Atribuciones de categorías</a> ·
+  <a href="/static/photos/ATTRIBUTION_PRODUCTS.md">Atribuciones de productos ({{ product_count }})</a>
+</p>
+<div class="credits-grid">
+  {% for category, item in photos.items() %}
+  <article class="credit-card">
+    <img src="/static/photos/{{ item.file }}?v={{ asset_version }}" alt="{{ category }}" loading="lazy">
+    <h2>{{ category }}</h2>
+    <p>{{ item.title }}</p>
+    <p>{{ item.artist }}</p>
+    <p>
+      {% if item.license_url %}<a href="{{ item.license_url }}">{{ item.license }}</a>{% else %}{{ item.license }}{% endif %}
+      · <a href="{{ item.page }}">Wikimedia Commons</a>
+    </p>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

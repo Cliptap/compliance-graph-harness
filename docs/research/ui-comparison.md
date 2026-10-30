@@ -18,7 +18,7 @@ pixel copy.
 | Inputs | 1 | 3 | 2 | 10 |
 | Buttons | 62 | 27 | 6 | 74 |
 | Footer links | 18 | 18 | 18 | 49 |
-| Product graphics | 60 inline | 24 inline | 5 inline | 127 `<img>` |
+| Product graphics | 60 photos | 24 photos | 5 photos | 127 `<img>` |
 | Sections | 17 | 0 | 2 | 28 |
 | Page height (px) | 7,525 | 2,948 | 1,542 | 12,197 |
 | Cookie banner | yes | yes | yes | yes |
@@ -42,10 +42,11 @@ pixel copy.
 ## Differences and why
 
 - **Content volume.** Jumbo has 28 sections and 127 images; Dumbo's home has 17 sections and 60
-  inline illustrations. The target is an MVP-sized storefront, not a full commercial site.
-- **Assets.** Dumbo draws category illustrations inline (SVG paths in the document) so the art does
-  not depend on image loading, caching or SVG support in the browser. Copying product photography,
-  the logo or the site text is a trademark/copyright risk and was ruled out in L15.
+  product photos. The target is an MVP-sized storefront, not a full commercial site.
+- **Assets.** Dumbo uses category and product photos from Wikimedia Commons with attribution at
+  `/credits`; an inline SVG icon remains as fallback when a product has no photo. Copying product
+  photography from the reference store, its logo or its text is a trademark/copyright risk and was
+  ruled out in L15.
 - **Links.** Dumbo exposes only routes that exist; Jumbo has dozens of marketing and help links.
   Dead links were deliberately not added.
 - **Forms.** Dumbo uses server-rendered forms (1 input on the home, 3 on the catalog); Jumbo is a

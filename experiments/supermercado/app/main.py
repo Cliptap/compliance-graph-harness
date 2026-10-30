@@ -44,6 +44,19 @@ PICKUP_STORES = ("Sucursal Centro", "Sucursal Providencia", "Sucursal Ñuñoa")
 SECRET_DEFAULT = "dev-only-secret-change-me"
 PER_PAGE = 24
 ASSET_VERSION = "5"
+PHOTOS_PATH = BASE_DIR / "static" / "photos" / "photos.json"
+PRODUCT_PHOTOS_PATH = BASE_DIR / "static" / "photos" / "product_photos.json"
+
+
+def _load_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+PHOTOS = _load_json(PHOTOS_PATH)
+PRODUCT_PHOTOS = _load_json(PRODUCT_PHOTOS_PATH)
 PALETTE = [
     ("#0d4f49", "#1fbf9c"), ("#b45309", "#f6c177"), ("#9f1239", "#ff7a8a"),
     ("#1e3a8a", "#60a5fa"), ("#5b21b6", "#c4b5fd"), ("#166534", "#4ade80"),
@@ -125,6 +138,8 @@ def _decorate(row) -> dict:
     product["category_slug"] = _slug(product["category"])
     product["initial"] = product["name"][:1].upper()
     product["icon"] = CATEGORY_ICONS.get(product["category"], DEFAULT_ICON)
+    product["photo"] = ((PRODUCT_PHOTOS.get(product["name"]) or {}).get("file")
+                        or (PHOTOS.get(product["category"]) or {}).get("file"))
     old = product.get("old_price_clp")
     product["discount_pct"] = round((old - product["price_clp"]) * 100 / old) if old else 0
     return product
@@ -802,6 +817,10 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) -> 
         with conn() as connection:
             create_right(connection, customer["id"], "block")
         return RedirectResponse("/rights", status_code=303)
+
+    @app.get("/credits", response_class=HTMLResponse)
+    def credits(request: Request):
+        return render(request, "credits.html", photos=PHOTOS, product_count=len(PRODUCT_PHOTOS))
 
     @app.get("/favicon.ico", include_in_schema=False)
     def favicon():

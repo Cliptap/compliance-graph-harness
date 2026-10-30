@@ -1,8 +1,9 @@
 # Dumbo — sistema objetivo del experimento
 
 Aplicación web ficticia de supermercado en línea, construida **sin el harness**. Es la base común
-de los tres brazos del experimento T7. No usa marcas, textos ni imágenes de un comercio real y no
-trata datos personales ni pagos reales.
+de los tres brazos del experimento T7. No usa marcas, textos ni imágenes del comercio de referencia;
+las fotos de categoría y producto provienen de Wikimedia Commons con atribución y no tratan datos
+personales ni pagos reales.
 
 ## Stack congelado
 
@@ -15,8 +16,12 @@ trata datos personales ni pagos reales.
 
 ```powershell
 python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
+.\run_dev.bat
 ```
+
+`run_dev.bat` levanta uvicorn en `http://127.0.0.1:8000` con recarga automática de Python y un
+supervisor que lo reinicia si el proceso de recarga se cae. Para una ejecución sin recarga:
+`python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`.
 
 La base se crea en `data/shop.db` (configurable con `SHOP_DB`). El secreto de firma se toma de
 `APP_SECRET`; sin la variable usa un valor de desarrollo.
@@ -31,7 +36,7 @@ python -m pytest tests -q -p no:cacheprovider
 
 - Home curado con ofertas, más vendidos, novedades y vitrinas por categoría (`/`).
 - Catálogo completo con búsqueda, filtros y paginación (`/catalog`); 152 productos en 20 categorías.
-- Ficha de producto con descripción, precio, stock y relacionados (`/product/{id}`), más imagen SVG generada (`/img/{id}.svg`).
+- Ficha de producto con descripción, precio, stock y relacionados (`/product/{id}`); foto de producto o categoría con fallback SVG inline.
 - Carrito (`/cart`).
 - Registro y login con RUT o correo (`/register`, `/login`).
 - Cuenta, direcciones y pedidos (`/account`, `/addresses`, `/orders`).
@@ -41,6 +46,13 @@ python -m pytest tests -q -p no:cacheprovider
 - Política de privacidad y terceros (`/privacy`, `/privacy/third-parties`).
 - Cookies por categoría, opcionales desactivadas por defecto (`/cookies`).
 - Derechos del titular: acceso, rectificación, supresión, oposición, portabilidad y bloqueo (`/rights`).
+
+## Fotos y créditos
+
+- Fotos de categoría y de producto descargadas de Wikimedia Commons y atribuidas en `/credits`.
+- Archivos completos: `app/static/photos/ATTRIBUTION.md` y `ATTRIBUTION_PRODUCTS.md`.
+- Si un producto no tiene foto propia, usa la de su categoría; si tampoco existe, cae al ícono SVG inline.
+- Las imágenes se redimensionaron y recomprimieron; se mantiene la licencia de cada archivo.
 
 ## Controles de privacidad del sistema base
 

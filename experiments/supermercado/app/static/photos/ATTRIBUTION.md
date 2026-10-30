@@ -1,0 +1,26 @@
+# Photo credits
+
+Photos from Wikimedia Commons, used under the license shown for each file.
+
+| Category | File | Title | Author | License | Source |
+|---|---|---|---|---|---|
+| Frutas y verduras | frutas-y-verduras.jpg | Fruits and Vegetables (Unsplash).jpg | Peter Feghali peterf | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Fruits_and_Vegetables_(Unsplash).jpg) |
+| Lácteos | lacteos.jpg | Cut wheels of cheese (Unsplash).jpg | Alexander Maasch tiefenscharf | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Cut_wheels_of_cheese_(Unsplash).jpg) |
+| Panadería | panaderia.jpg | Fresh Loaves of Bread (Unsplash).jpg | Clem Onojeghuo clemono2 | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Fresh_Loaves_of_Bread_(Unsplash).jpg) |
+| Bebidas | bebidas.jpg | Orange juice (Unsplash).jpg | Piotr Chrobot chrumo | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Orange_juice_(Unsplash).jpg) |
+| Despensa | despensa.jpg | Pantry shelf (Unsplash).jpg | Chris Lawton chrislawton | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Pantry_shelf_(Unsplash).jpg) |
+| Carnes | carnes.jpg | SZ 深圳 Shenzhen 福田 Futian 皇庭廣場 Wongtee Plaza shop 漢陽廷自助烤肉 Hayaco Barbecue Restaurant raw beef n pork slices September 2025 N13P 08.jpg | WCPCLM 2002258 | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:SZ_%E6%B7%B1%E5%9C%B3_Shenzhen_%E7%A6%8F%E7%94%B0_Futian_%E7%9A%87%E5%BA%AD%E5%BB%A3%E5%A0%B4_Wongtee_Plaza_shop_%E6%BC%A2%E9%99%BD%E5%BB%B7%E8%87%AA%E5%8A%A9%E7%83%A4%E8%82%89_Hayaco_Barbecue_Restaurant_raw_beef_n_pork_slices_September_2025_N13P_08.jpg) |
+| Limpieza | limpieza.jpg | Cleaning a coffee table at home with cleaning supplies and worn furniture.jpg | Shixart1985 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Cleaning_a_coffee_table_at_home_with_cleaning_supplies_and_worn_furniture.jpg) |
+| Congelados | congelados.jpg | Frozen berries (Unsplash).jpg | fireskystudios.com asthetik | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Frozen_berries_(Unsplash).jpg) |
+| Snacks | snacks.jpg | Potato-Chips.jpg | Evan-Amos | [Public domain]() | [Commons](https://commons.wikimedia.org/wiki/File:Potato-Chips.jpg) |
+| Infantil | infantil.jpg | Storebought baby food - fruit and vegetable puree in glass and pouch.jpg | MAKY.OREL | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Storebought_baby_food_-_fruit_and_vegetable_puree_in_glass_and_pouch.jpg) |
+| Mascotas | mascotas.jpg | Dog Food (1).jpg | Alisha Vargas | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Dog_Food_(1).jpg) |
+| Hogar | hogar.jpg | Laundry detergent pods.jpg | ajcespedes | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Laundry_detergent_pods.jpg) |
+| Belleza | belleza.jpg | Make-up kit (Unsplash).jpg | Manu Camargo manucmg | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Make-up_kit_(Unsplash).jpg) |
+| Desayuno | desayuno.jpg | Bowl of Cereal (Unsplash).jpg | Yvens Banatte yvensb | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Bowl_of_Cereal_(Unsplash).jpg) |
+| Comidas preparadas | comidas-preparadas.jpg | Pesto Pasta (Unsplash).jpg | Eaters Collective eaterscollective | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Pesto_Pasta_(Unsplash).jpg) |
+| Bebés | bebes.jpg | Baby and baby milk bottle, Baby feeding, Moscow, Russia.jpg | Vyacheslav Argenberg | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baby_and_baby_milk_bottle,_Baby_feeding,_Moscow,_Russia.jpg) |
+| Licores | licores.jpg | Enjoying a bottle of red wine (Unsplash).jpg | Jez Timms jeztimms | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Enjoying_a_bottle_of_red_wine_(Unsplash).jpg) |
+| Conservas | conservas.jpg | Can of peaches.jpg | GALAXY 2018 A7 | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Can_of_peaches.jpg) |
+| Salsas | salsas.jpg | Ketchup.jpg | Alfred Grupstra | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Ketchup.jpg) |
+| Cuidado personal | cuidado-personal.jpg | Toothbrush, Toothpaste, Dental Care (571741).jpg | Steve Buissinne, South Africa | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Toothbrush,_Toothpaste,_Dental_Care_(571741).jpg) |

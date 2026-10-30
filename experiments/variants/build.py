@@ -23,7 +23,7 @@ BASE = ROOT / "experiments" / "supermercado"
 MANIFEST = HERE / "manifest.json"
 GENERATED = HERE / "generated"
 EXTS = {".py", ".js", ".jsx", ".ts", ".tsx", ".sql", ".html"}
-IGNORE = shutil.ignore_patterns("data", "__pycache__", ".pytest_cache", "*.pyc")
+IGNORE = shutil.ignore_patterns("data", "__pycache__", ".pytest_cache", "*.pyc", "photos")
 SPEC = TaskSpec(task_id="VARIANT", goal="variant", allowed_paths=["*"])
 
 
