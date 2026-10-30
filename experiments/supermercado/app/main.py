@@ -138,8 +138,10 @@ def _decorate(row) -> dict:
     product["category_slug"] = _slug(product["category"])
     product["initial"] = product["name"][:1].upper()
     product["icon"] = CATEGORY_ICONS.get(product["category"], DEFAULT_ICON)
-    product["photo"] = ((PRODUCT_PHOTOS.get(product["name"]) or {}).get("file")
-                        or (PHOTOS.get(product["category"]) or {}).get("file"))
+    category_photo = (PHOTOS.get(product["category"]) or {}).get("file")
+    product["photo"] = (PRODUCT_PHOTOS.get(product["name"]) or {}).get("file") or category_photo
+    if product["photo"] and not (BASE_DIR / "static" / "photos" / product["photo"]).exists():
+        product["photo"] = category_photo
     old = product.get("old_price_clp")
     product["discount_pct"] = round((old - product["price_clp"]) * 100 / old) if old else 0
     return product
