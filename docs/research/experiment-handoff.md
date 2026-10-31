@@ -53,6 +53,12 @@
 ## Caveats
 
 - Cursor usage is exhausted; rep3 harness/compliance and 5 rep3 baseline cells are invalid.
+- **Compliance failure diagnosis**: `docs/research/compliance-failure-diagnosis.md`. T01 was an
+  over-strict hidden test (`201` rejected), not a privacy failure. T05 is a real hard delete that the
+  gate missed because there is no customer-deletion policy. T12 is a real RUT/email/phone exposure
+  through `JSONResponse`/list serialization that the gate and the Semgrep rule missed.
+- The T01 hidden test now accepts `200/201/303`; the old T01 failures must not be counted as
+  violations.
 - `formal_run.py --resume` now retries reports whose status is not `finished`.
 - The OpenCode compliance gate is prompt-driven (local CLI), not a custom tool; record the difference
   in the new preregistration/results.

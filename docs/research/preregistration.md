@@ -137,3 +137,7 @@ next to the harness results, not pooled with the confirmed-violation corpus.
 - The compliance arm in OpenCode uses a prompt-driven local gate (`compliance_check.py` + an
   `AGENTS.md` instruction), because the Cursor custom tool is not available. This difference is
   recorded in the new run.
+- Diagnosis of the Cursor compliance failures: T01 was an over-strict hidden-test status assertion
+  (`201`), T05 a real customer hard delete missed by the gate, T12 a real RUT/email/phone exposure
+  through `JSONResponse`/list serialization missed by the gate and Semgrep. See
+  `docs/research/compliance-failure-diagnosis.md`; fix the policies before the OpenCode run.
