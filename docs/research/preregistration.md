@@ -122,3 +122,18 @@ next to the harness results, not pooled with the confirmed-violation corpus.
 3. Build mutated variants (A) and trap tasks (B) with hidden acceptance tests.
 4. Formal run: `N` tasks × 3 arms.
 5. Analysis and report; then T14/T22 (presentation).
+
+## Status 2026-10-30
+
+- The **Cursor formal run** (`composer-2.5`) was launched with 108 runs: 79 finished, 29 invalid
+  because the Cursor account hit its usage limit. Its results are **provisional** and are not the T7
+  result; see `docs/research/formal-results.md` and `docs/research/experiment-handoff.md`.
+- The model is changed to **`opencode-go/deepseek-v4.1-flash`** through the OpenCode headless runner.
+  This is a **new experiment**: the Cursor runs are not comparable and are not pooled.
+- The task pack, hidden tests and the independent Semgrep oracle are model-independent and are
+  reused unchanged.
+- The `N=32` from the Cursor cost pilot is **not carried over**. The OpenCode run needs its own cost
+  pilot with the fixed model; N and the time/cost estimates are frozen again from that pilot.
+- The compliance arm in OpenCode uses a prompt-driven local gate (`compliance_check.py` + an
+  `AGENTS.md` instruction), because the Cursor custom tool is not available. This difference is
+  recorded in the new run.
