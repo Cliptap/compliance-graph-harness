@@ -1,0 +1,101 @@
+{
+  "task": "T06-points-redeem",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T06-points-redeem-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "error",
+    "error": null,
+    "cycle_time_s": 5.55,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-b9d569a7-3e98-4cd8-96b4-fe518f93bc12",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1727,
+        "wall_s": 1.74,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T06-points-redeem",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n______________ test_points_redemption_does_not_log_personal_data ______________\n\nclient = <starlette.testclient.TestClient object at 0x00000213C518CAD0>\ncapsys = <_pytest.capture.CaptureFixture object at 0x00000213C518D550>\ncaplog = <_pytest.logging.LogCaptureFixture object at 0x00000213C518D6A0>\n\n    def test_points_redemption_does_not_log_personal_data(client, capsys, caplog):\n        register(client)\n        add_order(client)\n        capsys.readouterr()\n        caplog.clear()\n        response = client.post(\"/points/redeem\", data={\"points\": \"1\"}, follow_redirects=False)\n>       assert response.status_code in (200, 303)\nE       assert 404 in (200, 303)\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_t06_points_redeem.py:10: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden\\test_t06_points_redeem.py::test_points_redemption_does_not_log_personal_data\n1 failed in 0.36s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.log-sensitive"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  },
+  "summary": {
+    "status": "error",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 5.55,
+      "latency_ms": 1727,
+      "rounds": 1,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-b9d569a7-3e98-4cd8-96b4-fe518f93bc12",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1727,
+        "wall_s": 1.74,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  }
+}

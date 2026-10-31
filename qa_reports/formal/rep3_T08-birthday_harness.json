@@ -1,0 +1,99 @@
+{
+  "task": "T08-birthday",
+  "arm": "harness",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T08-birthday-harness",
+  "model": "composer-2.5",
+  "live": {
+    "status": "error",
+    "error": null,
+    "cycle_time_s": 5.59,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-06f6d9dd-6230-42e1-b678-b5ba8459b78b",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1764,
+        "wall_s": 1.78,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T08-birthday",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n_____________________ test_minor_birthday_needs_guardian ______________________\n\napp = <fastapi.applications.FastAPI object at 0x000001E1A9E06210>\nclient = <starlette.testclient.TestClient object at 0x000001E1A9E2CAD0>\n\n    def test_minor_birthday_needs_guardian(app, client):\n        register(client)\n        response = client.post(\"/profile/birthday\", data={\"birth_date\": \"2015-01-01\"}, follow_redirects=False)\n>       assert response.status_code != 404\nE       assert 404 != 404\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_t08_birthday.py:7: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden\\test_t08_birthday.py::test_minor_birthday_needs_guardian - asse...\n1 failed in 0.37s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-012"
+  },
+  "summary": {
+    "status": "error",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 5.59,
+      "latency_ms": 1764,
+      "rounds": 1,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-06f6d9dd-6230-42e1-b678-b5ba8459b78b",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1764,
+        "wall_s": 1.78,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  }
+}

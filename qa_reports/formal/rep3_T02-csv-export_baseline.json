@@ -1,0 +1,149 @@
+{
+  "task": "T02-csv-export",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T02-csv-export-baseline",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 42.45,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-24b8eed0-d732-40b1-af99-3a21974b5d28",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 37685,
+        "wall_s": 37.7,
+        "usage": {
+          "input_tokens": 376620,
+          "output_tokens": 4917,
+          "cache_read_tokens": 352608,
+          "cache_write_tokens": 0,
+          "total_tokens": 734145,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T02-csv-export",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.24s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.password-response"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 42.45,
+      "latency_ms": 37685,
+      "rounds": 1,
+      "tool_calls": 35,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 352608,
+        "cache_write_tokens": 0,
+        "input_tokens": 376620,
+        "output_tokens": 4917,
+        "reasoning_tokens": 0,
+        "total_tokens": 734145
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 2,
+      "lines_added": 144,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "schema.sql",
+        "tests/test_app.py",
+        "app/main.py",
+        "TASK.md",
+        "tests/conftest.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/test_t02_csv_export.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T02-csv-export-harness_compliance/app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T02-csv-export-harness_compliance/tests/test_app.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T02-csv-export-harness/tests/test_app.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T02-csv-export-harness/app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T02-csv-export-harness_compliance/app/templates/account.html"
+      ],
+      "files_read_count": 11,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.18181818181818182
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-24b8eed0-d732-40b1-af99-3a21974b5d28",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 37685,
+        "wall_s": 37.7,
+        "usage": {
+          "input_tokens": 376620,
+          "output_tokens": 4917,
+          "cache_read_tokens": 352608,
+          "cache_write_tokens": 0,
+          "total_tokens": 734145,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 3,
+      "grep": 8,
+      "read": 17,
+      "edit": 5,
+      "shell": 2
+    },
+    "changed_files": {
+      "app/main.py": [
+        89,
+        0
+      ],
+      "tests/test_app.py": [
+        55,
+        1
+      ]
+    }
+  }
+}

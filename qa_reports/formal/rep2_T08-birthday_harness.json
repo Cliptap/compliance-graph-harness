@@ -1,0 +1,160 @@
+{
+  "task": "T08-birthday",
+  "arm": "harness",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T08-birthday-harness",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 44.96,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-f33b248e-796d-41c2-a69f-2aefa43972fd",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 41207,
+        "wall_s": 41.23,
+        "usage": {
+          "input_tokens": 515999,
+          "output_tokens": 4954,
+          "cache_read_tokens": 481472,
+          "cache_write_tokens": 0,
+          "total_tokens": 1002425,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T08-birthday",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.26s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-012"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 44.96,
+      "latency_ms": 41207,
+      "rounds": 1,
+      "tool_calls": 36,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 481472,
+        "cache_write_tokens": 0,
+        "input_tokens": 515999,
+        "output_tokens": 4954,
+        "reasoning_tokens": 0,
+        "total_tokens": 1002425
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 29,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 5,
+      "lines_added": 124,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "schema.sql",
+        "tests/test_app.py",
+        "app/main.py",
+        "app/db.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/test_t08_birthday.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T08-birthday-baseline/app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T08-birthday-baseline/tests/test_app.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T08-birthday-baseline/schema.sql",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T08-birthday-baseline/app/db.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T08-birthday-baseline/app/retention.py",
+        "app/retention.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/conftest.py"
+      ],
+      "files_read_count": 12,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.25
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-f33b248e-796d-41c2-a69f-2aefa43972fd",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 41207,
+        "wall_s": 41.23,
+        "usage": {
+          "input_tokens": 515999,
+          "output_tokens": 4954,
+          "cache_read_tokens": 481472,
+          "cache_write_tokens": 0,
+          "total_tokens": 1002425,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 3,
+      "grep": 6,
+      "read": 16,
+      "edit": 8,
+      "shell": 3
+    },
+    "changed_files": {
+      "app/db.py": [
+        5,
+        0
+      ],
+      "app/main.py": [
+        70,
+        1
+      ],
+      "app/retention.py": [
+        1,
+        0
+      ],
+      "schema.sql": [
+        2,
+        0
+      ],
+      "tests/test_app.py": [
+        46,
+        0
+      ]
+    }
+  }
+}

@@ -43,6 +43,7 @@ def runs() -> list[dict]:
             "rep": rep,
             "task": report.get("task"),
             "arm": report.get("arm"),
+            "status": live.get("status"),
             "cycle_time_s": live.get("cycle_time_s"),
             "tokens": tokens_of((summary.get("efficiency") or {}).get("tokens")),
             "hidden": hidden.get("hidden_tests_passed"),
@@ -85,13 +86,22 @@ def main() -> int:
     parser.add_argument("--out", default=str(ROOT / "qa_reports" / "formal" / "analysis.json"))
     args = parser.parse_args()
     rows = runs()
+    valid = [row for row in rows if row.get("status") == "finished"]
     by_key = {(row["rep"], row["task"], row["arm"]): row for row in rows}
-    summary = {"runs": len(rows), "arms": {}, "paired": {}, "detector_vs_oracle": {}}
+    summary = {
+        "runs": len(rows),
+        "finished": len(valid),
+        "invalid": len(rows) - len(valid),
+        "arms": {},
+        "paired": {},
+        "detector_vs_oracle": {},
+    }
     for arm in ARMS:
-        subset = [row for row in rows if row["arm"] == arm]
+        subset = [row for row in valid if row["arm"] == arm]
         times = [row["cycle_time_s"] for row in subset if row["cycle_time_s"]]
         summary["arms"][arm] = {
             "n": len(subset),
+            "invalid": sum(1 for row in rows if row["arm"] == arm and row.get("status") != "finished"),
             "cycle_mean": statistics.mean(times) if times else None,
             "cycle_median": statistics.median(times) if times else None,
             "hidden_pass": sum(1 for row in subset if row["hidden"]),
@@ -104,7 +114,8 @@ def main() -> int:
             base = by_key.get((rep, task, "baseline"))
             comp = by_key.get((rep, task, "harness_compliance"))
             harness = by_key.get((rep, task, "harness"))
-            if base and comp and base["cycle_time_s"] and comp["cycle_time_s"]:
+            if (base and comp and base["cycle_time_s"] and comp["cycle_time_s"]
+                    and base.get("status") == "finished" and comp.get("status") == "finished"):
                 pairs.append({
                     "rep": rep,
                     "task": task,
@@ -127,7 +138,7 @@ def main() -> int:
     }
     for arm in ("baseline", "harness", "harness_compliance"):
         tp = fp = fn = tn = 0
-        for row in rows:
+        for row in valid:
             if row["arm"] != arm:
                 continue
             detector = row["detector_findings"] > 0

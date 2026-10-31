@@ -1,0 +1,159 @@
+{
+  "task": "T06-points-redeem",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T06-points-redeem-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 51.7,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-80734c6c-7c24-456c-8241-83eac6d1878f",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 47870,
+        "wall_s": 47.89,
+        "usage": {
+          "input_tokens": 455663,
+          "output_tokens": 4924,
+          "cache_read_tokens": 422976,
+          "cache_write_tokens": 0,
+          "total_tokens": 883563,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T06-points-redeem",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.27s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.log-sensitive"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 51.7,
+      "latency_ms": 47870,
+      "rounds": 1,
+      "tool_calls": 40,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 422976,
+        "cache_write_tokens": 0,
+        "input_tokens": 455663,
+        "output_tokens": 4924,
+        "reasoning_tokens": 0,
+        "total_tokens": 883563
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 28,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 4,
+      "lines_added": 63,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "schema.sql",
+        "tests/test_app.py",
+        "app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T06-points-redeem-harness/app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T06-points-redeem-harness/tests/test_app.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/test_t06_points_redeem.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T06-points-redeem-harness/schema.sql",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T06-points-redeem-harness/tests/conftest.py",
+        "tests/conftest.py",
+        ".cursor/skills/compliance-dev/SKILL.md",
+        "app/db.py"
+      ],
+      "files_read_count": 12,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.25
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-80734c6c-7c24-456c-8241-83eac6d1878f",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 47870,
+        "wall_s": 47.89,
+        "usage": {
+          "input_tokens": 455663,
+          "output_tokens": 4924,
+          "cache_read_tokens": 422976,
+          "cache_write_tokens": 0,
+          "total_tokens": 883563,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 4,
+      "grep": 7,
+      "read": 19,
+      "shell": 4,
+      "edit": 5,
+      "mcp": 1
+    },
+    "changed_files": {
+      "app/main.py": [
+        27,
+        0
+      ],
+      "schema.sql": [
+        7,
+        0
+      ],
+      "tests/conftest.py": [
+        6,
+        0
+      ],
+      "tests/test_app.py": [
+        23,
+        1
+      ]
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "task": "T05-account-delete",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T05-account-delete-baseline",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 40.39,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-4b6c5ca7-d484-48f9-95b5-c653a052d934",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 36917,
+        "wall_s": 36.94,
+        "usage": {
+          "input_tokens": 348763,
+          "output_tokens": 6250,
+          "cache_read_tokens": 315680,
+          "cache_write_tokens": 0,
+          "total_tokens": 670693,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T05-account-delete",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n___________ test_delete_creates_erasure_request_and_keeps_retention ___________\n\napp = <fastapi.applications.FastAPI object at 0x0000025A34F32490>\nclient = <starlette.testclient.TestClient object at 0x0000025A34F5CAD0>\n\n    def test_delete_creates_erasure_request_and_keeps_retention(app, client):\n        register(client)\n        response = client.post(\"/account/delete\", follow_redirects=False)\n        assert response.status_code in (200, 303)\n        dump = db_dump(app)\n>       assert \"ana@example.cl\" in dump\nE       assert 'ana@example.cl' in \"{'name': 'products', 'seq': 152}\\n{'name': 'customers', 'seq': 1}\\n{'id': 1, 'name': 'Plátano Extra Granel', 'categor...'unit': '1 L', 'old_price_clp': None, 'description': 'Chimichurri de Dumbo. El toque que tu comida estaba esperando.'}\"\n\nhidden\\test_t05_account_delete.py:9: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden\\test_t05_account_delete.py::test_delete_creates_erasure_request_and_keeps_retention\n1 failed in 0.39s\n",
+    "oracle": {
+      "error": null,
+      "findings": [
+        {
+          "rule": "experiments.tasks.oracle.dumbo.hard-delete",
+          "path": "app/db.py",
+          "line": 225,
+          "message": "Physical deletion of customer data."
+        }
+      ]
+    },
+    "expected_rules": [
+      "dumbo.hard-delete"
+    ],
+    "expected_control": "CORE-CHECK-006"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 40.39,
+      "latency_ms": 36917,
+      "rounds": 1,
+      "tool_calls": 33,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 315680,
+        "cache_write_tokens": 0,
+        "input_tokens": 348763,
+        "output_tokens": 6250,
+        "reasoning_tokens": 0,
+        "total_tokens": 670693
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 5,
+      "lines_added": 66,
+      "lines_deleted": 2,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "schema.sql",
+        "app/db.py",
+        "app/main.py",
+        "app/rights.py",
+        "app/templates/account.html",
+        "tests/test_app.py",
+        "app/retention.py",
+        "README.md",
+        "app/templates/login.html",
+        "app/templates/index.html"
+      ],
+      "files_read_count": 11,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.2727272727272727
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-4b6c5ca7-d484-48f9-95b5-c653a052d934",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 36917,
+        "wall_s": 36.94,
+        "usage": {
+          "input_tokens": 348763,
+          "output_tokens": 6250,
+          "cache_read_tokens": 315680,
+          "cache_write_tokens": 0,
+          "total_tokens": 670693,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 2,
+      "grep": 8,
+      "read": 16,
+      "edit": 6,
+      "shell": 1
+    },
+    "changed_files": {
+      "app/db.py": [
+        22,
+        0
+      ],
+      "app/main.py": [
+        11,
+        2
+      ],
+      "app/templates/account.html": [
+        3,
+        0
+      ],
+      "app/templates/login.html": [
+        1,
+        0
+      ],
+      "tests/test_app.py": [
+        29,
+        0
+      ]
+    }
+  }
+}

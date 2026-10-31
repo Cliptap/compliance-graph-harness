@@ -59,6 +59,8 @@ def main() -> int:
     for task in tasks:
         out = out_dir / f"rep{args.rep}_{task}_{args.arm}.json"
         report = load(out) if args.resume else None
+        if report is not None and report.get("live", {}).get("status") != "finished":
+            report = None
         if report is None:
             command = [sys.executable, "experiments/tasks/run_arm.py", "--task", task,
                        "--arm", args.arm, "--model", args.model,

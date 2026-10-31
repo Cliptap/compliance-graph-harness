@@ -29,15 +29,28 @@ def main() -> int:
         "",
         "Generated from `qa_reports/formal/analysis.json`; the formal run uses 12 tasks × 3 repetitions.",
         "",
+    ]
+    finished = data.get("finished")
+    total = data.get("runs")
+    if finished is not None and total is not None and finished < total:
+        lines += [
+            f"> **PROVISIONAL**: {finished}/{total} runs finished; "
+            f"{data.get('invalid', 0)} invalid. Rerun the invalid cells before using these results.",
+            "> Invalid runs failed with the Cursor SDK message: "
+            "`You're out of usage. Switch to Auto, or ask your admin to increase your limit.`",
+            "",
+        ]
+    lines += [
         "## Arms",
         "",
-        "| Arm | n | Cycle mean | Cycle median | Hidden pass | Oracle findings | Tokens |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+        "| Arm | n | Invalid | Cycle mean | Cycle median | Hidden pass | Oracle findings | Tokens |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for arm, values in data.get("arms", {}).items():
         lines.append(
-            f"| {arm} | {values['n']} | {fmt(values['cycle_mean'])}s | {fmt(values['cycle_median'])}s | "
-            f"{values['hidden_pass']}/{values['n']} | {values['oracle_findings']} | {values['tokens']} |")
+            f"| {arm} | {values['n']} | {values.get('invalid', 0)} | {fmt(values['cycle_mean'])}s | "
+            f"{fmt(values['cycle_median'])}s | {values['hidden_pass']}/{values['n']} | "
+            f"{values['oracle_findings']} | {values['tokens']} |")
     paired = data.get("paired", {})
     lines += [
         "",
