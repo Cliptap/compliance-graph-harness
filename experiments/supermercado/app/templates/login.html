@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Ingresar · Dumbo{% endblock %}
+{% block content %}
+<h1>Iniciar sesión</h1>
+{% if errors %}<ul class="errors">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+<form method="post" action="/login" class="form">
+  <input type="hidden" name="next" value="{{ next_url or '' }}">
+  <label>Correo electrónico o RUT <input type="text" name="identifier" required autocomplete="username"></label>
+  <label>Contraseña <input type="password" name="password" required autocomplete="current-password"></label>
+  <button type="submit" class="button primary">Iniciar sesión</button>
+</form>
+<p class="muted">¿No tienes cuenta? <a href="/register">Crear cuenta</a></p>
+{% endblock %}

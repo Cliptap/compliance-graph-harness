@@ -1,0 +1,366 @@
+{
+  "task": "D01-phone-field",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D01-phone-field-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 102.53,
+    "tool_calls_by_name": {
+      "bash": 10,
+      "read": 14,
+      "edit": 10
+    },
+    "files_read": [
+      "schema.sql",
+      "TASK.md",
+      "app/main.py",
+      "app/db.py",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "app/templates/register.html",
+      "app/templates/account.html",
+      "app/retention.py",
+      "README.md",
+      "app/templates/me_data.html",
+      "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D01-phone-field-rules_skills_gate/tests/conftest.py",
+      "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D01-phone-field-rules_skills_gate/tests/test_app.py",
+      "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D01-phone-field-rules_skills_gate/schema.sql"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 506419,
+      "input_tokens": 57277,
+      "output_tokens": 4019,
+      "reasoning_tokens": 963,
+      "cache_read_tokens": 444160,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.012913,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 102.53,
+      "latency_ms": 102530,
+      "rounds": 12,
+      "tool_calls": 34,
+      "turns": 12,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 506419,
+        "input_tokens": 57277,
+        "output_tokens": 4019,
+        "reasoning_tokens": 963,
+        "cache_read_tokens": 444160,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.012913
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 7,
+      "lines_added": 31,
+      "lines_deleted": 7,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "schema.sql",
+        "TASK.md",
+        "app/main.py",
+        "app/db.py",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "app/templates/register.html",
+        "app/templates/account.html",
+        "app/retention.py",
+        "README.md",
+        "app/templates/me_data.html",
+        "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D01-phone-field-rules_skills_gate/tests/conftest.py",
+        "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D01-phone-field-rules_skills_gate/tests/test_app.py",
+        "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D01-phone-field-rules_skills_gate/schema.sql"
+      ],
+      "files_read_count": 14,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.21428571428571427
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7581,
+          "input": 5627,
+          "output": 153,
+          "reasoning": 9,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000946626
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 11030,
+          "input": 3400,
+          "output": 313,
+          "reasoning": 21,
+          "cache": {
+            "write": 0,
+            "read": 7296
+          }
+        },
+        "cost": 0.000732288
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 32909,
+          "input": 21960,
+          "output": 245,
+          "reasoning": 80,
+          "cache": {
+            "write": 0,
+            "read": 10624
+          }
+        },
+        "cost": 0.003520872
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35605,
+          "input": 2791,
+          "output": 175,
+          "reasoning": 127,
+          "cache": {
+            "write": 0,
+            "read": 32512
+          }
+        },
+        "cost": 0.000697386
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38437,
+          "input": 2646,
+          "output": 203,
+          "reasoning": 388,
+          "cache": {
+            "write": 0,
+            "read": 35200
+          }
+        },
+        "cost": 0.0008571
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 44936,
+          "input": 6805,
+          "output": 318,
+          "reasoning": 53,
+          "cache": {
+            "write": 0,
+            "read": 37760
+          }
+        },
+        "cost": 0.00135663
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 51006,
+          "input": 6098,
+          "output": 307,
+          "reasoning": 57,
+          "cache": {
+            "write": 0,
+            "read": 44544
+          }
+        },
+        "cost": 0.001266732
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 53478,
+          "input": 2743,
+          "output": 106,
+          "reasoning": 69,
+          "cache": {
+            "write": 0,
+            "read": 50560
+          }
+        },
+        "cost": 0.00066813
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 57572,
+          "input": 2171,
+          "output": 2017,
+          "reasoning": 136,
+          "cache": {
+            "write": 0,
+            "read": 53248
+          }
+        },
+        "cost": 0.001777194
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 57751,
+          "input": 2389,
+          "output": 62,
+          "reasoning": 4,
+          "cache": {
+            "write": 0,
+            "read": 55296
+          }
+        },
+        "cost": 0.000563838
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 57852,
+          "input": 187,
+          "output": 46,
+          "reasoning": 19,
+          "cache": {
+            "write": 0,
+            "read": 57600
+          }
+        },
+        "cost": 0.00023985
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 58262,
+          "input": 460,
+          "output": 74,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 57728
+          }
+        },
+        "cost": 0.000286584
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 10,
+      "read": 14,
+      "edit": 10
+    },
+    "changed_files": {
+      "app/db.py": [
+        3,
+        0
+      ],
+      "app/main.py": [
+        8,
+        5
+      ],
+      "app/retention.py": [
+        3,
+        2
+      ],
+      "app/templates/account.html": [
+        1,
+        0
+      ],
+      "app/templates/register.html": [
+        1,
+        0
+      ],
+      "schema.sql": [
+        1,
+        0
+      ],
+      "tests/test_app.py": [
+        14,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "D01-phone-field",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.23s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "map",
+        "expect": [
+          "secondary_phone",
+          "PERSONAL_CONTACT"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "y 19.628 Art. 27°; Ley 19.628 Art. 28°; Ley 19.628 Art. 2° let. p); Ley 19.628 Art. 34° ter let. i), Art. 34° quáter let. d); Ley 19.628 Art. 3° let. b); Ley 19.628 Art. 3° let. c); Ley 19.628 Art. 3° let. g); Ley 19.628 Art. 7° inc. 2° N° ii; Ley 19.628 Art. 8° let. b); Ley 19.628 Arts. 4° al 11°; Ley 21.719 Art. 14 bis; Ley 21.719 Art. 3 c); Ley 21.719 Art. 4 y Art. 10 |\n| `address_id` | customers | schema.sql:45 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` | CWE CWE-200; CWE CWE-404; CWE CWE-532; ISO/IEC 27001:2022 A.8.10; ISO/IEC 27001:2022 A.8.11; ISO/IEC 27001:2022 A.8.12; Ley 19.496 Art. 28 B; Ley 19.628 Art. 12°; Ley 19.628 Art. 13°; Ley 19.628 Art. 14° bis; Ley 19.628 Art. 14° let. d); Ley 19.628 Art. 14° ter; Ley 19.628 Art. 14° ter let. h); Ley 19.628 Art. 15°; Ley 19.628 Art. 15° bis; Ley 19.628 Art. 27°; Ley 19.628 Art. 28°; Ley 19.628 Art. 2° let. p); Ley 19.628 Art. 34° ter let. i), Art. 34° quáter let. d); Ley 19.628 Art. 3° let. b); Ley 19.628 Art. 3° let. c); Ley 19.628 Art. 3° let. g); Ley 19.628 Art. 7° inc. 2° N° ii; Ley 19.628 Art. 8° let. b); Ley 19.628 Arts. 4° al 11°; Ley 21.719 Art. 14 bis; Ley 21.719 Art. 3 c); Ley 21.719 Art. 4 y Art. 10 |\n\n## Sinks\n\n| Kind | Call | Location |\n| --- | --- | --- |\n| print | `print` | app/incidents.py:33 |\n| print | `print` | app/incidents.py:37 |\n| print | `print` | app/marketing.py:40 |\n| print | `print` | app/marketing.py:42 |\n| print | `print` | app/retention.py:42 |\n| print | `print` | app/rights.py:28 |\n| print | `print` | app/third_parties.py:29 |\n| print | `print` | app/third_parties.py:33 |\n\nStatic code-derived map: flows are co-occurrence, not runtime tracing. Not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D01-phone-field-baseline\\.harness\\evidence.db\n"
+      }
+    ],
+    "passed": true
+  }
+}

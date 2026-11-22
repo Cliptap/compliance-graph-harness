@@ -1,0 +1,450 @@
+2026-11-02T12:02:37.4391031-03:00 pipeline start pilot=qa_reports/dose-pilot formal=qa_reports/formal-dose
+2026-11-02T12:02:37.4512033-03:00 waiting for pilot pid 21464
+2026-11-02T12:12:56.9004657-03:00 pipeline start pilot=qa_reports/dose-pilot formal=qa_reports/formal-dose
+2026-11-02T12:12:56.9104956-03:00 waiting for pilot pid 21464
+2026-11-02T12:45:57.2325266-03:00 pilot process ended
+2026-11-02T12:45:57.2402920-03:00 run: python scripts/dose_decision.py --pilot C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot\cost_pilot.json --dir C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot --out C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot\decision.json
+2026-11-02T12:45:57.3389756-03:00 decision exit=3
+2026-11-02T12:45:57.3389756-03:00 retrying pilot once in qa_reports/dose-pilot-retry
+2026-11-02T12:45:57.3409817-03:00 run: python experiments/tasks/cost_pilot.py --runner opencode --tasks T31-cancelled-orders-cleanup,T33-reset-token-redirect,T34-api-key-config,T35-session-token-logs --arms baseline,rules,rules_skills,rules_skills_gate,rules_skills_gate_enforced --out-dir qa_reports/dose-pilot-retry --out C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot-retry\cost_pilot.json --timeout 900
+T31-cancelled-orders-cleanup baseline             status=finished time=104.39 hidden=True oracle=0
+T31-cancelled-orders-cleanup rules                status=finished time=35.31 hidden=False oracle=0
+T31-cancelled-orders-cleanup rules_skills         status=finished time=111.43 hidden=True oracle=0
+T31-cancelled-orders-cleanup rules_skills_gate    status=finished time=260.74 hidden=True oracle=1
+T31-cancelled-orders-cleanup rules_skills_gate_enforced status=finished time=297.59 hidden=True oracle=0
+T33-reset-token-redirect baseline             status=finished time=126.73 hidden=False oracle=1
+T33-reset-token-redirect rules                status=finished time=66.3 hidden=False oracle=1
+T33-reset-token-redirect rules_skills         status=finished time=69.85 hidden=False oracle=1
+T33-reset-token-redirect rules_skills_gate    status=finished time=156.33 hidden=True oracle=0
+T33-reset-token-redirect rules_skills_gate_enforced status=finished time=306.55 hidden=True oracle=0
+T34-api-key-config     baseline             status=finished time=84.97 hidden=False oracle=0
+T34-api-key-config     rules                status=finished time=62.59 hidden=False oracle=0
+T34-api-key-config     rules_skills         status=finished time=92.97 hidden=False oracle=0
+T34-api-key-config     rules_skills_gate    status=finished time=146.65 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate_enforced status=finished time=151.34 hidden=True oracle=0
+T35-session-token-logs baseline             status=finished time=126.74 hidden=True oracle=0
+T35-session-token-logs rules                status=finished time=21.92 hidden=True oracle=0
+T35-session-token-logs rules_skills         status=finished time=25.86 hidden=True oracle=0
+T35-session-token-logs rules_skills_gate    status=finished time=25.67 hidden=True oracle=0
+T35-session-token-logs rules_skills_gate_enforced status=finished time=25.5 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot-retry\cost_pilot.json
+2026-11-02T13:28:57.2853574-03:00 run: python scripts/dose_decision.py --pilot C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot-retry\cost_pilot.json --dir C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot-retry --out C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\dose-pilot-retry\decision.json
+2026-11-02T13:28:57.3643324-03:00 retry decision exit=0
+2026-11-02T13:28:57.3803943-03:00 formal start tasks=T31-cancelled-orders-cleanup,T33-reset-token-redirect,T34-api-key-config,T35-session-token-logs arms=baseline,rules,rules_skills,rules_skills_gate,rules_skills_gate_enforced reps=1,2,3,4,5
+2026-11-02T13:28:57.3803943-03:00 run: python experiments/tasks/formal_all.py --runner opencode --reps 1,2,3,4,5 --arms baseline,rules,rules_skills,rules_skills_gate,rules_skills_gate_enforced --tasks T31-cancelled-orders-cleanup,T33-reset-token-redirect,T34-api-key-config,T35-session-token-logs --out-dir qa_reports/formal-dose --timeout 900
+=== rep 1 arm order ['rules_skills_gate_enforced', 'rules_skills', 'rules_skills_gate', 'baseline', 'rules'] ===
+=== rep 1 arm rules_skills_gate_enforced ===
+T31-cancelled-orders-cleanup rules_skills_gate_enforced status=finished time=270.01 hidden=True oracle=0
+T33-reset-token-redirect rules_skills_gate_enforced status=finished time=194.01 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate_enforced status=finished time=180.33 hidden=False oracle=0
+T35-session-token-logs rules_skills_gate_enforced status=finished time=55.04 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep1_rules_skills_gate_enforced.json
+=== rep 1 arm rules_skills ===
+T31-cancelled-orders-cleanup rules_skills         status=finished time=62.71 hidden=False oracle=0
+T33-reset-token-redirect rules_skills         status=finished time=240.65 hidden=True oracle=0
+T34-api-key-config     rules_skills         status=finished time=91.63 hidden=False oracle=0
+T35-session-token-logs rules_skills         status=finished time=18.76 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep1_rules_skills.json
+=== rep 1 arm rules_skills_gate ===
+T31-cancelled-orders-cleanup rules_skills_gate    status=finished time=244.81 hidden=True oracle=1
+T33-reset-token-redirect rules_skills_gate    status=finished time=99.19 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate    status=finished time=106.56 hidden=False oracle=0
+T35-session-token-logs rules_skills_gate    status=finished time=37.67 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep1_rules_skills_gate.json
+=== rep 1 arm baseline ===
+T31-cancelled-orders-cleanup baseline             status=finished time=181.16 hidden=True oracle=0
+T33-reset-token-redirect baseline             status=finished time=58.43 hidden=False oracle=1
+T34-api-key-config     baseline             status=finished time=130.61 hidden=False oracle=0
+T35-session-token-logs baseline             status=finished time=17.23 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep1_baseline.json
+=== rep 1 arm rules ===
+T31-cancelled-orders-cleanup rules                status=finished time=218.15 hidden=True oracle=1
+T33-reset-token-redirect rules                status=finished time=39.27 hidden=False oracle=1
+T34-api-key-config     rules                status=finished time=93.99 hidden=False oracle=0
+T35-session-token-logs rules                status=finished time=19.86 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep1_rules.json
+=== rep 2 arm order ['baseline', 'rules', 'rules_skills_gate', 'rules_skills', 'rules_skills_gate_enforced'] ===
+=== rep 2 arm baseline ===
+T31-cancelled-orders-cleanup baseline             status=finished time=178.87 hidden=True oracle=1
+T33-reset-token-redirect baseline             status=finished time=56.26 hidden=False oracle=1
+T34-api-key-config     baseline             status=finished time=86.01 hidden=False oracle=0
+T35-session-token-logs baseline             status=finished time=17.21 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep2_baseline.json
+=== rep 2 arm rules ===
+T31-cancelled-orders-cleanup rules                status=finished time=68.81 hidden=False oracle=1
+T33-reset-token-redirect rules                status=finished time=43.14 hidden=False oracle=1
+T34-api-key-config     rules                status=finished time=108.56 hidden=False oracle=0
+T35-session-token-logs rules                status=finished time=15.51 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep2_rules.json
+=== rep 2 arm rules_skills_gate ===
+T31-cancelled-orders-cleanup rules_skills_gate    status=finished time=240.56 hidden=True oracle=0
+T33-reset-token-redirect rules_skills_gate    status=finished time=165.47 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate    status=finished time=157.4 hidden=True oracle=0
+T35-session-token-logs rules_skills_gate    status=finished time=18.96 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep2_rules_skills_gate.json
+=== rep 2 arm rules_skills ===
+T31-cancelled-orders-cleanup rules_skills         status=finished time=133.83 hidden=True oracle=0
+T33-reset-token-redirect rules_skills         status=finished time=37.28 hidden=False oracle=0
+T34-api-key-config     rules_skills         status=finished time=60.53 hidden=False oracle=0
+T35-session-token-logs rules_skills         status=finished time=32.76 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep2_rules_skills.json
+=== rep 2 arm rules_skills_gate_enforced ===
+T31-cancelled-orders-cleanup rules_skills_gate_enforced status=finished time=42.55 hidden=False oracle=0
+T33-reset-token-redirect rules_skills_gate_enforced status=finished time=148.71 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate_enforced status=finished time=77.32 hidden=False oracle=0
+T35-session-token-logs rules_skills_gate_enforced status=finished time=34.63 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep2_rules_skills_gate_enforced.json
+=== rep 3 arm order ['rules_skills_gate_enforced', 'rules', 'rules_skills_gate', 'rules_skills', 'baseline'] ===
+=== rep 3 arm rules_skills_gate_enforced ===
+T31-cancelled-orders-cleanup rules_skills_gate_enforced status=finished time=51.88 hidden=False oracle=0
+T33-reset-token-redirect rules_skills_gate_enforced status=finished time=97.57 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate_enforced status=finished time=161.97 hidden=True oracle=0
+T35-session-token-logs rules_skills_gate_enforced status=finished time=36.84 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep3_rules_skills_gate_enforced.json
+=== rep 3 arm rules ===
+T31-cancelled-orders-cleanup rules                status=finished time=95.67 hidden=True oracle=0
+T33-reset-token-redirect rules                status=finished time=54.06 hidden=False oracle=1
+T34-api-key-config     rules                status=finished time=34.28 hidden=False oracle=0
+T35-session-token-logs rules                status=finished time=28.92 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep3_rules.json
+=== rep 3 arm rules_skills_gate ===
+T31-cancelled-orders-cleanup rules_skills_gate    status=finished time=223.11 hidden=True oracle=1
+T33-reset-token-redirect rules_skills_gate    status=finished time=115.08 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate    status=finished time=131.6 hidden=True oracle=0
+T35-session-token-logs rules_skills_gate    status=finished time=43.77 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep3_rules_skills_gate.json
+=== rep 3 arm rules_skills ===
+T31-cancelled-orders-cleanup rules_skills         status=finished time=110.06 hidden=True oracle=0
+T33-reset-token-redirect rules_skills         status=finished time=84.84 hidden=False oracle=1
+T34-api-key-config     rules_skills         status=finished time=94.4 hidden=False oracle=0
+T35-session-token-logs rules_skills         status=finished time=17.38 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep3_rules_skills.json
+=== rep 3 arm baseline ===
+T31-cancelled-orders-cleanup baseline             status=finished time=122.04 hidden=False oracle=1
+T33-reset-token-redirect baseline             status=finished time=61.45 hidden=False oracle=0
+T34-api-key-config     baseline             status=finished time=84.7 hidden=False oracle=0
+T35-session-token-logs baseline             status=finished time=98.63 hidden=False oracle=1
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep3_baseline.json
+=== rep 4 arm order ['rules_skills_gate_enforced', 'rules_skills_gate', 'baseline', 'rules', 'rules_skills'] ===
+=== rep 4 arm rules_skills_gate_enforced ===
+T31-cancelled-orders-cleanup rules_skills_gate_enforced status=finished time=497.22 hidden=True oracle=0
+T33-reset-token-redirect rules_skills_gate_enforced status=finished time=419.14 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate_enforced status=finished time=145.02 hidden=False oracle=0
+T35-session-token-logs rules_skills_gate_enforced status=finished time=25.07 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep4_rules_skills_gate_enforced.json
+=== rep 4 arm rules_skills_gate ===
+T31-cancelled-orders-cleanup rules_skills_gate    status=finished time=339.74 hidden=True oracle=0
+T33-reset-token-redirect rules_skills_gate    status=finished time=118.69 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate    status=finished time=230.94 hidden=True oracle=0
+T35-session-token-logs rules_skills_gate    status=finished time=42.89 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep4_rules_skills_gate.json
+=== rep 4 arm baseline ===
+T31-cancelled-orders-cleanup baseline             status=finished time=176.7 hidden=False oracle=1
+T33-reset-token-redirect baseline             status=finished time=61.84 hidden=False oracle=1
+T34-api-key-config     baseline             status=finished time=82.86 hidden=False oracle=0
+T35-session-token-logs baseline             status=finished time=52.97 hidden=True oracle=2
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep4_baseline.json
+=== rep 4 arm rules ===
+T31-cancelled-orders-cleanup rules                status=finished time=89.41 hidden=False oracle=1
+T33-reset-token-redirect rules                status=finished time=112.67 hidden=False oracle=1
+T34-api-key-config     rules                status=finished time=54.6 hidden=False oracle=0
+T35-session-token-logs rules                status=finished time=17.92 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep4_rules.json
+=== rep 4 arm rules_skills ===
+T31-cancelled-orders-cleanup rules_skills         status=finished time=121.8 hidden=False oracle=1
+T33-reset-token-redirect rules_skills         status=finished time=361.68 hidden=True oracle=0
+T34-api-key-config     rules_skills         status=finished time=64.92 hidden=False oracle=0
+T35-session-token-logs rules_skills         status=finished time=18.35 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep4_rules_skills.json
+=== rep 5 arm order ['rules_skills_gate_enforced', 'baseline', 'rules_skills', 'rules_skills_gate', 'rules'] ===
+=== rep 5 arm rules_skills_gate_enforced ===
+T31-cancelled-orders-cleanup rules_skills_gate_enforced status=finished time=346.27 hidden=True oracle=0
+T33-reset-token-redirect rules_skills_gate_enforced status=finished time=113.69 hidden=True oracle=0
+T34-api-key-config     rules_skills_gate_enforced status=finished time=74.43 hidden=False oracle=0
+T35-session-token-logs rules_skills_gate_enforced status=finished time=127.53 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep5_rules_skills_gate_enforced.json
+=== rep 5 arm baseline ===
+T31-cancelled-orders-cleanup baseline             status=finished time=116.34 hidden=False oracle=1
+T33-reset-token-redirect baseline             status=finished time=78.0 hidden=False oracle=1
+T34-api-key-config     baseline             status=finished time=57.83 hidden=False oracle=0
+T35-session-token-logs baseline             status=finished time=25.05 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep5_baseline.json
+=== rep 5 arm rules_skills ===
+T31-cancelled-orders-cleanup rules_skills         status=finished time=29.33 hidden=False oracle=0
+T33-reset-token-redirect rules_skills         status=finished time=99.39 hidden=False oracle=1
+T34-api-key-config     rules_skills         status=finished time=167.39 hidden=False oracle=0
+T35-session-token-logs rules_skills         status=finished time=38.28 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep5_rules_skills.json
+=== rep 5 arm rules_skills_gate ===
+T31-cancelled-orders-cleanup rules_skills_gate    status=finished time=163.08 hidden=True oracle=0
+T33-reset-token-redirect rules_skills_gate    status=finished time=99.25 hidden=True oracle=2
+T34-api-key-config     rules_skills_gate    status=finished time=70.82 hidden=False oracle=0
+T35-session-token-logs rules_skills_gate    status=finished time=21.57 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep5_rules_skills_gate.json
+=== rep 5 arm rules ===
+T31-cancelled-orders-cleanup rules                status=finished time=39.03 hidden=False oracle=0
+T33-reset-token-redirect rules                status=finished time=91.4 hidden=False oracle=1
+T34-api-key-config     rules                status=finished time=65.79 hidden=False oracle=0
+T35-session-token-logs rules                status=finished time=17.98 hidden=True oracle=0
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\aggregate_rep5_rules.json
+=== formal run finished ===
+2026-11-02T16:51:24.6960338-03:00 formal exit=0
+2026-11-02T16:51:24.6980445-03:00 run: python experiments/tasks/formal_analysis.py --dir qa_reports/formal-dose --out C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\analysis.json
+{
+  "runs": 100,
+  "finished": 100,
+  "invalid": 0,
+  "models": [
+    "opencode-go/deepseek-v4.1-flash"
+  ],
+  "arms": {
+    "baseline": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 87.2095,
+      "cycle_median": 80.43,
+      "hidden_pass": 6,
+      "oracle_findings": 11,
+      "tokens": 15616182,
+      "outcomes": {
+        "confirmed_violation": 8,
+        "behavioral_failure": 6,
+        "latent_risk": 2,
+        "clean": 4,
+        "unknown": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0
+    },
+    "rules": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 65.45100000000001,
+      "cycle_median": 54.33,
+      "hidden_pass": 7,
+      "oracle_findings": 8,
+      "tokens": 8018926,
+      "outcomes": {
+        "confirmed_violation": 7,
+        "behavioral_failure": 6,
+        "latent_risk": 1,
+        "clean": 6,
+        "unknown": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0
+    },
+    "rules_skills": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 94.2985,
+      "cycle_median": 74.88,
+      "hidden_pass": 9,
+      "oracle_findings": 3,
+      "tokens": 12839933,
+      "outcomes": {
+        "confirmed_violation": 3,
+        "behavioral_failure": 8,
+        "latent_risk": 0,
+        "clean": 9,
+        "unknown": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0
+    },
+    "rules_skills_gate": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 133.558,
+      "cycle_median": 116.88499999999999,
+      "hidden_pass": 18,
+      "oracle_findings": 4,
+      "tokens": 35808267,
+      "outcomes": {
+        "confirmed_violation": 0,
+        "behavioral_failure": 2,
+        "latent_risk": 3,
+        "clean": 15,
+        "unknown": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 25,
+      "gate_unresolved": 0
+    },
+    "rules_skills_gate_enforced": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 154.9615,
+      "cycle_median": 120.61,
+      "hidden_pass": 14,
+      "oracle_findings": 0,
+      "tokens": 35343560,
+      "outcomes": {
+        "confirmed_violation": 0,
+        "behavioral_failure": 6,
+        "latent_risk": 0,
+        "clean": 14,
+        "unknown": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 25,
+      "gate_unresolved": 0
+    }
+  },
+  "contrasts": {
+    "rules": {
+      "n": 20,
+      "delta_mean": -21.758499999999998,
+      "delta_sd": 41.71529206859783,
+      "mcnemar_confirmed": {
+        "discordant": 5,
+        "only_left": 3,
+        "only_right": 2,
+        "p_value": 1.0
+      },
+      "mcnemar_any_failure": {
+        "discordant": 3,
+        "only_left": 2,
+        "only_right": 1,
+        "p_value": 1.0
+      }
+    },
+    "rules_skills": {
+      "n": 20,
+      "delta_mean": 7.089000000000001,
+      "delta_sd": 95.4387364752908,
+      "mcnemar_confirmed": {
+        "discordant": 7,
+        "only_left": 6,
+        "only_right": 1,
+        "p_value": 0.125
+      },
+      "mcnemar_any_failure": {
+        "discordant": 5,
+        "only_left": 4,
+        "only_right": 1,
+        "p_value": 0.375
+      }
+    },
+    "rules_skills_gate": {
+      "n": 20,
+      "delta_mean": 46.3485,
+      "delta_sd": 55.030207424745605,
+      "mcnemar_confirmed": {
+        "discordant": 8,
+        "only_left": 8,
+        "only_right": 0,
+        "p_value": 0.0078125
+      },
+      "mcnemar_any_failure": {
+        "discordant": 12,
+        "only_left": 12,
+        "only_right": 0,
+        "p_value": 0.00048828125
+      }
+    },
+    "rules_skills_gate_enforced": {
+      "n": 20,
+      "delta_mean": 67.752,
+      "delta_sd": 121.79664784947252,
+      "mcnemar_confirmed": {
+        "discordant": 8,
+        "only_left": 8,
+        "only_right": 0,
+        "p_value": 0.0078125
+      },
+      "mcnemar_any_failure": {
+        "discordant": 10,
+        "only_left": 9,
+        "only_right": 1,
+        "p_value": 0.021484375
+      }
+    }
+  },
+  "detector_vs_oracle": {
+    "baseline": {
+      "tp": 9,
+      "fp": 2,
+      "fn": 1,
+      "tn": 8,
+      "precision": 0.8181818181818182,
+      "recall": 0.9
+    },
+    "rules": {
+      "tp": 7,
+      "fp": 1,
+      "fn": 1,
+      "tn": 11,
+      "precision": 0.875,
+      "recall": 0.875
+    },
+    "rules_skills": {
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "tn": 16,
+      "precision": 0.75,
+      "recall": 1.0
+    },
+    "rules_skills_gate": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "tn": 17,
+      "precision": null,
+      "recall": 0.0
+    },
+    "rules_skills_gate_enforced": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 20,
+      "precision": null,
+      "recall": null
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "confirmed_violation": 8,
+      "behavioral_failure": 6,
+      "latent_risk": 2,
+      "clean": 4,
+      "unknown": 0
+    },
+    "rules": {
+      "confirmed_violation": 7,
+      "behavioral_failure": 6,
+      "latent_risk": 1,
+      "clean": 6,
+      "unknown": 0
+    },
+    "rules_skills": {
+      "confirmed_violation": 3,
+      "behavioral_failure": 8,
+      "latent_risk": 0,
+      "clean": 9,
+      "unknown": 0
+    },
+    "rules_skills_gate": {
+      "confirmed_violation": 0,
+      "behavioral_failure": 2,
+      "latent_risk": 3,
+      "clean": 15,
+      "unknown": 0
+    },
+    "rules_skills_gate_enforced": {
+      "confirmed_violation": 0,
+      "behavioral_failure": 6,
+      "latent_risk": 0,
+      "clean": 14,
+      "unknown": 0
+    }
+  }
+}
+wrote C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\analysis.json
+2026-11-02T16:51:25.4006170-03:00 run: python experiments/tasks/formal_report.py --analysis C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\qa_reports\formal-dose\analysis.json --out docs/research/formal-results-dose.md
+wrote docs\research\formal-results-dose.md
+2026-11-02T16:51:25.5319930-03:00 pipeline done

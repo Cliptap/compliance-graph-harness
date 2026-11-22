@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Terceros y transferencias · Dumbo{% endblock %}
+{% block content %}
+<h1>Terceros y transferencias</h1>
+<p>Este sistema no integra servicios externos por defecto. El pago es simulado y ocurre dentro de la aplicación.</p>
+{% if third_parties %}
+<table>
+  <thead><tr><th>Servicio</th><th>Finalidad</th><th>Región</th></tr></thead>
+  <tbody>{% for row in third_parties %}<tr><td>{{ row["name"] }}</td><td>{{ row["purpose"] }}</td><td>{{ row["region"] }}</td></tr>{% endfor %}</tbody>
+</table>
+{% else %}
+<p class="muted">No hay terceros declarados.</p>
+{% endif %}
+{% endblock %}

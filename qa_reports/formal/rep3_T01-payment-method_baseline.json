@@ -1,0 +1,165 @@
+{
+  "task": "T01-payment-method",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T01-payment-method-baseline",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 57.7,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-34010614-2f8b-45fa-8eb1-7a3785da59ba",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 54070,
+        "wall_s": 54.09,
+        "usage": {
+          "input_tokens": 485803,
+          "output_tokens": 5834,
+          "cache_read_tokens": 462048,
+          "cache_write_tokens": 0,
+          "total_tokens": 953685,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T01-payment-method",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.27s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.card-persist",
+      "dumbo.log-sensitive"
+    ],
+    "expected_control": "ECOM-CHECK-003"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 57.7,
+      "latency_ms": 54070,
+      "rounds": 1,
+      "tool_calls": 33,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 462048,
+        "cache_write_tokens": 0,
+        "input_tokens": 485803,
+        "output_tokens": 5834,
+        "reasoning_tokens": 0,
+        "total_tokens": 953685
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 6,
+      "lines_added": 108,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "schema.sql",
+        "tests/test_app.py",
+        "app/security.py",
+        "app/main.py",
+        "app/db.py",
+        "app/retention.py",
+        "tests/conftest.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/test_t01_payment_method.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/conftest.py",
+        "app/templates/addresses.html"
+      ],
+      "files_read_count": 10,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.3
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-34010614-2f8b-45fa-8eb1-7a3785da59ba",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 54070,
+        "wall_s": 54.09,
+        "usage": {
+          "input_tokens": 485803,
+          "output_tokens": 5834,
+          "cache_read_tokens": 462048,
+          "cache_write_tokens": 0,
+          "total_tokens": 953685,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 3,
+      "grep": 7,
+      "read": 12,
+      "shell": 3,
+      "edit": 8
+    },
+    "changed_files": {
+      "app/main.py": [
+        39,
+        0
+      ],
+      "app/retention.py": [
+        1,
+        0
+      ],
+      "app/security.py": [
+        20,
+        0
+      ],
+      "app/templates/payment_methods.html": [
+        17,
+        0
+      ],
+      "schema.sql": [
+        10,
+        0
+      ],
+      "tests/test_app.py": [
+        21,
+        0
+      ]
+    }
+  }
+}

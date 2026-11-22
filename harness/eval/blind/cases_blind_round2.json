@@ -1,0 +1,300 @@
+{
+  "version": 1,
+  "description": "Blind held-out round 2",
+  "cases": [
+    {
+      "id": "log_pii_email_service",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/services/customer_notifier.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\nclass CustomerNotifier:\n    def __init__(self, mailer):\n        self.mailer = mailer\n\n    def notify(self, customer):\n        logger.info(\"sending welcome mail to %s\", customer.email)\n        self.mailer.send(customer.email, \"Welcome\")\n"
+    },
+    {
+      "id": "log_pii_phone_async",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/api/customers.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\nasync def lookup_customer(phone, repo):\n    customer = await repo.find_by_phone(phone)\n    logger.warning(\"no match for phone %s\", phone)\n    return customer\n"
+    },
+    {
+      "id": "log_pii_rut_repo",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/repositories/customers.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\nclass CustomerRepository:\n    def __init__(self, session):\n        self.session = session\n\n    def find_by_rut(self, rut):\n        logger.debug(\"querying customers with rut=%s\", rut)\n        return self.session.execute(\n            \"SELECT * FROM customers WHERE rut = :rut\", {\"rut\": rut}\n        ).fetchall()\n"
+    },
+    {
+      "id": "log_pii_hashed_fp",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/signup.py",
+      "code": "import hashlib\nimport logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef fingerprint(value):\n    return hashlib.sha256(value.encode()).hexdigest()[:12]\n\n\nclass SignupService:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def register(self, email):\n        logger.info(\"signup received email_fp=%s\", fingerprint(email))\n        return self.repo.create(email=email)\n"
+    },
+    {
+      "id": "log_pii_order_ids",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/workers/orders.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\nasync def process_order(order, customer, repo):\n    logger.info(\n        \"processing order_id=%s request_id=%s\",\n        order.id,\n        order.request_id,\n    )\n    await repo.mark_processing(order.id)\n    return order.id\n"
+    },
+    {
+      "id": "log_pii_masked_audit",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/audit/writer.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef mask_email(email):\n    local, _, domain = email.partition(\"@\")\n    return f\"{local[:1]}***@{domain}\"\n\n\nclass AuditWriter:\n    def __init__(self, sink):\n        self.sink = sink\n\n    def record(self, customer, action):\n        logger.info(\"audit action=%s actor=%s\", action, mask_email(customer.email))\n        self.sink.write({\"action\": action})\n"
+    },
+    {
+      "id": "admin_email_list",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/routes.py",
+      "code": "async def admin_list_customers(repo):\n    rows = await repo.list_all()\n    return [\n        {\"id\": row.id, \"email\": row.email, \"phone\": row.phone, \"status\": row.status}\n        for row in rows\n    ]\n"
+    },
+    {
+      "id": "admin_rut_detail",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/services.py",
+      "code": "class AdminCustomerService:\n    def __init__(self, repository):\n        self.repository = repository\n\n    def detail(self, customer_id):\n        customer = self.repository.get(customer_id)\n        return {\n            \"id\": customer.id,\n            \"full_name\": customer.full_name,\n            \"rut\": customer.rut,\n            \"address\": customer.address,\n        }\n"
+    },
+    {
+      "id": "admin_contact_nested",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/payloads.py",
+      "code": "def build_admin_payload(users):\n    return [\n        {\n            \"user_id\": u.id,\n            \"contact\": {\"email\": u.email, \"phone\": u.phone},\n            \"plan\": u.plan,\n        }\n        for u in users\n    ]\n"
+    },
+    {
+      "id": "admin_masked_directory",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/directory.py",
+      "code": "def mask_email(value):\n    local, _, domain = value.partition(\"@\")\n    return f\"{local[:2]}***@{domain}\"\n\n\nclass AdminDirectory:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def list_contacts(self):\n        return [\n            {\"id\": c.id, \"email\": mask_email(c.email), \"status\": c.status}\n            for c in self.repo.all()\n        ]\n"
+    },
+    {
+      "id": "admin_safe_counts",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/stats.py",
+      "code": "async def admin_customer_summary(repo, since):\n    rows = await repo.counts_since(since)\n    return {\n        \"total\": rows.total,\n        \"active\": rows.active,\n        \"created_at\": rows.window_start.isoformat(),\n    }\n"
+    },
+    {
+      "id": "admin_self_profile",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/me.py",
+      "code": "async def get_my_profile(current_user, repo):\n    profile = await repo.get(current_user.id)\n    return {\n        \"id\": profile.id,\n        \"email\": profile.email,\n        \"phone\": profile.phone,\n    }\n"
+    },
+    {
+      "id": "cred_hash_export",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/services/user_admin.py",
+      "code": "class UserAdminService:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def export_user(self, user_id):\n        user = self.repo.get(user_id)\n        return {\n            \"id\": user.id,\n            \"email\": user.email,\n            \"password_hash\": user.password_hash,\n        }\n"
+    },
+    {
+      "id": "cred_vars_dump",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/accounts.py",
+      "code": "async def get_account(user_id, repo):\n    user = await repo.fetch(user_id)\n    data = vars(user)\n    data.pop(\"_sa_instance_state\", None)\n    return data\n"
+    },
+    {
+      "id": "cred_password_echo",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/registration.py",
+      "code": "def register(payload, repo):\n    record = repo.create(email=payload[\"email\"], password=payload[\"password\"])\n    return {\"id\": record.id, \"password\": payload[\"password\"]}\n"
+    },
+    {
+      "id": "cred_presenter_meta",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/presenters/user.py",
+      "code": "class UserPresenter:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def public_view(self, user_id):\n        user = self.repo.get(user_id)\n        return {\n            \"id\": user.id,\n            \"email\": user.email,\n            \"password_updated_at\": user.password_updated_at,\n            \"mfa_enabled\": user.mfa_enabled,\n        }\n"
+    },
+    {
+      "id": "cred_has_password_flag",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/account_status.py",
+      "code": "async def account_status(user_id, repo):\n    user = await repo.fetch(user_id)\n    return {\n        \"id\": user.id,\n        \"has_password\": bool(user.password_hash),\n        \"last_login\": user.last_login_at.isoformat(),\n    }\n"
+    },
+    {
+      "id": "cred_public_columns",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/repositories/accounts.py",
+      "code": "class AccountRepository:\n    def __init__(self, session):\n        self.session = session\n\n    def get_public(self, account_id):\n        row = self.session.execute(\n            \"SELECT id, email, created_at FROM accounts WHERE id = :id\",\n            {\"id\": account_id},\n        ).one()\n        return {\"id\": row.id, \"email\": row.email, \"created_at\": row.created_at}\n"
+    },
+    {
+      "id": "hard_delete_sql",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/repositories/customer_purge.py",
+      "code": "class CustomerRepository:\n    def __init__(self, session):\n        self.session = session\n\n    def purge(self, customer_id):\n        self.session.execute(\n            \"DELETE FROM customers WHERE id = :id\", {\"id\": customer_id}\n        )\n        self.session.commit()\n"
+    },
+    {
+      "id": "hard_delete_orm_async",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/services/customer_cleanup.py",
+      "code": "async def remove_customer(session, customer_id):\n    customer = await session.get(Customer, customer_id)\n    await session.delete(customer)\n    await session.commit()\n"
+    },
+    {
+      "id": "hard_delete_365",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/jobs/retention.py",
+      "code": "from datetime import datetime, timedelta\n\n\nclass RetentionJob:\n    def __init__(self, session):\n        self.session = session\n\n    def purge_old_customers(self):\n        cutoff = datetime.utcnow() - timedelta(days=365)\n        self.session.execute(\n            \"DELETE FROM customers WHERE created_at < :cutoff\", {\"cutoff\": cutoff}\n        )\n"
+    },
+    {
+      "id": "soft_delete_flag",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/repositories/customer_lifecycle.py",
+      "code": "class CustomerRepository:\n    def __init__(self, session):\n        self.session = session\n\n    def deactivate(self, customer_id):\n        self.session.execute(\n            \"UPDATE customers SET is_active = false, deactivated_at = now() WHERE id = :id\",\n            {\"id\": customer_id},\n        )\n        self.session.commit()\n"
+    },
+    {
+      "id": "hard_delete_gated_730",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/services/customer_purge_gated.py",
+      "code": "from datetime import datetime, timedelta\n\n\nasync def purge_eligible(session, customer_id):\n    customer = await session.get(Customer, customer_id)\n    cutoff = datetime.utcnow() - timedelta(days=730)\n    if customer.created_at < cutoff:\n        await session.delete(customer)\n        await session.commit()\n"
+    },
+    {
+      "id": "anonymize_customer",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/services/anonymizer.py",
+      "code": "class Anonymizer:\n    def __init__(self, session):\n        self.session = session\n\n    def anonymize(self, customer_id):\n        self.session.execute(\n            \"UPDATE customers SET email = NULL, phone = NULL, rut = NULL, anonymized = true WHERE id = :id\",\n            {\"id\": customer_id},\n        )\n        self.session.commit()\n"
+    },
+    {
+      "id": "billing_delete_365",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/repositories/invoices.py",
+      "code": "class InvoiceRepository:\n    def __init__(self, session):\n        self.session = session\n\n    def drop_old(self):\n        self.session.execute(\n            \"DELETE FROM invoices WHERE issued_at < now() - interval '365 days'\"\n        )\n        self.session.commit()\n"
+    },
+    {
+      "id": "billing_prune_180",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/jobs/order_pruning.py",
+      "code": "from datetime import datetime, timedelta\n\n\ndef prune_orders(session, retention_days=180):\n    cutoff = datetime.utcnow() - timedelta(days=retention_days)\n    session.query(Order).filter(Order.created_at < cutoff).delete()\n    session.commit()\n"
+    },
+    {
+      "id": "billing_delete_1095",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/db/order_cleanup.py",
+      "code": "async def purge_orders(conn, cutoff_days=1095):\n    await conn.execute(\n        \"DELETE FROM orders WHERE created_at < now() - make_interval(days => :days)\",\n        {\"days\": cutoff_days},\n    )\n"
+    },
+    {
+      "id": "billing_delete_2190",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/repositories/billing_retention.py",
+      "code": "class BillingRetention:\n    def __init__(self, session):\n        self.session = session\n\n    def purge_expired(self):\n        self.session.execute(\n            \"DELETE FROM invoices WHERE issued_at < now() - interval '2190 days'\"\n        )\n        self.session.commit()\n"
+    },
+    {
+      "id": "billing_archive_flag",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/jobs/invoice_archive.py",
+      "code": "async def archive_invoices(conn, cutoff_days=2555):\n    await conn.execute(\n        \"UPDATE invoices SET archived = true WHERE issued_at < now() - make_interval(days => :days)\",\n        {\"days\": cutoff_days},\n    )\n"
+    },
+    {
+      "id": "billing_export_only",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/tax/exporter.py",
+      "code": "class TaxExporter:\n    def __init__(self, session):\n        self.session = session\n\n    def export(self, year):\n        rows = self.session.execute(\n            \"SELECT id, total, issued_at FROM invoices WHERE EXTRACT(year FROM issued_at) = :year\",\n            {\"year\": year},\n        ).fetchall()\n        return [dict(row._mapping) for row in rows]\n"
+    },
+    {
+      "id": "reset_token_response",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/services/password_reset.py",
+      "code": "class PasswordResetService:\n    def __init__(self, users, tokens):\n        self.users = users\n        self.tokens = tokens\n\n    def request(self, email):\n        user = self.users.find_by_email(email)\n        token = self.tokens.issue(user.id)\n        return {\"status\": \"ok\", \"reset_token\": token}\n"
+    },
+    {
+      "id": "reset_token_redirect",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/api/reset_confirm.py",
+      "code": "from fastapi.responses import RedirectResponse\n\n\nasync def confirm_reset(token, service):\n    await service.consume(token)\n    return RedirectResponse(url=f\"/reset/finish?token={token}\", status_code=302)\n"
+    },
+    {
+      "id": "reset_token_log",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/auth/reset_tokens.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef issue_token(user, tokens):\n    token = tokens.create(user.id)\n    logger.info(\"password reset token issued: %s\", token)\n    return token\n"
+    },
+    {
+      "id": "reset_generic_email",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/services/password_reset_generic.py",
+      "code": "class PasswordResetService:\n    def __init__(self, users, tokens, mailer):\n        self.users = users\n        self.tokens = tokens\n        self.mailer = mailer\n\n    def request(self, email):\n        user = self.users.find_by_email(email)\n        if user is not None:\n            token = self.tokens.issue(user.id)\n            self.mailer.send_reset(user.email, token)\n        return {\"message\": \"if the account exists, an email was sent\"}\n"
+    },
+    {
+      "id": "reset_sms_status",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/api/reset_request.py",
+      "code": "async def request_reset(email, repo, tokens, sms):\n    user = await repo.find_by_email(email)\n    if user:\n        token = await tokens.issue(user.id)\n        await sms.send(user.phone, f\"Your code: {token}\")\n    return {\"status\": \"accepted\"}\n"
+    },
+    {
+      "id": "reset_expiry_meta",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/api/password_reset.py",
+      "code": "def request_reset(payload, repo, tokens, mailer):\n    user = repo.find_by_email(payload[\"email\"])\n    if user:\n        token = tokens.issue(user.id)\n        mailer.send(user.email, token)\n    return {\"requested\": True, \"expires_in\": 900}\n"
+    },
+    {
+      "id": "apikey_secret_response",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/services/api_keys.py",
+      "code": "class ApiKeyService:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def create(self, account_id):\n        key = self.repo.insert(account_id)\n        return {\"id\": key.id, \"api_key\": key.secret}\n"
+    },
+    {
+      "id": "apikey_secret_log",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/key_rotation.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\nasync def rotate_key(account_id, repo):\n    key = await repo.rotate(account_id)\n    logger.info(\"rotated key for account=%s secret=%s\", account_id, key.secret)\n    return {\"id\": key.id}\n"
+    },
+    {
+      "id": "apikey_plaintext_reveal",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/key_reveal.py",
+      "code": "def reveal_key(key_id, repo):\n    record = repo.get(key_id)\n    return {\"key_id\": record.id, \"value\": record.plaintext_secret}\n"
+    },
+    {
+      "id": "apikey_suffix_flag",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/views/api_key_view.py",
+      "code": "class ApiKeyView:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def describe(self, account_id):\n        record = self.repo.get_for_account(account_id)\n        return {\n            \"configured\": record is not None,\n            \"suffix\": record.secret[-4:] if record else None,\n        }\n"
+    },
+    {
+      "id": "apikey_rotation_meta",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/key_rotation_meta.py",
+      "code": "async def rotate_key(account_id, repo):\n    record = await repo.rotate(account_id)\n    return {\"id\": record.id, \"created_at\": record.created_at.isoformat()}\n"
+    },
+    {
+      "id": "apikey_configured_flag",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/integrations.py",
+      "code": "def integration_status(config):\n    return {\n        \"provider\": config.provider,\n        \"api_key_configured\": bool(config.api_key),\n        \"webhook_enabled\": config.webhook_enabled,\n    }\n"
+    }
+  ]
+}

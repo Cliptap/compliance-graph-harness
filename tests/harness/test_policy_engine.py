@@ -5,6 +5,7 @@ from src.harness.policy_engine import (
     ScopePolicy,
     SensitiveLoggingPolicy,
     DomainInvariantPolicy,
+    CustomerDeletionPolicy,
     DependencyPolicy,
 )
 
@@ -77,6 +78,72 @@ def test_domain_invariant_policy_prevents_hard_delete():
     assert len(findings) == 1
     assert findings[0].policy_id == "domain.prohibited_deletion"
     assert findings[0].line == 2
+
+
+def test_sensitive_logging_allows_pseudonymized_values():
+    spec = TaskSpec(task_id="T14", goal="Log de checkout")
+    code = (
+        "def checkout_log(secret, customer):\n"
+        "    logger.info('rut_fp=%s email_fp=%s', _fingerprint(secret, customer['rut']), "
+        "_fingerprint(secret, customer['email']))\n"
+    )
+    findings = SensitiveLoggingPolicy().evaluate(spec, {"app/main.py": code})
+    assert findings == []
+
+
+def test_sensitive_logging_flags_raw_values():
+    spec = TaskSpec(task_id="T14", goal="Log de checkout")
+    code = "def checkout_log(customer):\n    logger.info('rut=%s', customer['rut'])\n"
+    findings = SensitiveLoggingPolicy().evaluate(spec, {"app/main.py": code})
+    assert len(findings) == 1 and findings[0].policy_id == "privacy.cwe_532"
+
+
+def test_customer_deletion_policy_flags_hard_delete():
+    policy = CustomerDeletionPolicy()
+    spec = TaskSpec(task_id="T05", goal="Eliminar cuenta")
+
+    sql = "def delete_account(customer_id):\n    db.execute('DELETE FROM customers WHERE id = ?', (customer_id,))\n"
+    orm = "def delete_account(customer):\n    session.delete(customer)\n    session.commit()\n"
+
+    for code in (sql, orm):
+        findings = policy.evaluate(spec, {"app/main.py": code})
+        assert len(findings) == 1
+        assert findings[0].policy_id == "privacy.customer_hard_delete"
+        assert findings[0].status == "VIOLATION"
+
+
+def test_customer_deletion_policy_allows_erasure_request_and_soft_delete():
+    policy = CustomerDeletionPolicy()
+    spec = TaskSpec(task_id="T05", goal="Eliminar cuenta")
+    code = (
+        "def request_erasure(customer_id):\n"
+        "    db.execute('INSERT INTO erasure_requests (customer_id) VALUES (?)', (customer_id,))\n"
+        "    db.execute('UPDATE customers SET deleted_at = ? WHERE id = ?', (now(), customer_id))\n"
+    )
+    assert policy.evaluate(spec, {"app/main.py": code}) == []
+
+
+def test_customer_deletion_policy_ignores_comments_and_docstrings():
+    policy = CustomerDeletionPolicy()
+    spec = TaskSpec(task_id="T05", goal="Eliminar cuenta")
+    docs = (
+        '"""Docstring de la política.\n'
+        "A raw ``DELETE FROM customers`` removes the record.\n"
+        '"""\n'
+        "# comentario: session.delete(customer) tampoco cuenta\n"
+        "def helper():\n"
+        "    return None\n"
+    )
+    assert policy.evaluate(spec, {"app/main.py": docs}) == []
+
+
+def test_customer_deletion_policy_still_flags_code_lines():
+    policy = CustomerDeletionPolicy()
+    spec = TaskSpec(task_id="T05", goal="Eliminar cuenta")
+    code = "def purge():\n    sql = 'DELETE FROM customers WHERE id = 1'\n    db.execute(sql)\n"
+    findings = policy.evaluate(spec, {"app/main.py": code})
+    assert len(findings) == 1
+    assert findings[0].policy_id == "privacy.customer_hard_delete"
 
 
 def test_dependency_policy_prevents_unauthorized_manifest_edits():

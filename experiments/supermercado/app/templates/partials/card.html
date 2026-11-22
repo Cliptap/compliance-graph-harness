@@ -1,0 +1,20 @@
+<article class="product-card">
+  <a class="product-media cat-{{ product['category_slug'] }}" href="/product/{{ product['id'] }}" aria-label="{{ product['name'] }}">
+    <svg class="product-icon" viewBox="0 0 64 64" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ product["icon"]|safe }}</svg>
+    {% if product["photo"] %}<img class="product-photo" src="/static/photos/{{ product['photo'] }}?v={{ asset_version }}" alt="" loading="eager">{% endif %}
+    <span class="media-category">{{ product["category"] }}</span>
+    {% if product["discount_pct"] %}<span class="badge">-{{ product["discount_pct"] }}%</span>{% endif %}
+  </a>
+  <div class="product-body">
+    <span class="product-brand">{{ product["brand"] }}</span>
+    <h3><a href="/product/{{ product['id'] }}">{{ product["name"] }}</a></h3>
+    <span class="product-unit">{{ product["unit"] }}</span>
+    <div class="product-price">
+      {% if product["old_price_clp"] %}<s>${{ product["old_price_clp"] }}</s>{% endif %}
+      <strong>${{ product["price_clp"] }}</strong>
+    </div>
+    <form method="post" action="/cart/add/{{ product['id'] }}">
+      <button type="submit" class="button primary block" {% if product["stock"] < 1 %}disabled{% endif %}>Agregar</button>
+    </form>
+  </div>
+</article>

@@ -1,0 +1,483 @@
+{
+  "pack_id": "cl-ley-21719",
+  "version": 2,
+  "jurisdiction": "CL",
+  "description": "Multi-framework control catalog. A control maps one or more framework references (law, ISO 27001, CWE) to a reusable detection family.",
+  "frameworks": {
+    "Ley 21.719": {
+      "kind": "law",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272"
+    },
+    "ISO/IEC 27001:2022": {
+      "kind": "standard",
+      "url": "https://www.iso.org/standard/27001"
+    },
+    "CWE": {
+      "kind": "taxonomy",
+      "url": "https://cwe.mitre.org"
+    }
+  },
+  "data_categories": {
+    "IDENTIFIER_RUT": {
+      "sensitivity": "high",
+      "synonyms": [
+        "rut",
+        "run",
+        "national_id",
+        "national-id",
+        "dni"
+      ]
+    },
+    "PERSONAL_CONTACT": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "email",
+        "correo",
+        "e-mail",
+        "phone",
+        "telefono",
+        "teléfono",
+        "address",
+        "direccion",
+        "dirección"
+      ]
+    },
+    "CREDENTIAL": {
+      "sensitivity": "high",
+      "synonyms": [
+        "password",
+        "hashed_password",
+        "password_hash",
+        "private_key",
+        "secret",
+        "token",
+        "reset_token",
+        "api_key",
+        "api-key",
+        "session",
+        "cookie"
+      ]
+    },
+    "PAYMENT": {
+      "sensitivity": "high",
+      "synonyms": [
+        "card_number",
+        "pan",
+        "cvv",
+        "cvc",
+        "security_code",
+        "expiry"
+      ]
+    },
+    "SENSITIVE_HEALTH": {
+      "sensitivity": "critical",
+      "synonyms": [
+        "diagnosis",
+        "diagnostico",
+        "diagnóstico",
+        "clinical_notes",
+        "medical_record",
+        "treatment",
+        "health_status"
+      ]
+    }
+  },
+  "sinks": {
+    "log": {
+      "patterns": [
+        "print",
+        "logger.",
+        "logging.",
+        "console.log",
+        "console.error",
+        "sys.stdout",
+        "sys.stderr"
+      ]
+    },
+    "response": {
+      "patterns": [
+        "return",
+        "JSONResponse",
+        "Response",
+        "jsonify"
+      ]
+    },
+    "redirect": {
+      "patterns": [
+        "RedirectResponse",
+        "redirect"
+      ]
+    },
+    "csv": {
+      "patterns": [
+        "csv.writer",
+        "writerow",
+        "DictWriter"
+      ]
+    },
+    "http": {
+      "patterns": [
+        "requests.",
+        "httpx.",
+        "fetch(",
+        "axios."
+      ]
+    },
+    "db": {
+      "patterns": [
+        "INSERT",
+        "UPDATE",
+        "Column",
+        "mapped_column"
+      ]
+    },
+    "cache": {
+      "patterns": [
+        "redis.set",
+        "cache.put",
+        "memcached.set"
+      ]
+    },
+    "file": {
+      "patterns": [
+        "open(",
+        ".write("
+      ]
+    }
+  },
+  "sanitizers": {
+    "mask": [
+      "mask",
+      "redact",
+      "enmascar"
+    ],
+    "hash": [
+      "hash",
+      "sha256",
+      "bcrypt",
+      "argon"
+    ],
+    "fingerprint": [
+      "fingerprint",
+      "hmac"
+    ],
+    "tokenize": [
+      "tokeniz",
+      "tokenize"
+    ],
+    "encrypt": [
+      "encrypt",
+      "fernet",
+      "kms"
+    ],
+    "pseudonymize": [
+      "pseudon",
+      "seudon",
+      "anon"
+    ]
+  },
+  "controls": [
+    {
+      "id": "v2.log_pii",
+      "title": "Personal data written to logs",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.12",
+          "title": "Data leakage prevention"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-532"
+        }
+      ],
+      "data_categories": [
+        "IDENTIFIER_RUT",
+        "PERSONAL_CONTACT",
+        "CREDENTIAL",
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "sink_exposure",
+        "sinks": [
+          "log"
+        ],
+        "context": {
+          "route": "any"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remove the field or use an approved masking, hashing or pseudonymisation function before logging.",
+      "implemented": true,
+      "pack_control": "CL-DATAPROT-001"
+    },
+    {
+      "id": "v2.admin_exposure",
+      "title": "Unmasked personal data in a response",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.12",
+          "title": "Data leakage prevention"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.11",
+          "title": "Data masking"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-200"
+        }
+      ],
+      "data_categories": [
+        "IDENTIFIER_RUT",
+        "PERSONAL_CONTACT"
+      ],
+      "detection": {
+        "policy": "sink_exposure",
+        "sinks": [
+          "response"
+        ],
+        "context": {
+          "route": "admin"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Return only the fields the endpoint needs and mask RUT, email and phone in admin responses.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-003"
+    },
+    {
+      "id": "v2.customer_hard_delete",
+      "title": "Customer hard delete inside retention",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 4 y Art. 10"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.10",
+          "title": "Information deletion"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-404"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_CONTACT"
+      ],
+      "detection": {
+        "policy": "retention_deletion",
+        "params": {
+          "tables": [
+            "customers"
+          ],
+          "retention_days": 730,
+          "retention_field": "retention_days"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Register the erasure request and retain the record until the retention period; do not hard-delete it.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-006"
+    },
+    {
+      "id": "v2.billing_retention",
+      "title": "Billing records deleted before retention",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 3 c)"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.10",
+          "title": "Information deletion"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-404"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_CONTACT"
+      ],
+      "detection": {
+        "policy": "retention_deletion",
+        "params": {
+          "tables": [
+            "orders",
+            "invoices"
+          ],
+          "retention_days": 2190,
+          "retention_field": "retention_days"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Compare the delete cutoff with the billing retention period (six years) instead of a short cleanup window.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-013"
+    },
+    {
+      "id": "v2.reset_token",
+      "title": "Password-reset token returned to the client",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.24",
+          "title": "Use of cryptography"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-522"
+        }
+      ],
+      "data_categories": [
+        "CREDENTIAL"
+      ],
+      "detection": {
+        "policy": "credential_exposure",
+        "sinks": [
+          "response",
+          "redirect",
+          "log"
+        ],
+        "params": {
+          "keys": [
+            "token",
+            "reset_token"
+          ],
+          "value_pattern": "[a-f0-9]{32,}"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Send the token through the recovery channel; return a generic message and never put it in the response or redirect URL.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-002"
+    },
+    {
+      "id": "v2.api_key",
+      "title": "API key or secret returned to the client",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.24",
+          "title": "Use of cryptography"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-798"
+        }
+      ],
+      "data_categories": [
+        "CREDENTIAL"
+      ],
+      "detection": {
+        "policy": "credential_exposure",
+        "sinks": [
+          "response",
+          "redirect",
+          "log"
+        ],
+        "params": {
+          "keys": [
+            "api_key",
+            "api-key",
+            "secret"
+          ],
+          "value_pattern": "sk_[a-z0-9_]{8,}"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Never return secrets; expose only a configured/not-configured flag or a masked value.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-002"
+    },
+    {
+      "id": "v2.credential_response",
+      "pack_control": "CORE-CHECK-002",
+      "title": "Credential exposed in a response",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.12",
+          "title": "Data leakage prevention"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-200"
+        }
+      ],
+      "data_categories": [
+        "CREDENTIAL"
+      ],
+      "detection": {
+        "policy": "sink_exposure",
+        "sinks": [
+          "response"
+        ],
+        "context": {
+          "route": "any"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Never return password hashes, tokens or secrets; project only the required fields.",
+      "implemented": true
+    }
+  ],
+  "tables": {
+    "customers": [
+      "IDENTIFIER_RUT",
+      "PERSONAL_CONTACT",
+      "CREDENTIAL"
+    ],
+    "addresses": [
+      "PERSONAL_CONTACT"
+    ],
+    "orders": [
+      "PERSONAL_CONTACT",
+      "PAYMENT"
+    ],
+    "order_items": [
+      "PAYMENT"
+    ],
+    "points_ledger": [
+      "PERSONAL_CONTACT"
+    ],
+    "consents": [
+      "PERSONAL_CONTACT"
+    ],
+    "rights_requests": [
+      "PERSONAL_CONTACT"
+    ],
+    "cookie_consents": [
+      "PERSONAL_CONTACT"
+    ],
+    "marketing_messages": [
+      "PERSONAL_CONTACT"
+    ]
+  }
+}

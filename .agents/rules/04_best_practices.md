@@ -75,10 +75,19 @@ No requieren configuración — son universales.
 4. **Usa HTTPS en producción** — asume que el entorno lo configura.
 5. **Sanitiza inputs de usuario** — nunca confíes en datos externos.
 
-## Testing (Solo Si Se Solicitó)
+## Resiliencia
 
-No escribas tests a menos que el PRD o el desarrollador lo pidan explícitamente.
-Cuando se pidan tests:
+Todo código de extracción, limpieza o backend debe incluir manejo de excepciones (`try-except`).
+Nunca asumas un "camino feliz".
+
+## Testing (Política Condicional)
+
+Escribe un test cuando exista un runner ejecutable y un resultado esperado claro:
+- Observa el test fallar (RED) antes de implementar, luego GREEN y refactoriza
+- Un test por cada regla solicitada y uno por cada comportamiento existente que el cambio toque
+- Todo cambio de cumplimiento normativo (privacidad, retención) lleva su test
+- Sin runner aplicable o en cambios solo de documentación: explica la excepción; nunca inventes evidencia RED/GREEN
+Al escribir tests:
 - Sigue el patrón AAA: Arrange, Act, Assert
 - Un test = un comportamiento verificable
 - Nombra los tests describiendo el escenario: `test_login_fails_with_wrong_password`

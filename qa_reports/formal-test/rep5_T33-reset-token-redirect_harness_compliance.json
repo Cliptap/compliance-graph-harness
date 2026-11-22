@@ -1,0 +1,227 @@
+{
+  "task": "T33-reset-token-redirect",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T33-reset-token-redirect-harness_compliance",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 50.42,
+    "tool_calls_by_name": {
+      "bash": 3,
+      "read": 12
+    },
+    "files_read": [
+      "TASK.md",
+      "app/main.py",
+      "app/db.py",
+      "app/security.py",
+      "schema.sql",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "compliance_check.py",
+      ".harness/packs/cl-ley-21719.json",
+      ".agents/skills/compliance-dev/SKILL.md",
+      "README.md",
+      ".agents/skills/compliance-patch/SKILL.md"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 241498,
+      "input_tokens": 65639,
+      "output_tokens": 1281,
+      "reasoning_tokens": 1906,
+      "cache_read_tokens": 172672,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.012276,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 50.42,
+      "latency_ms": 50420,
+      "rounds": 6,
+      "tool_calls": 15,
+      "turns": 6,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 241498,
+        "input_tokens": 65639,
+        "output_tokens": 1281,
+        "reasoning_tokens": 1906,
+        "cache_read_tokens": 172672,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.012276
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "app/main.py",
+        "app/db.py",
+        "app/security.py",
+        "schema.sql",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "compliance_check.py",
+        ".harness/packs/cl-ley-21719.json",
+        ".agents/skills/compliance-dev/SKILL.md",
+        "README.md",
+        ".agents/skills/compliance-patch/SKILL.md"
+      ],
+      "files_read_count": 12,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.25
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 9275,
+          "input": 9201,
+          "output": 66,
+          "reasoning": 8,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.00142455
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 12746,
+          "input": 3298,
+          "output": 466,
+          "reasoning": 22,
+          "cache": {
+            "write": 0,
+            "read": 8960
+          }
+        },
+        "cost": 0.00081438
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36667,
+          "input": 24288,
+          "output": 222,
+          "reasoning": 125,
+          "cache": {
+            "write": 0,
+            "read": 12032
+          }
+        },
+        "cost": 0.003887496
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 55228,
+          "input": 18742,
+          "output": 142,
+          "reasoning": 248,
+          "cache": {
+            "write": 0,
+            "read": 36096
+          }
+        },
+        "cost": 0.003153588
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 62370,
+          "input": 6478,
+          "output": 147,
+          "reasoning": 1089,
+          "cache": {
+            "write": 0,
+            "read": 54656
+          }
+        },
+        "cost": 0.001877268
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 65212,
+          "input": 3632,
+          "output": 238,
+          "reasoning": 414,
+          "cache": {
+            "write": 0,
+            "read": 60928
+          }
+        },
+        "cost": 0.001118784
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 3,
+      "read": 12
+    },
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "T33-reset-token-redirect",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n__________________ test_reset_redirect_does_not_carry_token ___________________\n\nclient = <starlette.testclient.TestClient object at 0x000002913BC5C830>\n\n    def test_reset_redirect_does_not_carry_token(client):\n        register(client)\n        response = client.post(\"/password-reset\", data={\"email\": \"ana@example.cl\"},\n                               follow_redirects=False)\n>       assert response.status_code != 404, \"the endpoint was not implemented\"\nE       AssertionError: the endpoint was not implemented\nE       assert 404 != 404\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_t33_reset_token_redirect.py:10: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_t33_reset_token_redirect.py::test_reset_redirect_does_not_carry_token\n1 failed in 0.34s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.reset-token-response"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  }
+}

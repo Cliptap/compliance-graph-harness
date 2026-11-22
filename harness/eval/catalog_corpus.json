@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "description": "Labeled cases per v2 control. `expected` is the label for the named control; other controls may also fire on the same code.",
+  "cases": [
+    {
+      "id": "log_raw_rut",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def f(customer):\n    logger.info('rut=%s', customer['rut'])\n"
+    },
+    {
+      "id": "log_masked_rut",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def f(customer):\n    logger.info('rut_fp=%s', _fingerprint(secret, customer['rut']))\n"
+    },
+    {
+      "id": "log_plain_message",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def f(order_id):\n    logger.info('order %s created', order_id)\n"
+    },
+    {
+      "id": "admin_response_rut",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def admin_customers(customer):\n    return {'rut': customer['rut']}\n"
+    },
+    {
+      "id": "self_service_rut",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def profile(customer):\n    return {'rut': customer['rut']}\n"
+    },
+    {
+      "id": "admin_response_masked_rut",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def admin_customers(customer):\n    return {'rut': mask_rut(customer['rut'])}\n"
+    },
+    {
+      "id": "admin_response_variable_rut",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def admin_export(customer):\n    payload = {'rut': customer['rut']}\n    return Response(content=json.dumps(payload))\n"
+    },
+    {
+      "id": "admin_response_variable_masked",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def admin_export(customer):\n    payload = {'rut': mask_rut(customer['rut'])}\n    return Response(content=json.dumps(payload))\n"
+    },
+    {
+      "id": "admin_dict_row_customers",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def admin_customer(customer_id):\n    row = db.execute('SELECT * FROM customers WHERE id = ?', (customer_id,)).fetchone()\n    return dict(row)\n"
+    },
+    {
+      "id": "credential_dict_row_customers",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def admin_customer(customer_id):\n    row = db.execute('SELECT * FROM customers WHERE id = ?', (customer_id,)).fetchone()\n    return dict(row)\n"
+    },
+    {
+      "id": "credential_projection_is_clean",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def active():\n    rows = db.execute('SELECT c.id FROM customers c').fetchall()\n    return [row['id'] for row in rows]\n"
+    },
+    {
+      "id": "credential_hashed_is_clean",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def admin_customer(row):\n    return {'password_hash': hash_secret(row['password_hash'])}\n"
+    },
+    {
+      "id": "billing_delete_90_days",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def purge():\n    cutoff = now() - timedelta(days=90)\n    db.execute('DELETE FROM orders WHERE created_at < ?', (cutoff,))\n"
+    },
+    {
+      "id": "billing_delete_retention_aware",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def purge():\n    cutoff = now() - timedelta(days=2190)\n    db.execute('DELETE FROM orders WHERE created_at < ?', (cutoff,))\n"
+    },
+    {
+      "id": "billing_no_delete",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def purge():\n    return {'purged': 0}\n"
+    },
+    {
+      "id": "customer_hard_delete",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def purge():\n    db.execute('DELETE FROM customers')\n"
+    },
+    {
+      "id": "customer_erasure_request",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def request_erasure(customer_id):\n    db.execute('INSERT INTO rights_requests (customer_id, right_type) VALUES (?, ?)', (customer_id, 'erasure'))\n"
+    },
+    {
+      "id": "reset_token_response",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def reset():\n    return {'token': uuid.uuid4().hex}\n"
+    },
+    {
+      "id": "reset_token_redirect",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def reset():\n    return RedirectResponse(f'/sent?token={uuid.uuid4().hex}', status_code=303)\n"
+    },
+    {
+      "id": "reset_generic_redirect",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def reset():\n    return RedirectResponse('/sent', status_code=303)\n"
+    },
+    {
+      "id": "api_key_response",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/main.py",
+      "code": "def config():\n    return {'api_key': os.environ['PAYMENTS_API_KEY']}\n"
+    },
+    {
+      "id": "api_key_configured_flag",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/main.py",
+      "code": "def config():\n    return {'payments_configured': True}\n"
+    }
+  ]
+}

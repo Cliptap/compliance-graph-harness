@@ -1,0 +1,121 @@
+{
+  "task": "D03-crm-sync",
+  "arm": "rules_skills_gate",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-rules_skills_gate",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "timeout",
+    "error": null,
+    "exit_code": null,
+    "timed_out": true,
+    "cycle_time_s": 900.1,
+    "tool_calls_by_name": {},
+    "files_read": [],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": null,
+    "cost": 0.0,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "timeout",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 900.1,
+      "latency_ms": 900100,
+      "rounds": 0,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null,
+      "cost_usd": 0.0
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "D03-crm-sync",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n_________________ test_crm_sync_code_references_the_crm_host __________________\n\n    def test_crm_sync_code_references_the_crm_host():\n        text = \"\\n\".join(\n            path.read_text(encoding=\"utf-8\", errors=\"replace\")\n            for path in Path(\"app\").rglob(\"*.py\")\n        )\n>       assert \"crm.example-store.com\" in text, \"no code references the CRM host\"\nE       AssertionError: no code references the CRM host\nE       assert 'crm.example-store.com' in '\"\"\"SQLite access, schema bootstrap and the Dumbo catalog seed.\"\"\"\\nfrom __future__ import annotations\\n\\nimport os\\ni...ow[\\'purpose\\']} | {row[\\'region\\']}\")\\n    return 0\\n\\n\\nif __name__ == \"__main__\":\\n    raise SystemExit(main())\\n\\n'\n\nhidden\\test_d03_crm_sync.py:9: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_d03_crm_sync.py::test_crm_sync_code_references_the_crm_host\n1 failed in 0.13s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "register",
+        "expect": [
+          "crm.example-store.com"
+        ],
+        "expect_pass": true,
+        "passed": false,
+        "missing": [
+          "crm.example-store.com"
+        ],
+        "output": "# Processing register (RoPA draft) — C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-rules_skills_gate\n\n**1 processing activities** derived from the code. Purpose and legal basis cannot be read from code: they are declared as pending gaps to be completed with documentary evidence.\n\n| Activity | Data | Retention | Recipients | Consent | Pending gaps |\n| --- | --- | --- | --- | --- | --- |\n| customers | `rut` (IDENTIFIER_RUT), `email` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT), `birth_date` (CHILDREN_DATA), `address_id` (PERSONAL_CONTACT) | declarada | — | registrado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental)<br>age gate no declarado para datos de edad/menores |\n\nStatic code-derived draft: not a legal register, not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-rules_skills_gate\\.harness\\evidence.db\n"
+      },
+      {
+        "command": "subject",
+        "args": [
+          "--field",
+          "email"
+        ],
+        "expect": [
+          "crm.example-store.com"
+        ],
+        "expect_pass": false,
+        "passed": true,
+        "missing": [
+          "crm.example-store.com"
+        ],
+        "output": "# Subject evidence — field `email`\n\nStatic package: code-derived locations and flows; access log entries are pointed to their tables, not queried live. Not legal advice.\n\n## 1. Where the datum lives\n\n| Field | Entity | Location | Persisted | Controls |\n| --- | --- | --- | :-: | --- |\n| `email` | customers | schema.sql:6 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` |\n\n## 2. Flows (sinks in files that reference the subject fields)\n\n- `print` — app/retention.py:41 (print)\n\n## 4. Consent and rights records\n\n- `blocked` — schema.sql:11\n- `marketing_opt_in` — schema.sql:12\n- `withdrawn_at` — schema.sql:15\n- `purpose` — schema.sql:77\n- `granted_at` — schema.sql:79\n- `withdrawn_at` — schema.sql:80\n- `purpose` — schema.sql:117\n\n## 5. Processing state\n\n## 6. Third-party recipients\n\n- `www.w3.org`\n\n| Entity | Retention | Consent | Recipients |\n| --- | --- | --- | --- |\n| customers | declarada | registrado | — |\n\n"
+      }
+    ],
+    "passed": false
+  }
+}

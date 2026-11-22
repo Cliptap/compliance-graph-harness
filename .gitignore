@@ -1,3 +1,8 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
 # Python & Virtual Environments
 __pycache__/
 *.py[cod]
@@ -24,6 +29,13 @@ qa_reports/_workspace/
 qa_reports/test_capture/
 qa_reports/*.txt
 
+# Python packaging
+*.egg-info/
+dist/
+build/
+.ruff_cache/
+.mypy_cache/
+
 # IDEs, Local Agent scratchpads & Backups
 .agent/
 .cursor/
@@ -34,3 +46,12 @@ graphify-out/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# Local agent skill-registry cache
+.atl/
+# Playwright CLI session artifacts
+.playwright-cli/
+# Generated experiment variants
+experiments/variants/generated/
+# Experiment task workspaces
+experiments/tasks/workspaces/

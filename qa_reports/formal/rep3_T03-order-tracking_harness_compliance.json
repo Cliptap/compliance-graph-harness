@@ -1,0 +1,99 @@
+{
+  "task": "T03-order-tracking",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T03-order-tracking-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "error",
+    "error": null,
+    "cycle_time_s": 6.07,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-163c9ecf-a2b5-4f7a-af7f-86b2f2292150",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1810,
+        "wall_s": 1.83,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T03-order-tracking",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n_________________________ test_tracking_is_owner_only _________________________\n\nclient = <starlette.testclient.TestClient object at 0x000001FD2D6BCAD0>\nother_client = <starlette.testclient.TestClient object at 0x000001FD2D770190>\n\n    def test_tracking_is_owner_only(client, other_client):\n        register(client)\n        order = add_order(client)\n        order_id = order.headers[\"location\"].rsplit(\"/\", 1)[-1]\n        register(other_client, email=\"beto@example.cl\", rut=\"11111111-1\")\n        assert other_client.get(f\"/orders/{order_id}/tracking\").status_code in (401, 403, 404)\n>       assert client.get(f\"/orders/{order_id}/tracking\").status_code == 200\nE       AssertionError: assert 404 == 200\nE        +  where 404 = <Response [404 Not Found]>.status_code\nE        +    where <Response [404 Not Found]> = get('/orders/1/tracking')\nE        +      where get = <starlette.testclient.TestClient object at 0x000001FD2D6BCAD0>.get\n\nhidden\\test_t03_order_tracking.py:10: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden\\test_t03_order_tracking.py::test_tracking_is_owner_only - Asser...\n1 failed in 0.49s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-003"
+  },
+  "summary": {
+    "status": "error",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 6.07,
+      "latency_ms": 1810,
+      "rounds": 1,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-163c9ecf-a2b5-4f7a-af7f-86b2f2292150",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1810,
+        "wall_s": 1.83,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  }
+}

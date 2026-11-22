@@ -381,6 +381,53 @@ def build_repository_graph(
     return nodes_count
 
 
+def resolve_symbol_file(symbol_id: str, root: Path | str = WORKSPACE_ROOT) -> str | None:
+    """Map `symbol::a.b.Name` to the repository file that defines it (`a/b.py` or `a/b/__init__.py`).
+
+    Import-symbol nodes carry the *importer's* file path, so slicing by `file_path` returns the
+    wrong files; this resolves the defining module instead. External packages return None.
+    """
+    root = Path(root)
+    parts = symbol_id.removeprefix("symbol::").split(".")
+    while parts:
+        base = root.joinpath(*parts)
+        if base.with_suffix(".py").is_file():
+            return base.with_suffix(".py").relative_to(root).as_posix()
+        if (base / "__init__.py").is_file():
+            return (base / "__init__.py").relative_to(root).as_posix()
+        parts.pop()
+    return None
+
+
+def context_files(seed_file: str, depth: int = 1, db_path: Path | str = DEFAULT_DB_PATH,
+                  root: Path | str = WORKSPACE_ROOT) -> set[str]:
+    """Files an agent should read before editing `seed_file`: the file plus its repository imports.
+
+    Follows only outgoing IMPORTS edges and resolves each imported symbol to its defining file,
+    so sibling files that merely share a dependency are not returned.
+    """
+    conn = get_db_connection(db_path)
+    try:
+        result = {seed_file}
+        frontier = {seed_file}
+        for _ in range(depth):
+            next_frontier: set[str] = set()
+            for current in frontier:
+                rows = conn.execute(
+                    "SELECT target_id FROM graph_edges WHERE source_id = ? AND edge_type = 'IMPORTS'",
+                    (f"file::{current}",),
+                ).fetchall()
+                for row in rows:
+                    defined_in = resolve_symbol_file(row["target_id"], root)
+                    if defined_in and defined_in not in result:
+                        result.add(defined_in)
+                        next_frontier.add(defined_in)
+            frontier = next_frontier
+        return result
+    finally:
+        conn.close()
+
+
 def subgraph_slice(target_node_id: str, depth: int = 1, db_path: Path | str = DEFAULT_DB_PATH) -> dict[str, Any]:
     """Extrae el subgrafo relevante (Sub-graph Slicing estilo Graphify) a k-saltos del nodo objetivo.
     

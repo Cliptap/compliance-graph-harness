@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "base": "experiments/supermercado",
+  "note": "Hidden manifest for experiment A. Never copy it into an audit workspace.",
+  "variants": [
+    {
+      "id": "V01-log-rut-direct",
+      "kind": "seeded",
+      "description": "The checkout logs the customer RUT in plain text.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "        subtotal = sum(line[\"line_total\"] for line in lines)\n        points = subtotal // 1000",
+          "replace": "        subtotal = sum(line[\"line_total\"] for line in lines)\n        print(f\"checkout subtotal={subtotal} customer_rut={customer['rut']}\")\n        points = subtotal // 1000"
+        }
+      ],
+      "expected": [
+        {"control": "CORE-CHECK-002", "policy": "privacy.cwe_532", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V02-log-rut-through-call",
+      "kind": "seeded",
+      "description": "The RUT reaches a log sink through a local variable and a helper call.",
+      "mutations": [
+        {
+          "op": "add_file",
+          "path": "app/logging_helpers.py",
+          "content": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef log_value(value):\n    logger.info(\"value=%s\", value)\n"
+        },
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "from app import db\n",
+          "replace": "from app import db\nfrom app.logging_helpers import log_value\n"
+        },
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "        points = subtotal // 1000",
+          "replace": "        rut = customer[\"rut\"]\n        value = rut\n        log_value(value)\n        points = subtotal // 1000"
+        }
+      ],
+      "expected": [
+        {"control": "CL-DATAPROT-001", "policy": "privacy.cwe_532", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V03-card-number-persisted",
+      "kind": "seeded",
+      "description": "A legacy ORM model stores the full card number.",
+      "mutations": [
+        {
+          "op": "add_file",
+          "path": "app/legacy_models.py",
+          "content": "from sqlalchemy import Column, String\n\n\nclass PaymentRecord(Base):\n    __tablename__ = \"payment_records\"\n    id = Column(String, primary_key=True)\n    card_number = Column(String(19))\n"
+        }
+      ],
+      "expected": [
+        {"control": "ECOM-CHECK-003", "policy": "privacy.payment_data_storage", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V04-cvv-persisted",
+      "kind": "seeded",
+      "description": "A legacy ORM model persists the card security code.",
+      "mutations": [
+        {
+          "op": "add_file",
+          "path": "app/legacy_models.py",
+          "content": "from sqlalchemy import Column, String\n\n\nclass PaymentRecord(Base):\n    __tablename__ = \"payment_records\"\n    id = Column(String, primary_key=True)\n    cvv = Column(String(3))\n"
+        }
+      ],
+      "expected": [
+        {"control": "ECOM-CHECK-003", "policy": "privacy.payment_data_storage", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V05-consent-prechecked",
+      "kind": "seeded",
+      "description": "The marketing consent checkbox is checked by default.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "app/templates/register.html",
+          "find": "    <input type=\"checkbox\" name=\"marketing_opt_in\" value=\"1\">",
+          "replace": "    <input type=\"checkbox\" name=\"marketing_opt_in\" value=\"1\" checked>"
+        }
+      ],
+      "expected": [
+        {"control": "CORE-CHECK-005", "policy": "privacy.consent_transparency", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V06-api-exposes-rut",
+      "kind": "seeded",
+      "description": "A JSON summary returns the unmasked RUT.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "    @app.get(\"/health\")",
+          "replace": "    @app.get(\"/me/summary\")\n    def me_summary(request: Request):\n        customer = require_customer(request)\n        return {\"email\": customer[\"email\"], \"rut\": customer[\"rut\"]}\n\n    @app.get(\"/health\")"
+        }
+      ],
+      "expected": [
+        {"control": "CORE-CHECK-002", "policy": "privacy.api_exposure", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V07-api-exposes-credentials",
+      "kind": "seeded",
+      "description": "A JSON route returns the password hash.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "    @app.get(\"/health\")",
+          "replace": "    @app.get(\"/me/credentials\")\n    def me_credentials(request: Request):\n        customer = require_customer(request)\n        return {\"password\": customer[\"password_hash\"]}\n\n    @app.get(\"/health\")"
+        }
+      ],
+      "expected": [
+        {"control": "CORE-CHECK-002", "policy": "privacy.api_exposure", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V08-raw-biometric-template",
+      "kind": "seeded",
+      "description": "The customer table stores a raw biometric template.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "schema.sql",
+          "find": "    phone TEXT,\n",
+          "replace": "    phone TEXT,\n    face_encoding BLOB,\n"
+        }
+      ],
+      "expected": [
+        {"control": "CORE-CHECK-012", "policy": "privacy.minors_and_sensitive", "detector_status": "VIOLATION", "audit_outcome": "confirmed_violation"}
+      ]
+    },
+    {
+      "id": "V09-erasure-route-missing",
+      "kind": "seeded",
+      "description": "The dedicated erasure route is removed.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "    @app.post(\"/me/delete\")\n    def me_delete(request: Request):\n        customer = require_customer(request)\n        with conn() as connection:\n            create_right(connection, customer[\"id\"], \"erasure\")\n        return RedirectResponse(\"/rights\", status_code=303)\n\n",
+          "replace": ""
+        }
+      ],
+      "expected": [
+        {"control": "CORE-CHECK-006", "policy": "privacy.rights_reachability", "detector_status": "WARNING", "audit_outcome": "potential_risk"}
+      ]
+    },
+    {
+      "id": "V10-privacy-route-missing",
+      "kind": "seeded",
+      "description": "The public privacy policy route is removed.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "    @app.get(\"/privacy\", response_class=HTMLResponse)\n    def privacy(request: Request):\n        return render(request, \"privacy.html\")\n\n    @app.get(\"/privacy/third-parties\", response_class=HTMLResponse)\n    def third_parties(request: Request):\n        with conn() as connection:\n            rows = connection.execute(\"SELECT * FROM third_parties ORDER BY name\").fetchall()\n        return render(request, \"third_parties.html\", third_parties=rows)\n\n",
+          "replace": ""
+        }
+      ],
+      "expected": [
+        {"control": "CORE-CHECK-007", "policy": "privacy.consent_transparency", "detector_status": "WARNING", "audit_outcome": "potential_risk"}
+      ]
+    },
+    {
+      "id": "C01-clean-base",
+      "kind": "clean",
+      "description": "Unmodified base system.",
+      "mutations": [],
+      "expected": []
+    },
+    {
+      "id": "C02-clean-utility",
+      "kind": "clean",
+      "description": "Adds a harmless formatting helper.",
+      "mutations": [
+        {
+          "op": "add_file",
+          "path": "app/utils.py",
+          "content": "def format_clp(value: int) -> str:\n    return f\"${value:,}\".replace(\",\", \".\")\n"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "id": "C03-clean-masked-response",
+      "kind": "clean",
+      "description": "Adds a JSON route that returns the RUT masked.",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "app/main.py",
+          "find": "    @app.get(\"/health\")",
+          "replace": "    @app.get(\"/me/masked\")\n    def me_masked(request: Request):\n        customer = require_customer(request)\n        return {\"rut\": mask_rut(customer[\"rut\"])}\n\n    @app.get(\"/health\")"
+        }
+      ],
+      "expected": []
+    }
+  ]
+}

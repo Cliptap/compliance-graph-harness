@@ -10,6 +10,9 @@ Implementa evaluadores deterministas independientes en Python para:
 from __future__ import annotations
 
 import ast
+import io
+import re
+import tokenize
 from abc import ABC, abstractmethod
 from fnmatch import fnmatch
 from pathlib import Path
@@ -138,12 +141,125 @@ class SensitiveLoggingPolicy(BasePolicy):
         "sys.stdout",
     }
 
-    def __init__(self):
+    def __init__(self, track_flows: bool = True):
         super().__init__(
             policy_id="privacy.cwe_532_logging",
             description="Prohibición de emisión de identificadores y datos de salud en canales de logging/consola.",
             severity="CRITICAL",
         )
+        self.track_flows = track_flows
+
+    MASK_MARKERS = ("mask", "redact", "hash", "anon", "seudon", "pseudon", "finger",
+                    "tokeniz", "[redacted]")
+    FLOW_AMBIGUOUS_NAMES = frozenset({"run"})
+    REMEDIATION = (
+        "No emitir RUT ni datos médicos en texto plano. Aplicar función de enmascaramiento "
+        "(ej: XX.***.***-X) o eliminar el dato sensible de la cadena de registro."
+    )
+
+    @staticmethod
+    def _flow_hits(analyzer, trees: dict[str, ast.Module]) -> tuple[list, list[str]]:
+        """Runs the flow pass; on RecursionError retries file by file and returns the files it skipped."""
+        try:
+            return analyzer.analyze(trees), []
+        except RecursionError:
+            hits, skipped = [], []
+            for path, tree in trees.items():
+                try:
+                    hits.extend(analyzer.analyze({path: tree}))
+                except RecursionError:
+                    skipped.append(path)
+            return hits, skipped
+
+    def _evaluate_flows(self, trees: dict[str, ast.Module], lines: dict[str, list[str]],
+                        reported: set[tuple[str, int]]) -> list[Finding]:
+        """Call-level pass: sensitive values that reach a log sink through variables or calls."""
+        from src.harness.taint_flow import TaintAnalyzer
+
+        analyzer = TaintAnalyzer(self.SENSITIVE_TOKENS, self._is_log_call, self.MASK_MARKERS,
+                                 self.FLOW_AMBIGUOUS_NAMES)
+        hits, skipped = self._flow_hits(analyzer, trees)
+        findings = [
+            Finding(
+                policy_id="privacy.cwe_532",
+                severity="LOW",
+                status="WARNING",
+                file=path,
+                line=1,
+                message=("El análisis de flujo de datos no pudo completarse en este archivo (estructura demasiado "
+                         "profunda); solo se aplicó la inspección local de las llamadas a logs."),
+                remediation_advice="Revisar manualmente si datos personales llegan a logs en este archivo.",
+            )
+            for path in skipped
+        ]
+        for hit in hits:
+            if (hit.file, hit.line) in reported:
+                continue
+            path = " -> ".join([f"{hit.origin} ({hit.origin_file}:{hit.origin_line})", *hit.steps,
+                                f"{hit.sink} ({hit.file}:{hit.line})"])
+            file_lines = lines[hit.file]
+            findings.append(
+                Finding(
+                    policy_id="privacy.cwe_532",
+                    severity="CRITICAL",
+                    status="VIOLATION",
+                    file=hit.file,
+                    line=hit.line,
+                    message=(
+                        "Posible fuga de datos personales o clínicos hacia sumideros de depuración (CWE-532 / Ley 21.719) "
+                        f"por flujo de datos: {path}."
+                    ),
+                    evidence=file_lines[hit.line - 1].strip() if hit.line <= len(file_lines) else "",
+                    remediation_advice=self.REMEDIATION,
+                )
+            )
+        return findings
+
+    def _is_log_call(self, call: ast.Call) -> bool:
+        sink = ast.unparse(call.func).lower()
+        return any(sink == s or sink.endswith("." + s) for s in self.LOG_SINKS)
+
+    def _evaluate_ast(self, path: str, tree: ast.AST, lines: list[str]) -> list[Finding]:
+        """AST pass for Python: ignores comments/docstrings and inspects only log-call arguments."""
+        findings: list[Finding] = []
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and self._is_log_call(node)):
+                continue
+            args = [*node.args, *[k.value for k in node.keywords]]
+            args_src = " ".join(ast.unparse(a) for a in args).lower()
+            if any(m in args_src for m in self.MASK_MARKERS):
+                continue
+            words: set[str] = set()
+            for arg in args:
+                for sub in ast.walk(arg):
+                    if isinstance(sub, ast.Name):
+                        words.add(sub.id.lower())
+                    elif isinstance(sub, ast.Attribute):
+                        words.add(sub.attr.lower())
+                    elif isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                        words.update(sub.value.lower().replace("=", " ").replace(":", " ").split())
+            matched = sorted(t for t in self.SENSITIVE_TOKENS if t in words)
+            if not matched:
+                continue
+            findings.append(
+                Finding(
+                    policy_id="privacy.cwe_532",
+                    severity="CRITICAL",
+                    status="VIOLATION",
+                    file=path,
+                    line=node.lineno,
+                    message=(
+                        "Posible fuga de datos personales o clínicos hacia sumideros de depuración (CWE-532 / Ley 21.719). "
+                        f"Se detectó emisión con tokens sensibles: {matched}."
+                    ),
+                    evidence=lines[node.lineno - 1].strip() if node.lineno <= len(lines) else "",
+                    remediation_advice=(
+                        "No emitir RUT ni datos médicos en texto plano. Aplicar función de enmascaramiento "
+                        "(ej: XX.***.***-X) o eliminar el dato sensible de la cadena de registro."
+                    ),
+                )
+            )
+        return findings
 
     def evaluate(
         self,
@@ -152,10 +268,22 @@ class SensitiveLoggingPolicy(BasePolicy):
         diff: str | None = None,
     ) -> list[Finding]:
         findings: list[Finding] = []
+        trees: dict[str, ast.Module] = {}
+        py_lines: dict[str, list[str]] = {}
 
         for file_path, content in modified_files.items():
             normalized_path = file_path.replace("\\", "/")
             lines = content.splitlines()
+
+            if normalized_path.endswith(".py"):
+                try:
+                    tree = ast.parse(content)
+                except SyntaxError:
+                    tree = None
+                if tree is not None:
+                    findings.extend(self._evaluate_ast(normalized_path, tree, lines))
+                    trees[normalized_path], py_lines[normalized_path] = tree, lines
+                    continue
 
             # Inspección línea por línea para capturar llamadas a logging y patrones sensibles
             for idx, line in enumerate(lines, 1):
@@ -172,7 +300,9 @@ class SensitiveLoggingPolicy(BasePolicy):
                     continue
 
                 # Exención: si la línea explícitamente aplica una función de redacción/enmascaramiento
-                has_masking = any(m in line_lower for m in ["mask", "redact", "hash", "anon", "seudon", "[redacted]"])
+                has_masking = any(m in line_lower for m in [
+                    "mask", "redact", "hash", "anon", "seudon", "pseudon", "finger", "tokeniz",
+                    "[redacted]"])
                 if has_masking:
                     continue
 
@@ -195,11 +325,14 @@ class SensitiveLoggingPolicy(BasePolicy):
                     )
                 )
 
+        if self.track_flows and trees:
+            reported = {(f.file, f.line) for f in findings}
+            findings.extend(self._evaluate_flows(trees, py_lines, reported))
         return findings
 
 
 class DomainInvariantPolicy(BasePolicy):
-    """Salvaguarda invariantes del dominio clínico: retención decenal (Ley 20.584) y soft-delete obligatorio."""
+    """Salvaguarda invariantes del dominio clínico: conservación de 15 años (Ley 20.584) y soft-delete obligatorio."""
 
     DESTRUCTIVE_PATTERNS = [
         "session.delete",
@@ -235,8 +368,11 @@ class DomainInvariantPolicy(BasePolicy):
         for file_path, content in modified_files.items():
             normalized_path = file_path.replace("\\", "/")
             lines = content.splitlines()
+            code_lines = _code_line_numbers(content)
 
             for idx, line in enumerate(lines, 1):
+                if code_lines is not None and idx not in code_lines:
+                    continue
                 line_lower = line.lower()
 
                 has_destructive = any(dp in line_lower for dp in self.DESTRUCTIVE_PATTERNS)
@@ -253,7 +389,7 @@ class DomainInvariantPolicy(BasePolicy):
                             file=normalized_path,
                             line=idx,
                             message=(
-                                f"Infracción al deber de retención decenal de fichas médicas (Ley 20.584 Art. 13): "
+                                f"Infracción al deber de conservación por 15 años de fichas médicas (Ley 20.584 Art. 13): "
                                 f"Se detectó operación de borrado físico destructivo sobre entidad clínica."
                             ),
                             evidence=line.strip(),
@@ -265,6 +401,108 @@ class DomainInvariantPolicy(BasePolicy):
                     )
 
         return findings
+
+
+def _code_line_numbers(content: str) -> set[int] | None:
+    """Líneas con código real: excluye comentarios, strings y docstrings.
+
+    Devuelve ``None`` si el contenido no tokeniza (sintaxis inválida), para que el
+    evaluador conserve el comportamiento anterior en ese caso.
+    """
+    skipped = {
+        tokenize.COMMENT,
+        tokenize.STRING,
+        tokenize.FSTRING_START,
+        tokenize.FSTRING_MIDDLE,
+        tokenize.FSTRING_END,
+        tokenize.NL,
+        tokenize.NEWLINE,
+        tokenize.INDENT,
+        tokenize.DEDENT,
+        tokenize.ENCODING,
+        tokenize.ENDMARKER,
+    }
+    try:
+        code: set[int] = set()
+        for tok in tokenize.generate_tokens(io.StringIO(content).readline):
+            if tok.type not in skipped:
+                code.add(tok.start[0])
+        return code
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return None
+
+
+class CustomerDeletionPolicy(BasePolicy):
+    """Flags physical deletion of customer or account records (Ley 21.719 Arts. 3 c, 4, 10).
+
+    An erasure request must be registered and the personal data kept under the retention rule, or
+    anonymised. A raw ``DELETE FROM customers`` or ``session.delete(customer)`` removes the record
+    and the evidence needed to answer the rights request, so it counts as a retention violation.
+    """
+
+    CUSTOMER_TARGETS = (
+        "customer", "customers", "client", "clients", "clientes", "cuenta", "cuentas",
+        "account", "accounts", "usuario", "usuarios", "customer_id",
+    )
+    SQL_DELETE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)")
+    TRUNCATE = re.compile(r"\btruncate\s+table\s+[\"'`]?([a-z_][a-z0-9_]*)")
+    ORM_DELETE = (
+        "session.delete", "db.session.delete", ".delete()", "delete(", "hard_delete", "drop table",
+    )
+
+    def __init__(self):
+        super().__init__(
+            policy_id="privacy.customer_hard_delete",
+            description="Customer and account records must not be physically deleted before the retention rule.",
+            severity="HIGH",
+        )
+
+    def evaluate(
+        self,
+        task_spec: TaskSpec,
+        modified_files: dict[str, str],
+        diff: str | None = None,
+    ) -> list[Finding]:
+        findings: list[Finding] = []
+        for file_path, content in modified_files.items():
+            normalized_path = file_path.replace("\\", "/")
+            code_lines = _code_line_numbers(content)
+            for idx, line in enumerate(content.splitlines(), 1):
+                if code_lines is not None and idx not in code_lines:
+                    continue
+                if not self._deletes_customer(line):
+                    continue
+                findings.append(
+                    Finding(
+                        policy_id=self.policy_id,
+                        severity="HIGH",
+                        status="VIOLATION",
+                        file=normalized_path,
+                        line=idx,
+                        message=(
+                            "Borrado físico de registros de cliente/cuenta: impide atender la solicitud de "
+                            "supresión (Ley 21.719 Art. 4 y Art. 10) y borra la evidencia de conservación "
+                            "(Art. 3 c)."
+                        ),
+                        evidence=line.strip(),
+                        remediation_advice=(
+                            "Registrar una solicitud de supresión y conservar el registro hasta que venza "
+                            "el plazo de conservación; no eliminar ni anonimizar los datos personales antes "
+                            "de ese plazo."
+                        ),
+                    )
+                )
+        return findings
+
+    def _deletes_customer(self, line: str) -> bool:
+        lowered = line.lower()
+        match = self.SQL_DELETE.search(lowered) or self.TRUNCATE.search(lowered)
+        if match:
+            return any(target in match.group(1) for target in self.CUSTOMER_TARGETS)
+        has_destructive = any(orm in lowered for orm in self.ORM_DELETE)
+        if not has_destructive:
+            return False
+        return any(target in lowered for target in self.CUSTOMER_TARGETS)
 
 
 class DependencyPolicy(BasePolicy):
@@ -320,10 +558,18 @@ class PolicyEngine:
 
     def __init__(self, policies: list[BasePolicy] | None = None):
         if policies is None:
+            from src.harness.dimension_policy import PersonalDataDimensionsPolicy  # avoids circular import
+            from src.harness.exposure_policy import ApiPersonalDataExposurePolicy
+            from src.harness.payment_policy import PaymentDataStoragePolicy
+
             self.policies: list[BasePolicy] = [
                 ScopePolicy(),
                 SensitiveLoggingPolicy(),
+                ApiPersonalDataExposurePolicy(),
+                PaymentDataStoragePolicy(),
+                PersonalDataDimensionsPolicy(),
                 DomainInvariantPolicy(),
+                CustomerDeletionPolicy(),
                 DependencyPolicy(),
             ]
         else:

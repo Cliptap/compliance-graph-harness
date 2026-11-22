@@ -1,0 +1,107 @@
+{
+  "task": "D10-consent-withdrawal",
+  "arm": "rules_skills_gate",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D10-consent-withdrawal-rules_skills_gate",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "timeout",
+    "error": null,
+    "exit_code": null,
+    "timed_out": true,
+    "cycle_time_s": 900.1,
+    "tool_calls_by_name": {},
+    "files_read": [],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": null,
+    "cost": 0.0,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "timeout",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 900.1,
+      "latency_ms": 900100,
+      "rounds": 0,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null,
+      "cost_usd": 0.0
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "D10-consent-withdrawal",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n__________________ test_consent_withdrawal_returns_timestamp __________________\n\nclient = <starlette.testclient.TestClient object at 0x00000181EEEEC830>\n\n    def test_consent_withdrawal_returns_timestamp(client):\n        register(client)\n        response = client.post(\"/account/consent/withdraw\")\n>       assert response.status_code == 200, f\"withdrawal failed: {response.status_code}\"\nE       AssertionError: withdrawal failed: 404\nE       assert 404 == 200\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_d10_consent_withdrawal.py:7: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_d10_consent_withdrawal.py::test_consent_withdrawal_returns_timestamp\n1 failed in 0.44s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "subject",
+        "args": [
+          "--field",
+          "email"
+        ],
+        "expect": [
+          "withdrawn_at"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "# Subject evidence — field `email`\n\nStatic package: code-derived locations and flows; access log entries are pointed to their tables, not queried live. Not legal advice.\n\n## 1. Where the datum lives\n\n| Field | Entity | Location | Persisted | Controls |\n| --- | --- | --- | :-: | --- |\n| `email` | customers | schema.sql:6 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` |\n\n## 2. Flows (sinks in files that reference the subject fields)\n\n- `print` — app/retention.py:41 (print)\n\n## 4. Consent and rights records\n\n- `blocked` — schema.sql:10\n- `marketing_opt_in` — schema.sql:11\n- `purpose` — schema.sql:73\n- `granted_at` — schema.sql:75\n- `withdrawn_at` — schema.sql:76\n- `purpose` — schema.sql:113\n\n## 5. Processing state\n\n| Entity | Retention | Consent | Recipients |\n| --- | --- | --- | --- |\n| customers | declarada | registrado | — |\n\n"
+      }
+    ],
+    "passed": true
+  }
+}

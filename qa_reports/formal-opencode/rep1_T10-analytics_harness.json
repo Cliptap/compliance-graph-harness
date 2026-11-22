@@ -1,0 +1,184 @@
+{
+  "task": "T10-analytics",
+  "arm": "harness",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T10-analytics-harness",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 26.08,
+    "tool_calls_by_name": {
+      "bash": 4
+    },
+    "files_read": [],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 88840,
+      "input_tokens": 29648,
+      "output_tokens": 836,
+      "reasoning_tokens": 372,
+      "cache_read_tokens": 57984,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.005346,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 26.08,
+      "latency_ms": 26080,
+      "rounds": 5,
+      "tool_calls": 4,
+      "turns": 5,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 88840,
+        "input_tokens": 29648,
+        "output_tokens": 836,
+        "reasoning_tokens": 372,
+        "cache_read_tokens": 57984,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.005346
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 8602,
+          "input": 8532,
+          "output": 63,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.0013218
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 8853,
+          "input": 410,
+          "output": 117,
+          "reasoning": 6,
+          "cache": {
+            "write": 0,
+            "read": 8320
+          }
+        },
+        "cost": 0.00016026
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 13196,
+          "input": 4510,
+          "output": 96,
+          "reasoning": 14,
+          "cache": {
+            "write": 0,
+            "read": 8576
+          }
+        },
+        "cost": 0.000768228
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 28507,
+          "input": 15375,
+          "output": 156,
+          "reasoning": 48,
+          "cache": {
+            "write": 0,
+            "read": 12928
+          }
+        },
+        "cost": 0.002467434
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 29682,
+          "input": 821,
+          "output": 404,
+          "reasoning": 297,
+          "cache": {
+            "write": 0,
+            "read": 28160
+          }
+        },
+        "cost": 0.00062823
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 4
+    },
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "T10-analytics",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n_____________________ test_analytics_has_no_personal_data _____________________\n\nclient = <starlette.testclient.TestClient object at 0x000001E79C7BC830>\n\n    def test_analytics_has_no_personal_data(client):\n        register(client)\n        response = client.get(\"/admin/analytics\", headers={\"X-Admin-Token\": \"test-admin\"})\n>       assert response.status_code == 200\nE       assert 404 == 200\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_t10_analytics.py:7: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_t10_analytics.py::test_analytics_has_no_personal_data - as...\n1 failed in 0.40s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.third-party"
+    ],
+    "expected_control": "CORE-CHECK-010"
+  }
+}

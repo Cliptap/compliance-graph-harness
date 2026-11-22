@@ -1,0 +1,152 @@
+{
+  "task": "T12-admin-customers",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T12-admin-customers-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 43.68,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-2682b1fe-2d4d-48d4-8c34-b443b05a051b",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 39664,
+        "wall_s": 39.68,
+        "usage": {
+          "input_tokens": 280158,
+          "output_tokens": 4160,
+          "cache_read_tokens": 250720,
+          "cache_write_tokens": 0,
+          "total_tokens": 535038,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T12-admin-customers",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n_____________ test_admin_customers_requires_token_and_masks_data ______________\n\nclient = <starlette.testclient.TestClient object at 0x000001FE9ECE0980>\n\n    def test_admin_customers_requires_token_and_masks_data(client):\n        register(client)\n        assert client.get(\"/admin/customers\").status_code in (401, 403)\n        response = client.get(\"/admin/customers\", headers={\"X-Admin-Token\": \"test-admin\"})\n        assert response.status_code == 200\n        assert \"password_hash\" not in response.text\n        assert \"pbkdf2\" not in response.text\n>       assert \"123456785\" not in response.text\nE       assert '123456785' not in '{\"customers...points\":0}]}'\nE         \nE         '123456785' is contained here:\nE           {\"customers\":[{\"rut\":\"123456785\",\"email\":\"ana@example.cl\",\"phone\":\"+56911111111\",\"points\":0}]}\nE         ?                       +++++++++\n\nhidden\\test_t12_admin_customers.py:11: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden\\test_t12_admin_customers.py::test_admin_customers_requires_token_and_masks_data\n1 failed in 0.34s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.password-response",
+      "dumbo.unmasked-rut"
+    ],
+    "expected_control": "CORE-CHECK-003"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 43.68,
+      "latency_ms": 39664,
+      "rounds": 1,
+      "tool_calls": 24,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 250720,
+        "cache_write_tokens": 0,
+        "input_tokens": 280158,
+        "output_tokens": 4160,
+        "reasoning_tokens": 0,
+        "total_tokens": 535038
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 28,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 65,
+      "lines_deleted": 2,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "app/main.py",
+        "schema.sql",
+        "tests/test_app.py",
+        "app/security.py",
+        "tests/conftest.py",
+        ".cursor/skills/compliance-dev/SKILL.md",
+        "README.md"
+      ],
+      "files_read_count": 8,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.25
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-2682b1fe-2d4d-48d4-8c34-b443b05a051b",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 39664,
+        "wall_s": 39.68,
+        "usage": {
+          "input_tokens": 280158,
+          "output_tokens": 4160,
+          "cache_read_tokens": 250720,
+          "cache_write_tokens": 0,
+          "total_tokens": 535038,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 1,
+      "grep": 4,
+      "read": 8,
+      "shell": 3,
+      "edit": 7,
+      "mcp": 1
+    },
+    "changed_files": {
+      "app/main.py": [
+        40,
+        1
+      ],
+      "tests/conftest.py": [
+        1,
+        1
+      ],
+      "tests/test_app.py": [
+        24,
+        0
+      ]
+    }
+  }
+}

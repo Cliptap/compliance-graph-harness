@@ -1,0 +1,149 @@
+{
+  "task": "T08-birthday",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T08-birthday-baseline",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 44.45,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-7c3ed666-cdf8-4354-a5b0-05327d17311f",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 40220,
+        "wall_s": 40.25,
+        "usage": {
+          "input_tokens": 386941,
+          "output_tokens": 3630,
+          "cache_read_tokens": 354112,
+          "cache_write_tokens": 0,
+          "total_tokens": 744683,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T08-birthday",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.29s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-012"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 44.45,
+      "latency_ms": 40220,
+      "rounds": 1,
+      "tool_calls": 25,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 354112,
+        "cache_write_tokens": 0,
+        "input_tokens": 386941,
+        "output_tokens": 3630,
+        "reasoning_tokens": 0,
+        "total_tokens": 744683
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 52,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "tests/test_app.py",
+        "schema.sql",
+        "app/main.py",
+        "app/db.py",
+        "TASK.md",
+        "app/retention.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/test_t08_birthday.py",
+        "tests/conftest.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/conftest.py"
+      ],
+      "files_read_count": 9,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.3333333333333333
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-7c3ed666-cdf8-4354-a5b0-05327d17311f",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 40220,
+        "wall_s": 40.25,
+        "usage": {
+          "input_tokens": 386941,
+          "output_tokens": 3630,
+          "cache_read_tokens": 354112,
+          "cache_write_tokens": 0,
+          "total_tokens": 744683,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 3,
+      "grep": 7,
+      "read": 9,
+      "edit": 4,
+      "shell": 2
+    },
+    "changed_files": {
+      "app/db.py": [
+        7,
+        0
+      ],
+      "app/main.py": [
+        42,
+        1
+      ],
+      "schema.sql": [
+        3,
+        0
+      ]
+    }
+  }
+}

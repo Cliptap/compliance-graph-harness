@@ -1,0 +1,462 @@
+{
+  "task": "D05-courier",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D05-courier-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 129.3,
+    "tool_calls_by_name": {
+      "bash": 9,
+      "read": 13,
+      "write": 1,
+      "edit": 6
+    },
+    "files_read": [
+      "README.md",
+      "TASK.md",
+      "app/main.py",
+      "app/db.py",
+      "schema.sql",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "app/third_parties.py",
+      "app/marketing.py",
+      "app/retention.py",
+      "app/incidents.py",
+      "requirements.txt",
+      "app/templates/order.html"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 868410,
+      "input_tokens": 57830,
+      "output_tokens": 4410,
+      "reasoning_tokens": 1050,
+      "cache_read_tokens": 805120,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.014366,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 129.3,
+      "latency_ms": 129300,
+      "rounds": 18,
+      "tool_calls": 29,
+      "turns": 18,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 868410,
+        "input_tokens": 57830,
+        "output_tokens": 4410,
+        "reasoning_tokens": 1050,
+        "cache_read_tokens": 805120,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.014366
+    },
+    "quality": {
+      "tests": {
+        "passed": 30,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 5,
+      "lines_added": 227,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 1,
+      "architecture_violations": null,
+      "compliance_score": 99.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": [
+        {
+          "policy_id": "privacy.third_party_transfers",
+          "severity": "LOW",
+          "status": "WARNING",
+          "file": "app/courier.py",
+          "line": 1
+        }
+      ]
+    },
+    "context": {
+      "files_read": [
+        "README.md",
+        "TASK.md",
+        "app/main.py",
+        "app/db.py",
+        "schema.sql",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "app/third_parties.py",
+        "app/marketing.py",
+        "app/retention.py",
+        "app/incidents.py",
+        "requirements.txt",
+        "app/templates/order.html"
+      ],
+      "files_read_count": 13,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.23076923076923078
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7496,
+          "input": 5627,
+          "output": 68,
+          "reasoning": 9,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000895626
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 10109,
+          "input": 2359,
+          "output": 429,
+          "reasoning": 25,
+          "cache": {
+            "write": 0,
+            "read": 7296
+          }
+        },
+        "cost": 0.000648138
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 34624,
+          "input": 24563,
+          "output": 374,
+          "reasoning": 87,
+          "cache": {
+            "write": 0,
+            "read": 9600
+          }
+        },
+        "cost": 0.00398985
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 37400,
+          "input": 2964,
+          "output": 164,
+          "reasoning": 224,
+          "cache": {
+            "write": 0,
+            "read": 34048
+          }
+        },
+        "cost": 0.000779544
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 46520,
+          "input": 9335,
+          "output": 88,
+          "reasoning": 105,
+          "cache": {
+            "write": 0,
+            "read": 36992
+          }
+        },
+        "cost": 0.001627026
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 50405,
+          "input": 3764,
+          "output": 394,
+          "reasoning": 39,
+          "cache": {
+            "write": 0,
+            "read": 46208
+          }
+        },
+        "cost": 0.000963024
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 53611,
+          "input": 3252,
+          "output": 403,
+          "reasoning": 36,
+          "cache": {
+            "write": 0,
+            "read": 49920
+          }
+        },
+        "cost": 0.00090096
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 55559,
+          "input": 1675,
+          "output": 414,
+          "reasoning": 350,
+          "cache": {
+            "write": 0,
+            "read": 53120
+          }
+        },
+        "cost": 0.00086901
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 55715,
+          "input": 790,
+          "output": 141,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 54784
+          }
+        },
+        "cost": 0.000367452
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 55953,
+          "input": 177,
+          "output": 224,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 55552
+          }
+        },
+        "cost": 0.000327606
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 56556,
+          "input": 287,
+          "output": 589,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 55680
+          }
+        },
+        "cost": 0.00056349
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 56840,
+          "input": 634,
+          "output": 270,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 55936
+          }
+        },
+        "cost": 0.000424908
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 56927,
+          "input": 406,
+          "output": 73,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 56448
+          }
+        },
+        "cost": 0.000274044
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 57642,
+          "input": 578,
+          "output": 232,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 56832
+          }
+        },
+        "cost": 0.000396396
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 57905,
+          "input": 312,
+          "output": 249,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 57344
+          }
+        },
+        "cost": 0.000368232
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 58199,
+          "input": 319,
+          "output": 152,
+          "reasoning": 128,
+          "cache": {
+            "write": 0,
+            "read": 57600
+          }
+        },
+        "cost": 0.00038865
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 58339,
+          "input": 380,
+          "output": 56,
+          "reasoning": 47,
+          "cache": {
+            "write": 0,
+            "read": 57856
+          }
+        },
+        "cost": 0.000292368
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 58610,
+          "input": 408,
+          "output": 90,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 58112
+          }
+        },
+        "cost": 0.000289536
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 9,
+      "read": 13,
+      "write": 1,
+      "edit": 6
+    },
+    "changed_files": {
+      "app/courier.py": [
+        46,
+        0
+      ],
+      "app/main.py": [
+        41,
+        1
+      ],
+      "app/templates/order.html": [
+        7,
+        0
+      ],
+      "schema.sql": [
+        7,
+        0
+      ],
+      "tests/test_courier.py": [
+        126,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "D05-courier",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.03s\n",
+    "oracle": {
+      "error": null,
+      "findings": [
+        {
+          "rule": "experiments.tasks.oracle.dumbo.third-party",
+          "path": "app/courier.py",
+          "line": 9,
+          "message": "External host referenced by the target."
+        }
+      ]
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "register",
+        "expect": [
+          "courier.example-store.com"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "# Processing register (RoPA draft) — C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D05-courier-baseline\n\n**2 processing activities** derived from the code. Purpose and legal basis cannot be read from code: they are declared as pending gaps to be completed with documentary evidence.\n\n| Activity | Data | Retention | Recipients | Consent | Pending gaps |\n| --- | --- | --- | --- | --- | --- |\n| CourierShipment | `address` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT) | no aplica (no persistido) | courier.example-store.com | no declarado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental)<br>Third parties that may receive personal data need a contract and a transfer basis (Arts. 15 bis, 27). |\n\n| customers | `rut` (IDENTIFIER_RUT), `email` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT), `address_id` (PERSONAL_CONTACT) | declarada | — | registrado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental) |\n\nStatic code-derived draft: not a legal register, not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D05-courier-baseline\\.harness\\evidence.db\n"
+      }
+    ],
+    "passed": true
+  }
+}

@@ -20,25 +20,64 @@ from src.harness.db import DEFAULT_DB_PATH, init_harness_db
 def test_checklist_registry_separation():
     """Verifica que el registro desacople el Core universal de la Ley 21.719 del Plugin Sectorial de Salud."""
     registry = ChecklistRegistry()
-    assert len(registry.core_criteria) == 4
-    assert any(c.id == "CORE-CHECK-001" for c in registry.core_criteria)
-    assert any(c.id == "CORE-CHECK-002" for c in registry.core_criteria)
-    assert any(c.id == "CORE-CHECK-003" for c in registry.core_criteria)
-    assert any(c.id == "CORE-CHECK-004" for c in registry.core_criteria)
+    assert len(registry.core_criteria) == 13
+    core_ids = [c.id for c in registry.core_criteria]
+    assert core_ids == [f"CORE-CHECK-{n:03d}" for n in range(1, 14)]
 
     # Modo Universal (sin plugins sectoriales)
     universal_criteria = registry.get_active_criteria(sectorial_plugin=None)
-    assert len(universal_criteria) == 4
+    assert len(universal_criteria) == 13
     for plugin_name, _ in universal_criteria:
         assert plugin_name == "core_universal"
 
     # Modo Sectorial Clínico
     clinical_criteria = registry.get_active_criteria(sectorial_plugin="health_clinical")
-    assert len(clinical_criteria) == 7
+    assert len(clinical_criteria) == 16
     sectorial_ids = [c.id for p, c in clinical_criteria if p == "health_clinical"]
-    assert "HEALTH-CHECK-001" in sectorial_ids
-    assert "HEALTH-CHECK-002" in sectorial_ids
-    assert "HEALTH-CHECK-003" in sectorial_ids
+    assert sectorial_ids == ["HEALTH-CHECK-001", "HEALTH-CHECK-002", "HEALTH-CHECK-003"]
+    assert not any(c.id.startswith("ECOM-") for _, c in clinical_criteria)
+
+
+def test_ecommerce_plugin_applies_only_when_selected():
+    registry = ChecklistRegistry()
+    ecommerce = registry.get_active_criteria(sectorial_plugin="ecommerce_retail")
+    ecom_ids = [c.id for p, c in ecommerce if p == "ecommerce_retail"]
+    assert ecom_ids == [f"ECOM-CHECK-{n:03d}" for n in range(1, 8)]
+    assert len(ecommerce) == 20
+    assert not any(c.id.startswith("HEALTH-") for _, c in ecommerce)
+    for plugin in (None, "health_clinical"):
+        assert not any(c.id.startswith("ECOM-") for _, c in registry.get_active_criteria(sectorial_plugin=plugin))
+
+
+def test_manual_controls_are_not_evaluated_from_code(tmp_path):
+    code_file = tmp_path / "orders_api.py"
+    code_file.write_text("def checkout(order):\n    return order\n", encoding="utf-8")
+    db_test = tmp_path / "test_harness.db"
+    init_harness_db(db_test)
+    criteria = ChecklistRegistry().get_active_criteria(sectorial_plugin="ecommerce_retail")
+
+    verdict = StatelessAuditor(session_id="test-manual", db_path=db_test).audit_file(
+        file_path_abs=code_file,
+        rel_path="src/backend/api/orders_api.py",
+        file_node_id="src_backend_api_orders_api_py",
+        slice_data={"nodes": [], "edges": [], "involved_files": []},
+        active_criteria=criteria,
+    )
+
+    manual_ids = {f"CORE-CHECK-{n:03d}" for n in range(5, 14)} | {f"ECOM-CHECK-{n:03d}" for n in range(1, 8)}
+    manual = [r for r in verdict.results if r.criterion_id in manual_ids]
+    assert len(manual) == 16
+    for res in manual:
+        assert res.status == "NOT_APPLICABLE", res.criterion_id
+        assert "evidencia documental" in res.details
+        assert res.evidence_snippet is None and res.line_number is None
+    assert verdict.total_criteria == 20
+    assert verdict.na_count == sum(1 for r in verdict.results if r.status == "NOT_APPLICABLE")
+    conn = sqlite3.connect(db_test)
+    stored = dict(conn.execute(
+        "SELECT criterion_id, status FROM file_checklist_audits WHERE session_id = 'test-manual'").fetchall())
+    conn.close()
+    assert all(stored[cid] == "NOT_APPLICABLE" for cid in manual_ids)
 
 
 def test_stateless_auditor_detects_hard_delete_violation(tmp_path):
@@ -118,7 +157,7 @@ def test_orchestrator_execution(tmp_path):
     report = orchestrator.run_audit_loop(sectorial_plugin="health_clinical", apply_patches=False)
 
     assert report["total_files_audited"] > 0
-    assert report["active_criteria_count"] == 7
+    assert report["active_criteria_count"] == 16
     assert len(report["verdicts"]) == report["total_files_audited"]
 
     # Verificar persistencia en base de datos

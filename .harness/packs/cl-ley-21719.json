@@ -1,0 +1,2195 @@
+{
+  "pack_id": "cl-ley-21719",
+  "version": "2.0.0",
+  "jurisdiction": "Chile",
+  "enforcement_date": "2026-12-01",
+  "laws": {
+    "L19628": {
+      "name": "Ley 19.628 (reformada por Ley 21.719)",
+      "short": "Ley 21.719",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+      "source_type": "statute"
+    },
+    "L20584": {
+      "name": "Ley 20.584 (derechos y deberes del paciente)",
+      "short": "Ley 20.584",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+      "source_type": "statute"
+    },
+    "L21668": {
+      "name": "Ley 21.668 (interoperabilidad de fichas clínicas)",
+      "short": "Ley 21.668",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1203827",
+      "source_type": "statute"
+    },
+    "L19496": {
+      "name": "Ley 19.496 (protección de los derechos de los consumidores)",
+      "short": "Ley 19.496",
+      "url": "https://www.bcn.cl/leychile/Navegar?idNorma=61438&idParte=9478681",
+      "source_type": "statute"
+    },
+    "DL825": {
+      "name": "Decreto Ley 825 (Ley sobre Impuesto a las Ventas y Servicios)",
+      "short": "DL 825",
+      "url": "https://www.leychile.cl/Consulta/obtxml?opt=7&idNorma=6369",
+      "source_type": "statute"
+    },
+    "DL830": {
+      "name": "Decreto Ley 830 (Código Tributario)",
+      "short": "Código Tributario",
+      "url": "https://www.leychile.cl/Consulta/obtxml?opt=7&idNorma=6374",
+      "source_type": "statute"
+    },
+    "TBK_AFILIACION": {
+      "name": "Contrato de afiliación de establecimientos comerciales Transbank",
+      "short": "Contrato Transbank",
+      "url": "https://ayuda.transbank.cl/documents/433363/0/CONTRATO+AFILIACION+TBK+ENERO.21+vf.pdf/9bf12d1c-158d-2924-4a29-32517471b116?t=1646167687259",
+      "source_type": "contract"
+    }
+  },
+  "sanctions": {
+    "terminology": "Infracciones leves, graves y gravísimas (legal terms).",
+    "legal_review": "validated",
+    "note": "Amounts and the conditional 2%/4% cap self-validated against Ley 19.628 Arts. 34-36 as reformed by Ley 21.719 (BCN, 2026-10-28).",
+    "leve": "Amonestación escrita o multa de hasta 5.000 UTM",
+    "grave": "Multa de hasta 10.000 UTM",
+    "gravisima": "Multa de hasta 20.000 UTM (Art. 35 let. c)); hasta el 2% (grave) o 4% (gravísima) de los ingresos anuales solo para empresas que no son de menor tamaño y reinciden (Art. 35 inciso final, Art. 36)"
+  },
+  "data_categories": {
+    "SENSITIVE_HEALTH": {
+      "description": "Datos relativos a la salud física o psíquica, diagnósticos (CIE-10/11), anamnesis, tratamientos, prescripciones o condición médica del paciente.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° bis (en armonía con Ley 20.584 Art. 12 inc. 3°)",
+      "fields": [
+        "diagnosis",
+        "diagnostico",
+        "clinical_notes",
+        "medical_record",
+        "historia_clinica",
+        "treatment",
+        "receta",
+        "anamnesis",
+        "exam_result",
+        "health_status",
+        "alergias",
+        "evolucion_clinica"
+      ]
+    },
+    "SENSITIVE_BIOMETRIC": {
+      "description": "Datos relativos a rasgos físicos, fisiológicos o conductuales que permiten autenticación unívoca (huellas, patrones faciales). Prohibición de imágenes en bruto.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° ter",
+      "fields": [
+        "biometria",
+        "huella",
+        "fingerprint",
+        "face_embedding",
+        "iris",
+        "vector_facial"
+      ],
+      "requirement_note": "Raw-image ban / HMAC and immutable audit trail are project security policy, not literal legal requirements."
+    },
+    "IDENTIFIER_RUT": {
+      "description": "Rol Único Tributario o Nacional (RUT/RUN), identificador civil directo de personas naturales en la República de Chile.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. f) (identificadores, incluido el número de cédula de identidad), Art. 3° let. f) y h) (principios de seguridad y confidencialidad) y Art. 14° bis (deber de secreto)",
+      "fields": [
+        "identifier",
+        "rut",
+        "run",
+        "dni",
+        "national_id"
+      ]
+    },
+    "PERSONAL_CONTACT": {
+      "description": "Datos personales de contacto y localización.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 3° let. c) y Art. 14° quáter (Principio de Minimización y Privacidad por Defecto)",
+      "fields": [
+        "telecom",
+        "email",
+        "phone",
+        "address",
+        "telefono",
+        "direccion_residencia"
+      ]
+    },
+    "SECURITY_METADATA": {
+      "description": "Metadatos de trazabilidad, pistas de auditoría forense inmutable y firmas HMAC para acreditación ante la APDP.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies y Art. 14° sexies",
+      "fields": [
+        "audit_trail",
+        "access_log",
+        "hmac_signature",
+        "operator_id",
+        "session_token"
+      ],
+      "requirement_note": "Raw-image ban / HMAC and immutable audit trail are project security policy, not literal legal requirements."
+    },
+    "SENSITIVE_ETHNIC_RACIAL_ORIGIN": {
+      "description": "Datos que revelan el origen étnico o racial.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+      "fields": [
+        "ethnicity",
+        "ethnic_origin",
+        "racial_origin",
+        "origen_etnico",
+        "origen_racial",
+        "pueblo_originario"
+      ]
+    },
+    "SENSITIVE_POLITICAL_UNION_AFFILIATION": {
+      "description": "Datos que revelan la afiliación política, sindical o gremial.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+      "fields": [
+        "political_affiliation",
+        "afiliacion_politica",
+        "partido_politico",
+        "union_membership",
+        "afiliacion_sindical",
+        "afiliacion_gremial"
+      ]
+    },
+    "SENSITIVE_BELIEFS": {
+      "description": "Datos que revelan convicciones ideológicas o filosóficas o creencias religiosas.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+      "fields": [
+        "religion",
+        "religious_belief",
+        "creencia_religiosa",
+        "philosophical_belief",
+        "conviccion_ideologica"
+      ]
+    },
+    "SENSITIVE_SOCIOECONOMIC": {
+      "description": "Datos que revelan la situación socioeconómica (ingresos, nivel socioeconómico, puntajes de crédito).",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+      "fields": [
+        "socioeconomic_status",
+        "nivel_socioeconomico",
+        "situacion_socioeconomica",
+        "income",
+        "ingresos_mensuales",
+        "credit_score",
+        "puntaje_crediticio"
+      ]
+    },
+    "SENSITIVE_SEXUAL_LIFE_ORIENTATION": {
+      "description": "Información relativa a la vida sexual o a la orientación sexual.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+      "fields": [
+        "sexual_orientation",
+        "orientacion_sexual",
+        "sex_life",
+        "vida_sexual"
+      ]
+    },
+    "SENSITIVE_GENDER_IDENTITY": {
+      "description": "Información relativa a la identidad de género.",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+      "fields": [
+        "gender_identity",
+        "identidad_genero",
+        "identidad_de_genero"
+      ],
+      "requirement_note": "A plain 'gender' field is not listed: it often holds administrative sex, not gender identity."
+    },
+    "SENSITIVE_BIOLOGICAL_PROFILE": {
+      "description": "Datos relativos al perfil biológico humano (datos genéticos, proteómicos o metabólicos).",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g) y Art. 16° bis",
+      "fields": [
+        "genetic",
+        "genome",
+        "genomic",
+        "perfil_biologico",
+        "proteomic",
+        "metabolic_profile"
+      ]
+    },
+    "CHILDREN_DATA": {
+      "description": "Datos personales de niños y niñas (menores de 14 años) y de adolescentes (14 a 17 años).",
+      "legal_basis": "Ley 19.628 reformada por Ley 21.719 Art. 16° quáter (interés superior y autonomía progresiva; datos sensibles de adolescentes menores de dieciséis años con consentimiento de padres o representantes legales)",
+      "fields": [
+        "is_minor",
+        "es_menor",
+        "menor_de_edad",
+        "parental_consent",
+        "consentimiento_parental"
+      ],
+      "requirement_note": "Field names only flag explicit minor markers; age must be derived from the date of birth with thresholds 14 and 16, which field-name matching cannot do."
+    }
+  },
+  "controls": [
+    {
+      "id": "CL-DATAPROT-001",
+      "title": "Fuga de datos clínicos sensibles o RUT hacia logs del sistema o telemetría",
+      "description": "La información de la ficha clínica es dato sensible (Ley 20.584 Art. 12) y el responsable debe mantener secreto o confidencialidad acerca de los datos personales (Art. 14° bis) y aplicar medidas de seguridad según el riesgo (Art. 14° quinquies). Emitir RUT, diagnósticos o datos de salud sin sanitizar hacia logs, consola, archivos o APM los expone: vulnerar el secreto es infracción grave (Art. 34° ter let. i)) y gravísima si se trata de datos sensibles (Art. 34° quáter let. d)). La ley no prohíbe registrar eventos; exige no revelar datos personales.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: secrecy duty ('obligado a mantener secreto o confidencialidad acerca de los datos personales'); no absolute logging ban is claimed."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: measures 'adecuado al riesgo' that 'en su caso' include pseudonymisation and encryption; no fixed technique is claimed as law."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Let. i) classifies breach of secrecy as serious; let. d) of Art. 34 quáter makes it very serious for sensitive data. Let. j) covers security, not secrecy."
+          }
+        },
+        {
+          "law": "L20584",
+          "article": "Art. 12",
+          "citation": "Ley 20.584 Art. 12",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: clinical-record information 'será considerada como dato sensible' (inc. 3°); cited only for sensitivity and confidentiality, not for logs."
+          }
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-health-data-leak-logging",
+        "cwe": "CWE-532: Insertion of Sensitive Information into Log File",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "logging.Logger",
+          "logger",
+          "print",
+          "sys.stdout",
+          "sys.stderr",
+          "console.log",
+          "console.error",
+          "AuditLog.new_value",
+          "AuditLog.old_value"
+        ],
+        "implemented": true,
+        "policy_id": "privacy.cwe_532"
+      },
+      "remediation": {
+        "mitigations": [
+          "maskRut",
+          "hashIdentifier",
+          "redactMedicalData",
+          "encryptAesGcm"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code emits personal or sensitive data to log, console or telemetry sinks."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Law requires security measures adequate to the risk; a blanket ban on any logging is stricter than the law.",
+      "validation_note": "The control claims that personal and health data must not be revealed through log, console or telemetry sinks. Art. 14 bis imposes secrecy on personal data, Art. 14 quinquies requires security adequate to the risk, Art. 34 ter let. i) and Art. 34 quáter let. d) classify the breach of secrecy, and Ley 20.584 Art. 12 inc. 3 makes clinical-record information sensitive. It is labelled risk_based_measure because no text bans logging as such."
+    },
+    {
+      "id": "CL-DATAPROT-002",
+      "title": "Exposición de registros médicos en capas de caché sin cifrado en reposo",
+      "description": "[Estándar interno] Cifrar con AES-256-GCM los datos de salud antes de escribirlos en cachés distribuidas (Redis, Memcached) es una decisión del proyecto. La ley califica los datos de salud como sensibles (Art. 2° let. g)) y exige medidas de seguridad adecuadas al riesgo que, en su caso, incluyan el cifrado (Art. 14° quinquies inc. 2° let. a)); no prescribe un algoritmo ni la capa donde cifrar.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 2° let. g)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies inc. 2° let. a)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies inc. 2° let. a)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: measures 'adecuado al riesgo' that 'en su caso' include pseudonymisation and encryption; no fixed technique is claimed as law."
+          }
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-unencrypted-cache-health-data",
+        "cwe": "CWE-311: Missing Encryption of Sensitive Data",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "redis.set",
+          "cache.put",
+          "memcached.set"
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: cache encryptor sinks (redis.set/cache.put) are not analyzed yet."
+      },
+      "remediation": {
+        "mitigations": [
+          "encryptAesGcm",
+          "encryptEnvelope",
+          "kms.encrypt"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "Code writes health data to a shared cache."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "AES-256-GCM before cache writes is a project standard, not a literal legal text.",
+      "validation_note": "Art. 2 let. g) lists health data as sensitive and Art. 14 quinquies inc. 2 let. a) lists encryption as a measure that applies 'en su caso' within security adequate to the risk. The control presents AES-256-GCM before cache writes as the project's choice (internal_standard), not as a legal text."
+    },
+    {
+      "id": "CL-DATAPROT-003",
+      "title": "Persistencia de entidades de salud sin cifrado a nivel de campo (FLE) en modelo ORM",
+      "description": "[Estándar interno] Incorporar cifrado a nivel de campo en las entidades ORM que gestionan diagnósticos, anamnesis o perfiles biológicos es una decisión del proyecto. Concreta la protección desde el diseño (Art. 14° quáter: medidas técnicas y organizativas adecuadas desde el diseño, según el estado de la técnica, los costos y los riesgos) y la seguridad adecuada al riesgo (Art. 14° quinquies); la ley no exige esta técnica concreta.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: measures 'adecuadas desde el diseño' weighing the state of the art, costs and risks, and by default only the strictly necessary data, considering 'su accesibilidad'; the concrete technique is presented as the project's choice."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-orm-missing-encryption-transformer",
+        "cwe": "CWE-312: Cleartext Storage of Sensitive Information",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "unencrypted_column_storage"
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: ORM encryption-transformer coverage is not statically verifiable yet."
+      },
+      "remediation": {
+        "mitigations": [
+          "FieldLevelEncryption",
+          "EncryptedColumn",
+          "TypeDecorator.process_bind_param"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "Code persists health entities."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Field-level encryption is a project standard; the law requires measures adequate to the risk.",
+      "validation_note": "Art. 14 quáter requires adequate technical and organisational measures from the design stage and Art. 14 quinquies requires security adequate to the risk. Field-level encryption is one way to meet them and is presented as the project's choice (internal_standard)."
+    },
+    {
+      "id": "CL-DATAPROT-004",
+      "title": "Borrado físico prematuro de fichas clínicas (deber de conservación de 15 años)",
+      "description": "Los prestadores deben conservar la ficha clínica por al menos 15 años (Ley 20.584 Art. 13). La supresión no procede cuando el tratamiento es necesario para cumplir una obligación legal (Ley 19.628 Art. 7° inc. 2° N° ii). Si el titular solicita el bloqueo (Art. 8° ter) se suspende temporalmente el tratamiento, y su ejercicio no afectará el almacenamiento de los datos. Ejecutar un DELETE físico sobre fichas clínicas antes de ese plazo infringe el deber de conservación.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L20584",
+          "article": "Art. 13",
+          "citation": "Ley 20.584 Art. 13 (conservación de la ficha clínica por al menos 15 años)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 7° inc. 2° N° ii",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° inc. 2° N° ii",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 8° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° ter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: blocking is the data subject's right to temporary suspension and 'no afectará el almacenamiento'; it is not cited as a retention or legal-hold duty."
+          }
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-illegal-hard-delete-medical-record",
+        "cwe": "CWE-404: Improper Resource Shutdown or Release",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "session.delete",
+          "delete().where",
+          "hard_delete",
+          "DROP"
+        ],
+        "implemented": true,
+        "policy_id": "domain.prohibited_deletion"
+      },
+      "remediation": {
+        "mitigations": [
+          "soft_delete_filter",
+          "status = BLOCKED_LEGAL_HOLD",
+          "check_retention_period_15_years"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Code deletes clinical records (Ley 20.584 Art. 13: keep the record at least 15 years)."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Retention is legal; soft delete is one possible implementation, not the only one.",
+      "validation_note": "Ley 20.584 Art. 13 orders keeping the clinical record for at least fifteen years, and Ley 19.628 Art. 7 inc. 2 N° ii excludes erasure when processing is necessary to meet a legal obligation, so a premature physical delete breaches the retention duty. Art. 8 ter is cited only for what it says: blocking suspends processing and does not affect storage."
+    },
+    {
+      "id": "CL-DATAPROT-005",
+      "title": "Exposición de endpoints clínicos sin control de acceso",
+      "description": "Los terceros que no estén directamente relacionados con la atención de salud de la persona no tendrán acceso a la ficha clínica (Ley 20.584 Art. 13 inc. 4°). Exigir autenticación y roles asistenciales en los endpoints que consultan o modifican fichas es una medida según el riesgo, coherente con la protección desde el diseño y por defecto, que considera la accesibilidad de los datos (Art. 14° quáter), y con la seguridad adecuada al riesgo (Art. 14° quinquies); JWT, RBAC o ABAC son decisiones del proyecto.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: measures 'adecuadas desde el diseño' weighing the state of the art, costs and risks, and by default only the strictly necessary data, considering 'su accesibilidad'; the concrete technique is presented as the project's choice."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L20584",
+          "article": "Art. 13 inc. 4°",
+          "citation": "Ley 20.584 Art. 13 inc. 4°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-unprotected-clinical-endpoint",
+        "cwe": "CWE-285: Improper Authorization",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "unprotected_route",
+          "public_endpoint"
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: route authorization coverage needs the T16 rights reachability work; only CORE-CHECK-003 indicators exist."
+      },
+      "remediation": {
+        "mitigations": [
+          "Security(get_current_user, scopes=[...])",
+          "require_clinical_role"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "An HTTP endpoint exposes clinical or personal data."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "RBAC/ABAC/JWT are implementation choices; adequacy depends on context.",
+      "validation_note": "Ley 20.584 Art. 13 inc. 4 denies access to the clinical record to third parties not directly related to the person's care. Arts. 14 quáter and 14 quinquies require measures by design, by default (considering accessibility) and adequate to the risk. Authentication and care roles on clinical endpoints implement these duties; JWT, RBAC or ABAC are presented as project choices."
+    },
+    {
+      "id": "CL-DATAPROT-006",
+      "title": "Decisión clínica automatizada sin garantías de explicación, intervención humana y revisión",
+      "description": "El titular tiene derecho a oponerse y a no ser objeto de decisiones basadas en el tratamiento automatizado de sus datos personales, incluida la elaboración de perfiles, que produzcan efectos jurídicos en él o le afecten significativamente (Art. 8° bis), salvo las excepciones legales (contrato, consentimiento expreso o ley). En todos los casos el responsable debe asegurar el derecho a obtener una explicación, a la intervención humana, a expresar su punto de vista y a solicitar la revisión de la decisión. Un pipeline que resuelve diagnósticos o triaje sin una vía de revisión humana no ofrece esas garantías; exigir validación médica previa en todo paso automatizado es una decisión del proyecto.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 8° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: right to object to automated decisions with legal or significant effects, with exceptions, and in every case the duty to secure explanation, human intervention, the data subject's point of view and review; no ban on automation is claimed."
+          }
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-automated-decision-missing-human-review",
+        "cwe": "CWE-693: Protection Mechanism Failure",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "auto_resolve_diagnosis",
+          "unreviewed_triage_decision"
+        ],
+        "implemented": false,
+        "gap_reason": "Manual assessment: automated clinical decisions need human review evidence."
+      },
+      "remediation": {
+        "mitigations": [
+          "status = PENDING_PHYSICIAN_REVIEW",
+          "human_in_the_loop_gate"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Automated decision or profiling with legal or otherwise significant effects on the data subject."
+      },
+      "validation_mode": "manual_assessment",
+      "legal_review": "validated",
+      "legal_review_note": "Art. 8 bis is not a universal ban on automation; exceptions and the required safeguards must be assessed per decision.",
+      "validation_note": "Art. 8 bis grants the right to object to automated decisions with legal or significant effects, with exceptions, and always requires explanation, human intervention, the data subject's point of view and review. The control flags clinical pipelines that resolve diagnoses or triage without a human review path; a physician gate before every automated step is labelled as project policy."
+    },
+    {
+      "id": "CL-DATAPROT-007",
+      "title": "Exportación de portabilidad de ficha clínica en formato no estructurado",
+      "description": "[Estándar interno] Exportar la ficha clínica como Bundle HL7 FHIR R4 compatible con la Guía CL Core del MINSAL es una decisión del proyecto. La ley exige entregar los datos en un formato electrónico estructurado, genérico y de uso común solo cuando el tratamiento se realiza en forma automatizada y está basado en el consentimiento (Art. 9°), y la Ley 20.584 Art. 13 inc. 1°, modificada por la Ley 21.668 (Artículo único), exige adoptar medidas que permitan la interoperabilidad sin nombrar un estándar técnico.",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 9°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 9°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: structured, generic, commonly used format only when processing is automated and consent-based; no technical standard is claimed as law."
+          }
+        },
+        {
+          "law": "L20584",
+          "article": "Art. 13 inc. 1°",
+          "citation": "Ley 20.584 Art. 13 inc. 1°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L21668",
+          "article": "Artículo único",
+          "citation": "Ley 21.668 Artículo único",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1203827",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: the 'Artículo único' amends Ley 20.584 Arts. 12 and 13; cited only as the amending law of the interoperability duty, which names no technical standard."
+          }
+        }
+      ],
+      "detection": {
+        "type": "taint_sink",
+        "semgrep_id": "cl-privacy-non-fhir-portability-export",
+        "cwe": "CWE-20: Improper Input Validation",
+        "sensitive_category": "SENSITIVE_HEALTH",
+        "sinks": [
+          "raw_json_dump",
+          "csv_export",
+          "unstructured_pdf"
+        ],
+        "implemented": false,
+        "gap_reason": "No detector: export format (FHIR/raw) is not verified by code."
+      },
+      "remediation": {
+        "mitigations": [
+          "to_fhir_patient_bundle",
+          "fhir_cl_core_serializer"
+        ]
+      },
+      "evidence": {
+        "kind": "scan_finding_absent",
+        "note": "No open finding for this control in the compliance scan."
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "An endpoint exports or ports clinical records."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "HL7 FHIR R4 CL Core is a project architecture requirement until a regulation or technical standard is identified.",
+      "validation_note": "Art. 9 requires a structured, generic, commonly used electronic format only for automated, consent-based processing; Ley 20.584 Art. 13 inc. 1, as amended by the Ley 21.668 Artículo único, requires interoperability measures without naming a standard. HL7 FHIR R4 CL Core is therefore presented as a project choice (internal_standard)."
+    },
+    {
+      "id": "CORE-CHECK-001",
+      "title": "Privacidad desde el diseño, minimización y seudonimización o cifrado según el riesgo",
+      "description": "El responsable debe aplicar medidas técnicas y organizativas adecuadas desde el diseño y, por defecto, tratar solo los datos personales estrictamente necesarios (Art. 14° quáter). Las medidas de seguridad deben ser adecuadas al riesgo y, en su caso, incluir la seudonimización y el cifrado (Art. 14° quinquies inc. 2° let. a)). Enmascarar o seudonimizar identificadores directos (RUT/RUN), cifrar campos sensibles y no tratar parámetros superfluos concretan ese deber según el riesgo.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: measures 'adecuadas desde el diseño' weighing the state of the art, costs and risks, and by default only the strictly necessary data, considering 'su accesibilidad'; the concrete technique is presented as the project's choice."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies inc. 2° let. a)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies inc. 2° let. a)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: measures 'adecuado al riesgo' that 'en su caso' include pseudonymisation and encryption; no fixed technique is claimed as law."
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "PRIVACY_BY_DESIGN",
+        "plugin": "core",
+        "indicators": [
+          "mask",
+          "redact",
+          "hash",
+          "encrypt",
+          "identifier",
+          "rut"
+        ],
+        "implemented": false,
+        "gap_reason": "Only the legacy stateless auditor heuristic masks identifiers; not a PolicyEngine detector and not counted in the score."
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:mask",
+          "apply:redact",
+          "apply:hash",
+          "apply:encrypt",
+          "apply:identifier",
+          "apply:rut"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code stores or processes direct identifiers or sensitive fields."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Pseudonymisation and encryption are listed as possible measures, not invariable mandates.",
+      "validation_note": "Art. 14 quáter requires measures from the design stage and, by default, only strictly necessary data; Art. 14 quinquies inc. 2 let. a) lists pseudonymisation and encryption as measures that apply 'en su caso' within security adequate to the risk. The control claims masking, pseudonymisation and encryption as risk-based measures, not as fixed mandates."
+    },
+    {
+      "id": "CORE-CHECK-002",
+      "title": "Deber de secreto y prevención de fugas en logs, consolas y cachés",
+      "description": "El responsable está obligado a mantener secreto o confidencialidad acerca de los datos personales (Art. 14° bis); vulnerarlo es infracción grave (Art. 34° ter let. i)) y gravísima cuando se trata de datos sensibles (Art. 34° quáter let. d)). Emitir datos personales identificables hacia logs de depuración (logging, print, sys.stdout, console.log) o cachés sin cifrar los expone; evitarlo es una medida según el riesgo, no una prohibición legal de registrar eventos.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: secrecy duty ('obligado a mantener secreto o confidencialidad acerca de los datos personales'); no absolute logging ban is claimed."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 34° ter let. i), Art. 34° quáter let. d)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Let. i) classifies breach of secrecy as serious; let. d) of Art. 34 quáter makes it very serious for sensitive data. Let. j) covers security, not secrecy."
+          }
+        }
+      ],
+      "detection": {
+        "type": "pattern",
+        "category": "CONFIDENTIALITY_LEAK_PREVENTION",
+        "plugin": "core",
+        "patterns": [
+          "print(",
+          "sys.stdout",
+          "logger.",
+          "logging.",
+          "log.info(",
+          "log.debug("
+        ],
+        "implemented": true,
+        "policy_id": "privacy.cwe_532"
+      },
+      "remediation": {
+        "mitigations": [
+          "review:CONFIDENTIALITY_LEAK_PREVENTION"
+        ]
+      },
+      "evidence": {
+        "kind": "pattern_absent",
+        "note": "Prohibited patterns absent from the changed code."
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code emits personal data to logs, consoles or caches."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Detect exposure and missing safeguards; stricter internal bans must be labelled internal.",
+      "validation_note": "Art. 14 bis imposes secrecy on personal data; Art. 34 ter let. i) and Art. 34 quáter let. d) classify its breach as serious, or very serious for sensitive data. Avoiding personal data in debug sinks implements that duty; the control is labelled risk_based_measure because no text bans logging as such."
+    },
+    {
+      "id": "CORE-CHECK-003",
+      "title": "Derechos del titular (acceso, rectificación, supresión, oposición, portabilidad y bloqueo) y control de acceso",
+      "description": "El titular tiene derecho de acceso, rectificación, supresión, oposición, portabilidad y bloqueo de sus datos personales (Art. 4°), y el responsable debe implementar mecanismos y herramientas tecnológicas que permitan ejercerlos en forma expedita, ágil y eficaz (Art. 10°) dentro de los plazos del Art. 11°. Exigir autenticación y autorización antes de acceder a datos personales es una medida según el riesgo coherente con la protección desde el diseño y por defecto (Art. 14° quáter); RBAC, ABAC o JWT son decisiones del proyecto.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Arts. 4° al 11°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Arts. 4° al 11° (derechos del titular, incluido bloqueo y procedimiento)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quáter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: measures 'adecuadas desde el diseño' weighing the state of the art, costs and risks, and by default only the strictly necessary data, considering 'su accesibilidad'; the concrete technique is presented as the project's choice."
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "ARCOP_AND_ACCESS_CONTROL",
+        "plugin": "core",
+        "indicators": [
+          "current_user",
+          "rbac",
+          "role",
+          "scopes",
+          "security",
+          "permission"
+        ],
+        "implemented": false,
+        "gap_reason": "Only access-control indicators (current_user/rbac); T16 covers data-subject rights, not authentication."
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:current_user",
+          "apply:rbac",
+          "apply:role",
+          "apply:scopes",
+          "apply:security",
+          "apply:permission"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system handles data subject requests (access, rectification, erasure, opposition, portability, blocking)."
+      },
+      "validation_mode": "integration_test",
+      "legal_review": "validated",
+      "legal_review_note": "RBAC/ABAC/JWT are not legal mandates; the rights and deadlines are.",
+      "validation_note": "Art. 4 lists access, rectification, erasure, opposition, portability and blocking; Art. 10 requires means to exercise them expeditiously and Art. 11 sets the deadlines. Art. 14 quáter supports access restrictions by design and by default. RBAC, ABAC or JWT are presented as project choices."
+    },
+    {
+      "id": "CORE-CHECK-004",
+      "title": "Decisiones automatizadas: derecho de oposición y garantías de intervención humana",
+      "description": "El titular tiene derecho a oponerse y a no ser objeto de decisiones basadas en el tratamiento automatizado de sus datos personales, incluida la elaboración de perfiles, que produzcan efectos jurídicos en él o le afecten significativamente (Art. 8° bis), salvo las excepciones legales (contrato, consentimiento expreso o ley). En todos los casos el responsable debe asegurar el derecho a obtener una explicación, a la intervención humana, a expresar su punto de vista y a solicitar la revisión de la decisión. No todo flujo algorítmico es una decisión con esos efectos; los que lo son deben ofrecer esas garantías.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 8° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: right to object to automated decisions with legal or significant effects, with exceptions, and in every case the duty to secure explanation, human intervention, the data subject's point of view and review; no ban on automation is claimed."
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "AUTOMATED_DECISION_HUMAN_IN_THE_LOOP",
+        "plugin": "core",
+        "indicators": [
+          "human_review",
+          "physician_review",
+          "pending_review",
+          "automated_gate"
+        ],
+        "implemented": false,
+        "gap_reason": "Human-in-the-loop review is documentary; the legacy auditor has a heuristic only."
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:human_review",
+          "apply:physician_review",
+          "apply:pending_review",
+          "apply:automated_gate"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Automated decisions or profiling with legal or significant effects."
+      },
+      "validation_mode": "manual_assessment",
+      "legal_review": "validated",
+      "legal_review_note": "Must not block all algorithmic flows; evaluate exceptions and required safeguards.",
+      "validation_note": "Art. 8 bis grants the right to object to automated decisions with legal or significant effects, with exceptions, and always requires explanation, human intervention, the data subject's point of view and review. The control claims those safeguards only for decisions with such effects, not for every algorithm."
+    },
+    {
+      "id": "HEALTH-CHECK-001",
+      "title": "Conservación de 15 años de la ficha clínica frente a solicitudes de supresión",
+      "description": "Los prestadores deben conservar la ficha clínica por al menos 15 años (Ley 20.584 Art. 13). La supresión no procede cuando el tratamiento es necesario para cumplir una obligación legal (Ley 19.628 Art. 7° inc. 2° N° ii), por lo que una solicitud de supresión no autoriza un DELETE físico de historiales o consultas clínicas dentro de ese plazo. El bloqueo solicitado por el titular (Art. 8° ter) suspende temporalmente el tratamiento y no afectará el almacenamiento; el soft-delete es una implementación posible.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L20584",
+          "article": "Art. 13",
+          "citation": "Ley 20.584 Art. 13 (conservación de la ficha clínica por al menos 15 años)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 7° inc. 2° N° ii",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° inc. 2° N° ii",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 8° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° ter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: blocking is the data subject's right to temporary suspension and 'no afectará el almacenamiento'; it is not cited as a retention or legal-hold duty."
+          }
+        }
+      ],
+      "detection": {
+        "type": "pattern",
+        "category": "RETENTION_15_YEAR_CLINICAL_RECORD",
+        "plugin": "health_clinical",
+        "patterns": [
+          "session.delete",
+          "delete().where",
+          "hard_delete",
+          "DROP TABLE"
+        ],
+        "implemented": true,
+        "policy_id": "domain.prohibited_deletion"
+      },
+      "remediation": {
+        "mitigations": [
+          "soft_delete_filter",
+          "status = BLOCKED_LEGAL_HOLD"
+        ]
+      },
+      "evidence": {
+        "kind": "pattern_absent",
+        "note": "Prohibited patterns absent from the changed code."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Code deletes or archives clinical records (Ley 20.584 Art. 13, at least 15 years)."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "15-year rule from Ley 20.584 Art. 13; soft delete is one implementation, not a legal requirement.",
+      "validation_note": "Ley 20.584 Art. 13 orders keeping the clinical record for at least fifteen years and Ley 19.628 Art. 7 inc. 2 N° ii excludes erasure when processing is necessary to meet a legal obligation, so an erasure request does not authorise a physical delete within that period. Art. 8 ter is cited only for blocking, which does not affect storage; soft delete is labelled as one implementation."
+    },
+    {
+      "id": "HEALTH-CHECK-002",
+      "title": "Interoperabilidad de la ficha clínica bajo HL7 FHIR R4 CL Core (estándar del proyecto)",
+      "description": "[Estándar interno] Estructurar el canal de portabilidad y transferencia clínica bajo HL7 FHIR R4 con el perfil CL Core es una decisión del proyecto. La Ley 20.584 Art. 13 inc. 1° (modificado por la Ley 21.668, Artículo único) exige adoptar medidas que permitan la interoperabilidad con otros prestadores y el inc. 2° exige que los sistemas estén diseñados para interoperar, pero la ley no fija un estándar técnico. La portabilidad del Art. 9° aplica solo a tratamientos automatizados basados en el consentimiento.",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "L20584",
+          "article": "Art. 13 inc. 1° y 2°",
+          "citation": "Ley 20.584 Art. 13 inc. 1° y 2°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1039348",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L21668",
+          "article": "Artículo único",
+          "citation": "Ley 21.668 Artículo único",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1203827",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: the 'Artículo único' amends Ley 20.584 Arts. 12 and 13; cited only as the amending law of the interoperability duty, which names no technical standard."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 9°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 9°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as rewritten: structured, generic, commonly used format only when processing is automated and consent-based; no technical standard is claimed as law."
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "FHIR_INTEROPERABILITY",
+        "plugin": "health_clinical",
+        "indicators": [
+          "fhir",
+          "bundle",
+          "cl_core",
+          "patient_resource"
+        ],
+        "implemented": false,
+        "gap_reason": "FHIR interoperability is documentary/format review; the legacy auditor has a heuristic only."
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:fhir",
+          "apply:bundle",
+          "apply:cl_core",
+          "apply:patient_resource"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "Clinical data portability or transfer channel."
+      },
+      "validation_mode": "document_review",
+      "legal_review": "validated",
+      "legal_review_note": "Ley 21.668 does not by itself mandate FHIR R4 CL Core or a CSV/PDF ban; keep as project requirement until a source is identified.",
+      "validation_note": "Ley 20.584 Art. 13 inc. 1 (as amended by the Ley 21.668 Artículo único) requires interoperability measures and inc. 2 requires systems designed to interoperate, leaving standards to regulation; Art. 9 portability applies only to automated, consent-based processing. HL7 FHIR R4 CL Core is presented as a project choice (internal_standard)."
+    },
+    {
+      "id": "HEALTH-CHECK-003",
+      "title": "Protección reforzada de datos de salud (aislamiento y cifrado según el riesgo)",
+      "description": "Diagnósticos, anamnesis y notas clínicas son datos sensibles relativos a la salud (Art. 2° let. g)) cuyo tratamiento se limita a los fines previstos por las leyes especiales en materia sanitaria (Art. 16° bis); el aislamiento lógico y el cifrado en reposo son medidas según el riesgo, no exigencias literales.",
+      "severity": "CRITICAL",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 2° let. g)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 16° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 16° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28",
+            "note": "Verified for the claim as written: health data 'sólo podrán ser tratados para los fines previstos por las leyes especiales en materia sanitaria'; isolation and encryption are presented as risk-based measures."
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "HEALTH_DATA_ISOLATION",
+        "plugin": "health_clinical",
+        "indicators": [
+          "diagnosis",
+          "clinical_notes",
+          "medical_record",
+          "encrypted"
+        ],
+        "implemented": false,
+        "gap_reason": "Health-data isolation is documentary; the legacy auditor has a heuristic only."
+      },
+      "remediation": {
+        "mitigations": [
+          "apply:diagnosis",
+          "apply:clinical_notes",
+          "apply:medical_record",
+          "apply:encrypted"
+        ]
+      },
+      "evidence": {
+        "kind": "code_indicator_present",
+        "note": "Indicators found in the changed code."
+      },
+      "requirement_type": "risk_based_measure",
+      "applicability": {
+        "when": "Code stores or serves health data."
+      },
+      "validation_mode": "integration_test",
+      "legal_review": "validated",
+      "legal_review_note": "Reinforced protection must be proportionate to risk.",
+      "validation_note": "Art. 2 let. g) lists health data as sensitive and Art. 16 bis limits their processing to the purposes of the special health laws. The control claims reinforced protection only; logical isolation and encryption at rest are labelled as risk-based measures."
+    },
+    {
+      "id": "CORE-CHECK-005",
+      "title": "Licitud del tratamiento y consentimiento",
+      "description": "Todo tratamiento requiere una fuente de licitud: el consentimiento del titular (Art. 12°) u otra base del Art. 13° (por ejemplo, una obligación legal, la celebración o ejecución de un contrato con el titular o el interés legítimo del responsable que no afecte los derechos y libertades del titular), y el responsable deberá acreditar la licitud del tratamiento. El consentimiento debe ser libre, informado y específico en cuanto a su finalidad, previo e inequívoco, otorgado mediante una declaración o una clara acción afirmativa (Art. 12°; Art. 2° let. p)). El titular puede revocarlo en cualquier momento utilizando medios similares o equivalentes a los empleados para su otorgamiento, y corresponde al responsable probar que contó con él. Se presume que el consentimiento no ha sido libremente otorgado cuando se recaba en el marco de un contrato o servicio en que no es necesario efectuar esa recolección.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 12°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 12°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 13°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 13°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 2° let. p)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. p)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "LAWFUL_BASIS_AND_CONSENT",
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.consent_transparency",
+        "indicators": [
+          "consent",
+          "lawful_basis",
+          "consent_record",
+          "withdrawn_at"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "document:lawful_basis_per_purpose",
+          "record:consent_with_purpose_and_version",
+          "provide:withdrawal_path_equivalent_to_grant",
+          "avoid:bundled_consent"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Register of the lawful basis per purpose and consent records (timestamp, purpose, version, withdrawal)."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system processes personal data for any purpose; consent-based purposes need consent records."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Which lawful basis fits a purpose (e.g. legitimate-interest balancing) is a case-by-case judgment.",
+      "validation_note": "Art. 12 states the consent requirements, revocation by similar or equivalent means, the controller's burden of proof and the bundling presumption; Art. 13 lists the other lawful bases and requires the controller to prove lawfulness; Art. 2 let. p) defines consent as a free, specific, unequivocal and informed declaration or clear affirmative action. The control claims only these requirements."
+    },
+    {
+      "id": "CORE-CHECK-006",
+      "title": "Atención de los derechos del titular: procedimiento y plazos",
+      "description": "El responsable debe atender las solicitudes de acceso, rectificación, supresión, oposición, portabilidad y bloqueo (Art. 4°) mediante mecanismos expeditos, ágiles y eficaces; la rectificación, la supresión y la oposición son siempre gratuitas (Art. 10°). Debe pronunciarse a más tardar dentro de los treinta días corridos siguientes a la fecha de ingreso de la solicitud, plazo que podrá ser prorrogado por una sola vez hasta por treinta días corridos (Art. 11°). La solicitud de bloqueo temporal (Art. 8° ter) se responde dentro de los dos días hábiles siguientes a su recepción y, mientras no se resuelva, el responsable no podrá tratar los datos que forman parte del requerimiento. El responsable debe conservar prueba de la respuesta.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Arts. 4° al 11°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Arts. 4° al 11° (derechos del titular, medios de ejercicio y plazos de respuesta)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "DATA_SUBJECT_RIGHTS_HANDLING",
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.rights_reachability",
+        "indicators": [
+          "access",
+          "rectification",
+          "erasure",
+          "opposition",
+          "portability",
+          "block"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "document:rights_request_procedure",
+          "track:request_deadlines",
+          "record:reply_date_and_content"
+        ]
+      },
+      "evidence": {
+        "kind": "procedure_documented",
+        "note": "Documented procedure with request intake date, deadline tracking (30 + 30 calendar days; 2 business days for blocking) and proof of each reply."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system holds personal data of data subjects who can exercise their rights."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Identity-verification procedure is defined by the Agency and was not located.",
+      "validation_note": "Art. 4 lists the rights, Art. 8 ter the blocking right, Art. 10 the means and gratuity, and Art. 11 the 30 calendar days extendable once by 30, the 2 business days for blocking, the processing freeze while blocking is pending and the proof of reply. The control restates these rules without adding deadlines."
+    },
+    {
+      "id": "CORE-CHECK-007",
+      "title": "Deber de información y transparencia (política de tratamiento pública)",
+      "description": "El responsable debe facilitar y mantener permanentemente a disposición del público, en su sitio web o en otro medio de información equivalente, al menos: la política de tratamiento con su fecha y versión; su identidad; el canal de contacto para ejercer derechos; las categorías de datos, los destinatarios, las finalidades y la base de legitimidad del tratamiento; la política y las medidas de seguridad; los derechos del titular y el derecho a reclamar ante la Agencia; las transferencias internacionales; el periodo de conservación; la fuente de los datos; el derecho a retirar el consentimiento; y la existencia de decisiones automatizadas, incluida la elaboración de perfiles, con información significativa sobre la lógica aplicada (Art. 14° ter). Las políticas y prácticas deben estar accesibles de manera precisa, clara, inequívoca y gratuita (Art. 3° let. g)).",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° ter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 3° let. g)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 3° let. g)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "TRANSPARENCY_DUTY_OF_INFORMATION",
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.consent_transparency",
+        "indicators": [
+          "privacy_policy",
+          "policy_version",
+          "contact_channel",
+          "notice"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "publish:privacy_policy_with_version",
+          "expose:rights_contact_channel"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Published privacy policy with date and version covering the items of Art. 14 ter let. a) to l)."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system collects personal data from the public (web or app)."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Differentiated minimum standards may be set by the Agency (Art. 14 septies); none was located.",
+      "validation_note": "Art. 14 ter lists the minimum information items a) to l) that must be permanently available to the public and Art. 3 let. g) requires precise, clear, unequivocal and free access. The control lists only those items."
+    },
+    {
+      "id": "CORE-CHECK-008",
+      "title": "Registro y comunicación de vulneraciones de seguridad",
+      "description": "El responsable debe reportar a la Agencia, por los medios más expeditos posibles y sin dilaciones indebidas, las vulneraciones de seguridad que causen la destrucción, filtración, pérdida o alteración accidental o ilícita de los datos, o el acceso no autorizado, cuando exista un riesgo razonable para los derechos y libertades de los titulares (Art. 14° sexies). Debe registrar estas comunicaciones, describiendo la naturaleza de las vulneraciones, sus efectos, las categorías de datos, el número aproximado de titulares afectados y las medidas adoptadas. Cuando la vulneración afecte datos personales sensibles, datos de niños y niñas menores de catorce años o datos relativos a obligaciones de carácter económico, financiero, bancario o comercial, también debe comunicarse a los titulares. La ley no fija un plazo en horas. Omitir en forma deliberada la comunicación de las vulneraciones es infracción gravísima (Art. 34° quáter let. f)).",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° sexies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° sexies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 34° quáter let. f)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 34° quáter let. f)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "manual",
+        "category": "SECURITY_INCIDENT_REGISTER_AND_NOTIFICATION",
+        "plugin": "core",
+        "implemented": false,
+        "gap_reason": "Incident register and breach notification are documentary evidence only."
+      },
+      "remediation": {
+        "mitigations": [
+          "record:security_incident_register",
+          "document:breach_notification_procedure"
+        ]
+      },
+      "evidence": {
+        "kind": "procedure_documented",
+        "note": "Incident register (nature, effects, data categories, approximate number of data subjects, measures) and a documented Agency and data-subject notification procedure."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system stores or processes personal data."
+      },
+      "validation_mode": "document_review",
+      "legal_review": "validated",
+      "legal_review_note": "The cross-reference of Art. 34 ter let. k) to Art. 14 quinquies is not used here.",
+      "validation_note": "Art. 14 sexies requires reporting 'sin dilaciones indebidas' with no fixed hour count, recording the communications with the listed content, and notifying data subjects for sensitive data, children under fourteen and economic, financial, banking or commercial data; Art. 34 quáter let. f) makes deliberate omission very serious. No foreign 72-hour rule is imported."
+    },
+    {
+      "id": "CORE-CHECK-009",
+      "title": "Evaluación de impacto en protección de datos",
+      "description": "Cuando un tratamiento pueda producir un alto riesgo para los derechos de los titulares, el responsable debe realizar una evaluación de impacto en protección de datos previo al inicio de las operaciones del tratamiento (Art. 15° ter). Siempre se requiere en casos de evaluación sistemática y exhaustiva de aspectos personales basada en tratamiento o decisiones automatizadas, como la elaboración de perfiles, que produzcan efectos jurídicos significativos; tratamiento masivo de datos o a gran escala; observación o monitoreo sistemático de una zona de acceso público; y tratamiento de datos sensibles en las hipótesis de excepción del consentimiento. Incumplir esta obligación es infracción gravísima (Art. 34° quáter let. k)).",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 15° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 15° ter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 34° quáter let. k)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 34° quáter let. k)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "manual",
+        "category": "DATA_PROTECTION_IMPACT_ASSESSMENT",
+        "plugin": "core",
+        "implemented": false,
+        "gap_reason": "Impact assessment (EIPD) is documentary evidence only."
+      },
+      "remediation": {
+        "mitigations": [
+          "document:impact_assessment_before_processing"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Impact assessment dated before the processing started."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Processing that may produce a high risk, and always the four cases listed in Art. 15 ter."
+      },
+      "validation_mode": "document_review",
+      "legal_review": "validated",
+      "legal_review_note": "The Agency's orientative list and minimum guidelines were not located.",
+      "validation_note": "Art. 15 ter requires the assessment before processing when high risk is likely and always for profiling with significant legal effects, large-scale processing, systematic monitoring of public areas and sensitive data under consent exceptions; Art. 34 quáter let. k) makes its breach very serious."
+    },
+    {
+      "id": "CORE-CHECK-010",
+      "title": "Encargados del tratamiento y cesión de datos",
+      "description": "El encargado trata los datos conforme al encargo y a las instrucciones que le imparta el responsable (Art. 15° bis). El contrato debe establecer el objeto del encargo, su duración, la finalidad del tratamiento, el tipo de datos personales tratados, las categorías de titulares y los derechos y obligaciones de las partes. El encargado no puede delegar el encargo salvo que conste una autorización específica y por escrito del responsable, debe cumplir los Arts. 14° bis y 14° quinquies y reportar al responsable las vulneraciones de seguridad; al terminar el servicio, los datos deben ser suprimidos o devueltos al responsable. La cesión de datos a otro responsable requiere consentimiento u otra base del Art. 15° y debe constar por escrito o por un medio electrónico idóneo, identificando a las partes, los datos y las finalidades.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 15° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 15° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 15°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 15°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "PROCESSORS_AND_DATA_SHARING",
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.third_party_transfers",
+        "indicators": [
+          "processor",
+          "dpa",
+          "subprocessor",
+          "third_party"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "document:processor_contract_clauses",
+          "document:subprocessor_authorisation",
+          "record:data_cession"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Processor contracts with the Art. 15 bis clauses, written sub-processing authorisations and cession records."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "A third party receives personal data from the controller (processor or assignee)."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "The Agency's model processor contracts were not located.",
+      "validation_note": "Art. 15 bis lists the contract content, the written authorisation for sub-processing, the duty to comply with Arts. 14 bis and 14 quinquies, breach reporting to the controller and deletion or return at the end; Art. 15 regulates cession with its lawful bases and written form. The control restates only these duties."
+    },
+    {
+      "id": "CORE-CHECK-011",
+      "title": "Transferencias internacionales de datos",
+      "description": "Una transferencia internacional es lícita cuando el país de destino ofrece un nivel adecuado de protección o cuando está amparada en cláusulas contractuales, normas corporativas vinculantes u otros instrumentos jurídicos, o en un modelo de cumplimiento certificado (Art. 27°). Sin adecuación ni garantías solo procede una transferencia específica y que no sea habitual bajo las excepciones legales, por ejemplo con el consentimiento expreso del titular o cuando es necesaria para celebrar o ejecutar un contrato con él. La Agencia publica el listado de países adecuados y modelos tipo de cláusulas contractuales, y corresponde al responsable acreditar que la transferencia se practicó conforme a la ley (Art. 28°). Las transferencias internacionales deben informarse al público (Art. 14° ter let. h)).",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 27°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 27°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 28°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 28°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° ter let. h)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° ter let. h)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "INTERNATIONAL_TRANSFERS",
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.third_party_transfers",
+        "indicators": [
+          "transfer_basis",
+          "adequacy",
+          "international_transfer",
+          "region"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "document:transfer_register",
+          "document:transfer_safeguard"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Transfer register with destination country and the adequacy decision or contractual instrument relied on."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "Personal data are sent to or hosted in another country (cloud, SaaS, payment or analytics providers)."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "The Agency's list of adequate countries was not located; Art. 29 is not cited because its text was not extracted.",
+      "validation_note": "Art. 27 states the adequacy and safeguard routes and the exceptions for specific, non-habitual transfers (e.g. express consent, contract); Art. 28 assigns the list of adequate countries and model clauses to the Agency and the burden of proof to the controller; Art. 14 ter let. h) requires public disclosure."
+    },
+    {
+      "id": "CORE-CHECK-012",
+      "title": "Datos personales de niños, niñas y adolescentes",
+      "description": "El tratamiento de datos de niños, niñas y adolescentes sólo puede realizarse atendiendo al interés superior de éstos y al respeto de su autonomía progresiva (Art. 16° quáter). Se consideran niños o niñas a los menores de catorce años, y adolescentes a los mayores de catorce y menores de dieciocho años. Los datos de niños y niñas requieren el consentimiento de sus padres o representantes legales; los adolescentes siguen las reglas generales, salvo que los datos personales sensibles de los adolescentes menores de dieciséis años sólo se podrán tratar con el consentimiento otorgado por sus padres o representantes legales.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 16° quáter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 16° quáter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "CHILDREN_AND_ADOLESCENTS",
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.minors_and_sensitive",
+        "indicators": [
+          "birth_date",
+          "age_gate",
+          "guardian",
+          "parental_consent"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "gate:age_thresholds_14_and_16",
+          "record:parental_consent",
+          "document:best_interest_analysis"
+        ]
+      },
+      "evidence": {
+        "kind": "procedure_documented",
+        "note": "Age gating with thresholds 14 and 16, parental consent procedure and best-interest analysis."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system may process data of persons under eighteen."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Exceptions to parental consent provided by law, if any, must be checked per case.",
+      "validation_note": "Art. 16 quáter sets the best interest and progressive autonomy principle, the thresholds (under fourteen, fourteen to seventeen), parental consent for children and for sensitive data of adolescents under sixteen. The parental-consent rule for children was taken from the source map summary; the other statements are verbatim."
+    },
+    {
+      "id": "CORE-CHECK-013",
+      "title": "Conservación, supresión y limitación de la finalidad",
+      "description": "Los datos deben recolectarse con fines específicos, explícitos y lícitos, y su tratamiento debe limitarse al cumplimiento de esos fines (Art. 3° let. b)). Pueden conservarse sólo por el período de tiempo que sea necesario para cumplir con los fines del tratamiento, luego de lo cual deben ser suprimidos o anonimizados, sin perjuicio de las excepciones que establezca la ley; un período mayor requiere autorización legal o consentimiento del titular (Art. 3° let. c)). Los datos obtenidos para la ejecución de medidas precontractuales deben suprimirse o anonimizarse (Art. 14° let. d)). La supresión no procede cuando el tratamiento es necesario para cumplir una obligación legal o ejecutar un contrato suscrito con el titular (Art. 7° inc. 2° N° ii).",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 3° let. b)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 3° let. b)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 3° let. c)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 3° let. c)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° let. d)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° let. d)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 7° inc. 2° N° ii",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° inc. 2° N° ii",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "RETENTION_AND_PURPOSE_LIMITATION",
+        "plugin": "core",
+        "implemented": true,
+        "policy_id": "privacy.retention_minimization",
+        "indicators": [
+          "retention_days",
+          "ttl",
+          "purge",
+          "anonymise"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "document:retention_schedule_per_purpose",
+          "implement:purge_or_anonymisation"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Retention schedule per purpose with its legal justification, and the purge or anonymisation routine."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The system stores personal data beyond a single transaction."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Retention periods per purpose are the controller's decision within these limits.",
+      "validation_note": "Art. 3 let. b) limits processing to explicit purposes, Art. 3 let. c) limits retention to the time needed and requires deletion or anonymisation, Art. 14 let. d) covers pre-contractual data and Art. 7 inc. 2 N° ii excludes erasure for legal obligations or contract performance. The control quotes these rules only."
+    },
+    {
+      "id": "ECOM-CHECK-001",
+      "title": "Comunicaciones promocionales y oposición al marketing directo",
+      "description": "Toda comunicación promocional o publicitaria enviada por correo electrónico debe indicar la materia o asunto sobre el que versa, la identidad del remitente y contener una dirección válida a la que el destinatario pueda solicitar la suspensión de los envíos, que quedarán desde entonces prohibidos; las enviadas por correo postal, fax, llamados o mensajería telefónica deben indicar una forma expedita de solicitar su suspensión (Ley 19.496 Art. 28 B). Desde el 1 de diciembre de 2026 el tratamiento de datos para marketing necesita una fuente de licitud (consentimiento del Art. 12° u otra base del Art. 13°) y el titular puede oponerse al tratamiento realizado exclusivamente con fines de mercadotecnia o marketing directo, incluida la elaboración de perfiles (Art. 8° let. b)).",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "L19496",
+          "article": "Art. 28 B",
+          "citation": "Ley 19.496 Art. 28 B",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/Navegar?idNorma=61438&idParte=9478681",
+            "retrieved": "2026-10-28",
+            "note": "Wording cross-checked against the BCN navigation page and SERNAC; the BCN XML export predates Ley 21.398."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 12°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 12°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 13°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 13°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 8° let. b)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° let. b)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "MARKETING_COMMUNICATIONS",
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.consent_transparency",
+        "indicators": [
+          "consent",
+          "unsubscribe",
+          "opt_out",
+          "suppression_list"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "template:subject_sender_optout",
+          "honour:suppression_list",
+          "record:marketing_lawful_basis"
+        ]
+      },
+      "evidence": {
+        "kind": "procedure_documented",
+        "note": "Marketing templates with subject, sender and a valid opt-out address; suppression list honoured; lawful basis or consent records for marketing."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The e-commerce system sends promotional communications or processes data for direct marketing."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Whether marketing email may rely on legitimate interest (Art. 13 let. d)) plus the Art. 28 B opt-out is not settled by the text checked.",
+      "validation_note": "Ley 19.496 Art. 28 B sets the subject, sender and opt-out address for promotional email and an expedite opt-out for other channels; Ley 19.628 Arts. 12 and 13 require a lawful basis and Art. 8 let. b) grants the right to object to direct marketing and profiling. The control does not claim that prior consent is always required."
+    },
+    {
+      "id": "ECOM-CHECK-002",
+      "title": "Perfilamiento y recomendaciones personalizadas",
+      "description": "La elaboración de perfiles es todo tratamiento automatizado que utilice datos personales para evaluar, analizar o predecir aspectos como la situación económica, las preferencias personales, los intereses, el comportamiento, la ubicación o los movimientos de una persona (Art. 2° let. w)). El titular puede oponerse al tratamiento con fines exclusivos de marketing directo, incluida la elaboración de perfiles (Art. 8° let. b)). Si el perfilamiento produce decisiones con efectos jurídicos o que afecten significativamente al titular, aplican el derecho de oposición y las garantías del Art. 8° bis: explicación, intervención humana, expresar su punto de vista y revisión; si una decisión concreta (por ejemplo un precio personalizado o una decisión de crédito) tiene esos efectos se evalúa caso a caso. La evaluación sistemática y exhaustiva de aspectos personales basada en decisiones automatizadas, como la elaboración de perfiles, que produzca efectos jurídicos significativos exige una evaluación de impacto previa (Art. 15° ter). La existencia de decisiones automatizadas y perfiles, con información significativa sobre la lógica aplicada, debe informarse (Art. 14° ter let. l)).",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 2° let. w)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. w)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 8° let. b)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° let. b)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 8° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 8° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 15° ter",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 15° ter",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° ter let. l)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° ter let. l)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "manual",
+        "category": "PROFILING_AND_RECOMMENDATIONS",
+        "plugin": "ecommerce_retail",
+        "implemented": false,
+        "gap_reason": "Profiling and recommendation notices are documentary evidence only."
+      },
+      "remediation": {
+        "mitigations": [
+          "provide:profiling_opt_out",
+          "provide:human_review_for_significant_decisions",
+          "document:impact_assessment_for_profiling",
+          "publish:profiling_logic"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Profiling inventory with its opt-out path, Art. 8 bis safeguards where effects are significant, the impact assessment when Art. 15 ter applies and the published logic."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The e-commerce system profiles customers (recommendations, segmentation, personalised prices or offers)."
+      },
+      "validation_mode": "manual_assessment",
+      "legal_review": "validated",
+      "legal_review_note": "Whether a given personalised price or offer has significant effects is a case-by-case judgment.",
+      "validation_note": "Art. 2 let. w) defines profiling, Art. 8 let. b) grants objection to marketing profiling, Art. 8 bis gives the safeguards for decisions with legal or significant effects, Art. 15 ter requires an impact assessment for systematic profiling with significant legal effects and Art. 14 ter let. l) requires transparency. The control does not claim that product recommendations are significant decisions."
+    },
+    {
+      "id": "ECOM-CHECK-003",
+      "title": "Datos de tarjetas de pago: secreto, seguridad y comunicación de vulneraciones",
+      "description": "Los datos de tarjetas que trata el comercio son datos personales: el responsable debe mantener secreto o confidencialidad sobre ellos (Art. 14° bis) y aplicar medidas técnicas y organizativas apropiadas para garantizar un nivel de seguridad adecuado al riesgo, que en su caso incluya la seudonimización y el cifrado (Art. 14° quinquies). Las vulneraciones con riesgo razonable para los titulares se reportan a la Agencia sin dilaciones indebidas y, cuando afectan datos relativos a obligaciones de carácter económico, financiero, bancario o comercial, también a los titulares (Art. 14° sexies); el texto revisado no resuelve si los números de tarjeta caen en esa categoría. El estándar de la industria de tarjetas se trata en ECOM-CHECK-004 como obligación contractual.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 14° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° sexies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° sexies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "PAYMENT_CARD_DATA",
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.payment_data_storage",
+        "indicators": [
+          "card_number",
+          "cvv",
+          "pan",
+          "payment_token"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "minimise:card_data_storage",
+          "apply:pseudonymisation_or_encryption",
+          "document:breach_notification_procedure"
+        ]
+      },
+      "evidence": {
+        "kind": "procedure_documented",
+        "note": "Card data flow inventory, security measures adopted and a breach notification procedure covering data subjects."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The e-commerce system receives, stores or transmits payment card data."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Whether card numbers are 'datos relativos a obligaciones de carácter económico, financiero, bancario o comercial' is unresolved.",
+      "validation_note": "Art. 14 bis imposes secrecy, Art. 14 quinquies requires security adequate to the risk with pseudonymisation and encryption 'en su caso', and Art. 14 sexies requires notifying the Agency and, for economic, financial, banking or commercial data, the data subjects. The open question on card numbers is stated, not decided."
+    },
+    {
+      "id": "ECOM-CHECK-004",
+      "title": "Cumplimiento PCI DSS para datos de tarjetas (estándar contractual)",
+      "description": "[Estándar interno] Aplicar PCI DSS a los datos de tarjetas es una decisión del proyecto respaldada por el contrato de afiliación con el adquirente: en el contrato de afiliación Transbank (cláusula 10.9) el establecimiento declara adherir, en lo que le fuere aplicable, a las Normas PCI-DSS vigentes y asume su responsabilidad por la seguridad de los datos contenidos en las tarjetas. PCI DSS no es una obligación legal: la exigencia legal es la seguridad adecuada al riesgo del Art. 14° quinquies.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "TBK_AFILIACION",
+          "article": "Cláusula 10.9",
+          "citation": "Contrato de afiliación Transbank, cláusula 10.9 'Normas PCI-DSS'",
+          "source_check": {
+            "status": "verified",
+            "url": "https://ayuda.transbank.cl/documents/433363/0/CONTRATO+AFILIACION+TBK+ENERO.21+vf.pdf/9bf12d1c-158d-2924-4a29-32517471b116?t=1646167687259",
+            "retrieved": "2026-10-28",
+            "note": "Read through the search tool's full-text capture, not a direct fetch; binding only through the merchant contract."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 14° quinquies",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 14° quinquies",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "manual",
+        "category": "PCI_DSS_CONTRACTUAL",
+        "plugin": "ecommerce_retail",
+        "implemented": false,
+        "gap_reason": "PCI DSS is contractual evidence, never code evidence."
+      },
+      "remediation": {
+        "mitigations": [
+          "document:pci_dss_attestation"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "PCI DSS self-assessment or attestation required by the acquirer."
+      },
+      "requirement_type": "internal_standard",
+      "applicability": {
+        "when": "The merchant is affiliated with a card acquirer and handles card data."
+      },
+      "validation_mode": "document_review",
+      "legal_review": "validated",
+      "legal_review_note": "Contractual obligation; applicability depends on the merchant's contract and integration model.",
+      "validation_note": "Clause 10.9 of the Transbank affiliation contract binds the merchant to PCI DSS 'en lo que le fuere aplicable'; Art. 14 quinquies is the legal duty of security adequate to the risk. The control is an internal_standard and says PCI DSS is not law."
+    },
+    {
+      "id": "ECOM-CHECK-005",
+      "title": "Pasarelas de pago, operadores logísticos y otros encargados",
+      "description": "Las pasarelas de pago, los operadores logísticos y otros proveedores que tratan datos de clientes por cuenta del comercio actúan conforme al encargo: el contrato debe establecer el objeto del encargo, su duración, la finalidad, el tipo de datos, las categorías de titulares y los derechos y obligaciones de las partes; la subcontratación requiere autorización específica y por escrito, y al terminar el servicio los datos deben ser suprimidos o devueltos (Art. 15° bis). Si un courier usa los datos para fines propios puede ser cesionario y no encargado: la cesión requiere una base del Art. 15° y debe constar por escrito o por un medio electrónico idóneo, identificando a las partes, los datos y las finalidades.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 15° bis",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 15° bis",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 15°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 15°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "ECOMMERCE_PROCESSORS",
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.third_party_transfers",
+        "indicators": [
+          "processor",
+          "payment_gateway",
+          "transbank",
+          "dpa"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "document:provider_inventory",
+          "document:processor_contract_clauses",
+          "record:data_cession"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Inventory of payment, logistics and other providers receiving customer data, with Art. 15 bis contracts or Art. 15 cession records."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The e-commerce system shares customer data with payment gateways, couriers or other providers."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "The processor or assignee role of each provider is a case-by-case judgment.",
+      "validation_note": "Art. 15 bis lists the processor contract content, written sub-processing authorisation and deletion or return at the end; Art. 15 regulates cession to another controller in writing. Whether a courier is a processor or an assignee depends on its own use of the data, as stated."
+    },
+    {
+      "id": "ECOM-CHECK-006",
+      "title": "Conservación de documentos tributarios como excepción a la supresión",
+      "description": "Los duplicados de las facturas y los originales de las boletas deben ser conservados durante seis años (DL 825 Art. 58), y el Código Tributario exige conservarlos junto con la documentación correspondiente mientras esté pendiente el plazo que tiene el Servicio para la revisión de las declaraciones (Art. 17), plazo de tres años que se extiende a seis en los casos del Art. 200. Esa obligación legal hace improcedente la supresión de esos documentos dentro del plazo (Ley 19.628 Art. 7° inc. 2° N° ii). Los datos de clientes que no estén cubiertos por una obligación legal de conservación se conservan sólo por el período necesario para los fines del tratamiento y luego deben ser suprimidos o anonimizados (Art. 3° let. c)).",
+      "severity": "MEDIUM",
+      "sources": [
+        {
+          "law": "DL825",
+          "article": "Art. 58",
+          "citation": "DL 825 Art. 58",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.leychile.cl/Consulta/obtxml?opt=7&idNorma=6369",
+            "retrieved": "2026-10-28",
+            "note": "BCN XML export; its version date was not checked."
+          }
+        },
+        {
+          "law": "DL830",
+          "article": "Art. 17",
+          "citation": "Código Tributario (DL 830) Art. 17",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.leychile.cl/Consulta/obtxml?opt=7&idNorma=6374",
+            "retrieved": "2026-10-28",
+            "note": "BCN XML export; its version date was not checked."
+          }
+        },
+        {
+          "law": "DL830",
+          "article": "Art. 200",
+          "citation": "Código Tributario (DL 830) Art. 200",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.leychile.cl/Consulta/obtxml?opt=7&idNorma=6374",
+            "retrieved": "2026-10-28",
+            "note": "BCN XML export; its version date was not checked."
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 7° inc. 2° N° ii",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 7° inc. 2° N° ii",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 3° let. c)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 3° let. c)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "manual",
+        "category": "BILLING_RECORD_RETENTION",
+        "plugin": "ecommerce_retail",
+        "implemented": false,
+        "gap_reason": "Billing-record retention is documentary (DL 825 Art. 58, Código Tributario)."
+      },
+      "remediation": {
+        "mitigations": [
+          "document:retention_schedule_tax_documents",
+          "handle:erasure_request_with_legal_exception"
+        ]
+      },
+      "evidence": {
+        "kind": "document_present",
+        "note": "Retention schedule separating tax documents (six years) from marketing and tracking data, with the erasure-request handling for each."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The e-commerce system issues boletas or facturas and receives erasure requests."
+      },
+      "validation_mode": "document_review",
+      "legal_review": "validated",
+      "legal_review_note": "Re-confirm Arts. 58, 17 and 200 against the current consolidated text before release.",
+      "validation_note": "DL 825 Art. 58 orders keeping invoice duplicates and receipts for six years, Código Tributario Arts. 17 and 200 tie retention to the review period of three or six years, Ley 19.628 Art. 7 inc. 2 N° ii excludes erasure for legal obligations and Art. 3 let. c) requires deletion or anonymisation of the rest when the purpose ends."
+    },
+    {
+      "id": "ECOM-CHECK-007",
+      "title": "Situación socioeconómica y puntajes de crédito como datos sensibles",
+      "description": "La ley califica como datos sensibles los que revelen la situación socioeconómica de una persona (Art. 2° let. g)). Los datos sensibles sólo pueden tratarse cuando el titular manifiesta su consentimiento en forma expresa, o en las excepciones del Art. 16°. Este pack trata como datos sensibles los ingresos, el nivel socioeconómico y los puntajes o segmentaciones que revelen la situación socioeconómica del cliente, aunque se infieran del historial de compras.",
+      "severity": "HIGH",
+      "sources": [
+        {
+          "law": "L19628",
+          "article": "Art. 2° let. g)",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 2° let. g)",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        },
+        {
+          "law": "L19628",
+          "article": "Art. 16°",
+          "citation": "Ley 19.628 reformada por Ley 21.719 Art. 16°",
+          "source_check": {
+            "status": "verified",
+            "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272",
+            "retrieved": "2026-10-28"
+          }
+        }
+      ],
+      "detection": {
+        "type": "indicator",
+        "category": "SOCIOECONOMIC_SENSITIVE_DATA",
+        "plugin": "ecommerce_retail",
+        "implemented": true,
+        "policy_id": "privacy.minors_and_sensitive",
+        "indicators": [
+          "socioeconomic_status",
+          "socioeconomic_level",
+          "explicit_consent"
+        ]
+      },
+      "remediation": {
+        "mitigations": [
+          "classify:socioeconomic_as_sensitive",
+          "record:express_consent_or_exception"
+        ]
+      },
+      "evidence": {
+        "kind": "procedure_documented",
+        "note": "Inventory of socioeconomic fields and scores, with the express consent or the Art. 16 exception relied on."
+      },
+      "requirement_type": "legal_obligation",
+      "applicability": {
+        "when": "The e-commerce system collects or infers income, socioeconomic level or credit scores."
+      },
+      "validation_mode": "static_analysis",
+      "legal_review": "validated",
+      "legal_review_note": "Whether a given inferred segment reveals the socioeconomic situation is a case-by-case judgment.",
+      "validation_note": "Art. 2 let. g) lists 'la situación socioeconómica' among sensitive data and Art. 16 requires express consent or a closed exception. Treating inferred scores that reveal that situation as sensitive is the harness authors' reading of the literal term, stated as such in the description."
+    }
+  ],
+  "legal_review": "validated",
+  "validation_method": "Self-validation against primary legal texts (BCN LeyChile, Diario Oficial) by the harness authors; not legal advice.",
+  "plugins": {
+    "health_clinical": {
+      "name": "Health and clinical record plugin",
+      "description": "Sector context for Chilean health systems (Ley 20.584, Ley 21.668)."
+    },
+    "ecommerce_retail": {
+      "name": "E-commerce and retail plugin",
+      "description": "Sector context for Chilean e-commerce (Ley 19.496, DL 825, Código Tributario; PCI DSS as a contractual standard)."
+    }
+  },
+  "classification_note": "Field-name classification is insufficient: context and data flow matter. Categories follow Art. 2° let. g) and Art. 16° quáter; field lists are deliberately narrow to avoid false positives (generic names such as 'gender', 'race' or 'birth_date' are not listed). The generic 'status' entry in SENSITIVE_HEALTH is kept until the detector review (T12)."
+}

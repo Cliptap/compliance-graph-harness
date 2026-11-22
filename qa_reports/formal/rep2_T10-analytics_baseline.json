@@ -1,0 +1,156 @@
+{
+  "task": "T10-analytics",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T10-analytics-baseline",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 28.85,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-826dece0-56b8-4d11-ae6b-c7e4db08568f",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 25775,
+        "wall_s": 25.79,
+        "usage": {
+          "input_tokens": 256937,
+          "output_tokens": 3820,
+          "cache_read_tokens": 223936,
+          "cache_write_tokens": 0,
+          "total_tokens": 484693,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T10-analytics",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.25s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.third-party"
+    ],
+    "expected_control": "CORE-CHECK-010"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 28.85,
+      "latency_ms": 25775,
+      "rounds": 1,
+      "tool_calls": 29,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 223936,
+        "cache_write_tokens": 0,
+        "input_tokens": 256937,
+        "output_tokens": 3820,
+        "reasoning_tokens": 0,
+        "total_tokens": 484693
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 28,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 4,
+      "lines_added": 106,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "schema.sql",
+        "app/main.py",
+        "tests/test_app.py",
+        "app/security.py",
+        "tests/conftest.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T10-analytics-harness/app/analytics.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T10-analytics-harness/app/main.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/workspaces/T10-analytics-harness/tests/test_app.py",
+        "C:/Users/andre/Documents/VSC Projects/Gentle-AI/vibecoding/experiments/tasks/hidden/test_t10_analytics.py"
+      ],
+      "files_read_count": 10,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.2
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-826dece0-56b8-4d11-ae6b-c7e4db08568f",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 25775,
+        "wall_s": 25.79,
+        "usage": {
+          "input_tokens": 256937,
+          "output_tokens": 3820,
+          "cache_read_tokens": 223936,
+          "cache_write_tokens": 0,
+          "total_tokens": 484693,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 3,
+      "grep": 3,
+      "read": 12,
+      "edit": 9,
+      "shell": 2
+    },
+    "changed_files": {
+      "app/analytics.py": [
+        52,
+        0
+      ],
+      "app/main.py": [
+        18,
+        0
+      ],
+      "tests/conftest.py": [
+        3,
+        0
+      ],
+      "tests/test_app.py": [
+        33,
+        0
+      ]
+    }
+  }
+}

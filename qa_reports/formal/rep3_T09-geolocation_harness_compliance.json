@@ -1,0 +1,99 @@
+{
+  "task": "T09-geolocation",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T09-geolocation-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "error",
+    "error": null,
+    "cycle_time_s": 5.56,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-63b28802-27e1-47e3-aa1a-9f31986d03e5",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1662,
+        "wall_s": 1.68,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T09-geolocation",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n_______________________ test_geolocation_needs_consent ________________________\n\napp = <fastapi.applications.FastAPI object at 0x00000206F2E96210>\nclient = <starlette.testclient.TestClient object at 0x00000206F2EBCAD0>\n\n    def test_geolocation_needs_consent(app, client):\n        register(client)\n        response = client.post(\"/checkout/geolocation\",\n                               data={\"latitude\": \"33.45\", \"longitude\": \"-70.66\"}, follow_redirects=False)\n>       assert response.status_code != 404\nE       assert 404 != 404\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_t09_geolocation.py:8: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden\\test_t09_geolocation.py::test_geolocation_needs_consent - asser...\n1 failed in 0.35s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-012"
+  },
+  "summary": {
+    "status": "error",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 5.56,
+      "latency_ms": 1662,
+      "rounds": 1,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-63b28802-27e1-47e3-aa1a-9f31986d03e5",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1662,
+        "wall_s": 1.68,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  }
+}

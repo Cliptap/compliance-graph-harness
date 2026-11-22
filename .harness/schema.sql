@@ -99,3 +99,63 @@ CREATE TABLE IF NOT EXISTS file_checklist_audits (
 CREATE INDEX IF NOT EXISTS idx_checklist_file ON file_checklist_audits(file_path);
 CREATE INDEX IF NOT EXISTS idx_checklist_session ON file_checklist_audits(session_id);
 
+-- 7. MAPA DE DATOS Y ANTECEDENTES (Accountability / evidencias para la Agencia)
+CREATE TABLE IF NOT EXISTS evidence_fields (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,                    -- 'IDENTIFIER_RUT', 'PERSONAL_CONTACT', etc.
+    field_name TEXT NOT NULL,                  -- 'rut', 'email'
+    entity TEXT,                               -- 'Customer' (clase/modelo que lo define)
+    file_path TEXT NOT NULL,                   -- ruta relativa del archivo
+    line INTEGER,                              -- línea de la definición
+    persisted INTEGER DEFAULT 0,               -- 1 si el campo vive en un modelo persistido
+    controls_json TEXT DEFAULT '[]',           -- JSON array de ids de controles aplicables
+    articles_json TEXT DEFAULT '[]',           -- JSON array de citas normativas (framework labels)
+    scan_root TEXT NOT NULL,                   -- raíz del escaneo que generó la entrada
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (scan_root, file_path, entity, field_name)
+);
+
+CREATE TABLE IF NOT EXISTS evidence_sinks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sink_kind TEXT NOT NULL,                   -- 'log', 'print', 'stdout', 'audit'
+    call TEXT NOT NULL,                        -- expresión detectada (ej: logger.info)
+    file_path TEXT NOT NULL,
+    line INTEGER,
+    scan_root TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (scan_root, file_path, line, call)
+);
+
+CREATE INDEX IF NOT EXISTS idx_evidence_fields_cat ON evidence_fields(category);
+CREATE INDEX IF NOT EXISTS idx_evidence_fields_file ON evidence_fields(file_path);
+CREATE INDEX IF NOT EXISTS idx_evidence_sinks_file ON evidence_sinks(file_path);
+
+-- 8. REGISTRO DE ACTIVIDADES DE TRATAMIENTO (RoPA) — M2
+CREATE TABLE IF NOT EXISTS processing_activities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    activity TEXT NOT NULL,                    -- entidad/actividad (ej: Customer)
+    data_fields_json TEXT DEFAULT '[]',        -- JSON array [{field, category}]
+    file_path TEXT NOT NULL,
+    retention TEXT DEFAULT 'no declarada',     -- 'declarada' / 'no declarada'
+    recipients_json TEXT DEFAULT '[]',         -- hosts terceros detectados
+    consent TEXT DEFAULT 'no declarado',       -- 'registrado' / 'incompleto' / 'no declarado'
+    gaps_json TEXT DEFAULT '[]',               -- faltantes detectados (finalidad, base legal, retención, ...)
+    scan_root TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (scan_root, file_path, activity)
+);
+
+CREATE INDEX IF NOT EXISTS idx_activities_file ON processing_activities(file_path);
+
+-- 9. REGISTRO DE INCIDENTES / BRECHAS DE SEGURIDAD — M4
+CREATE TABLE IF NOT EXISTS incident_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT NOT NULL,
+    scope_json TEXT DEFAULT '[]',              -- categorías/datos afectados
+    severity TEXT DEFAULT 'MEDIUM',            -- LOW / MEDIUM / HIGH / CRITICAL
+    status TEXT DEFAULT 'OPEN',                -- OPEN / NOTIFIED / CLOSED
+    notified_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+

@@ -1,0 +1,148 @@
+{
+  "task": "T02-csv-export",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T02-csv-export-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 43.55,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-f50a01a4-9db7-45d0-8ba2-8041691bf440",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 40008,
+        "wall_s": 40.03,
+        "usage": {
+          "input_tokens": 352448,
+          "output_tokens": 6543,
+          "cache_read_tokens": 325472,
+          "cache_write_tokens": 0,
+          "total_tokens": 684463,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T02-csv-export",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.26s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.password-response"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 43.55,
+      "latency_ms": 40008,
+      "rounds": 1,
+      "tool_calls": 31,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 325472,
+        "cache_write_tokens": 0,
+        "input_tokens": 352448,
+        "output_tokens": 6543,
+        "reasoning_tokens": 0,
+        "total_tokens": 684463
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 2,
+      "lines_added": 144,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "schema.sql",
+        "app/main.py",
+        "TASK.md",
+        "tests/test_app.py",
+        ".cursor/skills/compliance-dev/SKILL.md",
+        ".harness/packs/cl-ley-21719.json",
+        "tests/conftest.py",
+        "app/rights.py",
+        "app/security.py"
+      ],
+      "files_read_count": 9,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.2222222222222222
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-f50a01a4-9db7-45d0-8ba2-8041691bf440",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 40008,
+        "wall_s": 40.03,
+        "usage": {
+          "input_tokens": 352448,
+          "output_tokens": 6543,
+          "cache_read_tokens": 325472,
+          "cache_write_tokens": 0,
+          "total_tokens": 684463,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 2,
+      "grep": 8,
+      "read": 13,
+      "edit": 5,
+      "shell": 2,
+      "mcp": 1
+    },
+    "changed_files": {
+      "app/main.py": [
+        89,
+        0
+      ],
+      "tests/test_app.py": [
+        55,
+        1
+      ]
+    }
+  }
+}

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harness para la Ley 21.719</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --ink:#14123a; --paper:#fff8ee; --violet:#6c4bff; --pink:#ff5c8a; --yellow:#ffc933;
+    --mint:#2fd5a0; --sky:#3ea8ff; --white:#ffffff;
+    --font:"Segoe UI Black","Arial Black","Segoe UI",Roboto,Arial,sans-serif;
+    --body:"Segoe UI",Roboto,Arial,sans-serif;
+    --mono:Consolas,"Courier New",monospace;
+  }
+  html,body{width:100%;height:100%;background:#0b0a1f;overflow:hidden;font-family:var(--body)}
+  #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;}
+  .slide{position:absolute;inset:0;display:none;padding:150px 120px 90px;color:var(--ink);background:var(--paper);overflow:hidden}
+  .slide.on{display:flex;flex-direction:column;justify-content:center;animation:in .45s ease}
+  @keyframes in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+
+  /* tipografía grande */
+  h1{font-family:var(--font);font-size:132px;line-height:1.02;letter-spacing:-2px}
+  h2{font-family:var(--font);font-size:96px;line-height:1.12;letter-spacing:-1px}
+  .lead{font-size:54px;line-height:1.25;font-weight:600}
+  .kicker{font-family:var(--font);font-size:30px;letter-spacing:6px;text-transform:uppercase;margin-bottom:28px}
+  .hl{color:var(--violet)}
+  .bg-ink .hl,.bg-violet .hl{color:var(--yellow)}
+  .hl.pink{color:var(--pink)}.hl.mint{color:var(--mint)}.hl.violet{color:var(--violet)}
+
+  /* fondos */
+  .bg-ink{background:var(--ink);color:#fff}
+  .bg-violet{background:var(--violet);color:#fff}
+  .bg-yellow{background:var(--yellow)}
+  .bg-pink{background:var(--pink);color:#fff}
+  .bg-mint{background:var(--mint)}
+  .blob{position:absolute;border-radius:50%;z-index:0}
+  .slide>*:not(.blob){position:relative;z-index:1}
+
+  .row{display:flex;gap:40px;align-items:stretch}
+  .col{display:flex;flex-direction:column}
+  .center{align-items:center;text-align:center}
+  .grow{flex:1}
+  .gap{height:48px}
+
+  .card{background:#fff;border-radius:36px;padding:48px;box-shadow:0 14px 0 rgba(20,18,58,.14);flex:1}
+  .card h3{font-family:var(--font);font-size:56px;line-height:1.1;margin:18px 0 14px}
+  .card p{font-size:38px;line-height:1.3;font-weight:500}
+  .emoji{font-size:96px;line-height:1}
+  .num{font-family:var(--font);font-size:120px;line-height:1}
+
+  /* terminal */
+  .term{background:#0e0c26;color:#e9e7ff;border-radius:28px;padding:44px 52px;font-family:var(--mono);font-size:40px;line-height:1.6;box-shadow:0 16px 0 rgba(0,0,0,.35)}
+  .term .dots{display:flex;gap:12px;margin-bottom:26px}
+  .term .dots i{width:20px;height:20px;border-radius:50%;display:block}
+  .term .dots i:nth-child(1){background:#ff5f57}.term .dots i:nth-child(2){background:#febc2e}.term .dots i:nth-child(3){background:#28c840}
+  .dim{color:#8c88c4}.bad{background:#ff3b5c;color:#fff;padding:2px 12px;border-radius:10px;font-weight:700}
+  .good{color:var(--mint);font-weight:700}.warn{color:var(--yellow);font-weight:700}
+
+  /* chips */
+  .chip{display:inline-block;font-family:var(--font);font-size:36px;padding:14px 30px;border-radius:999px;background:var(--ink);color:#fff}
+  .chip.mint{background:var(--mint);color:var(--ink)}.chip.yellow{background:var(--yellow);color:var(--ink)}
+  .chip.pink{background:var(--pink)}.chip.sky{background:var(--sky);color:var(--ink)}.chip.violet{background:var(--violet)}
+
+  /* flechas / pasos */
+  .step{flex:1;border-radius:36px;padding:44px 36px;text-align:center;color:var(--ink)}
+  .step .emoji{font-size:110px}
+  .step h3{font-family:var(--font);font-size:54px;margin-top:20px}
+  .step p{font-size:34px;margin-top:10px;font-weight:600}
+  .arrow{align-self:center;font-family:var(--font);font-size:90px}
+
+  /* tragamonedas */
+  .reels{display:flex;gap:18px;justify-content:center}
+  .reel{width:150px;height:190px;background:#fff;border:8px solid var(--ink);border-radius:26px;display:flex;align-items:center;justify-content:center;font-size:96px;font-family:var(--font);color:var(--ink)}
+
+  /* barras multas */
+  .bars{display:flex;align-items:flex-end;gap:40px;height:520px}
+  .bar{flex:1;border-radius:30px 30px 0 0;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;padding-top:26px;color:var(--ink)}
+  .bar b{font-family:var(--font);font-size:72px}.bar span{font-size:36px;font-weight:700}
+
+  /* grilla aristas */
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+  .tile{border-radius:30px;padding:30px 28px;text-align:center;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .tile .emoji{font-size:68px}
+  .tile p{font-size:30px;font-weight:600;line-height:1.2;margin-top:12px}
+  .tile h4{font-family:var(--font);font-size:40px;margin-top:14px;line-height:1.1}
+  .tile.code{background:var(--mint);color:var(--ink)}
+  .tile.doc{background:var(--yellow);color:var(--ink)}
+  .tile.risk{background:var(--sky);color:var(--ink)}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}
+  .grid5 .tile{min-height:170px;padding:18px 16px}
+  .grid5 .tile h4{font-size:32px;margin-top:0}
+  .grid5 .tile p{font-size:25px}
+
+  /* donut */
+  .legend{display:flex;flex-direction:column;gap:26px;font-size:46px;font-weight:700}
+  .legend i{display:inline-block;width:44px;height:44px;border-radius:12px;margin-right:22px;vertical-align:middle}
+
+  /* pregunta y comparación */
+  .quote{font-family:var(--body);font-weight:600;font-size:54px;line-height:1.3}
+  .shot{width:100%;display:block;border-radius:26px;border:6px solid #fff;box-shadow:0 14px 0 rgba(20,18,58,.2)}
+
+  /* tabla de resultados */
+  .res{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:30px}
+  .res th{font-family:var(--font);font-size:20px;letter-spacing:1px;text-transform:uppercase;text-align:left;padding:0 14px;color:#b9b4e6}
+  .res td{background:#fff;color:var(--ink);padding:16px 14px;font-weight:600}
+  .res tr td:first-child{border-radius:16px 0 0 16px}
+  .res tr td:last-child{border-radius:0 16px 16px 0}
+  .res tr.hi td{background:var(--mint)}
+  .res .n{font-family:var(--font);font-size:36px;font-weight:800}
+
+
+  .ico{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;display:block}
+  .step .emoji .ico,.tile .emoji .ico{margin:0 auto}
+  .compact .step{padding:24px 24px}
+  .compact .step .emoji{font-size:80px}
+  .compact .step h3{font-size:46px;margin-top:8px}
+  .compact .card{padding:30px 40px}
+  .compact .card h3{font-size:50px;margin:12px 0 8px}
+  .card.center .emoji .ico{margin:0 auto}
+  #block{position:absolute;left:120px;top:56px;z-index:5;display:flex;align-items:center;gap:20px;font-family:var(--font);font-size:30px;letter-spacing:5px;text-transform:uppercase;transition:opacity .35s ease;opacity:0}
+  #block .n{width:56px;height:56px;border:4px solid currentColor;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;letter-spacing:0}
+  #stage[data-theme=dark] #block{color:#fff}
+  #stage[data-theme=light] #block{color:var(--ink)}
+
+  /* UI */
+  #hud{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:50;pointer-events:none;background:rgba(20,18,58,.7);padding:8px 14px;border-radius:999px}
+  #hud i{width:26px;height:6px;border-radius:6px;background:rgba(255,255,255,.3)}
+  #hud i.on{background:#fff}
+  #count{position:fixed;right:16px;bottom:12px;color:#fff;background:rgba(20,18,58,.7);padding:6px 14px;border-radius:999px;font:600 15px var(--body);z-index:50}
+  #help{display:none}
+</style>
+</head>
+<body>
+<div id="stage">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8" />
+  <rect width="16" height="12" x="4" y="8" rx="2" />
+  <path d="M2 14h2" />
+  <path d="M20 14h2" />
+  <path d="M15 13v2" />
+  <path d="M9 13v2" /></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="m16 9-5.5 5.5L8 12" /></symbol><symbol id="i-circle-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+  <path d="M12 17h.01" /></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <path d="M12 6v6l4 2" /></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol><symbol id="i-credit-card" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2" />
+  <line x1="2" x2="22" y1="10" y2="10" />
+  <path d="M6 14h2" /></symbol><symbol id="i-dices" viewBox="0 0 24 24"><rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+  <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" />
+  <path d="M6 18h.01" />
+  <path d="M10 14h.01" />
+  <path d="M15 6h.01" />
+  <path d="M18 9h.01" /></symbol><symbol id="i-droplets" viewBox="0 0 24 24"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" />
+  <path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97" /></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" /></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" />
+  <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
+  <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" />
+  <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol><symbol id="i-keyboard" viewBox="0 0 24 24"><path d="M10 8h.01" />
+  <path d="M12 12h.01" />
+  <path d="M14 8h.01" />
+  <path d="M16 12h.01" />
+  <path d="M18 8h.01" />
+  <path d="M6 8h.01" />
+  <path d="M7 16h10" />
+  <path d="M8 12h.01" />
+  <rect width="20" height="16" x="2" y="4" rx="2" /></symbol><symbol id="i-laptop" viewBox="0 0 24 24"><path d="M18 5a2 2 0 0 1 2 2v8.526a2 2 0 0 0 .212.897l1.068 2.127a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.068-2.127A2 2 0 0 0 4 15.526V7a2 2 0 0 1 2-2z" />
+  <path d="M20.054 15.987H3.946" /></symbol><symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14" />
+  <path d="M12 6v14" />
+  <path d="M8 8v12" />
+  <path d="M4 4v16" /></symbol><symbol id="i-lock-open" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 9.9-1" /></symbol><symbol id="i-pencil-line" viewBox="0 0 24 24"><path d="M13 21h8" />
+  <path d="m15 5 4 4" />
+  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></symbol><symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></symbol><symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3" />
+  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+  <circle cx="18" cy="5" r="3" /></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18" />
+  <path d="m19 8 3 8a5 5 0 0 1-6 0zV7" />
+  <path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1" />
+  <path d="m5 8 3 8a5 5 0 0 1-6 0zV7" />
+  <path d="M7 21h10" /></symbol><symbol id="i-scan-search" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2" />
+  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+  <circle cx="12" cy="12" r="3" />
+  <path d="m16 16-1.9-1.9" /></symbol><symbol id="i-scroll-text" viewBox="0 0 24 24"><path d="M15 12h-5" />
+  <path d="M15 8h-5" />
+  <path d="M19 17V5a2 2 0 0 0-2-2H4" />
+  <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" /></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+  <path d="m9 12 2 2 4-4" /></symbol><symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6" />
+  <path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z" />
+  <path d="M21 12h1" />
+  <path d="M18.5 4.5 18 5" />
+  <path d="M2 12h1" />
+  <path d="M12 2v1" />
+  <path d="m4.929 4.929.707.707" />
+  <path d="M12 12v6" /></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" />
+  <circle cx="12" cy="12" r="6" />
+  <circle cx="12" cy="12" r="2" /></symbol><symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2" />
+  <line x1="12" x2="15" y1="14" y2="11" />
+  <circle cx="12" cy="14" r="8" /></symbol><symbol id="i-trash-2" viewBox="0 0 24 24"><path d="M10 11v6" />
+  <path d="M14 11v6" />
+  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+  <path d="M3 6h18" />
+  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol></defs></svg>
+
+  <!-- 1 PORTADA -->
+  <section class="slide bg-violet">
+    <div class="blob" style="width:760px;height:760px;background:var(--pink);right:-160px;top:-200px"></div>
+    <div class="blob" style="width:520px;height:520px;background:var(--yellow);right:260px;bottom:-260px"></div>
+    <h1>Un harness<br>para la <span class="hl">Ley 21.719</span></h1>
+    <div class="gap"></div>
+    <p class="lead" style="max-width:1100px">Cómo evitar que la IA olvide la ley de datos personales.</p>
+  </section>
+
+  <!-- 2 GANCHO -->
+  <section data-block="1|El problema" class="slide bg-ink">
+    <h2 style="margin-bottom:56px">Todo funciona.<br>Los tests pasan.</h2>
+    <div class="term">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div><span class="dim">14:22:01</span> <span class="good">INFO</span> orden #4092 procesada</div>
+      <div>cliente: RUT <span class="bad">18.234.567-8</span> | <span class="bad">c.gonzalez@empresa.cl</span></div>
+    </div>
+  </section>
+
+  <!-- 3 GIRO -->
+  <section data-block="1|El problema" class="slide bg-yellow">
+    <div class="blob" style="width:520px;height:520px;background:var(--pink);right:-160px;bottom:-220px"></div>
+    <p class="lead" style="font-size:60px;margin-bottom:40px">Nadie me lo pidió.<br>Yo tampoco pedí que no estuviera.</p>
+    <h2>La IA cumplió al pie de la letra.</h2>
+    <div class="gap"></div>
+    <p class="lead">El problema fue lo que yo no pedí.</p>
+  </section>
+
+  <!-- 4 PROMPT ENGINEERING -->
+  <section data-block="1|El problema" class="slide bg-paper">
+    <h1>Prompt <span class="hl pink">engineering</span></h1>
+    <div class="gap"></div>
+    <p class="lead">¿Y si lo escribimos todo en un prompt gigante?</p>
+    <div class="gap"></div>
+    <div class="row">
+      <div class="card"><div class="emoji"><svg class="ico"><use href="#i-circle-help"/></svg></div><h3>No sé qué falta</h3><p>No pido lo que no sé que existe.</p></div>
+      <div class="card"><div class="emoji"><svg class="ico"><use href="#i-droplets"/></svg></div><h3>Se diluye</h3><p>Más reglas, más se ignoran.</p></div>
+      <div class="card"><div class="emoji"><svg class="ico"><use href="#i-copy"/></svg></div><h3>Se copia</h3><p>Cada persona, su versión.</p></div>
+    </div>
+  </section>
+
+  <!-- 5 EVOLUCIÓN -->
+  <section data-block="1|El problema" class="slide bg-ink">
+    <h2 style="margin-bottom:70px">Del prompt al <span class="hl mint">harness</span></h2>
+    <div class="row">
+      <div class="step" style="background:#e9e7ff"><div class="emoji"><svg class="ico"><use href="#i-file-text"/></svg></div><h3>Prompt</h3><p>Todo en un texto</p></div>
+      <div class="arrow" style="color:#fff">→</div>
+      <div class="step" style="background:var(--yellow)"><div class="emoji"><svg class="ico"><use href="#i-puzzle"/></svg></div><h3>Skills</h3><p>Piezas por tarea</p></div>
+      <div class="arrow" style="color:#fff">→</div>
+      <div class="step" style="background:var(--mint)"><div class="emoji"><svg class="ico"><use href="#i-shield-check"/></svg></div><h3>Harness</h3><p>Todo el entorno</p></div>
+    </div>
+  </section>
+
+  <!-- 6 FLUJO -->
+  <section data-block="2|Qué es un harness" class="slide bg-paper compact">
+    <div class="row" style="margin-bottom:56px">
+      <div class="step" style="background:#e9e7ff"><div class="emoji"><svg class="ico"><use href="#i-laptop"/></svg></div><h3>Abro el IDE</h3></div>
+      <div class="arrow">→</div>
+      <div class="step" style="background:#e9e7ff"><div class="emoji"><svg class="ico"><use href="#i-bot"/></svg></div><h3>Elijo modelo</h3></div>
+      <div class="arrow">→</div>
+      <div class="step" style="background:#e9e7ff"><div class="emoji"><svg class="ico"><use href="#i-keyboard"/></svg></div><h3>Doy una orden</h3></div>
+      <div class="arrow">→</div>
+      <div class="step" style="background:var(--yellow)"><div class="emoji"><svg class="ico"><use href="#i-clock"/></svg></div><h3>Espero</h3></div>
+    </div>
+    <div class="row">
+      <div class="card center" style="background:var(--pink);color:#fff">
+        <svg viewBox="0 0 520 250" width="440" height="212">
+          <rect x="10" y="30" width="400" height="210" rx="34" fill="#14123a"/>
+          <rect x="30" y="8" width="360" height="40" rx="20" fill="#ffc933"/>
+          <rect x="40" y="70" width="104" height="140" rx="16" fill="#fff"/>
+          <rect x="158" y="70" width="104" height="140" rx="16" fill="#fff"/>
+          <rect x="276" y="70" width="104" height="140" rx="16" fill="#fff"/>
+          <text x="92" y="172" text-anchor="middle" font-family="Segoe UI Black,Arial Black,sans-serif" font-size="96" fill="#ff3b5c">7</text>
+          <path d="M196 112 Q210 130 214 150 M232 112 Q222 130 214 150" stroke="#2fd5a0" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <circle cx="196" cy="166" r="18" fill="#ff3b5c"/><circle cx="232" cy="166" r="18" fill="#ff3b5c"/>
+          <rect x="288" y="108" width="80" height="62" rx="10" fill="#14123a"/>
+          <text x="328" y="152" text-anchor="middle" font-family="Segoe UI Black,Arial Black,sans-serif" font-size="30" fill="#fff">BAR</text>
+          <line x1="440" y1="170" x2="470" y2="60" stroke="#14123a" stroke-width="12" stroke-linecap="round"/>
+          <circle cx="474" cy="46" r="26" fill="#ffc933" stroke="#14123a" stroke-width="8"/>
+          <rect x="410" y="150" width="46" height="34" rx="10" fill="#14123a"/>
+        </svg>
+        <h3 style="margin-top:34px">Sin harness</h3><p>Una máquina tragamonedas.</p>
+      </div>
+      <div class="card center" style="background:var(--mint)">
+        <div class="emoji" style="font-size:150px;height:190px"><svg class="ico"><use href="#i-route"/></svg></div>
+        <h3 style="margin-top:34px">Con harness</h3><p>El mismo camino, con guías.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 TRES IDEAS -->
+  <section data-block="2|Qué es un harness" class="slide bg-violet">
+    <h2 style="margin-bottom:64px">Un harness, en <span class="hl">3 ideas</span></h2>
+    <div class="row">
+      <div class="card" style="background:#fff;color:var(--ink)"><div class="num" style="color:var(--pink)">1</div><h3>Reglas siempre activas</h3><p>La IA las lee en cada sesión.</p></div>
+      <div class="card" style="background:#fff;color:var(--ink)"><div class="num" style="color:var(--violet)">2</div><h3>Skills y conocimiento</h3><p>Se cargan cuando la tarea lo pide.</p></div>
+      <div class="card" style="background:#fff;color:var(--ink)"><div class="num" style="color:var(--mint)">3</div><h3>Verificación</h3><p>Alguien comprueba el resultado.</p></div>
+    </div>
+  </section>
+
+  <!-- 8 FRASE -->
+  <section data-block="2|Qué es un harness" class="slide bg-yellow center" style="justify-content:center">
+    <div class="blob" style="width:700px;height:700px;background:var(--violet);right:-240px;top:-240px"></div>
+    <h2 style="max-width:1500px">No le pidas a la IA que se acuerde de la ley.</h2>
+    <div class="gap"></div>
+    <h2 style="font-size:84px"><span class="hl violet">Haz que la ley esté</span><br><span class="hl violet">siempre sobre la mesa.</span></h2>
+  </section>
+
+  <!-- 9 VIGENCIA -->
+  <section data-block="3|La dimensión normativa" class="slide bg-ink">
+    <h1 style="font-size:110px">Ley <span class="hl pink">21.719</span></h1>
+    <p class="lead" style="margin:26px 0 44px">Protección de datos personales. Entra en vigencia el <b style="color:var(--yellow)">1 de diciembre de 2026</b>.</p>
+    <div class="card" style="color:var(--ink);flex:none">
+      <span class="chip yellow" style="font-size:30px">Todavía no es ley</span>
+      <h3 style="font-size:50px">Proyecto para postergarla</h3>
+      <p style="font-size:36px">El Senado lo aprobó el 28 de octubre (33 votos a 6) y falta la Cámara de Diputados. Propone el 15 de octubre de 2027. Si no se publica antes del 1 de diciembre, la ley rige igual.</p>
+    </div>
+  </section>
+
+  <!-- 10 MULTAS -->
+  <section data-block="3|La dimensión normativa" class="slide bg-paper">
+    <h2 style="margin-bottom:40px">Tres niveles de multa</h2>
+    <div class="row">
+      <div class="card" style="border-top:20px solid var(--mint)">
+        <span class="chip mint">Leve</span>
+        <h3>Hasta 5.000 UTM</h3>
+        <p style="font-size:32px">No informar con claridad quién trata los datos.<br><br>Responder tarde o incompleto a un titular.</p>
+      </div>
+      <div class="card" style="border-top:20px solid var(--yellow)">
+        <span class="chip yellow">Grave</span>
+        <h3>Hasta 10.000 UTM</h3>
+        <p style="font-size:32px">Tratar datos sin consentimiento ni base legal.<br><br>Obstaculizar los derechos del titular.<br><br>Fallas de seguridad.</p>
+      </div>
+      <div class="card" style="border-top:20px solid var(--pink)">
+        <span class="chip pink">Gravísima</span>
+        <h3>Hasta 20.000 UTM</h3>
+        <p style="font-size:32px">Tratamiento fraudulento.<br><br>Datos sensibles o de menores, a sabiendas.<br><br>Ocultar una brecha a propósito.</p>
+      </div>
+    </div>
+    <p style="font-size:24px;margin-top:22px">UTM = unidad tributaria mensual: una referencia que se usa para expresar el monto de la multa.</p>
+  </section>
+
+  <!-- 11 MAPA DE LA LEY -->
+  <section data-block="4|Qué cubre la ley" class="slide bg-paper compact">
+    <h2 style="margin-bottom:18px">Qué parte de la ley abordamos</h2>
+    <p class="lead" style="margin-bottom:34px">Trece aspectos, tres niveles de acción.</p>
+    <div class="row" style="gap:26px">
+      <div class="card" style="border-top:14px solid var(--mint)">
+        <span class="chip mint">Lo cubre</span>
+        <h3 style="font-size:44px">El código</h3>
+        <p style="font-size:30px">Seguridad y logs<br>Consentimiento<br>Datos sensibles y menores<br>Credenciales y respuestas de API</p>
+      </div>
+      <div class="card" style="border-top:14px solid var(--sky)">
+        <span class="chip sky">Solo avisa</span>
+        <h3 style="font-size:44px">Indicios</h3>
+        <p style="font-size:30px">Derechos del titular<br>Transparencia<br>Privacidad por defecto<br>Retención<br>Terceros y transferencias<br>Marketing</p>
+      </div>
+      <div class="card" style="border-top:14px solid var(--yellow)">
+        <span class="chip yellow">Organización</span>
+        <h3 style="font-size:44px">Documentos</h3>
+        <p style="font-size:30px">Principios<br>Brechas<br>Delegado y modelo de prevención</p>
+      </div>
+    </div>
+    <p class="lead" style="font-size:34px;margin-top:30px">Cada control declara su artículo, cuándo aplica y cómo se comprueba. La Agencia pide <span class="hl">antecedentes</span>: el harness deja el hallazgo con su artículo.</p>
+  </section>
+
+  <!-- 12 COMO LO COMPRUEBA -->
+  <section data-block="4|Qué cubre la ley" class="slide bg-ink compact">
+    <h2 style="margin-bottom:8px;font-size:78px">Cómo lo comprueba</h2>
+    <p class="lead" style="font-size:40px;margin-bottom:22px">Una sola fuente de verdad, aplicada solo donde corresponde.</p>
+    <div class="row" style="margin-bottom:24px">
+      <div class="step" style="background:var(--violet);color:#fff"><div class="emoji"><svg class="ico"><use href="#i-library"/></svg></div><h3>Pack normativo</h3><p>La ley, en controles</p></div>
+      <div class="arrow" style="color:#fff">→</div>
+      <div class="step" style="background:var(--yellow)"><div class="emoji"><svg class="ico"><use href="#i-target"/></svg></div><h3>¿Aplica?</h3><p>Solo lo que corresponde</p></div>
+      <div class="arrow" style="color:#fff">→</div>
+      <div class="step" style="background:var(--mint)"><div class="emoji"><svg class="ico"><use href="#i-scan-search"/></svg></div><h3>Se comprueba</h3><p>En código o en documentos</p></div>
+    </div>
+    <div class="term" style="font-size:27px;padding:30px 40px">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div><span class="dim">$</span> python compliance_check.py</div>
+      <div><span class="bad">VIOLATION</span>: privacy.cwe_532 · app/orders.py:42</div>
+      <div>"logger.info(... rut=%s ...)" expone un RUT.</div>
+      <div>&nbsp;&nbsp;fix: enmascarar el RUT o no registrarlo.</div>
+    </div>
+    <div style="margin-top:20px"><span class="chip yellow" style="font-size:30px;padding:10px 24px">La compuerta es una red de seguridad: no reemplaza la revisión legal</span></div>
+  </section>
+
+  <!-- 13 PREGUNTA CIENTIFICA -->
+  <section data-block="5|El experimento" class="slide bg-violet center" style="justify-content:center">
+    <div class="blob" style="width:640px;height:640px;background:var(--pink);right:-260px;top:-240px"></div>
+    <p class="kicker" style="color:var(--yellow)">La pregunta científica</p>
+    <p class="quote" style="max-width:1620px;font-size:46px">“¿En qué medida un harness enriquecido con skills, reglas y ciclos de revisión basados en la Ley 21.719 mejora la incorporación comprobable de requisitos seleccionados de protección de datos en una aplicación con repositorio de datos, frente a desarrollarla sin harness o con un harness básico?”</p>
+    <p class="lead" style="font-size:32px;margin-top:28px;max-width:1500px">En simple: ¿el harness reduce las violaciones, a qué costo, y qué parte del harness es la que ayuda?</p>
+  </section>
+
+  <!-- 14 OBJETIVOS -->
+  <section data-block="5|El experimento" class="slide bg-paper compact">
+    <h2 style="margin-bottom:24px">Objetivos</h2>
+    <div class="card" style="background:var(--ink);color:#fff;flex:none;margin-bottom:28px">
+      <span class="chip yellow">Objetivo general</span>
+      <h3 style="font-size:44px;margin-top:16px">Medir si el harness reduce las violaciones de la ley, a qué costo y por qué.</h3>
+    </div>
+    <div class="row">
+      <div class="card"><h3 style="font-size:36px">Violaciones</h3><p style="font-size:26px">¿Cuántas violaciones confirmadas aparecen en cada forma de trabajar?</p></div>
+      <div class="card"><h3 style="font-size:36px">Qué parte ayuda</h3><p style="font-size:26px">¿Son las reglas, los playbooks o la compuerta?</p></div>
+      <div class="card"><h3 style="font-size:36px">Costo</h3><p style="font-size:26px">¿Cuánto tiempo y cuántos tokens cuesta?</p></div>
+      <div class="card"><h3 style="font-size:36px">Tarea terminada</h3><p style="font-size:26px">¿El trabajo igual se completa?</p></div>
+    </div>
+  </section>
+
+  <!-- 15 DISEÑO DEL EXPERIMENTO -->
+  <section data-block="5|El experimento" class="slide bg-ink compact">
+    <h2 style="margin-bottom:12px">Cómo lo probamos</h2>
+    <p class="lead" style="font-size:40px;margin-bottom:20px">La misma aplicación, cinco formas de trabajar y una medición independiente.</p>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px">
+      <div class="card" style="background:#e9e7ff;color:var(--ink);padding:22px"><span class="chip">baseline</span><h3 style="font-size:28px;margin-top:10px">Solo la app</h3><p style="font-size:22px">El agente trabaja sin ayuda.</p></div>
+      <div class="card" style="background:var(--yellow);color:var(--ink);padding:22px"><span class="chip">rules</span><h3 style="font-size:28px;margin-top:10px">+ Manual</h3><p style="font-size:22px">Las reglas del equipo, siempre a mano.</p></div>
+      <div class="card" style="background:#d9f7ec;color:var(--ink);padding:22px"><span class="chip">rules_skills</span><h3 style="font-size:28px;margin-top:10px">+ Playbooks</h3><p style="font-size:22px">12 guías que se cargan si hacen falta.</p></div>
+      <div class="card" style="background:var(--mint);color:var(--ink);padding:22px"><span class="chip">rules_skills_gate</span><h3 style="font-size:28px;margin-top:10px">+ Compuerta</h3><p style="font-size:22px">Un chequeo local antes de terminar.</p></div>
+      <div class="card" style="background:var(--violet);color:#fff;padding:22px"><span class="chip">…_enforced</span><h3 style="font-size:28px;margin-top:10px">+ Revisión externa</h3><p style="font-size:22px">Si queda algo, el sistema insiste.</p></div>
+    </div>
+    <div class="row" style="gap:20px">
+      <div class="card" style="background:#fff;color:var(--ink);flex:1.2"><h3 style="font-size:34px">4 tareas con trampa × 5 repeticiones × 5 formas</h3><p style="font-size:25px"><b>100 corridas</b> · mismo modelo fijo. Una trampa sutil es una instrucción de negocio razonable que esconde una decisión de privacidad.</p></div>
+      <div class="card" style="background:#fff;color:var(--ink);flex:1"><h3 style="font-size:32px">Un juez independiente (oráculo)</h3><p style="font-size:24px">Una forma de decidir si el resultado está bien que <b>no depende del harness</b>: pruebas ocultas + otro detector (Semgrep) + revisión humana. Si el harness se evaluara a sí mismo, sería trampa.</p></div>
+    </div>
+  </section>
+
+  <!-- 16 QUE ES LA COMPUERTA -->
+  <section data-block="5|El experimento" class="slide bg-paper compact">
+    <h2 style="margin-bottom:10px">La compuerta, en 3 pasos</h2>
+    <p class="lead" style="font-size:40px;margin-bottom:22px">No es un chatbot: son reglas deterministas sobre el código que el agente escribió.</p>
+    <div class="row" style="gap:14px;margin-bottom:22px">
+      <div class="step" style="background:#e9e7ff;color:var(--ink);padding:20px"><h3 style="font-size:26px">1. Escribe</h3><p style="font-size:22px">El agente implementa la tarea.</p></div>
+      <div class="arrow" style="font-size:34px">→</div>
+      <div class="step" style="background:var(--mint);color:var(--ink);padding:20px"><h3 style="font-size:26px">2. Revisa</h3><p style="font-size:21px">Busca datos sensibles y sigue su recorrido hasta logs, respuestas o pantallas. Si llegan a un lugar expuesto, cita el control y el artículo.</p></div>
+      <div class="arrow" style="font-size:34px">→</div>
+      <div class="step" style="background:var(--violet);color:#fff;padding:20px"><h3 style="font-size:26px">3. Corrige</h3><p style="font-size:22px">El agente arregla y vuelve a correr.</p></div>
+    </div>
+    <div class="term" style="font-size:21px;padding:18px 30px;margin-bottom:22px">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div><span class="dim">$</span> python compliance_check.py</div>
+      <div><span class="bad">VIOLATION</span>: v2.billing_retention · app/main.py:42</div>
+      <div>“DELETE FROM orders” con corte de 90 días; la retención es de 6 años.</div>
+      <div>&nbsp;&nbsp;fix: compará el corte con <span class="warn">retention_days</span>.</div>
+    </div>
+    <div class="row" style="gap:16px">
+      <div class="card" style="background:#fff;color:var(--ink);flex:1"><h3 style="font-size:26px">Con aviso</h3><p style="font-size:22px">El agente decide correrla.</p></div>
+      <div class="card" style="background:#fff;color:var(--ink);flex:1"><h3 style="font-size:26px">Con insistencia</h3><p style="font-size:22px">Además, el sistema revisa al final.</p></div>
+    </div>
+  </section>
+
+  <!-- 17 SIN Y CON COMPUERTA -->
+  <section data-block="5|El experimento" class="slide bg-paper compact">
+    <h2 style="margin-bottom:10px;font-size:76px">La misma pantalla, otras decisiones</h2>
+    <p class="lead" style="font-size:34px;margin-bottom:12px">La pantalla se ve igual. La diferencia está en lo que el agente decide guardar y exponer.</p>
+    <div class="row" style="gap:34px;align-items:stretch">
+      <div class="col" style="flex:1.05">
+        <img class="shot" src="assets/dumbo-home.png" alt="Portada de Dumbo, el sitio de comercio electrónico del experimento">
+        <p style="font-size:24px;margin-top:10px;font-weight:700">Dumbo · sitio base ejecutable sin harness</p>
+        <p style="font-size:20px;margin-top:4px">Token = credencial de acceso; si se filtra, otra persona puede usarla.</p>
+      </div>
+      <div class="col" style="flex:1;gap:14px">
+        <div class="card" style="background:#ffe3e8;flex:1;padding:26px 32px">
+          <span class="chip pink">Sin compuerta</span>
+          <h3 style="font-size:28px;margin:10px 0 6px">En la limpieza: borró antes del plazo (6 años).<br>En el reset: devolvió el token en la URL.<br>En el registro: registró el token de sesión.</h3>
+        </div>
+        <div class="card" style="background:#d9f7ec;flex:1;padding:26px 32px">
+          <span class="chip mint">Con compuerta</span>
+          <h3 style="font-size:28px;margin:10px 0 6px">Respetó el plazo de 6 años.<br>No expuso el token.<br>No lo registró.</h3>
+        </div>
+        <div class="card" style="background:var(--ink);color:#fff;flex:none;padding:18px 32px">
+          <p style="font-size:22px">La compuerta no conoce las trampas ni el test oculto: solo compara el código con el pack. El agente decide qué corregir. La diferencia está en <span class="hl">lo que guarda y expone</span>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 RESULTADOS -->
+  <section data-block="5|El experimento" class="slide bg-ink compact">
+    <h2 style="margin-bottom:6px">Resultados</h2>
+    <p class="lead" style="font-size:32px;margin-bottom:10px">100 corridas: 4 tareas difíciles × 5 configuraciones × 5 repeticiones.</p>
+    <table class="res">
+      <thead>
+        <tr><th>Configuración</th><th>Violaciones confirmadas</th><th>Pruebas ocultas</th><th>Tokens del modelo</th><th>Tiempo</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Solo la app <span class="dim">(baseline)</span></td><td><span class="n" style="color:var(--pink)">8</span></td><td>6/20</td><td>15,6 M</td><td>87 s</td></tr>
+        <tr><td>+ Manual <span class="dim">(rules)</span></td><td><span class="n" style="color:#d99a00">7</span></td><td>7/20</td><td>8,0 M</td><td>65 s</td></tr>
+        <tr><td>+ Playbooks <span class="dim">(rules_skills)</span></td><td><span class="n" style="color:#d99a00">3</span></td><td>9/20</td><td>12,8 M</td><td>94 s</td></tr>
+        <tr class="hi"><td><b>+ Compuerta</b> <span style="color:#14123a">(gate)</span></td><td><span class="n">0</span></td><td>20/20*</td><td>35,8 M</td><td>134 s</td></tr>
+        <tr><td>+ Revisión externa <span class="dim">(enforced)</span></td><td><span class="n">0</span></td><td>18/20*</td><td>35,3 M</td><td>155 s</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:18px;color:#b9b4e6;margin-top:14px">Pruebas ocultas = tests que el modelo no ve. Violación confirmada = test oculto fallido + evidencia del detector. p = probabilidad de casualidad. * Corregido tras la corrida: 2 fallos de T34 de la compuerta y 4 de la revisión externa eran error del test; los 2 restantes de la revisión externa son tareas no implementadas (404), no privacidad.</p>
+  </section>
+
+  <!-- 19 CONCLUSION -->
+  <section data-block="5|El experimento" class="slide bg-violet">
+    <div class="blob" style="width:560px;height:560px;background:var(--pink);right:-240px;bottom:-240px"></div>
+    <p class="kicker" style="color:var(--yellow)">Qué significan los resultados</p>
+    <div class="col" style="gap:14px;margin-bottom:34px">
+      <p class="lead" style="font-size:40px;max-width:1650px">Las reglas solas no alcanzan. Los playbooks ayudan, pero no bastan.</p>
+      <p class="lead" style="font-size:40px;max-width:1650px">La compuerta cambia el resultado: <span class="hl">8 violaciones → 0</span>, y 20 de 20 tareas bien.</p>
+      <p class="lead" style="font-size:40px;max-width:1650px">El costo: 2,3× más consumo del modelo y un poco más de tiempo.</p>
+    </div>
+    <h2 style="font-size:72px;max-width:1700px">La compuerta convierte la ley en un chequeo que el agente <span class="hl">no puede ignorar</span>.</h2>
+    <div class="gap" style="height:34px"></div>
+    <p class="lead" style="font-size:30px;max-width:1600px">No es una garantía de cumplimiento: es una red de seguridad. Y en este experimento, eliminó todas las violaciones confirmadas.</p>
+    <p class="lead" style="font-size:26px;margin-top:8px;max-width:1500px">La IA no se equivocó: hizo lo que le pedí. El harness me obliga a pedir lo que no sabía.</p>
+  </section>
+
+
+<div id="block"><span class="n"></span><span class="t"></span></div>
+</div>
+<div id="help">← → navegar · F pantalla completa</div>
+<div id="hud"></div><div id="count"></div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')], stage=document.getElementById('stage'),
+        hud=document.getElementById('hud'), count=document.getElementById('count');
+  const blockEl=document.getElementById('block'); let i=0, curBlock=null;
+  slides.forEach(()=>hud.appendChild(document.createElement('i')));
+  function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
+  function show(n){i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('on',k===i));
+    [...hud.children].forEach((d,k)=>d.classList.toggle('on',k===i));
+    const cls=slides[i].className, dark=/bg-(ink|violet|pink)/.test(cls);
+    stage.dataset.theme=dark?'dark':'light';
+    const b=slides[i].dataset.block||null;
+    if(b!==curBlock){
+      const first=curBlock===null&&!blockEl.dataset.init; blockEl.dataset.init=1; curBlock=b;
+      const paint=()=>{if(b){const [n,t]=b.split('|');blockEl.children[0].textContent=n;blockEl.children[1].textContent=t;blockEl.style.opacity=1}else blockEl.style.opacity=0};
+      if(first){blockEl.style.transition='none';paint();requestAnimationFrame(()=>blockEl.style.transition='')}
+      else{blockEl.style.opacity=0;clearTimeout(blockEl._t);blockEl._t=setTimeout(paint,b?250:0)}
+    }
+    count.textContent=`${i+1} / ${slides.length}`;location.hash=i+1}
+  addEventListener('resize',fit);
+  addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key))show(i+1);
+    else if(['ArrowLeft','PageUp'].includes(e.key))show(i-1);
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+    else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}});
+  addEventListener('click',e=>show(e.clientX>innerWidth/2?i+1:i-1));
+  fit();show((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body>
+</html>

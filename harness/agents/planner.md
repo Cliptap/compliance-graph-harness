@@ -42,7 +42,7 @@ Para cada feature del PRD, genera:
 ## Anti-Patrones
 
 - NO agregues "tarea: configurar CI/CD" si el PRD no lo pide
-- NO agregues "tarea: escribir tests" si la gobernanza no los requiere
+- NO crees una tarea separada de "escribir tests": el test acompaña a cada tarea de código según la política de Testing
 - NO agregues "tarea: crear panel de admin" si no esta en el PRD
 - NO asumas stack tecnologico si el PRD no lo define
 

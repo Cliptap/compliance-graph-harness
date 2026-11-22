@@ -1,0 +1,380 @@
+{
+  "task": "D04-log-middleware",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D04-log-middleware-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 121.0,
+    "tool_calls_by_name": {
+      "bash": 14,
+      "read": 6,
+      "write": 2,
+      "edit": 2
+    },
+    "files_read": [
+      "app/main.py",
+      "schema.sql",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "app/db.py",
+      "app/security.py"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 815323,
+      "input_tokens": 74980,
+      "output_tokens": 3316,
+      "reasoning_tokens": 2563,
+      "cache_read_tokens": 734464,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.016978,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 121.0,
+      "latency_ms": 121000,
+      "rounds": 15,
+      "tool_calls": 24,
+      "turns": 15,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 815323,
+        "input_tokens": 74980,
+        "output_tokens": 3316,
+        "reasoning_tokens": 2563,
+        "cache_read_tokens": 734464,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.016978
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 111,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "app/main.py",
+        "schema.sql",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "app/db.py",
+        "app/security.py"
+      ],
+      "files_read_count": 6,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.5
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7498,
+          "input": 5624,
+          "output": 73,
+          "reasoning": 9,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000898176
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 9707,
+          "input": 2078,
+          "output": 317,
+          "reasoning": 16,
+          "cache": {
+            "write": 0,
+            "read": 7296
+          }
+        },
+        "cost": 0.000533388
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 29842,
+          "input": 20185,
+          "output": 202,
+          "reasoning": 111,
+          "cache": {
+            "write": 0,
+            "read": 9344
+          }
+        },
+        "cost": 0.003243582
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35329,
+          "input": 5504,
+          "output": 70,
+          "reasoning": 315,
+          "cache": {
+            "write": 0,
+            "read": 29440
+          }
+        },
+        "cost": 0.00114492
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36870,
+          "input": 1283,
+          "output": 161,
+          "reasoning": 610,
+          "cache": {
+            "write": 0,
+            "read": 34816
+          }
+        },
+        "cost": 0.000759498
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 49756,
+          "input": 13252,
+          "output": 284,
+          "reasoning": 124,
+          "cache": {
+            "write": 0,
+            "read": 36096
+          }
+        },
+        "cost": 0.002340888
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 61472,
+          "input": 11870,
+          "output": 176,
+          "reasoning": 146,
+          "cache": {
+            "write": 0,
+            "read": 49280
+          }
+        },
+        "cost": 0.00212154
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 64823,
+          "input": 3439,
+          "output": 241,
+          "reasoning": 87,
+          "cache": {
+            "write": 0,
+            "read": 61056
+          }
+        },
+        "cost": 0.000895818
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 68798,
+          "input": 4078,
+          "output": 269,
+          "reasoning": 67,
+          "cache": {
+            "write": 0,
+            "read": 64384
+          }
+        },
+        "cost": 0.001006452
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 74370,
+          "input": 4677,
+          "output": 574,
+          "reasoning": 767,
+          "cache": {
+            "write": 0,
+            "read": 68352
+          }
+        },
+        "cost": 0.001711206
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 74653,
+          "input": 1425,
+          "output": 268,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 72960
+          }
+        },
+        "cost": 0.00059343
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 75308,
+          "input": 310,
+          "output": 416,
+          "reasoning": 214,
+          "cache": {
+            "write": 0,
+            "read": 74368
+          }
+        },
+        "cost": 0.000647604
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 75448,
+          "input": 699,
+          "output": 106,
+          "reasoning": 19,
+          "cache": {
+            "write": 0,
+            "read": 74624
+          }
+        },
+        "cost": 0.000403722
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 75652,
+          "input": 220,
+          "output": 90,
+          "reasoning": 78,
+          "cache": {
+            "write": 0,
+            "read": 75264
+          }
+        },
+        "cost": 0.000359592
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 75797,
+          "input": 336,
+          "output": 69,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 75392
+          }
+        },
+        "cost": 0.000317976
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 14,
+      "read": 6,
+      "write": 2,
+      "edit": 2
+    },
+    "changed_files": {
+      "app/main.py": [
+        2,
+        0
+      ],
+      "app/middleware.py": [
+        68,
+        0
+      ],
+      "tests/test_middleware.py": [
+        41,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "D04-log-middleware",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.17s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "map",
+        "expect": [
+          "app/middleware.py"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "b); Ley 19.628 Art. 3° let. c); Ley 19.628 Art. 3° let. g); Ley 19.628 Art. 7° inc. 2° N° ii; Ley 19.628 Art. 8° let. b); Ley 19.628 Arts. 4° al 11°; Ley 21.719 Art. 14 bis; Ley 21.719 Art. 3 c); Ley 21.719 Art. 4 y Art. 10 |\n| `address_id` | customers | schema.sql:44 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` | CWE CWE-200; CWE CWE-404; CWE CWE-532; ISO/IEC 27001:2022 A.8.10; ISO/IEC 27001:2022 A.8.11; ISO/IEC 27001:2022 A.8.12; Ley 19.496 Art. 28 B; Ley 19.628 Art. 12°; Ley 19.628 Art. 13°; Ley 19.628 Art. 14° bis; Ley 19.628 Art. 14° let. d); Ley 19.628 Art. 14° ter; Ley 19.628 Art. 14° ter let. h); Ley 19.628 Art. 15°; Ley 19.628 Art. 15° bis; Ley 19.628 Art. 27°; Ley 19.628 Art. 28°; Ley 19.628 Art. 2° let. p); Ley 19.628 Art. 34° ter let. i), Art. 34° quáter let. d); Ley 19.628 Art. 3° let. b); Ley 19.628 Art. 3° let. c); Ley 19.628 Art. 3° let. g); Ley 19.628 Art. 7° inc. 2° N° ii; Ley 19.628 Art. 8° let. b); Ley 19.628 Arts. 4° al 11°; Ley 21.719 Art. 14 bis; Ley 21.719 Art. 3 c); Ley 21.719 Art. 4 y Art. 10 |\n\n## Sinks\n\n| Kind | Call | Location |\n| --- | --- | --- |\n| print | `print` | app/incidents.py:33 |\n| print | `print` | app/incidents.py:37 |\n| print | `print` | app/marketing.py:40 |\n| print | `print` | app/marketing.py:42 |\n| log | `logging.getLogger` | app/middleware.py:14 |\n| log | `logger.info` | app/middleware.py:51 |\n| log | `logger.info` | app/middleware.py:66 |\n| print | `print` | app/retention.py:41 |\n| print | `print` | app/rights.py:28 |\n| print | `print` | app/third_parties.py:29 |\n| print | `print` | app/third_parties.py:33 |\n\nStatic code-derived map: flows are co-occurrence, not runtime tracing. Not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D04-log-middleware-baseline\\.harness\\evidence.db\n"
+      }
+    ],
+    "passed": true
+  }
+}

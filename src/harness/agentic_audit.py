@@ -15,6 +15,7 @@ from src.harness.db import (
     RULES_PATH,
     WORKSPACE_ROOT,
     get_db_connection,
+    init_harness_db,
     log_agent_reasoning,
 )
 from src.harness.graph_engine import subgraph_slice
@@ -33,11 +34,13 @@ class ChecklistCriterion(BaseModel):
     severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] = "CRITICAL"
     indicators: list[str] = Field(default_factory=list)
     prohibited_patterns: list[str] = Field(default_factory=list)
+    detection_type: str = "indicator"
+    evidence_kind: str = ""
 
 
 class ChecklistEvaluationResult(BaseModel):
     criterion_id: str
-    plugin_name: str  # "core_universal" | "health_clinical"
+    plugin_name: str  # "core_universal" | "health_clinical" | "ecommerce_retail"
     law_article: str
     title: str
     status: Literal["PASSED", "VIOLATION", "NOT_APPLICABLE"]
@@ -78,7 +81,9 @@ class ChecklistRegistry:
     def _load_registry(self) -> None:
         if not self.rules_path.exists():
             return
-        data = json.loads(self.rules_path.read_text(encoding="utf-8"))
+        from src.harness.normative_pack import load_legacy_view
+
+        data = load_legacy_view(self.rules_path)
         for raw in data.get("core_checklist", []):
             self.core_criteria.append(ChecklistCriterion(**raw))
         self.sectorial_plugins = data.get("sectorial_plugins", {})
@@ -183,6 +188,21 @@ class StatelessAuditor:
         slice_data: dict[str, Any],
     ) -> ChecklistEvaluationResult:
         cid = criterion.id
+
+        # Controles manuales: el código no puede aportar la evidencia exigida
+        if criterion.detection_type == "manual":
+            return ChecklistEvaluationResult(
+                criterion_id=cid,
+                plugin_name=plugin_name,
+                law_article=criterion.law_article,
+                title=criterion.title,
+                status="NOT_APPLICABLE",
+                severity=criterion.severity,
+                details=(
+                    "Control de evidencia documental: no se evalúa desde el código; "
+                    f"requiere revisión de '{criterion.evidence_kind}'."
+                ),
+            )
 
         # CORE-CHECK-001: Privacidad desde el Diseño (Enmascaramiento / Cifrado)
         if cid == "CORE-CHECK-001":
@@ -334,7 +354,7 @@ class StatelessAuditor:
                         title=criterion.title,
                         status="VIOLATION",
                         severity=criterion.severity,
-                        details=f"Infracción al deber de retención decenal (Art. 13 Ley 20.584): Borrado físico detectado en línea {bad_line}.",
+                        details=f"Infracción al deber de conservación por 15 años (Art. 13 Ley 20.584): Borrado físico detectado en línea {bad_line}.",
                         evidence_snippet=bad_snippet,
                         line_number=bad_line,
                         remediation_advice="Reemplazar borrado destructivo por marcado lógico (repo.soft_delete o status='BLOCKED_LEGAL_HOLD').",
@@ -423,9 +443,13 @@ class StatelessAuditor:
             plugin_name=plugin_name,
             law_article=criterion.law_article,
             title=criterion.title,
-            status="PASSED",
+            status="NOT_APPLICABLE",
             severity=criterion.severity,
-            details="Evaluación conforme con los estándares normativos.",
+            details=(
+                "El auditor stateless no tiene un evaluador para este control. Se resuelve en el "
+                "PolicyEngine (detectores de dimensión) o con evidencia documental; nunca se marca "
+                "PASSED por omisión."
+            ),
         )
 
     def _persist_evaluation(self, file_path: str, file_node_id: str, res: ChecklistEvaluationResult) -> None:
@@ -493,6 +517,7 @@ class AgenticAuditOrchestrator:
         from src.harness.pipeline import DeveloperPatcherAgent
 
         active_criteria = self.registry.get_active_criteria(sectorial_plugin=sectorial_plugin)
+        init_harness_db(self.db_path)
         conn = get_db_connection(self.db_path)
 
         # Identificar archivos prioritarios para la auditoría (API y Base de Datos)

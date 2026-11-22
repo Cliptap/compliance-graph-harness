@@ -1,0 +1,208 @@
+{
+  "task": "T22-reset-token-response",
+  "arm": "harness",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T22-reset-token-response-harness",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 32.44,
+    "tool_calls_by_name": {
+      "bash": 2,
+      "read": 10
+    },
+    "files_read": [
+      "TASK.md",
+      "README.md",
+      "app/main.py",
+      "schema.sql",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      ".agents/skills/07-auth/SKILL.md",
+      ".agents/skills/04-api-design/SKILL.md",
+      ".agents/skills/05-backend/SKILL.md",
+      ".agents/skills/08-testing/SKILL.md"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 127854,
+      "input_tokens": 42480,
+      "output_tokens": 987,
+      "reasoning_tokens": 1059,
+      "cache_read_tokens": 83328,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.00785,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 32.44,
+      "latency_ms": 32440,
+      "rounds": 5,
+      "tool_calls": 12,
+      "turns": 5,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 127854,
+        "input_tokens": 42480,
+        "output_tokens": 987,
+        "reasoning_tokens": 1059,
+        "cache_read_tokens": 83328,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.00785
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "README.md",
+        "app/main.py",
+        "schema.sql",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        ".agents/skills/07-auth/SKILL.md",
+        ".agents/skills/04-api-design/SKILL.md",
+        ".agents/skills/05-backend/SKILL.md",
+        ".agents/skills/08-testing/SKILL.md"
+      ],
+      "files_read_count": 10,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.2
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 8629,
+          "input": 8548,
+          "output": 68,
+          "reasoning": 13,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.0013308
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 11888,
+          "input": 3180,
+          "output": 381,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 8320
+          }
+        },
+        "cost": 0.00073476
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 31898,
+          "input": 20430,
+          "output": 57,
+          "reasoning": 147,
+          "cache": {
+            "write": 0,
+            "read": 11264
+          }
+        },
+        "cost": 0.003220692
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 32740,
+          "input": 951,
+          "output": 286,
+          "reasoning": 15,
+          "cache": {
+            "write": 0,
+            "read": 31488
+          }
+        },
+        "cost": 0.000417714
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 42699,
+          "input": 9371,
+          "output": 195,
+          "reasoning": 877,
+          "cache": {
+            "write": 0,
+            "read": 32256
+          }
+        },
+        "cost": 0.002145618
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 2,
+      "read": 10
+    },
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "T22-reset-token-response",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n__________________ test_password_reset_does_not_return_token __________________\n\nclient = <starlette.testclient.TestClient object at 0x000001C8D4428830>\n\n    def test_password_reset_does_not_return_token(client):\n        register(client)\n        response = client.post(\"/password-reset\", data={\"email\": \"ana@example.cl\"},\n                               follow_redirects=False)\n>       assert response.status_code != 404, \"the endpoint was not implemented\"\nE       AssertionError: the endpoint was not implemented\nE       assert 404 != 404\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_t22_reset_token_response.py:10: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_t22_reset_token_response.py::test_password_reset_does_not_return_token\n1 failed in 0.41s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.reset-token-response"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  }
+}

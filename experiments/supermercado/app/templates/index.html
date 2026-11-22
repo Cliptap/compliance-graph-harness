@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Dumbo · Tu súper en línea{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Despacho o retiro</span>
+    <h1>Lo que necesitas,<br>a tu puerta hoy.</h1>
+    <p>Más de {{ total }} productos en 20 categorías: frutas, despensa, limpieza y todo lo que tu casa necesita.</p>
+    <div class="hero-actions">
+      <a class="button primary big" href="#ofertas">Ver ofertas</a>
+      <a class="button ghost big" href="/catalog">Explorar catálogo</a>
+    </div>
+    <ul class="hero-points">
+      <li>Precios claros</li>
+      <li>Pago simulado</li>
+      <li>Datos bajo control</li>
+    </ul>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="hero-card hc1">Fresco</div>
+    <div class="hero-card hc2">Despensa</div>
+    <div class="hero-card hc3">Hogar</div>
+  </div>
+</section>
+
+<section class="quick-cats">
+  {% for item in categories %}
+  <a class="quick-cat" href="/catalog?category={{ item.name|urlencode }}">{{ item.name }} <small>{{ item.count }}</small></a>
+  {% endfor %}
+</section>
+
+<section class="benefits">
+  <div class="benefit"><strong>Despacho el mismo día</strong><span>En comunas seleccionadas de Santiago.</span></div>
+  <div class="benefit"><strong>Retiro sin costo</strong><span>Elige tu local al confirmar el pedido.</span></div>
+  <div class="benefit"><strong>Pago simulado</strong><span>Sin datos de tarjeta reales.</span></div>
+</section>
+
+<section class="brands">
+  <span class="muted">Marcas que encuentras en Dumbo</span>
+  <div class="brand-row">
+    {% for brand in ["Dumbo", "Campo", "Cocina", "Brisa", "Andino", "Casa", "Fresco", "Sol"] %}
+      <a class="brand-chip" href="/catalog?q={{ brand|urlencode }}">{{ brand }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="ofertas" class="section">
+  <div class="section-head">
+    <h2>Ofertas de la semana</h2>
+    <a href="/catalog?ofertas=1">Ver más</a>
+  </div>
+  <div class="product-row">
+    {% for product in offers %}{% include "partials/card.html" %}{% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Lo más vendido</h2>
+    <a href="/catalog">Ver todo</a>
+  </div>
+  <div class="product-grid">
+    {% for product in featured %}{% include "partials/card.html" %}{% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Nuevos ingresos</h2>
+    <a href="/catalog">Ver todo</a>
+  </div>
+  <div class="product-grid">
+    {% for product in newest %}{% include "partials/card.html" %}{% endfor %}
+  </div>
+</section>
+
+<section class="promo-band">
+  <div>
+    <span class="eyebrow light">Despacho gratis</span>
+    <h2>En compras sobre $30.000</h2>
+    <p>Válido en comunas seleccionadas. Elige despacho al confirmar tu pedido.</p>
+  </div>
+  <a class="button light-button big" href="/catalog">Comprar ahora</a>
+</section>
+
+{% for showcase in showcases %}
+<section class="section">
+  <div class="section-head">
+    <h2>{{ showcase.title }}</h2>
+    <a href="/catalog?category={{ showcase.category|urlencode }}">Ver todo</a>
+  </div>
+  <div class="product-grid">
+    {% for product in showcase.products %}{% include "partials/card.html" %}{% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<section class="catalog-cta">
+  <div>
+    <h2>Todo el catálogo</h2>
+    <p>{{ total }} productos en 20 categorías, con filtros y búsqueda.</p>
+  </div>
+  <a class="button primary big" href="/catalog">Ver catálogo completo</a>
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Marketing · Dumbo{% endblock %}
+{% block content %}
+<h1>Comunicaciones promocionales</h1>
+{% if active %}
+  <p>Estado: <strong>activo</strong> desde {{ active["granted_at"] }} (política {{ active["policy_version"] }}).</p>
+  <form method="post" action="/consent/marketing/withdraw">
+    <button type="submit" class="button">Darme de baja</button>
+  </form>
+{% else %}
+  <p>Estado: <strong>inactivo</strong>. No enviamos comunicaciones promocionales sin tu consentimiento.</p>
+  <form method="post" action="/consent/marketing/grant">
+    <button type="submit" class="button primary">Quiero recibir promociones</button>
+  </form>
+{% endif %}
+<p class="muted">La baja se aplica de inmediato y no afecta la licitud del tratamiento previo.</p>
+{% endblock %}

@@ -1,0 +1,103 @@
+{
+  "task": "D09-consent-record",
+  "arm": "rules_skills_gate",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D09-consent-record-rules_skills_gate",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "timeout",
+    "error": null,
+    "exit_code": null,
+    "timed_out": true,
+    "cycle_time_s": 900.15,
+    "tool_calls_by_name": {},
+    "files_read": [],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": null,
+    "cost": 0.0,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "timeout",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 900.15,
+      "latency_ms": 900150,
+      "rounds": 0,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null,
+      "cost_usd": 0.0
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "D09-consent-record",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.24s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "register",
+        "expect": [
+          "registrado"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "# Processing register (RoPA draft) — C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D09-consent-record-rules_skills_gate\n\n**1 processing activities** derived from the code. Purpose and legal basis cannot be read from code: they are declared as pending gaps to be completed with documentary evidence.\n\n| Activity | Data | Retention | Recipients | Consent | Pending gaps |\n| --- | --- | --- | --- | --- | --- |\n| customers | `rut` (IDENTIFIER_RUT), `email` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT), `birth_date` (CHILDREN_DATA), `address_id` (PERSONAL_CONTACT) | declarada | — | registrado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental)<br>age gate no declarado para datos de edad/menores |\n\nStatic code-derived draft: not a legal register, not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D09-consent-record-rules_skills_gate\\.harness\\evidence.db\n"
+      }
+    ],
+    "passed": true
+  }
+}

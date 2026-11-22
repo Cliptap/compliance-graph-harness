@@ -1,0 +1,101 @@
+{
+  "task": "T10-analytics",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T10-analytics-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "error",
+    "error": null,
+    "cycle_time_s": 5.56,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-28f88317-7dc3-4f51-a3cb-e8bc90a5e09d",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1758,
+        "wall_s": 1.77,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T10-analytics",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n_____________________ test_analytics_has_no_personal_data _____________________\n\nclient = <starlette.testclient.TestClient object at 0x000002472288CAD0>\n\n    def test_analytics_has_no_personal_data(client):\n        register(client)\n        response = client.get(\"/admin/analytics\", headers={\"X-Admin-Token\": \"test-admin\"})\n>       assert response.status_code == 200\nE       assert 404 == 200\nE        +  where 404 = <Response [404 Not Found]>.status_code\n\nhidden\\test_t10_analytics.py:7: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden\\test_t10_analytics.py::test_analytics_has_no_personal_data - as...\n1 failed in 0.38s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.third-party"
+    ],
+    "expected_control": "CORE-CHECK-010"
+  },
+  "summary": {
+    "status": "error",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 5.56,
+      "latency_ms": 1758,
+      "rounds": 1,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-28f88317-7dc3-4f51-a3cb-e8bc90a5e09d",
+        "status": "error",
+        "timed_out": false,
+        "duration_ms": 1758,
+        "wall_s": 1.77,
+        "usage": null,
+        "error_code": null,
+        "error_message": "Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
+      }
+    ],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  }
+}

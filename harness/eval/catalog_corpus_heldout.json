@@ -1,0 +1,223 @@
+{
+  "version": 1,
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection.",
+  "cases": [
+    {
+      "id": "log_attr_phone",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/notifications.py",
+      "code": "def notify(customer):\n    logger.warning(\"sms to %s failed\", customer.phone)\n"
+    },
+    {
+      "id": "log_order_id",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/notifications.py",
+      "code": "def notify(order_id):\n    logger.warning(\"delivery failed for order %s\", order_id)\n"
+    },
+    {
+      "id": "log_fstring_email",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/notifications.py",
+      "code": "def notify(customer):\n    logger.info(f\"contact {customer.email} updated\")\n"
+    },
+    {
+      "id": "admin_fastapi_email",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/api/admin.py",
+      "code": "@app.get(\"/admin/customer/{customer_id}\")\ndef admin_customer(customer_id):\n    customer = get_customer(customer_id)\n    return {\"email\": customer.email}\n"
+    },
+    {
+      "id": "admin_fastapi_masked",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/admin.py",
+      "code": "@app.get(\"/admin/customer/{customer_id}\")\ndef admin_customer(customer_id):\n    customer = get_customer(customer_id)\n    return {\"email\": mask_email(customer.email)}\n"
+    },
+    {
+      "id": "account_self_email",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/account.py",
+      "code": "@app.get(\"/account\")\ndef my_account(customer):\n    return {\"email\": customer.email}\n"
+    },
+    {
+      "id": "credential_password_hash",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/account.py",
+      "code": "@app.get(\"/account\")\ndef account(customer):\n    return {\"password_hash\": customer.password_hash}\n"
+    },
+    {
+      "id": "credential_projection",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/account.py",
+      "code": "@app.get(\"/account\")\ndef account(customer):\n    return {\"email\": customer.email, \"full_name\": customer.full_name}\n"
+    },
+    {
+      "id": "hard_delete_psycopg",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/retention.py",
+      "code": "def purge_customer(customer_id):\n    cursor.execute(\"DELETE FROM customers WHERE id = %s\", (customer_id,))\n"
+    },
+    {
+      "id": "soft_delete",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/retention.py",
+      "code": "def close_account(customer_id):\n    cursor.execute(\"UPDATE customers SET deleted_at = NOW() WHERE id = %s\", (customer_id,))\n"
+    },
+    {
+      "id": "billing_delete_two_years",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing.py",
+      "code": "def purge_invoices():\n    cutoff = datetime.utcnow() - timedelta(days=730)\n    session.execute(\"DELETE FROM invoices WHERE issued_at < :cutoff\", {\"cutoff\": cutoff})\n"
+    },
+    {
+      "id": "billing_delete_six_years",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/billing.py",
+      "code": "def purge_invoices():\n    cutoff = datetime.utcnow() - timedelta(days=2190)\n    session.execute(\"DELETE FROM invoices WHERE issued_at < :cutoff\", {\"cutoff\": cutoff})\n"
+    },
+    {
+      "id": "reset_token_json",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/api/password.py",
+      "code": "@app.post(\"/password/reset\")\ndef request_reset(email):\n    token = secrets.token_hex(16)\n    send_email(email, token)\n    return {\"reset_token\": token}\n"
+    },
+    {
+      "id": "reset_generic_message",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/api/password.py",
+      "code": "@app.post(\"/password/reset\")\ndef request_reset(email):\n    token = secrets.token_hex(16)\n    send_email(email, token)\n    return {\"message\": \"If the account exists, an email was sent.\"}\n"
+    },
+    {
+      "id": "api_key_literal",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/config.py",
+      "code": "@app.get(\"/config\")\ndef config():\n    return {\"api_key\": \"sk_live_51Habc12345\"}\n"
+    },
+    {
+      "id": "api_key_flag",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/config.py",
+      "code": "@app.get(\"/config\")\ndef config():\n    return {\"api_key_configured\": bool(settings.PAYMENTS_KEY)}\n"
+    },
+    {
+      "id": "log_pii_02",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/accounts/audit.py",
+      "code": "class AccountService:\n    def audit(self, account):\n        log.info(\"account=%s rut=%s\", account[\"id\"], account[\"rut\"])\n"
+    },
+    {
+      "id": "admin_exposure_02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/views.py",
+      "code": "class AdminCustomerView:\n    def get(self, customer_id, repo):\n        customer = repo.get(customer_id)\n        return {\n            \"id\": customer.id,\n            \"full_name\": customer.name,\n            \"phone\": customer.phone,\n        }\n"
+    },
+    {
+      "id": "admin_exposure_04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/summary.py",
+      "code": "def admin_customer_summary(customer):\n    local, _, domain = customer.email.partition(\"@\")\n    return {\n        \"id\": customer.id,\n        \"email_masked\": f\"{local[:2]}***@{domain}\",\n    }\n"
+    },
+    {
+      "id": "credential_response_03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/signing/export.py",
+      "code": "def export_signing_key(key_id, vault):\n    key = vault.load(key_id)\n    return {\"key_id\": key_id, \"private_key\": key.private_pem}\n"
+    },
+    {
+      "id": "credential_response_04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/users/summary.py",
+      "code": "def user_summary(user):\n    return {\n        \"id\": user.id,\n        \"display_name\": user.display_name,\n        \"has_password\": bool(user.password_hash),\n    }\n"
+    },
+    {
+      "id": "customer_hard_delete_02",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/customers/cleanup.py",
+      "code": "def cleanup_inactive(repo, as_of):\n    cutoff = as_of - timedelta(days=365)\n    stale = repo.find_inactive_since(cutoff)\n    for customer in stale:\n        repo.delete(customer)\n"
+    },
+    {
+      "id": "customer_hard_delete_03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/customers/admin.py",
+      "code": "class CustomerAdmin:\n    def remove(self, customer_id, session):\n        session.execute(delete(Customer).where(Customer.id == customer_id))\n"
+    },
+    {
+      "id": "billing_retention_02",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/orders/janitor.py",
+      "code": "def cleanup_orders(session, now):\n    cutoff = now - timedelta(days=548)\n    session.execute(delete(Order).where(Order.created_at < cutoff))\n"
+    },
+    {
+      "id": "billing_retention_03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/janitor.py",
+      "code": "class BillingJanitor:\n    RETENTION_DAYS = 900\n\n    def run(self, session, today):\n        cutoff = today - timedelta(days=self.RETENTION_DAYS)\n        session.query(Invoice).filter(Invoice.created_at < cutoff).delete()\n"
+    },
+    {
+      "id": "api_key_03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/auth/headers.py",
+      "code": "def authenticate(client, request, logger):\n    logger.debug(\"auth header=%s\", request.headers.get(\"Authorization\"))\n"
+    },
+    {
+      "id": "cred_vars_dump",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/accounts.py",
+      "code": "async def get_account(user_id, repo):\n    user = await repo.fetch(user_id)\n    data = vars(user)\n    data.pop(\"_sa_instance_state\", None)\n    return data\n"
+    },
+    {
+      "id": "billing_prune_180",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/jobs/order_pruning.py",
+      "code": "from datetime import datetime, timedelta\n\n\ndef prune_orders(session, retention_days=180):\n    cutoff = datetime.utcnow() - timedelta(days=retention_days)\n    session.query(Order).filter(Order.created_at < cutoff).delete()\n    session.commit()\n"
+    },
+    {
+      "id": "billing_delete_2190",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/repositories/billing_retention.py",
+      "code": "class BillingRetention:\n    def __init__(self, session):\n        self.session = session\n\n    def purge_expired(self):\n        self.session.execute(\n            \"DELETE FROM invoices WHERE issued_at < now() - interval '2190 days'\"\n        )\n        self.session.commit()\n"
+    },
+    {
+      "id": "reset_token_log",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/auth/reset_tokens.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef issue_token(user, tokens):\n    token = tokens.create(user.id)\n    logger.info(\"password reset token issued: %s\", token)\n    return token\n"
+    },
+    {
+      "id": "apikey_plaintext_reveal",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/key_reveal.py",
+      "code": "def reveal_key(key_id, repo):\n    record = repo.get(key_id)\n    return {\"key_id\": record.id, \"value\": record.plaintext_secret}\n"
+    }
+  ]
+}

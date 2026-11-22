@@ -1,0 +1,158 @@
+{
+  "task": "T08-birthday",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\experiments\\tasks\\workspaces\\T08-birthday-harness_compliance",
+  "model": "composer-2.5",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "cycle_time_s": 49.88,
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-78bcafaa-09dd-446c-8169-198379cc6e34",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 45749,
+        "wall_s": 45.77,
+        "usage": {
+          "input_tokens": 395398,
+          "output_tokens": 6077,
+          "cache_read_tokens": 359904,
+          "cache_write_tokens": 0,
+          "total_tokens": 761379,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ]
+  },
+  "hidden_and_oracle": {
+    "task": "T08-birthday",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.26s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-012"
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 49.88,
+      "latency_ms": 45749,
+      "rounds": 1,
+      "tool_calls": 30,
+      "turns": 1,
+      "usage_reported": true,
+      "tokens": {
+        "cache_read_tokens": 359904,
+        "cache_write_tokens": 0,
+        "input_tokens": 395398,
+        "output_tokens": 6077,
+        "reasoning_tokens": 0,
+        "total_tokens": 761379
+      }
+    },
+    "quality": {
+      "tests": {
+        "passed": 29,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 5,
+      "lines_added": 124,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "schema.sql",
+        "app/main.py",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        ".cursor/skills/compliance-dev/SKILL.md",
+        "app/db.py",
+        ".harness/packs/cl-ley-21719.json",
+        "app/retention.py"
+      ],
+      "files_read_count": 9,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.3333333333333333
+    },
+    "review": {
+      "required_corrections": 0,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "task",
+        "run_id": "run-78bcafaa-09dd-446c-8169-198379cc6e34",
+        "status": "finished",
+        "timed_out": false,
+        "duration_ms": 45749,
+        "wall_s": 45.77,
+        "usage": {
+          "input_tokens": 395398,
+          "output_tokens": 6077,
+          "cache_read_tokens": 359904,
+          "cache_write_tokens": 0,
+          "total_tokens": 761379,
+          "reasoning_tokens": null
+        },
+        "error_code": null,
+        "error_message": null
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 2,
+      "grep": 6,
+      "read": 10,
+      "edit": 9,
+      "shell": 2,
+      "mcp": 1
+    },
+    "changed_files": {
+      "app/db.py": [
+        5,
+        0
+      ],
+      "app/main.py": [
+        70,
+        1
+      ],
+      "app/retention.py": [
+        1,
+        0
+      ],
+      "schema.sql": [
+        2,
+        0
+      ],
+      "tests/test_app.py": [
+        46,
+        0
+      ]
+    }
+  }
+}
