@@ -1,11 +1,11 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 110,
-  "passed": 110,
+  "cases": 114,
+  "passed": 114,
   "controls": {
     "v2.admin_exposure": {
-      "tp": 10,
+      "tp": 11,
       "fp": 0,
       "fn": 0,
       "tn": 7,
@@ -13,16 +13,16 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.722,
+        0.741,
         1.0
       ],
       "recall_ci": [
-        0.722,
+        0.741,
         1.0
       ]
     },
     "v2.api_key": {
-      "tp": 9,
+      "tp": 10,
       "fp": 0,
       "fn": 0,
       "tn": 6,
@@ -30,11 +30,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.701,
+        0.722,
         1.0
       ],
       "recall_ci": [
-        0.701,
+        0.722,
         1.0
       ]
     },
@@ -90,7 +90,7 @@
       ]
     },
     "v2.log_pii": {
-      "tp": 8,
+      "tp": 9,
       "fp": 0,
       "fn": 0,
       "tn": 8,
@@ -98,16 +98,16 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.676,
+        0.701,
         1.0
       ],
       "recall_ci": [
-        0.676,
+        0.701,
         1.0
       ]
     },
     "v2.reset_token": {
-      "tp": 9,
+      "tp": 10,
       "fp": 0,
       "fn": 0,
       "tn": 5,
@@ -115,11 +115,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.701,
+        0.722,
         1.0
       ],
       "recall_ci": [
-        0.701,
+        0.722,
         1.0
       ]
     }
@@ -178,7 +178,10 @@
       "control": "v2.credential_response",
       "expected": "violation",
       "detected": true,
-      "other_findings": [],
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
       "passed": true
     },
     {
@@ -227,6 +230,7 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.api_key",
         "v2.credential_response"
       ],
       "passed": true
@@ -245,7 +249,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.credential_response"
+        "v2.credential_response",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -286,7 +291,10 @@
       "control": "v2.credential_response",
       "expected": "violation",
       "detected": true,
-      "other_findings": [],
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
       "passed": true
     },
     {
@@ -367,6 +375,7 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.api_key",
         "v2.log_pii"
       ],
       "passed": true
@@ -377,7 +386,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.credential_response"
+        "v2.credential_response",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -466,7 +476,10 @@
       "control": "v2.credential_response",
       "expected": "violation",
       "detected": true,
-      "other_findings": [],
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
       "passed": true
     },
     {
@@ -482,7 +495,10 @@
       "control": "v2.credential_response",
       "expected": "violation",
       "detected": true,
-      "other_findings": [],
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
       "passed": true
     },
     {
@@ -595,6 +611,7 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.api_key",
         "v2.credential_response"
       ],
       "passed": true
@@ -604,7 +621,9 @@
       "control": "v2.reset_token",
       "expected": "violation",
       "detected": true,
-      "other_findings": [],
+      "other_findings": [
+        "v2.api_key"
+      ],
       "passed": true
     },
     {
@@ -613,6 +632,7 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.api_key",
         "v2.log_pii"
       ],
       "passed": true
@@ -623,6 +643,7 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.api_key",
         "v2.log_pii"
       ],
       "passed": true
@@ -649,7 +670,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.credential_response"
+        "v2.credential_response",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -659,7 +681,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.log_pii"
+        "v2.log_pii",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -669,7 +692,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.log_pii"
+        "v2.log_pii",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -782,7 +806,10 @@
       "control": "v2.credential_response",
       "expected": "violation",
       "detected": true,
-      "other_findings": [],
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
       "passed": true
     },
     {
@@ -791,7 +818,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.api_key"
+        "v2.api_key",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -897,7 +925,9 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.credential_response"
+        "v2.api_key",
+        "v2.credential_response",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -907,6 +937,7 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.api_key",
         "v2.credential_response"
       ],
       "passed": true
@@ -916,7 +947,9 @@
       "control": "v2.reset_token",
       "expected": "violation",
       "detected": true,
-      "other_findings": [],
+      "other_findings": [
+        "v2.api_key"
+      ],
       "passed": true
     },
     {
@@ -925,6 +958,7 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.api_key",
         "v2.log_pii"
       ],
       "passed": true
@@ -951,7 +985,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.credential_response"
+        "v2.credential_response",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -961,7 +996,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.credential_response"
+        "v2.credential_response",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -987,7 +1023,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.log_pii"
+        "v2.log_pii",
+        "v2.reset_token"
       ],
       "passed": true
     },
@@ -1039,6 +1076,42 @@
       "expected": "clean",
       "detected": false,
       "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r5-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r5-adm-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r5-rst-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r5-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.reset_token"
+      ],
       "passed": true
     }
   ]

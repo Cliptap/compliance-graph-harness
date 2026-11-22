@@ -77,6 +77,62 @@ def _is_log_sink(name: str) -> bool:
     return any(name.startswith(pattern) or pattern in name for pattern in LOG_PATTERNS)
 
 
+MASK_NAME_HINTS = ("mask", "redact", "anonym", "obfuscat", "sanitiz", "hash", "fingerprint")
+
+
+def _field_category(catalog: Catalog, field: str) -> str | None:
+    """Exact synonym first, then a guarded fuzzy match (``phone_number`` -> phone)."""
+    lowered = field.lower()
+    for category in catalog.data_categories:
+        if lowered in catalog.synonyms(category):
+            return category
+    if lowered.startswith(DERIVED_IDENTIFIER_PREFIXES) or lowered.endswith(METADATA_FIELD_SUFFIXES):
+        return None
+    for category in catalog.data_categories:
+        for synonym in catalog.synonyms(category):
+            if len(synonym) > 3 and synonym in lowered:
+                return category
+    return None
+
+
+def _is_masking_name(name: str) -> bool:
+    lowered = name.lower()
+    return any(hint in lowered for hint in MASK_NAME_HINTS)
+
+
+def _value_is_masked(catalog: Catalog, value: ast.AST) -> bool:
+    """A per-field mask or a derived flag does not expose the underlying value."""
+    if isinstance(value, ast.JoinedStr):
+        return any(isinstance(part, ast.Constant) and isinstance(part.value, str)
+                   and "*" in part.value for part in value.values)
+    if isinstance(value, ast.Call):
+        leaf = _call_name(value).rsplit(".", 1)[-1]
+        if leaf in {"bool", "len", "any", "all"} or _is_masking_name(leaf):
+            return True
+        return catalog.is_sanitizer(ast.unparse(value))
+    if isinstance(value, ast.Subscript):
+        return not (isinstance(value.slice, ast.Constant) and isinstance(value.slice.value, str))
+    if isinstance(value, ast.Compare):
+        return True
+    if isinstance(value, ast.UnaryOp) and isinstance(value.op, ast.Not):
+        return True
+    return False
+
+
+def _has_credential_call(catalog: Catalog, node: ast.AST) -> bool:
+    """A call that issues or retrieves a credential: ``tokens.create``, ``config.load_secret``."""
+    for child in ast.walk(node):
+        if not isinstance(child, ast.Call):
+            continue
+        if _field_category(catalog, _call_name(child).rsplit(".", 1)[-1]) == "CREDENTIAL":
+            return True
+        if isinstance(child.func, ast.Attribute) and isinstance(child.func.value, ast.Name):
+            receiver = child.func.value.id
+            if _field_category(catalog, receiver) == "CREDENTIAL":
+                return True
+    return False
+
+
 def _enclosing_classes(tree: ast.AST) -> dict[int, str]:
     """Map each method node to the class that declares it, for context heuristics."""
     mapping: dict[int, str] = {}
@@ -122,22 +178,38 @@ def _finding(control: Control, path: str, line: int, message: str, evidence: str
     )
 
 
-def _skip_nodes(node: ast.AST) -> set[int]:
-    """Names whose table taint must not be applied blindly.
+VALUE_ACCESSORS = {"value", "raw"}
 
-    A subscript or attribute projects one field, and a comprehension target or
-    iterable is not the value that reaches the sink. The whole-row cases
-    (``dict(row)``) keep the table taint.
-    """
+
+def _skip_nodes(node: ast.AST) -> set[int]:
+    """Comprehension targets and iterables are not the value that reaches the sink."""
     skip: set[int] = set()
     for child in ast.walk(node):
-        if isinstance(child, (ast.Subscript, ast.Attribute)):
-            skip.add(id(child.value))
         if isinstance(child, ast.comprehension):
             skip.add(id(child.iter))
             if isinstance(child.target, ast.Name):
                 skip.add(id(child.target))
     return skip
+
+
+def _projection_tokens(node: ast.AST) -> dict[int, str]:
+    """Map a projected base node to the field it exposes (``row.email`` -> ``email``)."""
+    tokens: dict[int, str] = {}
+    for child in ast.walk(node):
+        if isinstance(child, ast.Attribute):
+            tokens[id(child.value)] = child.attr
+        elif isinstance(child, ast.Subscript):
+            token = _identifier(child)
+            if token is not None:
+                tokens[id(child.value)] = token
+    return tokens
+
+
+def _projects_value(catalog: Catalog, token: str | None) -> bool:
+    """A whole-object base only carries its taint into ``.value`` or a field it names."""
+    if token is None:
+        return True
+    return token in VALUE_ACCESSORS or _field_category(catalog, token) is not None
 
 
 def _leaf_functions(tree: ast.AST):
@@ -159,12 +231,58 @@ def _identifier(node: ast.AST) -> str | None:
     return None
 
 
+def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
+                     env: dict[str, set[str]] | None = None,
+                     summaries: dict[str, set[str]] | None = None) -> set[str]:
+    """Categories that reach a sink, following local variables and helper summaries."""
+    found: set[str] = set()
+    comprehension_skip = _skip_nodes(node)
+    projection = _projection_tokens(node)
+    blocked: set[int] = set()
+    for child in ast.walk(node):
+        if id(child) in blocked or id(child) in comprehension_skip:
+            continue
+        if id(child) in projection and not (
+                isinstance(child, ast.Name) and env and child.id in env
+                and _projects_value(catalog, projection[id(child)])):
+            continue
+        if isinstance(child, ast.Name) and env and child.id in env:
+            found |= env[child.id] & allowed
+        elif isinstance(child, ast.Call) and summaries:
+            leaf = _call_name(child).rsplit(".", 1)[-1]
+            if not _is_masking_name(leaf):
+                found |= summaries.get(leaf, set()) & allowed
+        elif isinstance(child, ast.Dict):
+            for key, value in zip(child.keys, child.values):
+                if _value_is_masked(catalog, value):
+                    for nested in ast.walk(value):
+                        blocked.add(id(nested))
+                    blocked.add(id(key))
+                    continue
+                if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                    category = _field_category(catalog, key.value)
+                    if category in allowed:
+                        found.add(category)
+        elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
+            token = _identifier(child)
+            category = _field_category(catalog, token) if token else None
+            if category in allowed:
+                found.add(category)
+        elif isinstance(child, ast.Constant) and isinstance(child.value, str):
+            for category in allowed:
+                if _constant_matches(child.value, catalog.synonyms(category)):
+                    found.add(category)
+    return found
+
+
 class _TaintTracker(ast.NodeVisitor):
     """Propagate sensitive categories through simple assignments and SQL reads."""
 
-    def __init__(self, catalog: Catalog, categories: set[str]):
+    def __init__(self, catalog: Catalog, categories: set[str],
+                 summaries: dict[str, set[str]] | None = None):
         self.catalog = catalog
         self.categories = set(categories)
+        self.summaries = summaries or {}
         self.env: dict[str, set[str]] = {}
 
     def scan(self, node: ast.AST) -> dict[str, set[str]]:
@@ -172,15 +290,46 @@ class _TaintTracker(ast.NodeVisitor):
         return self.env
 
     def visit_Assign(self, node: ast.Assign) -> None:
-        categories = self._categories(node.value)
+        categories = self._categories(node.value) | self._source_categories(node.targets, node.value)
         for target in node.targets:
             self._taint(target, categories)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         if node.value is not None:
-            self._taint(node.target, self._categories(node.value))
+            categories = self._categories(node.value) | self._source_categories([node.target], node.value)
+            self._taint(node.target, categories)
         self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        """``rows.append(value)`` carries the value's categories into the container."""
+        func = node.func
+        if isinstance(func, ast.Attribute) and func.attr in {"append", "extend", "update"} \
+                and isinstance(func.value, ast.Name):
+            categories: set[str] = set()
+            for arg in list(node.args) + [kw.value for kw in node.keywords]:
+                categories |= self._categories(arg)
+            if categories:
+                self.env[func.value.id] = self.env.get(func.value.id, set()) | categories
+        self.generic_visit(node)
+
+    def _source_categories(self, targets: list[ast.AST], value: ast.AST) -> set[str]:
+        """A variable that holds a credential stays tainted downstream.
+
+        ``tokens.create(...)``, ``secrets.get_active(...)`` and ``load_secret(...)``
+        are sources; a derived name (``token_ttl``) is not.
+        """
+        if "CREDENTIAL" not in self.categories:
+            return set()
+        names = [target.id for target in targets if isinstance(target, ast.Name)]
+        for name in names:
+            if name.startswith(DERIVED_IDENTIFIER_PREFIXES) or name.endswith(METADATA_FIELD_SUFFIXES):
+                continue
+            if _field_category(self.catalog, name) == "CREDENTIAL":
+                return {"CREDENTIAL"}
+        if names and _has_credential_call(self.catalog, value):
+            return {"CREDENTIAL"}
+        return set()
 
     def visit_ListComp(self, node: ast.ListComp) -> None:
         self._taint_comprehension(node.generators)
@@ -215,14 +364,15 @@ class _TaintTracker(ast.NodeVisitor):
         found: set[str] = set()
         sanitized: set[int] = set()
         for child in ast.walk(node):
-            if isinstance(child, ast.Call) and (
-                    self.catalog.is_sanitizer(ast.unparse(child))
-                    or _call_name(child).rsplit(".", 1)[-1] in {"sum", "len", "count", "bool",
-                                                                 "any", "all"}):
-                for nested in ast.walk(child):
-                    sanitized.add(id(nested))
-        skip = _skip_nodes(node)
+            if isinstance(child, ast.Call):
+                leaf = _call_name(child).rsplit(".", 1)[-1]
+                if (self.catalog.is_sanitizer(ast.unparse(child)) or _is_masking_name(leaf)
+                        or leaf in {"sum", "len", "count", "bool", "any", "all"}):
+                    for nested in ast.walk(child):
+                        sanitized.add(id(nested))
         dict_keys: set[int] = set()
+        skip = _skip_nodes(node)
+        projection = _projection_tokens(node)
         for child in ast.walk(node):
             if id(child) in sanitized:
                 continue
@@ -230,11 +380,17 @@ class _TaintTracker(ast.NodeVisitor):
                 for key, value in zip(child.keys, child.values):
                     if isinstance(key, ast.Constant) and isinstance(key.value, str):
                         dict_keys.add(id(key))
-                        category = self.catalog.category_for(key.value)
+                        category = _field_category(self.catalog, key.value)
                         if category in self.categories and not self.catalog.is_sanitizer(ast.unparse(value)):
                             found.add(category)
             elif isinstance(child, ast.Name) and child.id in self.env and id(child) not in skip:
+                if id(child) in projection and not _projects_value(
+                        self.catalog, projection[id(child)]):
+                    continue
                 found |= self.env[child.id]
+            elif isinstance(child, ast.Call):
+                leaf = _call_name(child).rsplit(".", 1)[-1]
+                found |= self.summaries.get(leaf, set())
             elif isinstance(child, ast.Constant) and isinstance(child.value, str) and id(child) not in dict_keys:
                 for table in TABLE_RE.findall(child.value.lower()):
                     found |= set(self.catalog.tables.get(table, ()))
@@ -244,10 +400,45 @@ class _TaintTracker(ast.NodeVisitor):
             elif isinstance(child, (ast.Attribute, ast.Subscript)):
                 token = _identifier(child)
                 if token:
-                    category = self.catalog.category_for(token)
+                    category = _field_category(self.catalog, token)
                     if category:
                         found.add(category)
         return found & self.categories
+
+
+def _function_summaries(tree: ast.AST, catalog: Catalog,
+                        categories: set[str]) -> dict[str, set[str]]:
+    """Return-value summaries for local helpers, computed to a fixpoint.
+
+    Pattern matching sees the sink in the caller but the sensitive value is built
+    inside the helper. A summary says which categories a function's return value
+    can carry, following other local helpers and variables.
+    """
+    functions = {node.name: node for node in ast.walk(tree)
+                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    if not functions:
+        return {}
+    summaries: dict[str, set[str]] = {}
+    for _ in range(len(functions) + 1):
+        changed = False
+        for name, func in functions.items():
+            found: set[str] = set()
+            if not _is_masking_name(name):
+                env = _TaintTracker(catalog, categories, summaries).scan(func)
+                for node in ast.walk(func):
+                    if isinstance(node, ast.Return) and node.value is not None \
+                            and not _value_is_masked(catalog, node.value):
+                        if isinstance(node.value, ast.Call) and _call_name(node.value) in (
+                                set(RESPONSE_PATTERNS) | set(REDIRECT_PATTERNS) | set(CSV_SINKS)):
+                            continue
+                        found |= _sink_categories(catalog, node.value, categories, env, summaries)
+            found &= categories
+            if found != summaries.get(name, set()):
+                summaries[name] = found
+                changed = True
+        if not changed:
+            break
+    return {name: values for name, values in summaries.items() if values}
 
 
 class PolicyFamily:
@@ -256,6 +447,17 @@ class PolicyFamily:
 
     def evaluate(self, control: Control, task: TaskSpec, files: dict[str, str]) -> list[Finding]:
         raise NotImplementedError
+
+    @staticmethod
+    def _dedupe(findings: list[Finding]) -> list[Finding]:
+        seen = set()
+        out = []
+        for finding in findings:
+            key = (finding.policy_id, finding.file, finding.line, finding.message)
+            if key not in seen:
+                seen.add(key)
+                out.append(finding)
+        return out
 
 
 class SinkExposureFamily(PolicyFamily):
@@ -272,24 +474,25 @@ class SinkExposureFamily(PolicyFamily):
                 tree = ast.parse(content)
             except SyntaxError:
                 continue
+            summaries = _function_summaries(tree, self.catalog, categories)
             if "log" in sinks:
-                findings.extend(self._scan_logs(control, path, tree, categories))
+                findings.extend(self._scan_logs(control, path, tree, categories, summaries))
             if "response" in sinks:
-                findings.extend(self._scan_responses(control, path, tree, categories))
+                findings.extend(self._scan_responses(control, path, tree, categories, summaries))
                 findings.extend(self._scan_serializers(control, path, tree, categories))
                 findings.extend(self._scan_graphql_types(control, path, tree, categories))
                 if control.detection.context.get("route") == "admin":
                     findings.extend(self._scan_admin_classes(control, path, tree, categories))
             if "redirect" in sinks:
-                findings.extend(self._scan_redirects(control, path, tree, categories))
+                findings.extend(self._scan_redirects(control, path, tree, categories, summaries))
             if "csv" in sinks:
-                findings.extend(self._scan_csv(control, path, tree, categories))
+                findings.extend(self._scan_csv(control, path, tree, categories, summaries))
         return self._dedupe(findings)
 
-    def _scan_logs(self, control, path, tree, categories) -> list[Finding]:
+    def _scan_logs(self, control, path, tree, categories, summaries) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call):
                     continue
@@ -299,13 +502,13 @@ class SinkExposureFamily(PolicyFamily):
                 text = ast.unparse(node)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(node, categories, env)
+                matched = self._categories(node, categories, env, summaries)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"Log call exposes {sorted(matched)} without masking.", text))
         return out
 
-    def _scan_responses(self, control, path, tree, categories) -> list[Finding]:
+    def _scan_responses(self, control, path, tree, categories, summaries) -> list[Finding]:
         out = []
         admin_only = control.detection.context.get("route") == "admin"
         enclosing = _enclosing_classes(tree)
@@ -316,7 +519,7 @@ class SinkExposureFamily(PolicyFamily):
                     and "admin" not in class_name.lower()
                     and "admin" not in path.lower()):
                 continue
-            env = _TaintTracker(self.catalog, categories).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
             dumps = _dump_names(func)
             for node in ast.walk(func):
                 payload = None
@@ -340,24 +543,14 @@ class SinkExposureFamily(PolicyFamily):
                 text = ast.unparse(payload)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(payload, categories, env)
+                matched = self._categories(payload, categories, env, summaries)
                 if matched:
                     out.append(_finding(control, path, payload.lineno,
                                         f"Response exposes {sorted(matched)} without masking.", text))
         return out
 
     def _field_category(self, field: str) -> str | None:
-        lowered = field.lower()
-        for category in self.catalog.data_categories:
-            if lowered in self.catalog.synonyms(category):
-                return category
-        if lowered.startswith(DERIVED_IDENTIFIER_PREFIXES) or lowered.endswith(METADATA_FIELD_SUFFIXES):
-            return None
-        for category in self.catalog.data_categories:
-            for synonym in self.catalog.synonyms(category):
-                if len(synonym) > 3 and synonym in lowered:
-                    return category
-        return None
+        return _field_category(self.catalog, field)
 
     def _masked_serializer_fields(self, cls: ast.ClassDef) -> set[str]:
         masked: set[str] = set()
@@ -449,99 +642,49 @@ class SinkExposureFamily(PolicyFamily):
                     break
         return out
 
-    def _scan_redirects(self, control, path, tree, categories) -> list[Finding]:
+    def _scan_redirects(self, control, path, tree, categories, summaries) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in REDIRECT_PATTERNS:
                     continue
                 text = ast.unparse(node)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(node, categories, env)
+                matched = self._categories(node, categories, env, summaries)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"Redirect exposes {sorted(matched)}.", text))
         return out
 
-    def _scan_csv(self, control, path, tree, categories) -> list[Finding]:
+    def _scan_csv(self, control, path, tree, categories, summaries) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in CSV_SINKS:
                     continue
                 text = ast.unparse(node)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(node, categories, env)
+                matched = self._categories(node, categories, env, summaries)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"CSV row exposes {sorted(matched)} without masking.", text))
         return out
 
     def _value_is_masked(self, value: ast.AST) -> bool:
-        """A per-field mask or a derived flag does not expose the underlying value."""
-        if isinstance(value, ast.JoinedStr):
-            return any(isinstance(part, ast.Constant) and isinstance(part.value, str)
-                       and "*" in part.value for part in value.values)
-        if isinstance(value, ast.Call):
-            leaf = _call_name(value).rsplit(".", 1)[-1]
-            if leaf in {"bool", "len", "any", "all"}:
-                return True
-            return self.catalog.is_sanitizer(ast.unparse(value))
-        if isinstance(value, ast.Compare):
-            return True
-        if isinstance(value, ast.UnaryOp) and isinstance(value.op, ast.Not):
-            return True
-        return False
+        return _value_is_masked(self.catalog, value)
 
     def _categories(self, node: ast.AST, allowed: set[str],
-                    env: dict[str, set[str]] | None = None) -> set[str]:
-        found: set[str] = set()
-        skip = _skip_nodes(node)
-        for child in ast.walk(node):
-            if id(child) in skip:
-                continue
-            if isinstance(child, ast.Name) and env and child.id in env:
-                found |= env[child.id] & allowed
-            elif isinstance(child, ast.Dict):
-                for key, value in zip(child.keys, child.values):
-                    if self._value_is_masked(value):
-                        for nested in ast.walk(value):
-                            skip.add(id(nested))
-                        skip.add(id(key))
-                        continue
-                    if isinstance(key, ast.Constant) and isinstance(key.value, str):
-                        category = self._field_category(key.value)
-                        if category in allowed:
-                            found.add(category)
-            elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
-                token = _identifier(child)
-                category = self._field_category(token) if token else None
-                if category in allowed:
-                    found.add(category)
-            elif isinstance(child, ast.Constant) and isinstance(child.value, str):
-                for category in allowed:
-                    if _constant_matches(child.value, self.catalog.synonyms(category)):
-                        found.add(category)
-        return found
+                    env: dict[str, set[str]] | None = None,
+                    summaries: dict[str, set[str]] | None = None) -> set[str]:
+        return _sink_categories(self.catalog, node, allowed, env, summaries)
 
     @staticmethod
     def _decorators(func: ast.AST) -> str:
         return " ".join(ast.unparse(decorator) for decorator in getattr(func, "decorator_list", []))
-
-    @staticmethod
-    def _dedupe(findings: list[Finding]) -> list[Finding]:
-        seen = set()
-        out = []
-        for finding in findings:
-            key = (finding.policy_id, finding.file, finding.line, finding.message)
-            if key not in seen:
-                seen.add(key)
-                out.append(finding)
-        return out
 
 
 class RetentionDeletionFamily(PolicyFamily):
@@ -799,6 +942,7 @@ class CredentialExposureFamily(PolicyFamily):
         keys = tuple(params.get("keys", ()))
         value_pattern = params.get("value_pattern")
         sinks = set(control.detection.sinks)
+        categories = set(control.data_categories)
         out: list[Finding] = []
         for path, content in files.items():
             if not path.endswith(".py"):
@@ -808,20 +952,29 @@ class CredentialExposureFamily(PolicyFamily):
             except SyntaxError:
                 continue
             header_bindings = _secret_header_bindings(tree)
+            summaries = _function_summaries(tree, self.catalog, categories)
+            env_by_node: dict[int, dict[str, set[str]]] = {}
+            for func in _leaf_functions(tree):
+                env = _TaintTracker(self.catalog, categories, summaries).scan(func)
+                for child in ast.walk(func):
+                    env_by_node[id(child)] = env
             for node in ast.walk(tree):
                 if not self._is_sink(node, sinks):
                     continue
                 text = ast.unparse(node)
                 if self.catalog.is_sanitizer(text):
                     continue
-                if (self._matches(text, keys, value_pattern)
+                tainted = _sink_categories(self.catalog, node, categories,
+                                           env_by_node.get(id(node)), summaries)
+                if (tainted
+                        or self._matches(text, keys, value_pattern)
                         or self._logs_token(node, sinks, keys)
                         or self._logs_secret_name(node, sinks, keys)
                         or self._returns_secret_attribute(node, sinks, keys)
                         or self._logs_secret_header(node, header_bindings, keys)):
                     out.append(_finding(control, path, getattr(node, "lineno", 1),
                                         "A credential reaches a response, redirect or log.", text))
-        return out
+        return self._dedupe(out)
 
     @staticmethod
     def _logs_token(node: ast.AST, sinks: set[str], keys: tuple[str, ...]) -> bool:

@@ -48,4 +48,5 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   dependencies, GraphQL and Celery. The four gaps were fixed and are now regression cases.
 - Round 5: sealed, run once, 32/42, focused on indirect data flow. Six failures were fixed and
   promoted to the regression corpus (prose value context, admin path, dict keys, `dict(__dict__)`,
-  helper cutoffs); four remain interprocedural (helper return, formatted token/key variable).
+  helper cutoffs); the four interprocedural cases were later closed by helper summaries, append
+  taint and credential sources (42/42 regression). A round 6 is required for a post-fix number.

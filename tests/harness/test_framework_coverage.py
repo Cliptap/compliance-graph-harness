@@ -160,3 +160,74 @@ def test_direct_helper_cutoff_in_delete_is_clean():
             "def purge(session):\n"
             "    session.execute(delete(Customer).where(Customer.created_at < _cutoff()))\n")
     assert "v2.customer_hard_delete" not in ids(code)
+
+
+def test_helper_returned_log_line_is_pii():
+    code = ("import logging\n\nlogger = logging.getLogger(__name__)\n\n\n"
+            "def build_line(customer):\n"
+            "    return f'notify {customer.email} rut={customer.rut}'\n\n\n"
+            "def notify(customer):\n"
+            "    line = build_line(customer)\n"
+            "    logger.info(line)\n")
+    assert "v2.log_pii" in ids(code)
+
+
+def test_masked_helper_return_is_clean():
+    code = ("import logging\n\nlogger = logging.getLogger(__name__)\n\n\n"
+            "def mask_email(email):\n"
+            "    local, _, domain = email.partition('@')\n"
+            "    return f'{local[:1]}***@{domain}'\n\n\n"
+            "def log_receipt(order, customer):\n"
+            "    masked = mask_email(customer.email)\n"
+            "    logger.info('sent %s to %s', order.id, masked)\n")
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_admin_export_helper_column_is_flagged():
+    code = ("def _contact(customer):\n"
+            "    phone = customer.phone_e164\n"
+            "    return f'+{phone[:2]} {phone[2:]}'\n\n\n"
+            "def export_customers(repo):\n"
+            "    payload = []\n"
+            "    for customer in repo.all_active():\n"
+            "        payload.append({'customer_id': customer.id, 'contact': _contact(customer)})\n"
+            "    return {'rows': payload}\n")
+    assert "v2.admin_exposure" in ids(code, "app/admin/export.py")
+
+
+def test_reset_token_in_redirect_is_flagged():
+    code = ("from fastapi import APIRouter\n"
+            "from fastapi.responses import RedirectResponse\n\n"
+            "router = APIRouter()\n\n\n"
+            "@router.get('/reset')\n"
+            "def reset_link(user, tokens):\n"
+            "    token = tokens.create(user.id, ttl_minutes=30)\n"
+            "    url = f'https://app.example.com/reset?token={token}'\n"
+            "    return RedirectResponse(url, status_code=303)\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_api_key_in_redirect_is_flagged():
+    code = ("from fastapi import APIRouter\n"
+            "from fastapi.responses import RedirectResponse\n\n"
+            "router = APIRouter()\n\n\n"
+            "@router.get('/connect')\n"
+            "def connect(account, secrets):\n"
+            "    key = secrets.get_active(account.id)\n"
+            "    target = 'https://dashboard.example.com/connect?key=%s' % key.value\n"
+            "    return RedirectResponse(target, status_code=302)\n")
+    assert "v2.api_key" in ids(code)
+
+
+def test_masked_key_suffix_is_clean():
+    code = ("def describe(record):\n"
+            "    return {'api_key_suffix': record.api_key[-4:],\n"
+            "            'created_at': record.created_at}\n")
+    assert "v2.api_key" not in ids(code)
+
+
+def test_session_model_is_not_a_credential_source():
+    code = ("def summary(self, account_id):\n"
+            "    account = self.session.get(Account, account_id)\n"
+            "    return {'id': account.id, 'email_verified': account.email_verified}\n")
+    assert "v2.credential_response" not in ids(code)

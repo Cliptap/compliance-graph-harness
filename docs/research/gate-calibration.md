@@ -336,6 +336,27 @@ remaining failures are interprocedural: helper return (`r5-log-01`), helper phon
 formatted token/key variable (`r5-rst-02`, `r5-key-03`). The 32/42 is the pre-fix measurement; a
 round 6 is required for the post-fix number.
 
+## Interprocedural taint (after round 5)
+
+The four remaining failures are fixed. The detector now builds a return-value summary for every
+local helper, to a fixpoint, and a credential source model:
+
+| Gap | Model |
+|---|---|
+| Helper return | `_function_summaries` runs each function's returns through the taint tracker and records the categories the return can carry; a call to that helper taints its target |
+| Append-built payload | `payload.append(value)` and `extend`/`update` taint the container with the value's categories |
+| Formatted intermediate | `env` already propagates through f-strings and `%`; the missing piece was the credential source |
+| Credential source | a call taints its target when the target name, the callee name or a collection receiver (`secrets.get_active`) matches the credential synonyms |
+| Truncation | a slice/index subscript (`api_key[-4:]`) counts as a mask, like `*` f-strings and `bool`/`len`/`count` calls |
+
+Scope is intra-file: summaries are keyed by function name, parameters are not mapped, and imports
+are not followed. That is deliberate: the measured failures were all same-file helpers and
+source-returning calls, and a full interprocedural graph was not required to close them.
+
+Result: **42/42** on the sealed round-5 set, with the four cases promoted to the regression corpus.
+Regression state: curated 22/22, regression corpus **114/114**, full suite **443 passed**. The
+32/42 remains the measurement before the taint work; a round 6 is required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -361,7 +382,12 @@ round 6 is required for the post-fix number.
   not followed. The prose matches ("invoice email", "with_email=%d") add false positives. This is a
   design fork: extend interprocedural taint or document the ceiling.
 - The cheap round-5 fixes (prose value context, admin path, dict keys, `dict(__dict__)`, helper
-  cutoffs) close six failures; the remaining four are interprocedural by construction.
+  cutoffs) close six failures; the remaining four were closed by local helper summaries, an
+  append model and a credential source model. The sealed set now passes 42/42, but that is a
+  regression number: round 5 is burned.
+- The taint model is intra-file and name-based. It follows helper returns, f-strings, `%` and
+  container appends inside one module; it does not follow imports, parameter-to-return mappings or
+  object field sensitivity. Those are the known false-negative surface for round 6.
 
 ## Limitations
 
@@ -376,15 +402,19 @@ round 6 is required for the post-fix number.
 - Round 5 is not in the regression corpus: its failures are interprocedural and require a design
   change, not a pattern fix. Six of its cases were fixed and promoted; the four interprocedural ones
   remain outside the corpus.
+- The interprocedural taint is intra-file and name-based: imports, parameter-to-return mappings and
+  per-field object models are not followed. A cross-file helper returning a credential is still a
+  false negative candidate.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Decide between extending interprocedural taint (helper returns, formatted intermediates, router
-   prefixes, helper cutoffs) and documenting the ceiling.
-2. Author a fresh blind round 6 after the cheap round-5 fixes.
-3. Include real code from the target app and public repositories, not only snippets.
+1. Author a fresh blind round 6 for the post-taint number, with real code from the target app and
+   public repositories, not only snippets.
+2. Probe the remaining taint limits: cross-file helper returns, parameter passthrough and
+   per-field object sensitivity.
+3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
