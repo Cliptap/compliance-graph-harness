@@ -374,3 +374,24 @@ def test_constructor_keyword_cutoff_is_clean():
             "def trigger(session):\n"
             "    Job(days=LEGAL_HOLD_DAYS).run(session)\n")
     assert "v2.billing_retention" not in ids(code)
+
+
+def test_imported_producer_name_is_tainted():
+    code = ("from app.identifiers import format_rut_and_email\n\n"
+            "def rows(customers):\n"
+            "    return [{'label': format_rut_and_email(c)} for c in customers]\n")
+    assert "v2.admin_exposure" in ids(code, "app/views/admin_export.py")
+
+
+def test_imported_masker_is_clean():
+    code = ("from app.identifiers import mask_rut_and_email\n\n"
+            "def rows(customers):\n"
+            "    return [{'label': mask_rut_and_email(c)} for c in customers]\n")
+    assert "v2.admin_exposure" not in ids(code, "app/views/admin_export.py")
+
+
+def test_imported_sender_is_not_a_value():
+    code = ("from app.mailer import send_email\n\n"
+            "def notify(user):\n"
+            "    return {'sent': send_email(user.email)}\n")
+    assert "v2.admin_exposure" not in ids(code, "app/views/admin_export.py")

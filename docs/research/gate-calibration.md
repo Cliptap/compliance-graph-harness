@@ -452,10 +452,11 @@ through a format label, a callee argument or a fuzzy key.
 | `r7-bil-06` | a constructor keyword resolved from a constant gates the retention window |
 | keyword flows | parameter effects include parameter names, so keyword arguments propagate at call sites |
 | receiver methods | `self`/`cls` are not treated as parameter positions |
+| `r7-adm-03` | imported producer names (`format_rut_and_email`) seed their categories from the name; maskers and senders are excluded |
 
-Regression state: sealed round-7 set **41/42** (only `r7-adm-03` remains), curated 22/22, regression
-corpus **126/126** (119 + 7), full suite **457 passed**. The 34/42 remains the pre-fix measurement;
-a round 8 is required for the post-fix number.
+Regression state: sealed round-7 set **42/42**, curated 22/22, regression corpus **127/127**
+(119 + 8), full suite **460 passed**. The 34/42 remains the pre-fix measurement; a round 8 is
+required for the post-fix number.
 
 ## Interpretation
 
@@ -499,10 +500,14 @@ a round 8 is required for the post-fix number.
   37/42 remains the pre-fix measurement.
 - Round 7 moved recall to 0.952 at the cost of precision (0.741): keyword flows work, but format
   labels, masked names and nested credential-shaped arguments produced seven false positives. The
-  fixes narrow those matches and keep a single false negative, the cross-module helper.
+  fixes narrow those matches and the sealed set passes 42/42 as regression, including the imported
+  producer name.
 - The precision lesson is consistent: the detector must distinguish *where a value is* from *a label
   that names it*. Placeholders, masked identifiers, metadata suffixes and callee arguments are not
   values.
+- The cross-module fix is name-based, not dataflow: an imported producer whose name states its
+  payload (`format_rut_and_email`) is trusted, while maskers and senders are excluded. A function
+  that hides its payload behind a neutral name is still a false negative.
 
 ## Limitations
 
@@ -522,17 +527,17 @@ a round 8 is required for the post-fix number.
   false negative candidate.
 - Round 6 is burned like the previous sets. Its 37/42 is the measurement **before** the fixes; the
   five failing cases were fixed and promoted, so the sealed set now passes 42/42 as regression.
-- Round 7 is burned. Its 34/42 is the measurement **before** the fixes; seven cases were fixed and
-  promoted, and the cross-module false negative remains outside the corpus.
+- Round 7 is burned. Its 34/42 is the measurement **before** the fixes; the eight failing cases
+  were fixed and promoted.
 - Parameter effects cover positional and keyword arguments and log sinks. Response/redirect
-  propagation through parameters and cross-module effects are not modeled.
+  propagation through parameters is not modeled. Cross-module handling is name-based: imports whose
+  names state their payload are trusted, the rest are not followed.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Extend parameter effects to response and redirect sinks, and decide whether cross-module returns
-   justify an import-aware pass.
+1. Extend parameter effects to response and redirect sinks.
 2. Author a fresh blind round 8 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.

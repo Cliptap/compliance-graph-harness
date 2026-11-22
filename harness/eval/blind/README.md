@@ -60,3 +60,5 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   helpers, credential metadata and a nested credential-shaped argument, plus one cross-module false
   negative. The seven false positives were fixed and promoted (41/42 regression); round 8 is
   required for a post-fix number.
+- Round 7 closed: the imported producer name was added as a name-based cross-module rule; the sealed
+  set now passes 42/42 as regression (127/127 corpus).

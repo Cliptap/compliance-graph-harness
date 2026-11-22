@@ -1,11 +1,11 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 126,
-  "passed": 126,
+  "cases": 127,
+  "passed": 127,
   "controls": {
     "v2.admin_exposure": {
-      "tp": 12,
+      "tp": 13,
       "fp": 0,
       "fn": 0,
       "tn": 9,
@@ -13,11 +13,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.757,
+        0.772,
         1.0
       ],
       "recall_ci": [
-        0.757,
+        0.772,
         1.0
       ]
     },
@@ -1210,6 +1210,14 @@
       "control": "v2.billing_retention",
       "expected": "clean",
       "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r7-adm-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
       "other_findings": [],
       "passed": true
     }

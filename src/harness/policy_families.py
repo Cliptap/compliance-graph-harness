@@ -204,11 +204,17 @@ def _finding(control: Control, path: str, line: int, message: str, evidence: str
 
 
 VALUE_ACCESSORS = {"value", "raw"}
+IMPORT_VERBS = {"format", "build", "render", "issue", "generate", "make", "compose", "get",
+                "load", "fetch", "read", "describe", "export", "serialize", "summarize",
+                "decrypt", "parse"}
 PASSTHROUGH_CALLS = {"dict", "list", "tuple", "set", "str", "jsonify", "JsonResponse",
                      "JSONResponse", "Response", "RedirectResponse", "execute", "executemany",
                      "fetchone", "fetchall", "fetchmany", "mappings", "scalars", "scalar",
                      "query", "filter", "filter_by", "where", "first", "one", "all", "get",
-                     "count", "values"}
+                     "count", "values", "zip", "enumerate", "sorted", "reversed", "next", "iter",
+                     "join", "format", "replace", "strip", "lstrip", "rstrip", "lower", "upper",
+                     "title", "split", "rsplit", "partition", "encode", "decode",
+                     "dumps", "dump", "loads", "load"}
 
 
 def _skip_nodes(node: ast.AST) -> set[int]:
@@ -261,6 +267,29 @@ def _identifier(node: ast.AST) -> str | None:
     return None
 
 
+def _imported_names(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            names.update(alias.asname or alias.name for alias in node.names)
+        elif isinstance(node, ast.Import):
+            names.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
+    return names
+
+
+def _name_categories(catalog: Catalog, name: str) -> set[str]:
+    """An imported producer whose name states its payload: ``format_rut_and_email``."""
+    tokens = [token for token in re.split(r"[^a-z0-9]+", name.lower()) if token]
+    if not tokens or tokens[0] not in IMPORT_VERBS:
+        return set()
+    found: set[str] = set()
+    for category in catalog.data_categories:
+        synonyms = catalog.synonyms(category)
+        if any(token in synonyms for token in tokens):
+            found.add(category)
+    return found
+
+
 def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[str, set[str]]:
     """Literal field lists (``self.columns = ['id', 'rut', 'email']``) by name."""
     mapping: dict[str, set[str]] = {}
@@ -300,9 +329,26 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
         if isinstance(child, ast.Call) and _is_masking_name(_call_name(child).rsplit(".", 1)[-1]):
             for nested in ast.walk(child):
                 masked_calls.add(id(nested))
+    blocked_args: set[int] = set()
+    for child in ast.walk(node):
+        if child is node or not isinstance(child, ast.Call):
+            continue
+        leaf = _call_name(child).rsplit(".", 1)[-1]
+        positions = (param_returns or {}).get(leaf, set())
+        propagates = bool((summaries or {}).get(leaf)) or any(
+            index in positions for index in range(len(child.args))) or any(
+            keyword.arg in positions for keyword in child.keywords if keyword.arg)
+        if (leaf in PASSTHROUGH_CALLS or propagates or _is_masking_name(leaf)
+                or leaf in RESPONSE_PATTERNS or leaf in REDIRECT_PATTERNS or _is_log_sink(leaf)
+                or leaf in CSV_SINKS):
+            continue
+        for arg in list(child.args) + [keyword.value for keyword in child.keywords]:
+            for nested in ast.walk(arg):
+                blocked_args.add(id(nested))
     blocked: set[int] = set()
     for child in ast.walk(node):
-        if id(child) in blocked or id(child) in comprehension_skip or id(child) in masked_calls:
+        if id(child) in blocked or id(child) in comprehension_skip or id(child) in masked_calls \
+                or id(child) in blocked_args:
             continue
         if id(child) in projection and not (
                 isinstance(child, ast.Name) and env and child.id in env
@@ -529,6 +575,10 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
         return {}
     field_lists = _field_lists(tree, catalog, categories)
     summaries: dict[str, set[str]] = {}
+    for imported in _imported_names(tree):
+        imported_categories = _name_categories(catalog, imported) & categories
+        if imported_categories and not _is_masking_name(imported):
+            summaries[imported] = imported_categories
     for _ in range(len(functions) + 1):
         changed = False
         for name, func in functions.items():
