@@ -31,6 +31,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 3 (sealed, post-fix) | 38 | **25/38** | 14 false negatives, 0 false positives |
 | Blind round 4 (sealed, post-fix) | 35 | **31/35** | 4 false negatives, 0 false positives |
 | Blind round 5 (sealed) | 42 | **32/42** | 7 false negatives, 3 false positives |
+| Blind round 6 (sealed, post-taint) | 42 | **37/42** | 4 false negatives, 1 false positive |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -357,6 +358,38 @@ Result: **42/42** on the sealed round-5 set, with the four cases promoted to the
 Regression state: curated 22/22, regression corpus **114/114**, full suite **443 passed**. The
 32/42 remains the measurement before the taint work; a round 6 is required for the post-fix number.
 
+## Blind round 6 (sealed, post-taint)
+
+A sixth fresh author wrote 42 realistic modules (15–45 lines, class methods, 2–3 helper chains,
+explicit-name cross-file imports). The file was sealed before the run
+(`cases_blind_round6.json.sha256`, `e8b47c6ef4347fb1d1a84fb1ee5d1044b16ffd32b895695bcde41b57b9d6a40d`)
+and run once.
+
+Result: **37/42**. Aggregate: precision **0.944** [0.742, 0.990], recall **0.810** [0.600, 0.923],
+accuracy 0.881 [0.750, 0.948].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.api_key` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.billing_retention` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.credential_response` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.customer_hard_delete` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.log_pii` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.reset_token` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+
+The taint work holds on chains, classes and formatted intermediates: `log_pii` and `reset_token`
+are perfect, and the helper-chain cases passed. The remaining failures are the documented limits
+plus one false positive:
+
+| Case | Cause |
+|---|---|
+| `r6-cred-04` (FP) | the callee name `_has_password` is read as a value identifier; the fuzzy matcher sees `password` in the function name |
+| `r6-admin-02` | DRF view builds columns dynamically from `self.columns`; the list is never mapped to fields |
+| `r6-del-03` | `session.delete(row)` on rows from `query(Customer)`; instance delete is not linked to the table |
+| `r6-bill-01` | `_expired_orders(session, cutoff).delete(...)`; the table comes from a helper, and the 365-day cutoff is never resolved |
+| `r6-key-03` | `key` flows through `_auth_header(key)` and `_audit_line(header)`; parameter-to-return mapping is not modeled |
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -387,7 +420,12 @@ Regression state: curated 22/22, regression corpus **114/114**, full suite **443
   regression number: round 5 is burned.
 - The taint model is intra-file and name-based. It follows helper returns, f-strings, `%` and
   container appends inside one module; it does not follow imports, parameter-to-return mappings or
-  object field sensitivity. Those are the known false-negative surface for round 6.
+  object field sensitivity. Those limits were the hypothesis for round 6 and the round confirmed
+  them.
+- Round 6 confirms that surface: helper chains, classes and formatted intermediates hold
+  (precision 0.944, recall 0.810), while dynamic columns, ORM instance deletes, table resolution
+  through helpers and parameter-to-return flows fail. One false positive came from reading a callee
+  name (`_has_password`) as a value identifier.
 
 ## Limitations
 
@@ -405,16 +443,20 @@ Regression state: curated 22/22, regression corpus **114/114**, full suite **443
 - The interprocedural taint is intra-file and name-based: imports, parameter-to-return mappings and
   per-field object models are not followed. A cross-file helper returning a credential is still a
   false negative candidate.
+- Round 6 is burned like the previous sets. Its 37/42 is the measurement **before** the planned
+  fixes; the failures are not yet in the regression corpus.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Author a fresh blind round 6 for the post-taint number, with real code from the target app and
+1. Fix the five round-6 failures and promote the four false negatives plus the false positive to the
+   regression corpus.
+2. Author a fresh blind round 7 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe the remaining taint limits: cross-file helper returns, parameter passthrough and
+3. Probe the remaining taint limits: cross-file helper returns, parameter passthrough and
    per-field object sensitivity.
-3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+4. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
