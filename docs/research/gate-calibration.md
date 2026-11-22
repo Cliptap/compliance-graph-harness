@@ -1,4 +1,4 @@
-# Gate calibration - v2 controls (2026-11-21)
+﻿# Gate calibration - v2 controls (2026-11-21)
 
 ## Question
 
@@ -203,8 +203,8 @@ accuracy 0.632 [0.473, 0.766].
 
 | Control | TP | FP | FN | TN | Precision | Recall |
 |---|---:|---:|---:|---:|---|---|
-| `v2.admin_exposure` | 0 | 0 | 3 | 2 | — | 0.00 |
-| `v2.api_key` | 0 | 0 | 3 | 3 | — | 0.00 |
+| `v2.admin_exposure` | 0 | 0 | 3 | 2 | â€” | 0.00 |
+| `v2.api_key` | 0 | 0 | 3 | 3 | â€” | 0.00 |
 | `v2.billing_retention` | 1 | 0 | 2 | 2 | 1.00 | 0.33 |
 | `v2.credential_response` | 1 | 0 | 2 | 2 | 1.00 | 0.33 |
 | `v2.customer_hard_delete` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
@@ -296,7 +296,7 @@ accuracy 0.762 [0.615, 0.865].
 
 | Control | TP | FP | FN | TN | Precision | Recall |
 |---|---:|---:|---:|---:|---|---|
-| `v2.admin_exposure` | 0 | 0 | 3 | 3 | — | 0.00 |
+| `v2.admin_exposure` | 0 | 0 | 3 | 3 | â€” | 0.00 |
 | `v2.api_key` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
 | `v2.billing_retention` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
 | `v2.credential_response` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
@@ -318,6 +318,23 @@ The failures are interprocedural and prose, not new field names:
 This is the interprocedural ceiling: pattern matching is precise on local flows and does not follow
 helper returns, intermediate formatted variables or router prefixes. Prose matching also needs a
 value context ("email=" with a string, not "invoice email").
+
+## Fixes after blind round 5
+
+Six of the ten failures were fixed and promoted to the regression corpus:
+
+| Case | Fix |
+|---|---|
+| `r5-log-05/06` (FP) | prose synonyms need a value context; derived prefixes (`with_`, `has_`, `is_`) and aggregations (`sum`, `len`, `count`, `bool`, `any`, `all`) are not tainted |
+| `r5-adm-01` | admin context includes the file path, not only the function/decorator/class |
+| `r5-adm-03` | dict keys use the fuzzy field matcher with metadata guards |
+| `r5-cred-01` | `dict(obj.__dict__)` is recognised as an attribute dump |
+| `r5-del-06` | helper cutoffs and default arguments resolve to constants, but only when the cutoff feeds the delete |
+
+Regression state: regression corpus **110/110** (104 + 6), full suite **436 passed**. The four
+remaining failures are interprocedural: helper return (`r5-log-01`), helper phone (`r5-adm-02`),
+formatted token/key variable (`r5-rst-02`, `r5-key-03`). The 32/42 is the pre-fix measurement; a
+round 6 is required for the post-fix number.
 
 ## Interpretation
 
@@ -343,6 +360,8 @@ value context ("email=" with a string, not "invoice email").
   `%` variables, router prefixes and helper cutoffs. Local matching stays precise; compositions are
   not followed. The prose matches ("invoice email", "with_email=%d") add false positives. This is a
   design fork: extend interprocedural taint or document the ceiling.
+- The cheap round-5 fixes (prose value context, admin path, dict keys, `dict(__dict__)`, helper
+  cutoffs) close six failures; the remaining four are interprocedural by construction.
 
 ## Limitations
 
@@ -355,7 +374,8 @@ value context ("email=" with a string, not "invoice email").
 - Round 4's post-fix result is also regression-only; the detector now has coverage for Flask,
   SQLAlchemy, GraphQL and Celery idioms, but no fresh measurement yet.
 - Round 5 is not in the regression corpus: its failures are interprocedural and require a design
-  change, not a pattern fix.
+  change, not a pattern fix. Six of its cases were fixed and promoted; the four interprocedural ones
+  remain outside the corpus.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
@@ -363,10 +383,8 @@ value context ("email=" with a string, not "invoice email").
 
 1. Decide between extending interprocedural taint (helper returns, formatted intermediates, router
    prefixes, helper cutoffs) and documenting the ceiling.
-2. If the cheap path wins: prose tokens require a value context, admin router prefixes and
-   `dict(obj.__dict__)` are added, and helper cutoffs are resolved.
-3. Author a fresh blind round 6 after the chosen changes.
-4. Include real code from the target app and public repositories, not only snippets.
+2. Author a fresh blind round 6 after the cheap round-5 fixes.
+3. Include real code from the target app and public repositories, not only snippets.
 
 ## Artifacts
 

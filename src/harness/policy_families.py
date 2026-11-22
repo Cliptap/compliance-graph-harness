@@ -16,6 +16,7 @@ from src.harness.contracts import Finding, TaskSpec
 
 RUT_VALUE_RE = re.compile(r"\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b")
 AMBIGUOUS_TEXT_SYNONYMS = {"run"}
+PROSE_SYNONYMS = {"email", "phone", "address", "token", "secret", "password"}
 
 
 def _constant_matches(text: str, synonyms: list[str]) -> bool:
@@ -26,6 +27,14 @@ def _constant_matches(text: str, synonyms: list[str]) -> bool:
         term = synonym.lower()
         if term in AMBIGUOUS_TEXT_SYNONYMS:
             if term in lowered and has_rut_value:
+                return True
+            continue
+        if term in PROSE_SYNONYMS:
+            pattern = (
+                rf"\b{re.escape(term)}\b\s*[:=]\s*"
+                r"(?:%s|%\(|f?\{|[\w.+-]+@[\w.-]+|[+]?\d[\d\s().-]{4,}|[A-Za-z][\w .-]*)"
+            )
+            if re.search(pattern, text, re.IGNORECASE):
                 return True
             continue
         if re.search(rf"\b{re.escape(synonym)}\b", text, re.IGNORECASE):
@@ -39,6 +48,7 @@ REDIRECT_PATTERNS = ("RedirectResponse", "redirect")
 DELETE_RE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)", re.IGNORECASE)
 DJANGO_OBJECTS_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\.objects\b")
 DERIVED_FIELD_SUFFIXES = ("_configured", "_suffix", "_last4", "_preview", "_enabled")
+DERIVED_IDENTIFIER_PREFIXES = ("with_", "has_", "is_")
 METADATA_FIELD_SUFFIXES = ("_ttl", "_minutes", "_updated_at", "_count", "_enabled", "_configured",
                            "_suffix", "_last4", "_preview", "_verified", "_confirmed", "_fp",
                            "_hash", "_id")
@@ -79,14 +89,20 @@ def _enclosing_classes(tree: ast.AST) -> dict[int, str]:
 
 
 def _dump_names(func: ast.AST) -> set[str]:
-    """Names assigned from vars(obj) or obj.__dict__: returning them dumps every attribute."""
+    """Names assigned from vars(obj), obj.__dict__ or dict(obj.__dict__): they dump every attribute."""
     names: set[str] = set()
     for node in ast.walk(func):
         if not isinstance(node, ast.Assign):
             continue
         value = node.value
-        if (isinstance(value, ast.Call) and _call_name(value) == "vars") or (
-                isinstance(value, ast.Attribute) and value.attr == "__dict__"):
+        is_dump = (
+            (isinstance(value, ast.Call) and _call_name(value) == "vars")
+            or (isinstance(value, ast.Attribute) and value.attr == "__dict__")
+            or (isinstance(value, ast.Call) and _call_name(value) == "dict"
+                and value.args and isinstance(value.args[0], ast.Attribute)
+                and value.args[0].attr == "__dict__")
+        )
+        if is_dump:
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     names.add(target.id)
@@ -199,7 +215,10 @@ class _TaintTracker(ast.NodeVisitor):
         found: set[str] = set()
         sanitized: set[int] = set()
         for child in ast.walk(node):
-            if isinstance(child, ast.Call) and self.catalog.is_sanitizer(ast.unparse(child)):
+            if isinstance(child, ast.Call) and (
+                    self.catalog.is_sanitizer(ast.unparse(child))
+                    or _call_name(child).rsplit(".", 1)[-1] in {"sum", "len", "count", "bool",
+                                                                 "any", "all"}):
                 for nested in ast.walk(child):
                     sanitized.add(id(nested))
         skip = _skip_nodes(node)
@@ -294,7 +313,8 @@ class SinkExposureFamily(PolicyFamily):
             class_name = enclosing.get(id(func), "")
             if (admin_only and "admin" not in func.name.lower()
                     and "admin" not in self._decorators(func).lower()
-                    and "admin" not in class_name.lower()):
+                    and "admin" not in class_name.lower()
+                    and "admin" not in path.lower()):
                 continue
             env = _TaintTracker(self.catalog, categories).scan(func)
             dumps = _dump_names(func)
@@ -331,7 +351,7 @@ class SinkExposureFamily(PolicyFamily):
         for category in self.catalog.data_categories:
             if lowered in self.catalog.synonyms(category):
                 return category
-        if lowered.endswith(METADATA_FIELD_SUFFIXES):
+        if lowered.startswith(DERIVED_IDENTIFIER_PREFIXES) or lowered.endswith(METADATA_FIELD_SUFFIXES):
             return None
         for category in self.catalog.data_categories:
             for synonym in self.catalog.synonyms(category):
@@ -494,7 +514,7 @@ class SinkExposureFamily(PolicyFamily):
                         skip.add(id(key))
                         continue
                     if isinstance(key, ast.Constant) and isinstance(key.value, str):
-                        category = self.catalog.category_for(key.value)
+                        category = self._field_category(key.value)
                         if category in allowed:
                             found.add(category)
             elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
@@ -554,12 +574,16 @@ class RetentionDeletionFamily(PolicyFamily):
     def _scan_tree(self, control, path, tree, tables, retention_days, retention_field):
         constants = _int_constants(tree)
         enclosing = _enclosing_classes(tree)
+        functions = {node.name: node for node in ast.walk(tree)
+                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
         out: list[Finding] = []
         for func in _leaf_functions(tree):
             cutoff = _max_cutoff(func, constants)
             if cutoff is not None and cutoff >= retention_days:
                 continue
             if cutoff is None and _mentions_retention_field(func, retention_field):
+                continue
+            if cutoff is None and _helper_retention_aware(func, functions, constants, retention_days):
                 continue
             out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), "")))
         for stmt in tree.body:
@@ -610,10 +634,6 @@ def _int_constants(tree: ast.AST) -> dict[str, int]:
     constants: dict[str, int] = {}
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            args = node.args.args[-len(node.args.defaults):] if node.args.defaults else []
-            for arg, default in zip(args, node.args.defaults):
-                if isinstance(default, ast.Constant) and isinstance(default.value, int):
-                    constants[arg.arg] = default.value
             continue
         targets: list[ast.AST] = []
         value = None
@@ -630,6 +650,15 @@ def _int_constants(tree: ast.AST) -> dict[str, int]:
                 constants[target.id] = value
             elif isinstance(target, ast.Attribute):
                 constants[target.attr] = value
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or not node.args.defaults:
+            continue
+        args = node.args.args[-len(node.args.defaults):]
+        for arg, default in zip(args, node.args.defaults):
+            if isinstance(default, ast.Constant) and isinstance(default.value, int):
+                constants[arg.arg] = default.value
+            elif isinstance(default, ast.Name) and default.id in constants:
+                constants[arg.arg] = constants[default.id]
     return constants
 
 
@@ -662,6 +691,43 @@ def _mentions_retention_field(node: ast.AST, field: str) -> bool:
     if not field:
         return False
     return field in ast.unparse(node).lower()
+
+
+def _helper_retention_aware(func: ast.AST, functions: dict[str, ast.AST],
+                            constants: dict[str, int], retention_days: int) -> bool:
+    """A delete is gated only if the helper-derived cutoff feeds the delete itself."""
+    delete_exprs = _delete_expressions(func)
+    if not delete_exprs:
+        return False
+    adequate = {name for name, helper in functions.items()
+                if (_max_cutoff(helper, constants) or 0) >= retention_days}
+    if not adequate:
+        return False
+    names: set[str] = set()
+    for node in ast.walk(func):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+            continue
+        if not any(isinstance(child, ast.Call)
+                   and _call_name(child).rsplit(".", 1)[-1] in adequate
+                   for child in ast.walk(node.value)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        names.update(target.id for target in targets if isinstance(target, ast.Name))
+    for expr in delete_exprs:
+        if any(re.search(rf"\b{re.escape(name)}\b", expr) for name in names):
+            return True
+        if any(re.search(rf"\b{re.escape(name)}\s*\(", expr) for name in adequate):
+            return True
+    return False
+
+
+def _delete_expressions(func: ast.AST) -> list[str]:
+    exprs: list[str] = []
+    for node in ast.walk(func):
+        if isinstance(node, ast.Call) and _call_name(node).rsplit(".", 1)[-1].lower() in {
+                "delete", "execute", "filter", "where"}:
+            exprs.append(ast.unparse(node))
+    return exprs
 
 
 def _table_candidates(name: str) -> set[str]:

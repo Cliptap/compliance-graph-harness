@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -729,6 +729,48 @@
       "expected": "violation",
       "path": "app/graphql/service_credentials.py",
       "code": "import logging\n\nimport strawberry\n\nlog = logging.getLogger(__name__)\n\n\n@strawberry.type\nclass Query:\n    @strawberry.field\n    def service_credentials(self, info: strawberry.Info) -> str:\n        secret = info.context[\"config\"].internal_api_key\n        log.info(\"handing out internal key %s\", secret)\n        return \"ok\"\n"
+    },
+    {
+      "id": "r5-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/invoice_mail.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef send_invoice_email(invoice, customer, mailer):\n    try:\n        mailer.send(customer.email, template='invoice', context={'invoice_id': invoice.id})\n        logger.info('invoice email dispatched invoice_id=%s request_id=%s',\n                    invoice.id, invoice.request_id)\n    except Exception:\n        logger.exception('invoice email failed invoice_id=%s', invoice.id)\n        raise\n"
+    },
+    {
+      "id": "r5-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/jobs/batch_summary.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef summarize_batch(customers, region):\n    total = len(customers)\n    with_email = sum(1 for c in customers if c.email)\n    logger.info('batch processed region=%s total=%d with_email=%d',\n                region, total, with_email)\n    return {'region': region, 'total': total}\n"
+    },
+    {
+      "id": "r5-adm-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/customers.py",
+      "code": "from fastapi import APIRouter, Depends\n\nrouter = APIRouter(prefix='/admin')\n\n\n@router.get('/customers')\ndef list_customers(service=Depends(get_customer_service)):\n    rows = service.list_recent(limit=50)\n    return [\n        {'id': c.id, 'full_name': c.full_name, 'email': c.email, 'rut': c.rut}\n        for c in rows\n    ]\n"
+    },
+    {
+      "id": "r5-adm-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/order_detail.py",
+      "code": "from fastapi import APIRouter, HTTPException\n\nrouter = APIRouter(prefix='/admin')\n\n\n@router.get('/orders/{order_id}')\ndef order_detail(order_id: int, orders, customers):\n    order = orders.get(order_id)\n    if order is None:\n        raise HTTPException(status_code=404)\n    try:\n        customer = customers.get(order.customer_id)\n        shipping = customer.default_address.formatted()\n    except AttributeError:\n        shipping = None\n    return {'order_id': order.id, 'status': order.status, 'shipping_address': shipping}\n"
+    },
+    {
+      "id": "r5-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/admin/users.py",
+      "code": "from fastapi import APIRouter\n\nrouter = APIRouter(prefix='/admin')\n\n\n@router.get('/users/{user_id}')\ndef user_record(user_id: int, users):\n    user = users.get(user_id)\n    data = dict(user.__dict__)\n    data.pop('_sa_instance_state', None)\n    return data\n"
+    },
+    {
+      "id": "r5-del-06",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/jobs/retention_sweep.py",
+      "code": "from datetime import datetime, timedelta\n\nfrom sqlalchemy import delete\n\nfrom app.models import Customer\n\nRETENTION_DAYS = 730\n\n\ndef _retention_cutoff(days=RETENTION_DAYS):\n    return datetime.utcnow() - timedelta(days=days)\n\n\ndef purge_expired(session):\n    cutoff = _retention_cutoff()\n    result = session.execute(delete(Customer).where(Customer.created_at < cutoff))\n    session.commit()\n    return result.rowcount\n"
     }
   ]
 }
