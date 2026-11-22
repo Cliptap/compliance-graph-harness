@@ -395,3 +395,31 @@ def test_imported_sender_is_not_a_value():
             "def notify(user):\n"
             "    return {'sent': send_email(user.email)}\n")
     assert "v2.admin_exposure" not in ids(code, "app/views/admin_export.py")
+
+
+def test_parameter_reaches_response_inside_helper():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "def render(customer, email):\n"
+            "    return JSONResponse({'id': customer.id, 'email': email})\n\n"
+            "def view(customer):\n"
+            "    return render(customer=customer, email=customer.email)\n")
+    assert "v2.admin_exposure" in ids(code, "app/api/admin_render.py")
+
+
+def test_parameter_reaches_redirect_inside_helper():
+    code = ("from fastapi.responses import RedirectResponse\n\n"
+            "def go(token):\n"
+            "    return RedirectResponse(f'/reset?token={token}')\n\n"
+            "def start(repo, user_id):\n"
+            "    token = repo.issue_reset(user_id)\n"
+            "    return go(token)\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_masked_parameter_in_helper_response_is_clean():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "def render(customer, masked_email):\n"
+            "    return JSONResponse({'id': customer.id, 'email': masked_email})\n\n"
+            "def view(customer, mask_email):\n"
+            "    return render(customer=customer, masked_email=mask_email(customer.email))\n")
+    assert "v2.admin_exposure" not in ids(code, "app/api/admin_render.py")

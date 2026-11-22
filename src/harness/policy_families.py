@@ -402,6 +402,24 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
     return found
 
 
+def _effect_matched(catalog: Catalog, node: ast.Call, positions: set[int | str],
+                    allowed: set[str], env: dict[str, set[str]] | None,
+                    summaries: dict[str, set[str]] | None,
+                    param_returns: dict[str, set[int | str]] | None,
+                    field_lists: dict[str, set[str]] | None) -> set[str]:
+    """Categories carried by the arguments whose parameter positions reach a sink."""
+    matched: set[str] = set()
+    for index, arg in enumerate(node.args):
+        if index in positions:
+            matched |= _sink_categories(catalog, arg, allowed, env, summaries,
+                                        param_returns, field_lists)
+    for keyword in node.keywords:
+        if keyword.arg in positions:
+            matched |= _sink_categories(catalog, keyword.value, allowed, env, summaries,
+                                        param_returns, field_lists)
+    return matched
+
+
 class _TaintTracker(ast.NodeVisitor):
     """Propagate sensitive categories through simple assignments and SQL reads."""
 
@@ -604,8 +622,10 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
 
 def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                   summaries: dict[str, set[str]]) -> tuple[dict[str, set[int | str]],
+                                                           dict[str, set[int | str]],
+                                                           dict[str, set[int | str]],
                                                            dict[str, set[int | str]]]:
-    """Parameter positions that reach a return value or a log sink.
+    """Parameter positions that reach a return value, a log, a response or a redirect.
 
     ``_auth_header(key)`` returns its first parameter; a caller that passes a
     credential inherits it. ``_audit(org, key)`` logs its second parameter; a
@@ -654,7 +674,32 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                                     param_returns, field_lists):
                     param_logs[name].update({index, param})
                     break
-    return param_returns, param_logs
+    param_responses: dict[str, set[int | str]] = {name: set() for name in functions}
+    param_redirects: dict[str, set[int | str]] = {name: set() for name in functions}
+    for name, func in functions.items():
+        for index, param in enumerate(params[name]):
+            others = {key: value for key, value in param_returns.items() if key != name}
+            tracker = _TaintTracker(catalog, categories, summaries, others)
+            tracker.env[param] = set(categories)
+            env = tracker.scan(func)
+            for node in ast.walk(func):
+                if isinstance(node, ast.Call) and _call_name(node) in REDIRECT_PATTERNS:
+                    if _sink_categories(catalog, node, categories, env, summaries,
+                                        param_returns, field_lists):
+                        param_redirects[name].update({index, param})
+                        break
+                if isinstance(node, ast.Call) and _call_name(node) in RESPONSE_PATTERNS:
+                    if _sink_categories(catalog, node, categories, env, summaries,
+                                        param_returns, field_lists):
+                        param_responses[name].update({index, param})
+                        break
+                if isinstance(node, ast.Return) and isinstance(
+                        node.value, (ast.Dict, ast.List, ast.Tuple)):
+                    if _sink_categories(catalog, node.value, categories, env, summaries,
+                                        param_returns, field_lists):
+                        param_responses[name].update({index, param})
+                        break
+    return param_returns, param_logs, param_responses, param_redirects
 
 
 class PolicyFamily:
@@ -692,20 +737,22 @@ class SinkExposureFamily(PolicyFamily):
                 continue
             summaries = _function_summaries(tree, self.catalog, categories)
             field_lists = _field_lists(tree, self.catalog, categories)
-            param_returns, param_logs = _call_effects(tree, self.catalog, categories, summaries)
+            (param_returns, param_logs,
+             param_responses, param_redirects) = _call_effects(tree, self.catalog, categories,
+                                                               summaries)
             if "log" in sinks:
                 findings.extend(self._scan_logs(control, path, tree, categories, summaries,
                                                 param_returns, param_logs, field_lists))
             if "response" in sinks:
                 findings.extend(self._scan_responses(control, path, tree, categories, summaries,
-                                                     param_returns, field_lists))
+                                                     param_returns, field_lists, param_responses))
                 findings.extend(self._scan_serializers(control, path, tree, categories))
                 findings.extend(self._scan_graphql_types(control, path, tree, categories))
                 if control.detection.context.get("route") == "admin":
                     findings.extend(self._scan_admin_classes(control, path, tree, categories))
             if "redirect" in sinks:
                 findings.extend(self._scan_redirects(control, path, tree, categories, summaries,
-                                                     param_returns, field_lists))
+                                                     param_returns, field_lists, param_redirects))
             if "csv" in sinks:
                 findings.extend(self._scan_csv(control, path, tree, categories, summaries,
                                                param_returns, field_lists))
@@ -750,7 +797,7 @@ class SinkExposureFamily(PolicyFamily):
         return out
 
     def _scan_responses(self, control, path, tree, categories, summaries,
-                        param_returns, field_lists) -> list[Finding]:
+                        param_returns, field_lists, param_responses) -> list[Finding]:
         out = []
         admin_only = control.detection.context.get("route") == "admin"
         enclosing = _enclosing_classes(tree)
@@ -790,6 +837,19 @@ class SinkExposureFamily(PolicyFamily):
                 if matched:
                     out.append(_finding(control, path, payload.lineno,
                                         f"Response exposes {sorted(matched)} without masking.", text))
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Call):
+                    continue
+                positions = param_responses.get(_call_name(node).rsplit(".", 1)[-1])
+                if not positions:
+                    continue
+                matched = _effect_matched(self.catalog, node, positions, categories, env,
+                                          summaries, param_returns, field_lists)
+                if matched:
+                    out.append(_finding(control, path, node.lineno,
+                                        f"Response inside '{_call_name(node)}' exposes "
+                                        f"{sorted(matched)} without masking.",
+                                        ast.unparse(node)))
         return out
 
     def _field_category(self, field: str) -> str | None:
@@ -886,7 +946,7 @@ class SinkExposureFamily(PolicyFamily):
         return out
 
     def _scan_redirects(self, control, path, tree, categories, summaries,
-                        param_returns, field_lists) -> list[Finding]:
+                        param_returns, field_lists, param_redirects) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
             env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
@@ -901,6 +961,18 @@ class SinkExposureFamily(PolicyFamily):
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"Redirect exposes {sorted(matched)}.", text))
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Call):
+                    continue
+                positions = param_redirects.get(_call_name(node).rsplit(".", 1)[-1])
+                if not positions:
+                    continue
+                matched = _effect_matched(self.catalog, node, positions, categories, env,
+                                          summaries, param_returns, field_lists)
+                if matched:
+                    out.append(_finding(control, path, node.lineno,
+                                        f"Redirect inside '{_call_name(node)}' exposes "
+                                        f"{sorted(matched)}.", ast.unparse(node)))
         return out
 
     def _scan_csv(self, control, path, tree, categories, summaries,
@@ -1361,7 +1433,8 @@ class CredentialExposureFamily(PolicyFamily):
             header_bindings = _secret_header_bindings(tree)
             summaries = _function_summaries(tree, self.catalog, categories)
             field_lists = _field_lists(tree, self.catalog, categories)
-            param_returns, param_logs = _call_effects(tree, self.catalog, categories, summaries)
+            param_returns, param_logs, param_responses, param_redirects = _call_effects(
+                tree, self.catalog, categories, summaries)
             env_by_node: dict[int, dict[str, set[str]]] = {}
             for func in _leaf_functions(tree):
                 env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
@@ -1404,6 +1477,25 @@ class CredentialExposureFamily(PolicyFamily):
                     if matched:
                         out.append(_finding(control, path, node.lineno,
                                             "A credential reaches a log inside a helper.",
+                                            ast.unparse(node)))
+            for sink_name, positions_by_func, enabled, message in (
+                    ("response", param_responses, "response" in sinks,
+                     "A credential reaches a response inside a helper."),
+                    ("redirect", param_redirects, "redirect" in sinks,
+                     "A credential reaches a redirect inside a helper.")):
+                if not enabled:
+                    continue
+                for node in ast.walk(tree):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    positions = positions_by_func.get(_call_name(node).rsplit(".", 1)[-1])
+                    if not positions:
+                        continue
+                    matched = _effect_matched(self.catalog, node, positions, categories,
+                                              env_by_node.get(id(node)), summaries,
+                                              param_returns, field_lists)
+                    if matched:
+                        out.append(_finding(control, path, node.lineno, message,
                                             ast.unparse(node)))
         return self._dedupe(out)
 

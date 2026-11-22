@@ -452,10 +452,11 @@ through a format label, a callee argument or a fuzzy key.
 | `r7-bil-06` | a constructor keyword resolved from a constant gates the retention window |
 | keyword flows | parameter effects include parameter names, so keyword arguments propagate at call sites |
 | receiver methods | `self`/`cls` are not treated as parameter positions |
+| parameter sinks | a parameter that reaches a response or redirect inside a helper is flagged at the call site |
 | `r7-adm-03` | imported producer names (`format_rut_and_email`) seed their categories from the name; maskers and senders are excluded |
 
 Regression state: sealed round-7 set **42/42**, curated 22/22, regression corpus **127/127**
-(119 + 8), full suite **460 passed**. The 34/42 remains the pre-fix measurement; a round 8 is
+(119 + 8), full suite **463 passed**. The 34/42 remains the pre-fix measurement; a round 8 is
 required for the post-fix number.
 
 ## Interpretation
@@ -529,18 +530,18 @@ required for the post-fix number.
   five failing cases were fixed and promoted, so the sealed set now passes 42/42 as regression.
 - Round 7 is burned. Its 34/42 is the measurement **before** the fixes; the eight failing cases
   were fixed and promoted.
-- Parameter effects cover positional and keyword arguments and log sinks. Response/redirect
-  propagation through parameters is not modeled. Cross-module handling is name-based: imports whose
-  names state their payload are trusted, the rest are not followed.
+- Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
+  Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
+  are not followed.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Extend parameter effects to response and redirect sinks.
-2. Author a fresh blind round 8 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 8 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+2. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+3. Decide whether neutrally named cross-module returns justify an import-aware pass.
 
 ## Artifacts
 
