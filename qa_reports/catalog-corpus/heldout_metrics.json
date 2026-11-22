@@ -1,11 +1,11 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 114,
-  "passed": 114,
+  "cases": 119,
+  "passed": 119,
   "controls": {
     "v2.admin_exposure": {
-      "tp": 11,
+      "tp": 12,
       "fp": 0,
       "fn": 0,
       "tn": 7,
@@ -13,16 +13,16 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.741,
+        0.757,
         1.0
       ],
       "recall_ci": [
-        0.741,
+        0.757,
         1.0
       ]
     },
     "v2.api_key": {
-      "tp": 10,
+      "tp": 11,
       "fp": 0,
       "fn": 0,
       "tn": 6,
@@ -30,16 +30,16 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.722,
+        0.741,
         1.0
       ],
       "recall_ci": [
-        0.722,
+        0.741,
         1.0
       ]
     },
     "v2.billing_retention": {
-      "tp": 10,
+      "tp": 11,
       "fp": 0,
       "fn": 0,
       "tn": 6,
@@ -47,11 +47,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.722,
+        0.741,
         1.0
       ],
       "recall_ci": [
-        0.722,
+        0.741,
         1.0
       ]
     },
@@ -59,7 +59,7 @@
       "tp": 10,
       "fp": 0,
       "fn": 0,
-      "tn": 6,
+      "tn": 7,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -73,7 +73,7 @@
       ]
     },
     "v2.customer_hard_delete": {
-      "tp": 9,
+      "tp": 10,
       "fp": 0,
       "fn": 0,
       "tn": 7,
@@ -81,11 +81,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.701,
+        0.722,
         1.0
       ],
       "recall_ci": [
-        0.701,
+        0.722,
         1.0
       ]
     },
@@ -1110,6 +1110,53 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r6-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r6-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r6-del-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.log_pii",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r6-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r6-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.log_pii",
         "v2.reset_token"
       ],
       "passed": true

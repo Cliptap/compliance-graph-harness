@@ -390,6 +390,22 @@ plus one false positive:
 | `r6-bill-01` | `_expired_orders(session, cutoff).delete(...)`; the table comes from a helper, and the 365-day cutoff is never resolved |
 | `r6-key-03` | `key` flows through `_auth_header(key)` and `_audit_line(header)`; parameter-to-return mapping is not modeled |
 
+## Fixes after blind round 6
+
+The five failures were fixed and promoted to the regression corpus:
+
+| Case | Fix |
+|---|---|
+| `r6-cred-04` (FP) | a call's `func` node is no longer read as a value identifier; `_has_password` stops matching `password` |
+| `r6-admin-02` | literal field lists (`self.columns = [...]`) are mapped to categories and a dict comprehension keyed by the iteration variable is flagged |
+| `r6-del-03` | names that hold a query result are tracked, so `session.delete(row)` resolves to the queried table |
+| `r6-bill-01` | tables propagate through query helpers, so `_expired_orders(...).delete()` resolves to `orders`; an adequate helper cutoff feeding the deleted rows is still a gate |
+| `r6-key-03` | parameter positions that reach a return value or a log sink are computed to a fixpoint; a call with a tainted argument at a logged position is flagged |
+
+Regression state: sealed round-6 set **42/42**, curated 22/22, regression corpus **119/119** (114 + 5),
+full suite **449 passed**. The 37/42 remains the pre-fix measurement; a round 7 is required for the
+post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -426,6 +442,10 @@ plus one false positive:
   (precision 0.944, recall 0.810), while dynamic columns, ORM instance deletes, table resolution
   through helpers and parameter-to-return flows fail. One false positive came from reading a callee
   name (`_has_password`) as a value identifier.
+- The round-6 fixes close all five: callee nodes are not values, literal field lists resolve, query
+  results carry their table into instance deletes, tables propagate through helpers, and
+  parameter-position effects model returns and logs. The sealed set is 42/42 as regression; the
+  37/42 remains the pre-fix measurement.
 
 ## Limitations
 
@@ -443,20 +463,20 @@ plus one false positive:
 - The interprocedural taint is intra-file and name-based: imports, parameter-to-return mappings and
   per-field object models are not followed. A cross-file helper returning a credential is still a
   false negative candidate.
-- Round 6 is burned like the previous sets. Its 37/42 is the measurement **before** the planned
-  fixes; the failures are not yet in the regression corpus.
+- Round 6 is burned like the previous sets. Its 37/42 is the measurement **before** the fixes; the
+  five failing cases were fixed and promoted, so the sealed set now passes 42/42 as regression.
+- Parameter effects cover positional arguments and log sinks. Keyword arguments, response/redirect
+  propagation and cross-module effects are not modeled.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Fix the five round-6 failures and promote the four false negatives plus the false positive to the
-   regression corpus.
-2. Author a fresh blind round 7 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 7 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-3. Probe the remaining taint limits: cross-file helper returns, parameter passthrough and
-   per-field object sensitivity.
-4. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+2. Probe the remaining taint limits: cross-file helper returns, keyword-argument effects and
+   response/redirect propagation through parameters.
+3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 

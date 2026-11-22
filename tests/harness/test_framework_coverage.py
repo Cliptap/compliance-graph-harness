@@ -231,3 +231,70 @@ def test_session_model_is_not_a_credential_source():
             "    account = self.session.get(Account, account_id)\n"
             "    return {'id': account.id, 'email_verified': account.email_verified}\n")
     assert "v2.credential_response" not in ids(code)
+
+
+def test_callee_name_is_not_a_value_identifier():
+    code = ("def _has_password(user):\n"
+            "    return bool(user.password_hash)\n\n"
+            "def profile(user):\n"
+            "    return {'id': user.id, 'has_password': _has_password(user)}\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_dynamic_column_list_is_flagged():
+    code = ("class CustomerReportView:\n"
+            "    def __init__(self):\n"
+            "        self.columns = ['id', 'rut', 'email']\n\n"
+            "    def _row(self, customer):\n"
+            "        return {column: getattr(customer, column) for column in self.columns}\n\n"
+            "    def render(self, queryset):\n"
+            "        return {'rows': [self._row(c) for c in queryset]}\n")
+    assert "v2.admin_exposure" in ids(code, "app/api/admin_reports.py")
+
+
+def test_instance_delete_from_query_is_flagged():
+    code = ("def _candidates(session):\n"
+            "    return session.query(Customer).filter(Customer.updated_at < cutoff())\n\n"
+            "def purge(session):\n"
+            "    rows = _candidates(session).all()\n"
+            "    for row in rows:\n"
+            "        session.delete(row)\n"
+            "    session.commit()\n")
+    assert "v2.customer_hard_delete" in ids(code)
+
+
+def test_delete_on_helper_query_is_flagged():
+    code = ("from datetime import datetime, timedelta\n\n"
+            "def _expired(session, cutoff):\n"
+            "    return session.query(Order).filter(Order.created_at < cutoff)\n\n"
+            "def purge(session, days=365):\n"
+            "    cutoff = datetime.utcnow() - timedelta(days=days)\n"
+            "    return _expired(session, cutoff).delete(synchronize_session=False)\n")
+    assert "v2.billing_retention" in ids(code)
+
+
+def test_credential_param_logged_inside_helper_is_flagged():
+    code = ("import logging\n\nlogger = logging.getLogger(__name__)\n\n"
+            "def _header(key):\n"
+            "    return f'Bearer {key}'\n\n"
+            "def _audit(org_id, key):\n"
+            "    header = _header(key)\n"
+            "    logger.info('org=%s auth=%s', org_id, header)\n\n"
+            "def ping(repo, org_id):\n"
+            "    key = repo.get_api_key(org_id)\n"
+            "    _audit(org_id, key)\n")
+    assert "v2.api_key" in ids(code)
+
+
+def test_instance_delete_with_retention_helper_is_clean():
+    code = ("from datetime import datetime, timedelta\n\n"
+            "RETENTION_DAYS = 730\n\n"
+            "def _expired(session):\n"
+            "    cutoff = datetime.utcnow() - timedelta(days=RETENTION_DAYS)\n"
+            "    return session.query(Customer).filter(Customer.created_at < cutoff)\n\n"
+            "def purge(session):\n"
+            "    rows = _expired(session).all()\n"
+            "    for row in rows:\n"
+            "        session.delete(row)\n"
+            "    session.commit()\n")
+    assert "v2.customer_hard_delete" not in ids(code)
