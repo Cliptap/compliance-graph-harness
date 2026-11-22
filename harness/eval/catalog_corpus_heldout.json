@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -218,6 +218,272 @@
       "expected": "violation",
       "path": "app/api/key_reveal.py",
       "code": "def reveal_key(key_id, repo):\n    record = repo.get(key_id)\n    return {\"key_id\": record.id, \"value\": record.plaintext_secret}\n"
+    },
+    {
+      "id": "lp_cli_export",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/customers/management/commands/export_customers.py",
+      "code": "def handle_export(args):\n    for customer in Customer.objects.filter(active=True):\n        logger.info('exporting rut=%s email=%s', customer.rut, customer.email)\n        write_row(customer)\n"
+    },
+    {
+      "id": "lp_worker_sms",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/workers/sms_worker.py",
+      "code": "def process_sms_batch(batch):\n    for job in batch:\n        logger.warning('retrying sms phone=%s attempt=%s', job.phone, job.attempts)\n        retry_job(job)\n"
+    },
+    {
+      "id": "lp_mw_audit",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/middleware/audit.py",
+      "code": "class AuditMiddleware:\n    def __init__(self, get_response):\n        self.get_response = get_response\n\n    def __call__(self, request):\n        account = getattr(request, 'account', None)\n        logger.info('path=%s actor_email=%s', request.path, account.email)\n        return self.get_response(request)\n"
+    },
+    {
+      "id": "lp_clean_mask",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/notifications/dispatch.py",
+      "code": "def queue_notification(customer, request_id):\n    recipient = mask_email(customer.email)\n    logger.info('notification queued request_id=%s recipient=%s', request_id, recipient)\n    enqueue(customer.id, request_id)\n"
+    },
+    {
+      "id": "lp_clean_ser_fp",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/customers/serializers.py",
+      "code": "class CustomerSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Customer\n        fields = ['id', 'created_at', 'status']\n\n    def to_representation(self, instance):\n        data = super().to_representation(instance)\n        logger.debug('serialized record id=%s rut_fp=%s', instance.id, fingerprint(instance.rut))\n        return data\n"
+    },
+    {
+      "id": "ae_ser_admin",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin_api/serializers.py",
+      "code": "class AdminCustomerSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Customer\n        fields = ['id', 'rut', 'email', 'phone', 'address', 'created_at']\n"
+    },
+    {
+      "id": "ae_view_addr",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin_api/views.py",
+      "code": "def admin_customer_detail(request, pk):\n    customer = get_object_or_404(Customer, pk=pk)\n    return JsonResponse({\n        'id': customer.id,\n        'full_name': customer.full_name,\n        'address': customer.address,\n    })\n"
+    },
+    {
+      "id": "ae_modeladmin",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/customers/admin.py",
+      "code": "@admin.register(Customer)\nclass CustomerAdmin(admin.ModelAdmin):\n    list_display = ('id', 'full_name', 'email', 'phone')\n    search_fields = ('email', 'rut')\n"
+    },
+    {
+      "id": "ae_clean_mask",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin_api/serializers.py",
+      "code": "class AdminCustomerSerializer(serializers.ModelSerializer):\n    email = serializers.SerializerMethodField()\n    phone = serializers.SerializerMethodField()\n\n    class Meta:\n        model = Customer\n        fields = ['id', 'email', 'phone', 'status']\n\n    def get_email(self, obj):\n        return mask_email(obj.email)\n\n    def get_phone(self, obj):\n        return mask_phone(obj.phone)\n"
+    },
+    {
+      "id": "ae_clean_self",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/portal/views.py",
+      "code": "def my_profile(request):\n    customer = request.user.customer\n    return JsonResponse({\n        'id': customer.id,\n        'email': customer.email,\n        'phone': customer.phone,\n    })\n"
+    },
+    {
+      "id": "cr_orm_todict",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/accounts/models.py",
+      "code": "class Account(models.Model):\n    email = models.EmailField()\n    password_hash = models.CharField(max_length=128)\n\n    def to_dict(self):\n        return {'id': self.id, 'email': self.email, 'password_hash': self.password_hash}\n"
+    },
+    {
+      "id": "cr_ser_secret",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/integrations/serializers.py",
+      "code": "class IntegrationSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Integration\n        fields = ['id', 'name', 'api_secret', 'created_at']\n"
+    },
+    {
+      "id": "cr_view_reset_pw",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/accounts/views.py",
+      "code": "def issue_temp_password(request, account_id):\n    account = Account.objects.get(pk=account_id)\n    temp = secrets.token_urlsafe(12)\n    account.set_password(temp)\n    account.save()\n    return JsonResponse({'username': account.username, 'temporary_password': temp})\n"
+    },
+    {
+      "id": "cr_clean_ser_flag",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/integrations/serializers.py",
+      "code": "class IntegrationSerializer(serializers.ModelSerializer):\n    api_key_configured = serializers.SerializerMethodField()\n\n    class Meta:\n        model = Integration\n        fields = ['id', 'name', 'api_key_configured']\n\n    def get_api_key_configured(self, obj):\n        return bool(obj.api_key_ciphertext)\n"
+    },
+    {
+      "id": "cr_clean_di_profile",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/accounts/services.py",
+      "code": "class ProfileService:\n    def __init__(self, accounts):\n        self.accounts = accounts\n\n    def profile(self, account_id):\n        account = self.accounts.get(account_id)\n        return {\n            'id': account.id,\n            'email': account.email,\n            'password_updated_at': account.password_updated_at,\n        }\n"
+    },
+    {
+      "id": "ch_cli_purge",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/customers/management/commands/purge_customers.py",
+      "code": "def handle_purge(self, *args, **options):\n    cutoff = timezone.now() - timedelta(days=90)\n    Customer.objects.filter(last_login__lt=cutoff).delete()\n    self.stdout.write('purged inactive customers')\n"
+    },
+    {
+      "id": "ch_worker_delete",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/workers/customer_cleanup.py",
+      "code": "def purge_stale_customers(cutoff_days=180):\n    cutoff = timezone.now() - timedelta(days=cutoff_days)\n    with connection.cursor() as cursor:\n        cursor.execute('DELETE FROM customers WHERE updated_at < %s', [cutoff])\n"
+    },
+    {
+      "id": "ch_orm_manager",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/customers/models.py",
+      "code": "class CustomerManager(models.Manager):\n    def purge_abandoned(self):\n        return self.filter(status='abandoned').delete()\n\n\nclass Customer(models.Model):\n    status = models.CharField(max_length=20)\n    updated_at = models.DateTimeField(auto_now=True)\n\n    objects = CustomerManager()\n"
+    },
+    {
+      "id": "ch_clean_soft_cli",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/customers/management/commands/archive_customers.py",
+      "code": "def handle_archive(self, *args, **options):\n    cutoff = timezone.now() - timedelta(days=900)\n    Customer.objects.filter(last_login__lt=cutoff).update(\n        deleted_at=timezone.now(),\n        is_active=False,\n    )\n"
+    },
+    {
+      "id": "ch_clean_job_retention",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/jobs/customer_retention.py",
+      "code": "RETENTION_DAYS = 730\n\n\ndef purge_expired_customers():\n    cutoff = timezone.now() - timedelta(days=RETENTION_DAYS)\n    Customer.objects.filter(created_at__lt=cutoff, deleted_at__isnull=False).delete()\n"
+    },
+    {
+      "id": "ch_clean_anonymize",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/customers/anonymization.py",
+      "code": "def anonymize_customer(customer_id):\n    Customer.objects.filter(pk=customer_id).update(\n        full_name='anon',\n        email=None,\n        phone=None,\n        anonymized_at=timezone.now(),\n    )\n"
+    },
+    {
+      "id": "br_cli_365",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/management/commands/purge_invoices.py",
+      "code": "def handle_purge(self, *args, **options):\n    cutoff = timezone.now() - timedelta(days=365)\n    Invoice.objects.filter(issued_at__lt=cutoff).delete()\n"
+    },
+    {
+      "id": "br_worker_730",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/workers/order_cleanup.py",
+      "code": "def cleanup_orders():\n    cutoff = timezone.now() - timedelta(days=730)\n    Order.objects.filter(created_at__lt=cutoff).delete()\n"
+    },
+    {
+      "id": "br_sql_1825",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/purge.py",
+      "code": "def delete_stale_invoices():\n    cutoff = timezone.now() - timedelta(days=1825)\n    with connection.cursor() as cursor:\n        cursor.execute('DELETE FROM invoices WHERE created_at < %s', [cutoff])\n"
+    },
+    {
+      "id": "br_clean_2190",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/jobs/billing_retention.py",
+      "code": "BILLING_RETENTION_DAYS = 2190\n\n\ndef purge_billing_records():\n    cutoff = timezone.now() - timedelta(days=BILLING_RETENTION_DAYS)\n    Order.objects.filter(created_at__lt=cutoff, archived=True).delete()\n"
+    },
+    {
+      "id": "br_clean_archive",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/billing/maintenance.py",
+      "code": "def archive_old_orders():\n    cutoff = timezone.now() - timedelta(days=365)\n    Order.objects.filter(created_at__lt=cutoff, archived=False).update(\n        archived=True,\n        archived_at=timezone.now(),\n    )\n"
+    },
+    {
+      "id": "rt_view_body",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/accounts/views.py",
+      "code": "def request_password_reset(request):\n    email = request.data['email']\n    user = User.objects.filter(email=email).first()\n    if user is None:\n        return JsonResponse({'detail': 'if the account exists, an email was sent'})\n    token = create_reset_token(user)\n    send_reset_email(user, token)\n    return JsonResponse({'detail': 'reset sent', 'token': token})\n"
+    },
+    {
+      "id": "rt_redirect",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/accounts/reset.py",
+      "code": "def reset_redirect(request, uid):\n    user = User.objects.get(pk=uid)\n    token = issue_token(user)\n    return redirect('/reset/confirm?token=%s' % token)\n"
+    },
+    {
+      "id": "rt_log_token",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/workers/reset_mailer.py",
+      "code": "def send_reset(user):\n    token = generate_token(user)\n    logger.info('reset issued user_id=%s token=%s', user.id, token)\n    queue_email(user.email, token)\n    return {'detail': 'if the account exists, an email was sent'}\n"
+    },
+    {
+      "id": "rt_cli_token",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/accounts/management/commands/issue_reset.py",
+      "code": "def handle_issue(self, *args, **options):\n    user = User.objects.get(email=options['email'])\n    token = default_token_generator.make_token(user)\n    self.stdout.write('reset token: %s' % token)\n"
+    },
+    {
+      "id": "rt_clean_generic",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/accounts/views.py",
+      "code": "def request_password_reset(request):\n    email = request.data.get('email', '')\n    user = User.objects.filter(email=email).first()\n    if user is not None:\n        token = create_reset_token(user)\n        send_reset_email(user, token)\n    return JsonResponse({'detail': 'if the account exists, an email was sent'})\n"
+    },
+    {
+      "id": "rt_clean_meta",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/accounts/reset_api.py",
+      "code": "def request_password_reset(request):\n    token = create_reset_token(request.user)\n    send_reset_email(request.user, token)\n    return JsonResponse({\n        'detail': 'if the account exists, an email was sent',\n        'expires_in_minutes': 30,\n        'delivery_channel': 'email',\n    })\n"
+    },
+    {
+      "id": "ak_rotate_raw",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/views.py",
+      "code": "def rotate_api_key(request, integration_id):\n    integration = Integration.objects.get(pk=integration_id)\n    raw_key = generate_api_key()\n    integration.api_key_hash = hash_key(raw_key)\n    integration.save()\n    return JsonResponse({'id': integration.id, 'api_key': raw_key})\n"
+    },
+    {
+      "id": "ak_cli_decrypt",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/management/commands/show_key.py",
+      "code": "def handle_show(self, *args, **options):\n    integration = Integration.objects.get(name=options['name'])\n    self.stdout.write('api_key=%s' % decrypt(integration.api_key_ciphertext))\n"
+    },
+    {
+      "id": "ak_worker_log",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/webhooks/delivery.py",
+      "code": "def deliver_webhook(event, integration):\n    headers = {'X-Api-Key': integration.api_key}\n    logger.info('delivering webhook id=%s headers=%s', event.id, headers)\n    return post(integration.url, json=event.payload, headers=headers)\n"
+    },
+    {
+      "id": "ak_clean_ser",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/integrations/serializers.py",
+      "code": "class IntegrationSerializer(serializers.ModelSerializer):\n    api_key_configured = serializers.SerializerMethodField()\n    api_key_suffix = serializers.SerializerMethodField()\n\n    class Meta:\n        model = Integration\n        fields = ['id', 'name', 'api_key_configured', 'api_key_suffix']\n\n    def get_api_key_configured(self, obj):\n        return bool(obj.api_key_ciphertext)\n\n    def get_api_key_suffix(self, obj):\n        return obj.api_key_last4 or ''\n"
+    },
+    {
+      "id": "ak_clean_viewset",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/integrations/viewsets.py",
+      "code": "class IntegrationViewSet(viewsets.ModelViewSet):\n    def list(self, request):\n        items = self.get_queryset()\n        return Response([\n            {'id': item.id, 'name': item.name, 'key_preview': '****' + (item.api_key_last4 or '')}\n            for item in items\n        ])\n"
+    },
+    {
+      "id": "ak_clean_rotate_resp",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/integrations/rotation.py",
+      "code": "def rotate_api_key(request, integration_id):\n    integration = Integration.objects.get(pk=integration_id)\n    raw_key = generate_api_key()\n    integration.api_key_hash = hash_key(raw_key)\n    integration.api_key_last4 = raw_key[-4:]\n    integration.save()\n    send_key_to_owner(integration, raw_key)\n    return JsonResponse({'id': integration.id, 'api_key_suffix': integration.api_key_last4})\n"
     }
   ]
 }

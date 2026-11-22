@@ -33,10 +33,12 @@ def _constant_matches(text: str, synonyms: list[str]) -> bool:
     return False
 
 LOG_PATTERNS = ("print", "logger.", "logging.", "console.log", "console.error",
-                "sys.stdout", "sys.stderr")
-RESPONSE_PATTERNS = ("JSONResponse", "Response", "jsonify")
+                "sys.stdout", "sys.stderr", "stdout.write", "stderr.write")
+RESPONSE_PATTERNS = ("JSONResponse", "JsonResponse", "Response", "jsonify")
 REDIRECT_PATTERNS = ("RedirectResponse", "redirect")
 DELETE_RE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)", re.IGNORECASE)
+DJANGO_OBJECTS_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\.objects\b")
+DERIVED_FIELD_SUFFIXES = ("_configured", "_suffix", "_last4", "_preview", "_enabled")
 TIMEDELTA_RE = re.compile(r"timedelta\s*\(\s*days\s*=\s*(\d+)", re.IGNORECASE)
 INTERVAL_RE = re.compile(r"interval\s+'(\d+)\s+days?'", re.IGNORECASE)
 MAKE_INTERVAL_RE = re.compile(r"make_interval\s*\(\s*days\s*=>\s*(\d+)", re.IGNORECASE)
@@ -252,6 +254,9 @@ class SinkExposureFamily(PolicyFamily):
                 findings.extend(self._scan_logs(control, path, tree, categories))
             if "response" in sinks:
                 findings.extend(self._scan_responses(control, path, tree, categories))
+                findings.extend(self._scan_serializers(control, path, tree, categories))
+                if control.detection.context.get("route") == "admin":
+                    findings.extend(self._scan_admin_classes(control, path, tree, categories))
             if "redirect" in sinks:
                 findings.extend(self._scan_redirects(control, path, tree, categories))
             if "csv" in sinks:
@@ -315,6 +320,87 @@ class SinkExposureFamily(PolicyFamily):
                 if matched:
                     out.append(_finding(control, path, payload.lineno,
                                         f"Response exposes {sorted(matched)} without masking.", text))
+        return out
+
+    def _field_category(self, field: str) -> str | None:
+        lowered = field.lower()
+        for category in self.catalog.data_categories:
+            if lowered in self.catalog.synonyms(category):
+                return category
+        for category in self.catalog.data_categories:
+            for synonym in self.catalog.synonyms(category):
+                if len(synonym) > 3 and synonym in lowered:
+                    return category
+        return None
+
+    def _masked_serializer_fields(self, cls: ast.ClassDef) -> set[str]:
+        masked: set[str] = set()
+        for method in cls.body:
+            if not isinstance(method, ast.FunctionDef) or not method.name.startswith("get_"):
+                continue
+            field = method.name[4:]
+            for node in ast.walk(method):
+                if isinstance(node, ast.Return) and node.value is not None \
+                        and self._value_is_masked(node.value):
+                    masked.add(field)
+        return masked
+
+    def _scan_serializers(self, control, path, tree, categories) -> list[Finding]:
+        out: list[Finding] = []
+        admin_only = control.detection.context.get("route") == "admin"
+        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+            meta = next((item for item in cls.body
+                         if isinstance(item, ast.ClassDef) and item.name == "Meta"), None)
+            if meta is None:
+                continue
+            fields: list[str] = []
+            for stmt in meta.body:
+                if not isinstance(stmt, ast.Assign):
+                    continue
+                if not any(isinstance(target, ast.Name) and target.id == "fields"
+                           for target in stmt.targets):
+                    continue
+                if isinstance(stmt.value, (ast.List, ast.Tuple)):
+                    fields = [element.value for element in stmt.value.elts
+                              if isinstance(element, ast.Constant) and isinstance(element.value, str)]
+            if not fields:
+                continue
+            if admin_only and "admin" not in cls.name.lower() and "admin" not in path.lower():
+                continue
+            masked = self._masked_serializer_fields(cls)
+            for field in fields:
+                if field in masked or field.lower().endswith(DERIVED_FIELD_SUFFIXES):
+                    continue
+                category = self._field_category(field)
+                if category in categories:
+                    out.append(_finding(control, path, cls.lineno,
+                                        f"Serializer '{cls.name}' exposes '{field}' without masking.",
+                                        field))
+                    break
+        return out
+
+    def _scan_admin_classes(self, control, path, tree, categories) -> list[Finding]:
+        out: list[Finding] = []
+        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+            bases = " ".join(ast.unparse(base) for base in cls.bases)
+            if "admin" not in cls.name.lower() and "admin.ModelAdmin" not in bases:
+                continue
+            for stmt in cls.body:
+                if not isinstance(stmt, ast.Assign):
+                    continue
+                names = {target.id for target in stmt.targets if isinstance(target, ast.Name)}
+                if not names & {"list_display", "search_fields", "list_filter"}:
+                    continue
+                if not isinstance(stmt.value, (ast.List, ast.Tuple)):
+                    continue
+                for element in stmt.value.elts:
+                    if not isinstance(element, ast.Constant) or not isinstance(element.value, str):
+                        continue
+                    if self._field_category(element.value) in categories:
+                        out.append(_finding(control, path, stmt.lineno,
+                                            f"Admin class '{cls.name}' exposes '{element.value}' "
+                                            "without masking.", element.value))
+                        break
         return out
 
     def _scan_redirects(self, control, path, tree, categories) -> list[Finding]:
@@ -441,6 +527,7 @@ class RetentionDeletionFamily(PolicyFamily):
 
     def _scan_tree(self, control, path, tree, tables, retention_days, retention_field):
         constants = _int_constants(tree)
+        enclosing = _enclosing_classes(tree)
         out: list[Finding] = []
         for func in _leaf_functions(tree):
             cutoff = _max_cutoff(func, constants)
@@ -448,7 +535,7 @@ class RetentionDeletionFamily(PolicyFamily):
                 continue
             if cutoff is None and _mentions_retention_field(func, retention_field):
                 continue
-            out.extend(self._deletes_in(control, path, func, tables))
+            out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), "")))
         for stmt in tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
@@ -461,10 +548,10 @@ class RetentionDeletionFamily(PolicyFamily):
         return out
 
     @staticmethod
-    def _deletes_in(control, path, node, tables):
+    def _deletes_in(control, path, node, tables, class_name=""):
         out: list[Finding] = []
         for child in ast.walk(node):
-            matched = _delete_tables(child) & tables
+            matched = _delete_tables(child, class_name) & tables
             if not matched:
                 continue
             table = sorted(matched)[0]
@@ -568,7 +655,7 @@ def _query_model(func: ast.AST) -> str | None:
     return None
 
 
-def _delete_tables(node: ast.AST) -> set[str]:
+def _delete_tables(node: ast.AST, class_name: str = "") -> set[str]:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         match = DELETE_RE.search(node.value.lower())
         return {match.group(1)} if match else set()
@@ -582,8 +669,34 @@ def _delete_tables(node: ast.AST) -> set[str]:
                 token = _identifier(arg)
                 return _table_candidates(token) if token else set()
         model = _query_model(node.func)
+        if model:
+            return _table_candidates(model)
+        model = _django_model(node, class_name)
         return _table_candidates(model) if model else set()
     return set()
+
+
+def _django_model(node: ast.AST, class_name: str = "") -> str | None:
+    match = DJANGO_OBJECTS_RE.search(ast.unparse(node))
+    if match:
+        return match.group(1)
+    if class_name.endswith("Manager"):
+        return class_name[: -len("Manager")]
+    return None
+
+
+def _secret_header_bindings(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Dict):
+            continue
+        for key in node.value.keys:
+            if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                continue
+            lowered = key.value.lower()
+            if "api-key" in lowered or "api_key" in lowered or "authorization" in lowered:
+                names.update(target.id for target in node.targets if isinstance(target, ast.Name))
+    return names
 
 
 class CredentialExposureFamily(PolicyFamily):
@@ -602,6 +715,7 @@ class CredentialExposureFamily(PolicyFamily):
                 tree = ast.parse(content)
             except SyntaxError:
                 continue
+            header_bindings = _secret_header_bindings(tree)
             for node in ast.walk(tree):
                 if not self._is_sink(node, sinks):
                     continue
@@ -610,7 +724,8 @@ class CredentialExposureFamily(PolicyFamily):
                     continue
                 if (self._matches(text, keys, value_pattern)
                         or self._logs_token(node, sinks, keys)
-                        or self._returns_secret_attribute(node, sinks, keys)):
+                        or self._returns_secret_attribute(node, sinks, keys)
+                        or self._logs_secret_header(node, header_bindings, keys)):
                     out.append(_finding(control, path, getattr(node, "lineno", 1),
                                         "A credential reaches a response, redirect or log.", text))
         return out
@@ -621,9 +736,24 @@ class CredentialExposureFamily(PolicyFamily):
             return False
         if not any(key in {"token", "reset_token"} for key in keys):
             return False
-        arguments = " ".join(ast.unparse(arg) for arg in node.args[1:])
+        for arg in list(node.args) + [kw.value for kw in node.keywords]:
+            for child in ast.walk(arg):
+                if isinstance(child, ast.Name) and "token" in child.id.lower():
+                    return True
+                if isinstance(child, ast.Attribute) and "token" in child.attr.lower():
+                    return True
+        return False
+
+    @staticmethod
+    def _logs_secret_header(node: ast.AST, bindings: set[str],
+                            keys: tuple[str, ...]) -> bool:
+        if not bindings or not isinstance(node, ast.Call):
+            return False
+        if not any(key in {"api_key", "api-key", "secret"} for key in keys):
+            return False
+        arguments = " ".join(ast.unparse(arg) for arg in node.args)
         arguments += " " + " ".join(ast.unparse(kw.value) for kw in node.keywords)
-        return bool(re.search(r"\btoken\b", arguments, re.IGNORECASE))
+        return any(re.search(rf"\b{re.escape(name)}\b", arguments) for name in bindings)
 
     def _returns_secret_attribute(self, node: ast.AST, sinks: set[str],
                                   keys: tuple[str, ...]) -> bool:

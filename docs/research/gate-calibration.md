@@ -223,6 +223,24 @@ The 14 false negatives are framework coverage, not edge cases:
 There were no false positives: the precision fixes of rounds 1 and 2 held. The detector is precise on
 what it recognises and web-request-centric; it is not yet a general Django/DRF/ORM/CLI auditor.
 
+## Fixes after blind round 3
+
+The 14 framework false negatives were fixed and promoted to the regression corpus:
+
+| Group | Fix |
+|---|---|
+| Django `JsonResponse` | added to `RESPONSE_PATTERNS` |
+| DRF serializers | `Meta.fields` scanned; method fields masked with a sanitizer are skipped; derived suffixes (`_configured`, `_suffix`, `_last4`, `_preview`) ignored |
+| Django admin | `list_display`, `search_fields` and `list_filter` scanned for personal fields |
+| Django ORM | `Model.objects.filter(...).delete()` and `Manager.delete()` map to table candidates |
+| CLI stdout | `stdout.write` and `stderr.write` are log sinks; token arguments are detected |
+| Header dict | `X-Api-Key`/`Authorization` bindings passed to a log are flagged for api-key controls |
+| Credential names | `temporary_password`, `temp_password`, `api_secret` and `client_secret` added to `CREDENTIAL` |
+
+Regression state: curated 22/22, regression corpus **69/69** (31 previous + 38 round-3 cases), full
+suite **423 passed**. The sealed round-3 set was not re-scored; 25/38 is the measurement **before**
+these fixes. A round 4 is required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -234,10 +252,11 @@ what it recognises and web-request-centric; it is not yet a general Django/DRF/O
   recall 0.619 [0.409, 0.792]. Round 2 post-round-1: 0.944 [0.742, 0.990] / 0.810 [0.600, 0.923].
   Round 3 post-run-fix: 1.000 [0.676, 1.000] / 0.364 [0.197, 0.570]. The samples are small; report
   the intervals.
-- The round-2 gaps were fixed and regression-tested. Round 3 moves the frontier to framework
+- The round-2 gaps were fixed and regression-tested. Round 3 moved the frontier to framework
   coverage: Django `JsonResponse`, DRF serializer fields, Django admin, ORM manager deletes, CLI
-  stdout and header dicts. The detector is precise on what it recognises and web-request-centric;
-  recall collapses on those idioms.
+  stdout and header dicts. The detector was precise but web-request-centric; recall collapsed on
+  those idioms. The 14 gaps were fixed after the measurement and are now regression cases; 25/38
+  remains the pre-fix number until round 4.
 - The false positives matter: a boolean projection, a manual f-string mask and the English word
   "run" were fixed; round 3 produced no false positives.
 
@@ -248,16 +267,15 @@ what it recognises and web-request-centric; it is not yet a general Django/DRF/O
 - Minimal snippets, 7 of 37 controls, and only the v2 families. Legacy policies (`privacy.cwe_532`,
   `privacy.api_exposure`) are outside this calibration.
 - Round 3 is deliberately Django/DRF-heavy; other frameworks and ORMs are less covered.
+- Round 3's post-fix result is regression-only: a fresh blind round is required to estimate it.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Add framework coverage: Django `JsonResponse`, DRF serializer `Meta.fields`, Django admin
-   `list_display`, ORM manager deletes, CLI `stdout.write` and `X-Api-Key` header dicts.
-2. Author a fresh blind round 4 after those fixes, with a human adjudicator if possible.
-3. Include real code from the target app and public repositories, not only snippets.
-4. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+1. Author a fresh blind round 4 after the framework coverage, with a human adjudicator if possible.
+2. Include real code from the target app and public repositories, not only snippets.
+3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
