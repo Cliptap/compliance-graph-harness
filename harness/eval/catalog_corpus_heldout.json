@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -484,6 +484,251 @@
       "expected": "clean",
       "path": "app/integrations/rotation.py",
       "code": "def rotate_api_key(request, integration_id):\n    integration = Integration.objects.get(pk=integration_id)\n    raw_key = generate_api_key()\n    integration.api_key_hash = hash_key(raw_key)\n    integration.api_key_last4 = raw_key[-4:]\n    integration.save()\n    send_key_to_owner(integration, raw_key)\n    return JsonResponse({'id': integration.id, 'api_key_suffix': integration.api_key_last4})\n"
+    },
+    {
+      "id": "r4_log_signup_email",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/blueprints/signup.py",
+      "code": "from flask import Blueprint, request\nimport logging\n\nbp = Blueprint(\"signup\", __name__)\nlog = logging.getLogger(__name__)\n\n\n@bp.post(\"/signup\")\ndef signup():\n    payload = request.get_json()\n    log.info(\"new signup received from %s\", payload[\"email\"])\n    return {\"status\": \"accepted\"}, 202\n"
+    },
+    {
+      "id": "r4_log_hashed_login",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/session_audit.py",
+      "code": "import hashlib\nimport logging\n\nfrom sqlalchemy.ext.asyncio import AsyncSession\n\nlog = logging.getLogger(__name__)\n\n\nasync def record_login(session: AsyncSession, account) -> None:\n    fingerprint = hashlib.sha256(account.email.encode()).hexdigest()[:12]\n    session.add(account)\n    await session.commit()\n    log.info(\"login recorded account_fp=%s\", fingerprint)\n"
+    },
+    {
+      "id": "r4_log_sms_phone",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/tasks/notifications.py",
+      "code": "import logging\n\nfrom celery import shared_task\n\nlog = logging.getLogger(__name__)\n\n\n@shared_task\ndef send_delivery_sms(phone_number: str, order_ref: str) -> str:\n    log.info(\"dispatching sms to %s for order %s\", phone_number, order_ref)\n    return \"queued\"\n"
+    },
+    {
+      "id": "r4_log_masked_rut_review",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/kyc.py",
+      "code": "import logging\nfrom dataclasses import dataclass\n\nlog = logging.getLogger(__name__)\n\n\n@dataclass\nclass KycService:\n    repository: \"KycRepository\"\n\n    def mask_rut(self, rut: str) -> str:\n        return \"***\" + rut[-3:]\n\n    def review(self, customer_id: int, rut: str) -> None:\n        log.info(\"kyc review customer=%s rut=%s\", customer_id, self.mask_rut(rut))\n        self.repository.mark_reviewed(customer_id)\n"
+    },
+    {
+      "id": "r4_log_graph_aggregate",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/graphql/metrics.py",
+      "code": "import logging\n\nimport strawberry\n\nlog = logging.getLogger(__name__)\n\n\n@strawberry.type\nclass SignupStats:\n    total: int\n    by_region: dict\n\n\n@strawberry.type\nclass Query:\n    @strawberry.field\n    def signup_stats(self) -> SignupStats:\n        total = 412\n        by_region = {\"south\": 120, \"north\": 292}\n        log.info(\"signup stats computed total=%s regions=%s\", total, len(by_region))\n        return SignupStats(total=total, by_region=by_region)\n"
+    },
+    {
+      "id": "r4_admin_flask_email_list",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/blueprints/admin_users.py",
+      "code": "from flask import Blueprint, jsonify\n\nfrom app.repositories import user_repository\n\nadmin_bp = Blueprint(\"admin_users\", __name__)\n\n\n@admin_bp.get(\"/admin/users\")\ndef list_users():\n    users = user_repository.all()\n    return jsonify([{\"id\": u.id, \"email\": u.email, \"status\": u.status} for u in users])\n"
+    },
+    {
+      "id": "r4_admin_sqla_masked_phone",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/customer_directory.py",
+      "code": "from sqlalchemy import select\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\n\ndef mask_phone(phone: str) -> str:\n    return \"***\" + phone[-4:]\n\n\ndef admin_customer_directory(session: Session) -> list[dict]:\n    rows = session.scalars(select(Customer).where(Customer.active.is_(True))).all()\n    return [\n        {\"id\": row.id, \"name\": row.display_name, \"phone\": mask_phone(row.phone)}\n        for row in rows\n    ]\n"
+    },
+    {
+      "id": "r4_admin_di_address",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/api/admin_directory.py",
+      "code": "from fastapi import APIRouter, Depends\n\nrouter = APIRouter()\n\n\nclass AdminDirectoryService:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def profile(self, customer_id: int) -> dict:\n        customer = self.repo.get(customer_id)\n        return {\n            \"id\": customer.id,\n            \"full_name\": customer.full_name,\n            \"home_address\": customer.address,\n            \"segment\": customer.segment,\n        }\n\n\ndef get_directory_service() -> AdminDirectoryService:\n    return AdminDirectoryService(repo=CustomerRepository())\n\n\n@router.get(\"/admin/customers/{customer_id}\")\ndef admin_customer(customer_id: int, service: AdminDirectoryService = Depends(get_directory_service)):\n    return service.profile(customer_id)\n"
+    },
+    {
+      "id": "r4_admin_graphql_rut",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/graphql/admin_customers.py",
+      "code": "import strawberry\n\nfrom app.services.customers import CustomerService\n\n\n@strawberry.type\nclass AdminCustomer:\n    id: int\n    rut: str\n    plan: str\n\n\n@strawberry.type\nclass Query:\n    @strawberry.field\n    def admin_customer(self, customer_id: int, info: strawberry.Info) -> AdminCustomer:\n        service: CustomerService = info.context[\"customer_service\"]\n        record = service.get(customer_id)\n        return AdminCustomer(id=record.id, rut=record.rut, plan=record.plan)\n"
+    },
+    {
+      "id": "r4_admin_selfservice_profile",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/me.py",
+      "code": "from fastapi import APIRouter, Depends\n\nrouter = APIRouter()\n\n\ndef current_session():\n    return {\"customer_id\": 42, \"email\": \"ana.perez@example.com\"}\n\n\n@router.get(\"/me/profile\")\ndef my_profile(session: dict = Depends(current_session)):\n    return {\n        \"customer_id\": session[\"customer_id\"],\n        \"email\": session[\"email\"],\n        \"notifications_enabled\": True,\n    }\n"
+    },
+    {
+      "id": "r4_cred_flask_password_hash",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/blueprints/profile.py",
+      "code": "from flask import Blueprint, jsonify\n\nfrom app.repositories import user_repository\n\nauth_bp = Blueprint(\"profile\", __name__)\n\n\n@auth_bp.get(\"/profile/<int:user_id>\")\ndef profile(user_id):\n    user = user_repository.get(user_id)\n    return jsonify(\n        {\n            \"id\": user.id,\n            \"username\": user.username,\n            \"password_hash\": user.password_hash,\n        }\n    )\n"
+    },
+    {
+      "id": "r4_cred_sqla_client_secret",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/integrations/views.py",
+      "code": "from sqlalchemy import select\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Integration\n\n\ndef integration_config(session: Session, integration_id: int) -> dict:\n    row = session.scalar(select(Integration).where(Integration.id == integration_id))\n    return {\"id\": row.id, \"provider\": row.provider, \"client_secret\": row.client_secret}\n"
+    },
+    {
+      "id": "r4_cred_di_account_summary",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/accounts.py",
+      "code": "from fastapi import APIRouter, Depends\n\nrouter = APIRouter()\n\n\nclass AccountReader:\n    def __init__(self, session):\n        self.session = session\n\n    def summary(self, account_id: int) -> dict:\n        account = self.session.get(Account, account_id)\n        return {\n            \"id\": account.id,\n            \"display_name\": account.display_name,\n            \"email_verified\": account.email_verified,\n        }\n\n\ndef get_account_reader() -> AccountReader:\n    return AccountReader(session=SessionLocal())\n\n\n@router.get(\"/accounts/{account_id}\")\ndef read_account(account_id: int, reader: AccountReader = Depends(get_account_reader)):\n    return reader.summary(account_id)\n"
+    },
+    {
+      "id": "r4_cred_graphql_api_secret",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/graphql/tenants.py",
+      "code": "import strawberry\n\nfrom app.services.tenants import TenantService\n\n\n@strawberry.type\nclass TenantSettings:\n    tenant_id: str\n    plan: str\n    api_secret: str\n\n\n@strawberry.type\nclass Query:\n    @strawberry.field\n    def tenant_settings(self, tenant_id: str, info: strawberry.Info) -> TenantSettings:\n        service: TenantService = info.context[\"tenant_service\"]\n        settings = service.load(tenant_id)\n        return TenantSettings(\n            tenant_id=settings.tenant_id,\n            plan=settings.plan,\n            api_secret=settings.api_secret,\n        )\n"
+    },
+    {
+      "id": "r4_cred_settings_service_info",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/service_info.py",
+      "code": "from fastapi import APIRouter\n\nfrom app.config import settings\n\nrouter = APIRouter()\n\n\n@router.get(\"/service-info\")\ndef service_info():\n    return {\n        \"service\": settings.service_name,\n        \"region\": settings.region,\n        \"token_ttl_minutes\": settings.access_token_ttl_minutes,\n        \"smtp_configured\": bool(settings.smtp_password),\n    }\n"
+    },
+    {
+      "id": "r4_cust_hard_delete_orm",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/services/customer_admin.py",
+      "code": "from sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\n\ndef purge_customer(session: Session, customer_id: int) -> None:\n    session.execute(delete(Customer).where(Customer.id == customer_id))\n    session.commit()\n"
+    },
+    {
+      "id": "r4_cust_hard_delete_sql",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/db/maintenance.py",
+      "code": "from sqlalchemy import text\nfrom sqlalchemy.orm import Session\n\n\ndef remove_customer(session: Session, customer_id: int) -> None:\n    session.execute(text(\"DELETE FROM customers WHERE id = :cid\"), {\"cid\": customer_id})\n    session.commit()\n"
+    },
+    {
+      "id": "r4_cust_soft_delete",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/services/customer_archive.py",
+      "code": "from datetime import datetime, timezone\n\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\n\ndef archive_customer(session: Session, customer_id: int) -> None:\n    customer = session.get(Customer, customer_id)\n    customer.deleted_at = datetime.now(timezone.utc)\n    customer.is_active = False\n    session.commit()\n"
+    },
+    {
+      "id": "r4_cust_gated_730",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/services/customer_retention.py",
+      "code": "from datetime import datetime, timedelta, timezone\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\nRETENTION_DAYS = 730\n\n\ndef purge_expired_customers(session: Session) -> int:\n    cutoff = datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)\n    result = session.execute(delete(Customer).where(Customer.last_activity_at < cutoff))\n    session.commit()\n    return result.rowcount\n"
+    },
+    {
+      "id": "r4_cust_celery_short_window",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/tasks/cleanup.py",
+      "code": "from datetime import datetime, timedelta, timezone\n\nfrom celery import shared_task\nfrom sqlalchemy import delete\n\nfrom app.db import SessionLocal\nfrom app.models import Customer\n\n\n@shared_task\ndef cleanup_inactive_customers(days: int = 90) -> int:\n    cutoff = datetime.now(timezone.utc) - timedelta(days=days)\n    with SessionLocal() as session:\n        result = session.execute(delete(Customer).where(Customer.last_activity_at < cutoff))\n        session.commit()\n        return result.rowcount\n"
+    },
+    {
+      "id": "r4_bill_invoice_365",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/purge.py",
+      "code": "from datetime import datetime, timedelta, timezone\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Invoice\n\n\ndef purge_invoices(session: Session) -> int:\n    cutoff = datetime.now(timezone.utc) - timedelta(days=365)\n    result = session.execute(delete(Invoice).where(Invoice.issued_at < cutoff))\n    session.commit()\n    return result.rowcount\n"
+    },
+    {
+      "id": "r4_bill_order_2190",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/billing/order_retention.py",
+      "code": "from datetime import datetime, timedelta, timezone\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Order\n\nTAX_RETENTION_DAYS = 2190\n\n\ndef purge_orders(session: Session) -> int:\n    cutoff = datetime.now(timezone.utc) - timedelta(days=TAX_RETENTION_DAYS)\n    result = session.execute(delete(Order).where(Order.created_at < cutoff))\n    session.commit()\n    return result.rowcount\n"
+    },
+    {
+      "id": "r4_bill_invoice_180",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/expiry.py",
+      "code": "import datetime as dt\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Invoice\n\n\ndef expire_old_invoices(session: Session) -> None:\n    threshold = dt.datetime.utcnow() - dt.timedelta(days=180)\n    session.execute(delete(Invoice).where(Invoice.created_at < threshold))\n    session.commit()\n"
+    },
+    {
+      "id": "r4_bill_celery_cold_storage",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/tasks/billing_archive.py",
+      "code": "from datetime import datetime, timedelta, timezone\n\nfrom celery import shared_task\n\nfrom app.db import SessionLocal\nfrom app.models import Order\n\n\n@shared_task\ndef move_orders_to_cold_storage(months: int = 24) -> int:\n    cutoff = datetime.now(timezone.utc) - timedelta(days=months * 30)\n    with SessionLocal() as session:\n        moved = session.query(Order).filter(Order.created_at < cutoff).update(\n            {\"storage_tier\": \"cold\"}\n        )\n        session.commit()\n        return moved\n"
+    },
+    {
+      "id": "r4_bill_flask_730",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/blueprints/billing_admin.py",
+      "code": "from datetime import datetime, timedelta, timezone\n\nfrom flask import Blueprint, jsonify\n\nfrom app.db import db\nfrom app.models import Invoice\n\nbilling_bp = Blueprint(\"billing_admin\", __name__)\n\n\n@billing_bp.delete(\"/admin/invoices/expired\")\ndef purge_expired_invoices():\n    cutoff = datetime.now(timezone.utc) - timedelta(days=730)\n    deleted = db.session.query(Invoice).filter(Invoice.issued_at < cutoff).delete()\n    db.session.commit()\n    return jsonify({\"deleted\": deleted})\n"
+    },
+    {
+      "id": "r4_reset_flask_token_body",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/blueprints/password_reset.py",
+      "code": "import secrets\n\nfrom flask import Blueprint, jsonify\n\nreset_bp = Blueprint(\"password_reset\", __name__)\n\n\n@reset_bp.post(\"/password/reset\")\ndef request_reset():\n    token = secrets.token_urlsafe(32)\n    store_reset_token(token)\n    return jsonify({\"reset_token\": token, \"expires_in\": 900})\n"
+    },
+    {
+      "id": "r4_reset_redirect_token",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/api/password_reset.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import RedirectResponse\n\nrouter = APIRouter()\n\n\n@router.get(\"/password/reset/start\")\ndef start_reset(account_id: int):\n    token = issue_reset_token(account_id)\n    return RedirectResponse(url=f\"/password/reset/confirm?token={token}\", status_code=303)\n"
+    },
+    {
+      "id": "r4_reset_celery_log_token",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/tasks/reset_mail.py",
+      "code": "import logging\n\nfrom celery import shared_task\n\nlog = logging.getLogger(__name__)\n\n\n@shared_task\ndef dispatch_reset_email(account_id: int) -> None:\n    token = build_reset_token(account_id)\n    log.info(\"reset link for account %s: /reset?token=%s\", account_id, token)\n    send_email(account_id, f\"https://app.example.com/reset?token={token}\")\n"
+    },
+    {
+      "id": "r4_reset_di_generic",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/api/forgot_password.py",
+      "code": "from fastapi import APIRouter, Depends\n\nrouter = APIRouter()\n\n\nclass ResetService:\n    def __init__(self, accounts, mailer):\n        self.accounts = accounts\n        self.mailer = mailer\n\n    def request(self, email: str) -> None:\n        account = self.accounts.find_by_email(email)\n        if account is None:\n            return\n        token = self.accounts.create_reset_token(account.id)\n        self.mailer.send_password_reset(account.email, token)\n\n\ndef get_reset_service() -> ResetService:\n    return ResetService(accounts=AccountRepository(), mailer=EmailGateway())\n\n\n@router.post(\"/password/forgot\")\ndef forgot_password(payload: ForgotPayload, service: ResetService = Depends(get_reset_service)):\n    service.request(payload.email)\n    return {\"message\": \"If the account exists, an email was sent.\"}\n"
+    },
+    {
+      "id": "r4_reset_graphql_generic",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/graphql/accounts.py",
+      "code": "import strawberry\n\nfrom app.services.accounts import AccountService\n\n\n@strawberry.type\nclass RequestResetResult:\n    accepted: bool\n    message: str\n\n\n@strawberry.type\nclass Mutation:\n    @strawberry.mutation\n    def request_password_reset(self, email: str, info: strawberry.Info) -> RequestResetResult:\n        service: AccountService = info.context[\"account_service\"]\n        service.queue_reset(email)\n        return RequestResetResult(\n            accepted=True,\n            message=\"If the account exists, an email was sent.\",\n        )\n"
+    },
+    {
+      "id": "r4_key_flask_credentials",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/blueprints/api_clients.py",
+      "code": "from flask import Blueprint, jsonify\n\nfrom app.repositories import ApiClientRepository\n\nclient_bp = Blueprint(\"api_clients\", __name__)\n\n\n@client_bp.get(\"/clients/<int:client_id>/credentials\")\ndef client_credentials(client_id):\n    client = ApiClientRepository.get(client_id)\n    return jsonify({\"client_id\": client.client_id, \"api_key\": client.api_key})\n"
+    },
+    {
+      "id": "r4_key_sqla_signing_secret",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/webhooks/views.py",
+      "code": "from sqlalchemy import select\nfrom sqlalchemy.orm import Session\n\nfrom app.models import WebhookEndpoint\n\n\ndef webhook_settings(session: Session, endpoint_id: int) -> dict:\n    endpoint = session.scalar(select(WebhookEndpoint).where(WebhookEndpoint.id == endpoint_id))\n    return {\n        \"id\": endpoint.id,\n        \"url\": endpoint.url,\n        \"signing_secret\": endpoint.signing_secret,\n    }\n"
+    },
+    {
+      "id": "r4_key_di_masked_suffix",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/client_keys.py",
+      "code": "from fastapi import APIRouter, Depends\n\nrouter = APIRouter()\n\n\nclass KeyService:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def describe(self, client_id: str) -> dict:\n        record = self.repo.get(client_id)\n        return {\n            \"client_id\": record.client_id,\n            \"api_key_suffix\": record.api_key[-4:],\n            \"created_at\": record.created_at,\n        }\n\n\ndef get_key_service() -> KeyService:\n    return KeyService(repo=ApiKeyRepository())\n\n\n@router.get(\"/clients/{client_id}/key\")\ndef key_info(client_id: str, service: KeyService = Depends(get_key_service)):\n    return service.describe(client_id)\n"
+    },
+    {
+      "id": "r4_key_settings_flag",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/integrations.py",
+      "code": "from fastapi import APIRouter\n\nfrom app.config import settings\n\nrouter = APIRouter()\n\n\n@router.get(\"/integrations/status\")\ndef integrations_status():\n    return {\n        \"payments\": {\"enabled\": bool(settings.payments_api_key)},\n        \"maps\": {\"enabled\": bool(settings.maps_api_key)},\n        \"region\": settings.region,\n    }\n"
+    },
+    {
+      "id": "r4_key_graphql_log_secret",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/graphql/service_credentials.py",
+      "code": "import logging\n\nimport strawberry\n\nlog = logging.getLogger(__name__)\n\n\n@strawberry.type\nclass Query:\n    @strawberry.field\n    def service_credentials(self, info: strawberry.Info) -> str:\n        secret = info.context[\"config\"].internal_api_key\n        log.info(\"handing out internal key %s\", secret)\n        return \"ok\"\n"
     }
   ]
 }

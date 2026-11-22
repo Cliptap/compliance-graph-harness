@@ -44,3 +44,5 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
 - Round 2: sealed, run once, 37/42 post-round-1, focused on service/repository/async shapes.
 - Round 3: sealed, run once, 25/38 post-run-fix, focused on CLI, workers, serializers and ORM
   models. The remaining gaps are framework coverage, not edge cases.
+- Round 4: sealed, run once, 31/35 post-framework, focused on Flask, SQLAlchemy, FastAPI
+  dependencies, GraphQL and Celery. The four gaps were fixed and are now regression cases.

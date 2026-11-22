@@ -39,6 +39,9 @@ REDIRECT_PATTERNS = ("RedirectResponse", "redirect")
 DELETE_RE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)", re.IGNORECASE)
 DJANGO_OBJECTS_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\.objects\b")
 DERIVED_FIELD_SUFFIXES = ("_configured", "_suffix", "_last4", "_preview", "_enabled")
+METADATA_FIELD_SUFFIXES = ("_ttl", "_minutes", "_updated_at", "_count", "_enabled", "_configured",
+                           "_suffix", "_last4", "_preview", "_verified", "_confirmed", "_fp",
+                           "_hash", "_id")
 TIMEDELTA_RE = re.compile(r"timedelta\s*\(\s*days\s*=\s*(\d+)", re.IGNORECASE)
 INTERVAL_RE = re.compile(r"interval\s+'(\d+)\s+days?'", re.IGNORECASE)
 MAKE_INTERVAL_RE = re.compile(r"make_interval\s*\(\s*days\s*=>\s*(\d+)", re.IGNORECASE)
@@ -255,6 +258,7 @@ class SinkExposureFamily(PolicyFamily):
             if "response" in sinks:
                 findings.extend(self._scan_responses(control, path, tree, categories))
                 findings.extend(self._scan_serializers(control, path, tree, categories))
+                findings.extend(self._scan_graphql_types(control, path, tree, categories))
                 if control.detection.context.get("route") == "admin":
                     findings.extend(self._scan_admin_classes(control, path, tree, categories))
             if "redirect" in sinks:
@@ -327,6 +331,8 @@ class SinkExposureFamily(PolicyFamily):
         for category in self.catalog.data_categories:
             if lowered in self.catalog.synonyms(category):
                 return category
+        if lowered.endswith(METADATA_FIELD_SUFFIXES):
+            return None
         for category in self.catalog.data_categories:
             for synonym in self.catalog.synonyms(category):
                 if len(synonym) > 3 and synonym in lowered:
@@ -403,6 +409,26 @@ class SinkExposureFamily(PolicyFamily):
                         break
         return out
 
+    def _scan_graphql_types(self, control, path, tree, categories) -> list[Finding]:
+        out: list[Finding] = []
+        admin_only = control.detection.context.get("route") == "admin"
+        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+            decorators = " ".join(ast.unparse(decorator) for decorator in cls.decorator_list).lower()
+            if "strawberry" not in decorators:
+                continue
+            if admin_only and "admin" not in cls.name.lower() and "admin" not in path.lower():
+                continue
+            for stmt in cls.body:
+                if not isinstance(stmt, ast.AnnAssign) or not isinstance(stmt.target, ast.Name):
+                    continue
+                field = stmt.target.id
+                if self._field_category(field) in categories:
+                    out.append(_finding(control, path, stmt.lineno,
+                                        f"GraphQL type '{cls.name}' exposes '{field}' without masking.",
+                                        field))
+                    break
+        return out
+
     def _scan_redirects(self, control, path, tree, categories) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
@@ -473,7 +499,7 @@ class SinkExposureFamily(PolicyFamily):
                             found.add(category)
             elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
                 token = _identifier(child)
-                category = self.catalog.category_for(token) if token else None
+                category = self._field_category(token) if token else None
                 if category in allowed:
                     found.add(category)
             elif isinstance(child, ast.Constant) and isinstance(child.value, str):
@@ -724,6 +750,7 @@ class CredentialExposureFamily(PolicyFamily):
                     continue
                 if (self._matches(text, keys, value_pattern)
                         or self._logs_token(node, sinks, keys)
+                        or self._logs_secret_name(node, sinks, keys)
                         or self._returns_secret_attribute(node, sinks, keys)
                         or self._logs_secret_header(node, header_bindings, keys)):
                     out.append(_finding(control, path, getattr(node, "lineno", 1),
@@ -732,7 +759,8 @@ class CredentialExposureFamily(PolicyFamily):
 
     @staticmethod
     def _logs_token(node: ast.AST, sinks: set[str], keys: tuple[str, ...]) -> bool:
-        if "log" not in sinks or not isinstance(node, ast.Call):
+        if "log" not in sinks or not isinstance(node, ast.Call) \
+                or not _is_log_sink(_call_name(node)):
             return False
         if not any(key in {"token", "reset_token"} for key in keys):
             return False
@@ -745,9 +773,28 @@ class CredentialExposureFamily(PolicyFamily):
         return False
 
     @staticmethod
+    def _logs_secret_name(node: ast.AST, sinks: set[str],
+                          keys: tuple[str, ...]) -> bool:
+        if "log" not in sinks or not isinstance(node, ast.Call) \
+                or not _is_log_sink(_call_name(node)):
+            return False
+        if not any(key in {"api_key", "api-key", "secret"} for key in keys):
+            return False
+        for arg in list(node.args) + [kw.value for kw in node.keywords]:
+            for child in ast.walk(arg):
+                if isinstance(child, ast.Name) and any(
+                        term in child.id.lower() for term in ("secret", "api_key")):
+                    return True
+                if isinstance(child, ast.Attribute) and any(
+                        term in child.attr.lower() for term in ("secret", "api_key")):
+                    return True
+        return False
+
+    @staticmethod
     def _logs_secret_header(node: ast.AST, bindings: set[str],
                             keys: tuple[str, ...]) -> bool:
-        if not bindings or not isinstance(node, ast.Call):
+        if not bindings or not isinstance(node, ast.Call) \
+                or not _is_log_sink(_call_name(node)):
             return False
         if not any(key in {"api_key", "api-key", "secret"} for key in keys):
             return False

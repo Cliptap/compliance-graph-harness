@@ -82,3 +82,23 @@ def test_api_key_header_dict_log():
         "    logger.info('delivering %s', headers)\n"
     )
     assert "v2.api_key" in ids(code)
+
+
+def test_fuzzy_personal_identifier_in_log():
+    code = 'def f(phone_number):\n    log.info("sms %s", phone_number)\n'
+    assert "v2.log_pii" in ids(code)
+
+
+def test_strawberry_admin_type_field():
+    code = "@strawberry.type\nclass AdminCustomer:\n    id: int\n    rut: str\n"
+    assert "v2.admin_exposure" in ids(code)
+
+
+def test_strawberry_credential_type_field():
+    code = "@strawberry.type\nclass TenantSettings:\n    tenant_id: str\n    api_secret: str\n"
+    assert "v2.credential_response" in ids(code)
+
+
+def test_api_key_secret_name_in_log():
+    code = 'def f(secret, log):\n    log.info("key %s", secret)\n'
+    assert "v2.api_key" in ids(code)
