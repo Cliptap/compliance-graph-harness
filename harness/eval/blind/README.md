@@ -46,3 +46,6 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   models. The remaining gaps are framework coverage, not edge cases.
 - Round 4: sealed, run once, 31/35 post-framework, focused on Flask, SQLAlchemy, FastAPI
   dependencies, GraphQL and Celery. The four gaps were fixed and are now regression cases.
+- Round 5: sealed, run once, 32/42, focused on indirect data flow. The failures are interprocedural
+  (helper returns, formatted intermediates, router prefixes, helper cutoffs) plus two prose-token
+  false positives; not yet fixed.
