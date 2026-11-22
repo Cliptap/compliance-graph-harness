@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -834,6 +834,55 @@
       "expected": "violation",
       "path": "app/api/vendor_ping.py",
       "code": "import logging\n\nfrom fastapi import APIRouter, Depends\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter()\n\n\ndef _auth_header(key):\n    return f'Bearer {key}'\n\n\ndef _audit_line(org_id, header):\n    return f'vendor call org={org_id} auth={header}'\n\n\ndef _audit(org_id, key):\n    header = _auth_header(key)\n    logger.info(_audit_line(org_id, header))\n    return header\n\n\n@router.post('/orgs/{org_id}/ping')\ndef ping_vendor(org_id: int, repo=Depends(get_repo)):\n    key = repo.get_api_key(org_id)\n    header = _audit(org_id, key)\n    return {'status': 'ok', 'used': bool(header)}"
+    },
+    {
+      "id": "r7-log-04",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/profile.py",
+      "code": "import logging\n\nfrom fastapi import APIRouter\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter()\n\n\nclass ProfilePresenter:\n    def __init__(self, component):\n        self.component = component\n\n    def mask(self, email):\n        local, _, domain = email.partition('@')\n        return f'{local[:2]}***@{domain}'\n\n    def present(self, user):\n        masked = self.mask(email=user['email'])\n        logger.info('profile viewed component=%s user_id=%s email=%s', self.component, user['id'], masked)\n        return {'user_id': user['id'], 'email': masked}\n\n\npresenter = ProfilePresenter(component='profile')\n\n\n@router.get('/me/profile')\ndef my_profile():\n    user = {'id': 42, 'email': 'ana.perez@example.com'}\n    return presenter.present(user)\n"
+    },
+    {
+      "id": "r7-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/views/shipping.py",
+      "code": "import logging\n\nfrom flask import Flask, jsonify, request\n\napp = Flask(__name__)\nlog = logging.getLogger('shipping')\n\n\ndef mask_address(address):\n    parts = address.split(' ')\n    return f'*** {parts[-1]}'\n\n\ndef build_confirmation(order_id, address):\n    masked = mask_address(address)\n    log.info('shipping confirmation order=%s address=%s', order_id, masked)\n    return {'order_id': order_id, 'address': masked}\n\n\n@app.post('/orders/<order_id>/confirm')\ndef confirm(order_id):\n    address = request.json.get('address', 'Av. Providencia 1234 Santiago')\n    return jsonify(build_confirmation(order_id=order_id, address=address))\n\n\n@app.get('/health')\ndef health():\n    return jsonify({'status': 'ok'})\n"
+    },
+    {
+      "id": "r7-adm-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/admin_list.py",
+      "code": "from fastapi import APIRouter, Depends\n\nfrom app.deps import require_admin\nfrom app.models import Customer\n\nrouter = APIRouter(prefix='/admin', dependencies=[Depends(require_admin)])\n\n\ndef _mask_email(value):\n    local, _, domain = value.partition('@')\n    return f'{local[:1]}***@{domain}'\n\n\ndef _row(customer, masked_email):\n    return {\n        'id': customer.id,\n        'name': customer.full_name,\n        'email': masked_email,\n        'has_email': bool(customer.email),\n    }\n\n\n@router.get('/customers')\ndef list_customers():\n    rows = [_row(customer=customer, masked_email=_mask_email(customer.email)) for customer in Customer.all()]\n    return {'results': rows}\n\n\n@router.get('/customers/{customer_id}/orders')\ndef customer_orders(customer_id: int):\n    return {'order_ids': Customer.orders(customer_id)}\n"
+    },
+    {
+      "id": "r7-adm-06",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/admin_customer.py",
+      "code": "from rest_framework.permissions import IsAdminUser\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.models import Customer\n\n\ndef _phone_suffix(phone):\n    digits = ''.join(ch for ch in phone if ch.isdigit())\n    return digits[-4:]\n\n\nclass AdminCustomerDetailView(APIView):\n    permission_classes = [IsAdminUser]\n\n    def get(self, request, pk):\n        customer = Customer.objects.get(pk=pk)\n        body = {\n            'id': customer.id,\n            'plan': customer.plan,\n            'created_at': customer.created_at.isoformat(),\n            'phone_suffix': _phone_suffix(phone=customer.phone),\n        }\n        return Response(body)\n\n\nclass AdminCustomerHeaderView(APIView):\n    permission_classes = [IsAdminUser]\n\n    def get(self, request, pk):\n        customer = Customer.objects.get(pk=pk)\n        return Response({'display_name': customer.full_name.split(' ')[0]})\n"
+    },
+    {
+      "id": "r7-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/credential_status.py",
+      "code": "from fastapi import APIRouter, Depends\n\nfrom app.deps import require_admin\nfrom app.models import User\n\nrouter = APIRouter(prefix='/admin', dependencies=[Depends(require_admin)])\n\n\ndef _credential_status(user, changed_at):\n    return {\n        'user_id': user.id,\n        'has_password': bool(user.password),\n        'password_algorithm': user.password_algorithm,\n        'password_changed_at': changed_at,\n    }\n\n\n@router.get('/users/{user_id}/credential-status')\ndef credential_status(user_id: int):\n    user = User.get(user_id)\n    changed_at = user.password_changed_at.isoformat() if user.password_changed_at else None\n    return _credential_status(user=user, changed_at=changed_at)\n\n\n@router.post('/users/{user_id}/password/invalidate')\ndef invalidate_password(user_id: int):\n    User.invalidate_password(user_id)\n    return {'invalidated': True}\n"
+    },
+    {
+      "id": "r7-cred-05",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/users.py",
+      "code": "from django.contrib.auth.hashers import make_password\nfrom django.contrib.auth.models import User\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\n\nclass UserProvisioner:\n    def __init__(self, send_email):\n        self.send_email = send_email\n\n    def create(self, username, raw_password):\n        user = User.objects.create(username=username, password=make_password(raw_password))\n        if self.send_email:\n            user.email_user('welcome', 'Set your password from the portal.')\n        return {'id': user.id, 'username': user.username, 'email_sent': self.send_email}\n\n\nclass CreateUserView(APIView):\n    def post(self, request):\n        provisioner = UserProvisioner(send_email=True)\n        body = provisioner.create(\n            username=request.data['username'],\n            raw_password=request.data['password'],\n        )\n        return Response(body, status=201)\n"
+    },
+    {
+      "id": "r7-bil-06",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/api/order_retention.py",
+      "code": "from datetime import timedelta\n\nfrom django.utils import timezone\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.masking import mask_email\nfrom app.models import Order\n\nLEGAL_HOLD_DAYS = 2190\n\n\nclass OrderRetentionJob:\n    def __init__(self, days):\n        self.days = days\n\n    def receipt(self, batch, sample_email):\n        return {'purged': len(batch), 'days': self.days, 'sample_customer': sample_email}\n\n    def run(self):\n        cutoff = timezone.now() - timedelta(days=self.days)\n        batch = list(Order.objects.filter(created_at__lt=cutoff, refunded=True)[:500])\n        if not batch:\n            return self.receipt(batch=[], sample_email=None)\n        note = self.receipt(batch=batch, sample_email=mask_email(batch[0].customer_email))\n        Order.objects.filter(id__in=[order.id for order in batch]).delete()\n        return note\n\n\nclass OrderRetentionView(APIView):\n    def post(self, request):\n        return Response(OrderRetentionJob(days=LEGAL_HOLD_DAYS).run())\n"
     }
   ]
 }

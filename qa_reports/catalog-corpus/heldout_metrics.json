@@ -1,14 +1,14 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 119,
-  "passed": 119,
+  "cases": 126,
+  "passed": 126,
   "controls": {
     "v2.admin_exposure": {
       "tp": 12,
       "fp": 0,
       "fn": 0,
-      "tn": 7,
+      "tn": 9,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -42,7 +42,7 @@
       "tp": 11,
       "fp": 0,
       "fn": 0,
-      "tn": 6,
+      "tn": 7,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -59,7 +59,7 @@
       "tp": 10,
       "fp": 0,
       "fn": 0,
-      "tn": 7,
+      "tn": 9,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -93,7 +93,7 @@
       "tp": 9,
       "fp": 0,
       "fn": 0,
-      "tn": 8,
+      "tn": 10,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -1135,11 +1135,7 @@
       "control": "v2.customer_hard_delete",
       "expected": "violation",
       "detected": true,
-      "other_findings": [
-        "v2.api_key",
-        "v2.log_pii",
-        "v2.reset_token"
-      ],
+      "other_findings": [],
       "passed": true
     },
     {
@@ -1159,6 +1155,62 @@
         "v2.log_pii",
         "v2.reset_token"
       ],
+      "passed": true
+    },
+    {
+      "id": "r7-log-04",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r7-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r7-adm-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r7-adm-06",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r7-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r7-cred-05",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r7-bil-06",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
       "passed": true
     }
   ]

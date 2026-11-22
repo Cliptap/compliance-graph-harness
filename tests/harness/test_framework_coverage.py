@@ -298,3 +298,79 @@ def test_instance_delete_with_retention_helper_is_clean():
             "        session.delete(row)\n"
             "    session.commit()\n")
     assert "v2.customer_hard_delete" not in ids(code)
+
+
+def test_masked_argument_placeholder_is_not_pii():
+    code = ("import logging\nlogger = logging.getLogger(__name__)\n\n"
+            "def mask(value):\n"
+            "    return f'***{value[-2:]}'\n\n"
+            "def show(user):\n"
+            "    masked = mask(user['email'])\n"
+            "    logger.info('email=%s', masked)\n")
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_masked_value_name_is_not_exposed():
+    code = "def row(customer, masked_email):\n    return {'email': masked_email}\n"
+    assert "v2.admin_exposure" not in ids(code, "app/admin/rows.py")
+
+
+def test_suffix_helper_is_masked():
+    code = ("def _phone_suffix(phone):\n"
+            "    digits = ''.join(ch for ch in phone if ch.isdigit())\n"
+            "    return digits[-4:]\n\n"
+            "def row(customer):\n"
+            "    return {'phone_suffix': _phone_suffix(phone=customer.phone)}\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/rows.py")
+
+
+def test_password_metadata_is_not_a_credential():
+    code = ("def status(user):\n"
+            "    return {'user_id': user.id,\n"
+            "            'password_algorithm': user.password_algorithm,\n"
+            "            'password_changed_at': user.password_changed_at}\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_nested_credential_call_is_not_a_source():
+    code = ("def create(username, raw):\n"
+            "    user = User.objects.create(username=username, password=make_password(raw))\n"
+            "    return {'id': user.id, 'username': user.username}\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_keyword_parameter_reaches_response():
+    code = ("from rest_framework.response import Response\n\n"
+            "class Serializer:\n"
+            "    def render(self, customer, email):\n"
+            "        data = {'id': customer.id}\n"
+            "        data['email'] = email\n"
+            "        return data\n\n"
+            "def list_customers(customers):\n"
+            "    serializer = Serializer()\n"
+            "    rows = [serializer.render(customer=c, email=c.email) for c in customers]\n"
+            "    return Response({'rows': rows})\n")
+    assert "v2.admin_exposure" in ids(code, "app/api/admin_list.py")
+
+
+def test_keyword_parameter_logged_inside_helper():
+    code = ("import logging\nlogger = logging.getLogger(__name__)\n\n"
+            "def audit(event, email):\n"
+            "    logger.info('event=%s email=%s', event, email)\n\n"
+            "def handle(payload):\n"
+            "    audit(event='signup', email=payload['email'])\n")
+    assert "v2.log_pii" in ids(code)
+
+
+def test_constructor_keyword_cutoff_is_clean():
+    code = ("from datetime import datetime, timedelta\n\n"
+            "LEGAL_HOLD_DAYS = 2190\n\n"
+            "class Job:\n"
+            "    def __init__(self, days):\n"
+            "        self.days = days\n\n"
+            "    def run(self, session):\n"
+            "        cutoff = datetime.utcnow() - timedelta(days=self.days)\n"
+            "        return session.query(Order).filter(Order.created_at < cutoff).delete()\n\n"
+            "def trigger(session):\n"
+            "    Job(days=LEGAL_HOLD_DAYS).run(session)\n")
+    assert "v2.billing_retention" not in ids(code)

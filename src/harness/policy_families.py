@@ -32,7 +32,7 @@ def _constant_matches(text: str, synonyms: list[str]) -> bool:
         if term in PROSE_SYNONYMS:
             pattern = (
                 rf"\b{re.escape(term)}\b\s*[:=]\s*"
-                r"(?:%s|%\(|f?\{|[\w.+-]+@[\w.-]+|[+]?\d[\d\s().-]{4,}|[A-Za-z][\w .-]*)"
+                r"(?:[\w.+-]+@[\w.-]+|[+]?\d[\d\s().-]{4,}|[A-Za-z][\w .-]*)"
             )
             if re.search(pattern, text, re.IGNORECASE):
                 return True
@@ -51,7 +51,8 @@ DERIVED_FIELD_SUFFIXES = ("_configured", "_suffix", "_last4", "_preview", "_enab
 DERIVED_IDENTIFIER_PREFIXES = ("with_", "has_", "is_")
 METADATA_FIELD_SUFFIXES = ("_ttl", "_minutes", "_updated_at", "_count", "_enabled", "_configured",
                            "_suffix", "_last4", "_preview", "_verified", "_confirmed", "_fp",
-                           "_hash", "_id")
+                           "_hash", "_id", "_at", "_algorithm", "_status", "_policy", "_ref",
+                           "_version")
 TIMEDELTA_RE = re.compile(r"timedelta\s*\(\s*days\s*=\s*(\d+)", re.IGNORECASE)
 INTERVAL_RE = re.compile(r"interval\s+'(\d+)\s+days?'", re.IGNORECASE)
 MAKE_INTERVAL_RE = re.compile(r"make_interval\s*\(\s*days\s*=>\s*(\d+)", re.IGNORECASE)
@@ -78,6 +79,16 @@ def _is_log_sink(name: str) -> bool:
 
 
 MASK_NAME_HINTS = ("mask", "redact", "anonym", "obfuscat", "sanitiz", "hash", "fingerprint")
+MASK_NAME_SUFFIXES = ("_masked", "_mask", "_suffix", "_last4", "_preview", "_fp", "_hash",
+                      "_fingerprint", "_redacted")
+
+
+def _exact_category(catalog: Catalog, field: str) -> str | None:
+    lowered = field.lower()
+    for category in catalog.data_categories:
+        if lowered in catalog.synonyms(category):
+            return category
+    return None
 
 
 def _field_category(catalog: Catalog, field: str) -> str | None:
@@ -97,7 +108,7 @@ def _field_category(catalog: Catalog, field: str) -> str | None:
 
 def _is_masking_name(name: str) -> bool:
     lowered = name.lower()
-    return any(hint in lowered for hint in MASK_NAME_HINTS)
+    return any(hint in lowered for hint in MASK_NAME_HINTS) or lowered.endswith(MASK_NAME_SUFFIXES)
 
 
 def _value_is_masked(catalog: Catalog, value: ast.AST) -> bool:
@@ -112,6 +123,11 @@ def _value_is_masked(catalog: Catalog, value: ast.AST) -> bool:
         return catalog.is_sanitizer(ast.unparse(value))
     if isinstance(value, ast.Subscript):
         return not (isinstance(value.slice, ast.Constant) and isinstance(value.slice.value, str))
+    if isinstance(value, (ast.Name, ast.Attribute)):
+        token = _identifier(value)
+        if not token or _exact_category(catalog, token):
+            return False
+        return _is_masking_name(token)
     if isinstance(value, ast.Compare):
         return True
     if isinstance(value, ast.UnaryOp) and isinstance(value.op, ast.Not):
@@ -120,16 +136,25 @@ def _value_is_masked(catalog: Catalog, value: ast.AST) -> bool:
 
 
 def _has_credential_call(catalog: Catalog, node: ast.AST) -> bool:
-    """A call that issues or retrieves a credential: ``tokens.create``, ``config.load_secret``."""
-    for child in ast.walk(node):
-        if not isinstance(child, ast.Call):
-            continue
-        if _field_category(catalog, _call_name(child).rsplit(".", 1)[-1]) == "CREDENTIAL":
-            return True
-        if isinstance(child.func, ast.Attribute) and isinstance(child.func.value, ast.Name):
-            receiver = child.func.value.id
-            if _field_category(catalog, receiver) == "CREDENTIAL":
+    """A call that issues or retrieves a credential: ``tokens.create``, ``config.load_secret``.
+
+    Only the call chain is followed: a credential-shaped call passed as an *argument*
+    (``User.objects.create(password=make_password(...))``) does not make the result a secret.
+    """
+    current = node
+    while current is not None:
+        if isinstance(current, ast.Call):
+            if _field_category(catalog, _call_name(current).rsplit(".", 1)[-1]) == "CREDENTIAL":
                 return True
+            func = current.func
+            current = func.value if isinstance(func, ast.Attribute) else None
+            continue
+        if isinstance(current, ast.Attribute):
+            current = current.value
+            continue
+        if isinstance(current, ast.Name):
+            return _field_category(catalog, current.id) == "CREDENTIAL"
+        return False
     return False
 
 
@@ -179,6 +204,11 @@ def _finding(control: Control, path: str, line: int, message: str, evidence: str
 
 
 VALUE_ACCESSORS = {"value", "raw"}
+PASSTHROUGH_CALLS = {"dict", "list", "tuple", "set", "str", "jsonify", "JsonResponse",
+                     "JSONResponse", "Response", "RedirectResponse", "execute", "executemany",
+                     "fetchone", "fetchall", "fetchmany", "mappings", "scalars", "scalar",
+                     "query", "filter", "filter_by", "where", "first", "one", "all", "get",
+                     "count", "values"}
 
 
 def _skip_nodes(node: ast.AST) -> set[int]:
@@ -258,16 +288,21 @@ def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[
 def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                      env: dict[str, set[str]] | None = None,
                      summaries: dict[str, set[str]] | None = None,
-                     param_returns: dict[str, set[int]] | None = None,
+                     param_returns: dict[str, set[int | str]] | None = None,
                      field_lists: dict[str, set[str]] | None = None) -> set[str]:
     """Categories that reach a sink, following local variables and helper summaries."""
     found: set[str] = set()
     comprehension_skip = _skip_nodes(node)
     projection = _projection_tokens(node)
     callees = {id(child.func) for child in ast.walk(node) if isinstance(child, ast.Call)}
+    masked_calls: set[int] = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call) and _is_masking_name(_call_name(child).rsplit(".", 1)[-1]):
+            for nested in ast.walk(child):
+                masked_calls.add(id(nested))
     blocked: set[int] = set()
     for child in ast.walk(node):
-        if id(child) in blocked or id(child) in comprehension_skip:
+        if id(child) in blocked or id(child) in comprehension_skip or id(child) in masked_calls:
             continue
         if id(child) in projection and not (
                 isinstance(child, ast.Name) and env and child.id in env
@@ -283,6 +318,10 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                 for index, arg in enumerate(child.args):
                     if index in positions:
                         found |= _sink_categories(catalog, arg, allowed, env, summaries,
+                                                  param_returns, field_lists)
+                for keyword in child.keywords:
+                    if keyword.arg in positions:
+                        found |= _sink_categories(catalog, keyword.value, allowed, env, summaries,
                                                   param_returns, field_lists)
         elif isinstance(child, ast.Dict):
             for key, value in zip(child.keys, child.values):
@@ -322,7 +361,7 @@ class _TaintTracker(ast.NodeVisitor):
 
     def __init__(self, catalog: Catalog, categories: set[str],
                  summaries: dict[str, set[str]] | None = None,
-                 param_returns: dict[str, set[int]] | None = None):
+                 param_returns: dict[str, set[int | str]] | None = None):
         self.catalog = catalog
         self.categories = set(categories)
         self.summaries = summaries or {}
@@ -414,12 +453,27 @@ class _TaintTracker(ast.NodeVisitor):
                         or leaf in {"sum", "len", "count", "bool", "any", "all"}):
                     for nested in ast.walk(child):
                         sanitized.add(id(nested))
+        blocked_args: set[int] = set()
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Call):
+                continue
+            leaf = _call_name(child).rsplit(".", 1)[-1]
+            propagates = bool(self.summaries.get(leaf)) or any(
+                index in self.param_returns.get(leaf, set()) for index in range(len(child.args)))
+            propagates = propagates or any(
+                keyword.arg in self.param_returns.get(leaf, set())
+                for keyword in child.keywords if keyword.arg)
+            if (leaf in PASSTHROUGH_CALLS or propagates or _is_masking_name(leaf)):
+                continue
+            for arg in list(child.args) + [keyword.value for keyword in child.keywords]:
+                for nested in ast.walk(arg):
+                    blocked_args.add(id(nested))
         dict_keys: set[int] = set()
         skip = _skip_nodes(node)
         projection = _projection_tokens(node)
         callees = {id(child.func) for child in ast.walk(node) if isinstance(child, ast.Call)}
         for child in ast.walk(node):
-            if id(child) in sanitized:
+            if id(child) in sanitized or id(child) in blocked_args:
                 continue
             if isinstance(child, ast.Dict):
                 for key, value in zip(child.keys, child.values):
@@ -437,9 +491,13 @@ class _TaintTracker(ast.NodeVisitor):
             elif isinstance(child, ast.Call):
                 leaf = _call_name(child).rsplit(".", 1)[-1]
                 found |= self.summaries.get(leaf, set())
+                positions = self.param_returns.get(leaf, set())
                 for index, arg in enumerate(child.args):
-                    if index in self.param_returns.get(leaf, set()):
+                    if index in positions:
                         found |= self._categories(arg)
+                for keyword in child.keywords:
+                    if keyword.arg in positions:
+                        found |= self._categories(keyword.value)
             elif isinstance(child, ast.Constant) and isinstance(child.value, str) and id(child) not in dict_keys:
                 for table in TABLE_RE.findall(child.value.lower()):
                     found |= set(self.catalog.tables.get(table, ()))
@@ -495,7 +553,8 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
 
 
 def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
-                  summaries: dict[str, set[str]]) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
+                  summaries: dict[str, set[str]]) -> tuple[dict[str, set[int | str]],
+                                                           dict[str, set[int | str]]]:
     """Parameter positions that reach a return value or a log sink.
 
     ``_auth_header(key)`` returns its first parameter; a caller that passes a
@@ -504,14 +563,16 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
     """
     functions = {node.name: node for node in ast.walk(tree)
                  if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
-    params = {name: [arg.arg for arg in func.args.args] for name, func in functions.items()}
+    params = {name: [arg.arg for arg in func.args.args if arg.arg not in {"self", "cls"}]
+              for name, func in functions.items()}
     field_lists = _field_lists(tree, catalog, categories)
-    param_returns: dict[str, set[int]] = {name: set() for name in functions}
+    param_returns: dict[str, set[int | str]] = {name: set() for name in functions}
     for _ in range(len(functions) + 1):
         changed = False
         for name, func in functions.items():
             for index, param in enumerate(params[name]):
-                tracker = _TaintTracker(catalog, categories, summaries, param_returns)
+                others = {key: value for key, value in param_returns.items() if key != name}
+                tracker = _TaintTracker(catalog, categories, summaries, others)
                 tracker.env[param] = set(categories)
                 env = tracker.scan(func)
                 hit = False
@@ -524,15 +585,16 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                                         param_returns, field_lists):
                         hit = True
                         break
-                if hit and index not in param_returns[name]:
-                    param_returns[name].add(index)
+                if hit:
+                    param_returns[name].update({index, param})
                     changed = True
         if not changed:
             break
-    param_logs: dict[str, set[int]] = {name: set() for name in functions}
+    param_logs: dict[str, set[int | str]] = {name: set() for name in functions}
     for name, func in functions.items():
         for index, param in enumerate(params[name]):
-            tracker = _TaintTracker(catalog, categories, summaries, param_returns)
+            others = {key: value for key, value in param_returns.items() if key != name}
+            tracker = _TaintTracker(catalog, categories, summaries, others)
             tracker.env[param] = set(categories)
             env = tracker.scan(func)
             for node in ast.walk(func):
@@ -540,7 +602,7 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                     continue
                 if _sink_categories(catalog, node, categories, env, summaries,
                                     param_returns, field_lists):
-                    param_logs[name].add(index)
+                    param_logs[name].update({index, param})
                     break
     return param_returns, param_logs
 
@@ -621,17 +683,20 @@ class SinkExposureFamily(PolicyFamily):
                 positions = param_logs.get(name.rsplit(".", 1)[-1])
                 if not positions:
                     continue
+                matched: set[str] = set()
                 for index, arg in enumerate(node.args):
-                    if index not in positions:
-                        continue
-                    matched = self._categories(arg, categories, env, summaries,
-                                               param_returns, field_lists)
-                    if matched:
-                        out.append(_finding(
-                            control, path, node.lineno,
-                            f"Log call inside '{_call_name(node)}' exposes {sorted(matched)} without masking.",
-                            ast.unparse(node)))
-                        break
+                    if index in positions:
+                        matched |= self._categories(arg, categories, env, summaries,
+                                                    param_returns, field_lists)
+                for keyword in node.keywords:
+                    if keyword.arg in positions:
+                        matched |= self._categories(keyword.value, categories, env, summaries,
+                                                    param_returns, field_lists)
+                if matched:
+                    out.append(_finding(
+                        control, path, node.lineno,
+                        f"Log call inside '{_call_name(node)}' exposes {sorted(matched)} without masking.",
+                        ast.unparse(node)))
         return out
 
     def _scan_responses(self, control, path, tree, categories, summaries,
@@ -944,6 +1009,19 @@ def _int_constants(tree: ast.AST) -> dict[str, int]:
                 constants[arg.arg] = default.value
             elif isinstance(default, ast.Name) and default.id in constants:
                 constants[arg.arg] = constants[default.id]
+    call_values: dict[str, set[int]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        for keyword in node.keywords:
+            if not keyword.arg:
+                continue
+            value = _int_value(keyword.value, constants)
+            if value is not None:
+                call_values.setdefault(keyword.arg, set()).add(value)
+    for name, values in call_values.items():
+        if len(values) == 1 and name not in constants:
+            constants[name] = next(iter(values))
     return constants
 
 
@@ -1264,14 +1342,19 @@ class CredentialExposureFamily(PolicyFamily):
                     if not positions or not isinstance(node, ast.Call):
                         continue
                     env = env_by_node.get(id(node))
+                    matched: set[str] = set()
                     for index, arg in enumerate(node.args):
-                        if index in positions and _sink_categories(
-                                self.catalog, arg, categories, env, summaries,
-                                param_returns, field_lists):
-                            out.append(_finding(control, path, node.lineno,
-                                                "A credential reaches a log inside a helper.",
-                                                ast.unparse(node)))
-                            break
+                        if index in positions:
+                            matched |= _sink_categories(self.catalog, arg, categories, env,
+                                                        summaries, param_returns, field_lists)
+                    for keyword in node.keywords:
+                        if keyword.arg in positions:
+                            matched |= _sink_categories(self.catalog, keyword.value, categories, env,
+                                                        summaries, param_returns, field_lists)
+                    if matched:
+                        out.append(_finding(control, path, node.lineno,
+                                            "A credential reaches a log inside a helper.",
+                                            ast.unparse(node)))
         return self._dedupe(out)
 
     @staticmethod

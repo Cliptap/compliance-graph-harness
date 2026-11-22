@@ -55,3 +55,8 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   instance deletes, table resolution through helpers and parameter passthrough, plus one false
   positive from a callee name. The five cases were fixed and promoted (42/42 regression). A round 7
   is required for a post-fix number.
+- Round 7: sealed, run once, 34/42, keyword-argument flows and parameters reaching responses.
+  Recall 0.952 and precision 0.741: seven false positives from format labels, masked names, suffix
+  helpers, credential metadata and a nested credential-shaped argument, plus one cross-module false
+  negative. The seven false positives were fixed and promoted (41/42 regression); round 8 is
+  required for a post-fix number.
