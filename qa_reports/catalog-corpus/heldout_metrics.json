@@ -1,11 +1,11 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 104,
-  "passed": 104,
+  "cases": 110,
+  "passed": 110,
   "controls": {
     "v2.admin_exposure": {
-      "tp": 8,
+      "tp": 10,
       "fp": 0,
       "fn": 0,
       "tn": 7,
@@ -13,11 +13,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.676,
+        0.722,
         1.0
       ],
       "recall_ci": [
-        0.676,
+        0.722,
         1.0
       ]
     },
@@ -56,7 +56,7 @@
       ]
     },
     "v2.credential_response": {
-      "tp": 9,
+      "tp": 10,
       "fp": 0,
       "fn": 0,
       "tn": 6,
@@ -64,11 +64,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.701,
+        0.722,
         1.0
       ],
       "recall_ci": [
-        0.701,
+        0.722,
         1.0
       ]
     },
@@ -76,7 +76,7 @@
       "tp": 9,
       "fp": 0,
       "fn": 0,
-      "tn": 6,
+      "tn": 7,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -93,7 +93,7 @@
       "tp": 8,
       "fp": 0,
       "fn": 0,
-      "tn": 6,
+      "tn": 8,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -989,6 +989,56 @@
       "other_findings": [
         "v2.log_pii"
       ],
+      "passed": true
+    },
+    {
+      "id": "r5-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r5-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r5-adm-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r5-adm-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r5-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.admin_exposure"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r5-del-06",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
       "passed": true
     }
   ]

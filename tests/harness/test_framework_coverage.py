@@ -10,8 +10,8 @@ ENGINE = CatalogEngine(load_catalog(CATALOG))
 SPEC = TaskSpec(task_id="framework", goal="framework", allowed_paths=["*"], forbidden_paths=[])
 
 
-def ids(code: str) -> set[str]:
-    findings = ENGINE.evaluate(SPEC, {"app/framework.py": code})
+def ids(code: str, path: str = "app/framework.py") -> set[str]:
+    findings = ENGINE.evaluate(SPEC, {path: code})
     return {finding.policy_id for finding in findings}
 
 
@@ -102,3 +102,61 @@ def test_strawberry_credential_type_field():
 def test_api_key_secret_name_in_log():
     code = 'def f(secret, log):\n    log.info("key %s", secret)\n'
     assert "v2.api_key" in ids(code)
+
+
+def test_prose_email_is_not_logged_pii():
+    code = 'def f(order, log):\n    log.info("invoice email dispatched for %s", order.id)\n'
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_email_with_value_is_logged_pii():
+    code = 'def f(email, log):\n    log.info("email=%s", email)\n'
+    assert "v2.log_pii" in ids(code)
+
+
+def test_email_count_is_not_logged_pii():
+    code = ("def f(customers, log):\n"
+            "    with_email = sum(1 for c in customers if c.email)\n"
+            "    log.info('with_email=%d', with_email)\n")
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_admin_route_path_is_context():
+    code = "def list_customers(rows):\n    return [{'email': c.email} for c in rows]\n"
+    assert "v2.admin_exposure" in ids(code, "app/admin/customers.py")
+
+
+def test_admin_shipping_address_key():
+    code = "def admin_order(order):\n    return {'shipping_address': order.address}\n"
+    assert "v2.admin_exposure" in ids(code)
+
+
+def test_dict_dunder_dump_is_flagged():
+    code = "def user_record(user):\n    data = dict(user.__dict__)\n    return data\n"
+    assert "v2.credential_response" in ids(code)
+
+
+def test_helper_retention_cutoff_is_clean():
+    code = ("RETENTION_DAYS = 730\n\n"
+            "def _cutoff(days=RETENTION_DAYS):\n    return now() - timedelta(days=days)\n\n"
+            "def purge(session):\n    cutoff = _cutoff()\n"
+            "    session.execute(delete(Customer).where(Customer.created_at < cutoff))\n")
+    assert "v2.customer_hard_delete" not in ids(code)
+
+
+def test_helper_cutoff_not_feeding_delete_is_still_flagged():
+    code = ("RETENTION_DAYS = 730\n\n"
+            "def _cutoff(days=RETENTION_DAYS):\n    return now() - timedelta(days=days)\n\n"
+            "def purge(session, customer_id):\n"
+            "    window = _cutoff()\n"
+            "    audit_log.info('retention window %s', window)\n"
+            "    session.execute(delete(Customer).where(Customer.id == customer_id))\n")
+    assert "v2.customer_hard_delete" in ids(code)
+
+
+def test_direct_helper_cutoff_in_delete_is_clean():
+    code = ("RETENTION_DAYS = 730\n\n"
+            "def _cutoff(days=RETENTION_DAYS):\n    return now() - timedelta(days=days)\n\n"
+            "def purge(session):\n"
+            "    session.execute(delete(Customer).where(Customer.created_at < _cutoff()))\n")
+    assert "v2.customer_hard_delete" not in ids(code)

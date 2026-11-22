@@ -1,4 +1,4 @@
-# Gate calibration - v2 controls (2026-11-21)
+﻿# Gate calibration - v2 controls (2026-11-21)
 
 ## Question
 
@@ -30,6 +30,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 2 (sealed, post-fix) | 42 | **37/42** | 4 false negatives, 1 false positive |
 | Blind round 3 (sealed, post-fix) | 38 | **25/38** | 14 false negatives, 0 false positives |
 | Blind round 4 (sealed, post-fix) | 35 | **31/35** | 4 false negatives, 0 false positives |
+| Blind round 5 (sealed) | 42 | **32/42** | 7 false negatives, 3 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -202,8 +203,8 @@ accuracy 0.632 [0.473, 0.766].
 
 | Control | TP | FP | FN | TN | Precision | Recall |
 |---|---:|---:|---:|---:|---|---|
-| `v2.admin_exposure` | 0 | 0 | 3 | 2 | — | 0.00 |
-| `v2.api_key` | 0 | 0 | 3 | 3 | — | 0.00 |
+| `v2.admin_exposure` | 0 | 0 | 3 | 2 | â€” | 0.00 |
+| `v2.api_key` | 0 | 0 | 3 | 3 | â€” | 0.00 |
 | `v2.billing_retention` | 1 | 0 | 2 | 2 | 1.00 | 0.33 |
 | `v2.credential_response` | 1 | 0 | 2 | 2 | 1.00 | 0.33 |
 | `v2.customer_hard_delete` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
@@ -283,6 +284,58 @@ Regression state: curated 22/22, regression corpus **104/104** (69 previous + 35
 suite **427 passed**. The sealed round-4 set was not re-scored; 31/35 is the measurement **before**
 these fixes. A round 5 is required for the post-fix number.
 
+## Blind round 5 (sealed)
+
+A fifth fresh author wrote 42 cases (6 per control) with indirect data flow: helper returns,
+intermediate variables, f-strings and `%` formatting, and `try/except`. The file was sealed before the
+run (`cases_blind_round5.json.sha256`,
+`fdf4c861144bc12a1c1115b23cd785493d78d9984b88675495f6feb8ae207f9a`) and run once.
+
+Result: **32/42**. Aggregate: precision **0.824** [0.590, 0.938], recall **0.667** [0.454, 0.828],
+accuracy 0.762 [0.615, 0.865].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 0 | 0 | 3 | 3 | â€” | 0.00 |
+| `v2.api_key` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.billing_retention` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.credential_response` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.customer_hard_delete` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.log_pii` | 2 | 2 | 1 | 1 | 0.50 | 0.67 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+The failures are interprocedural and prose, not new field names:
+
+| Group | Cases | Cause |
+|---|---|---|
+| Helper return | `r5-log-01` | The f-string is built in a helper; the caller logs the variable |
+| Admin prefix | `r5-adm-01/02/03` | The admin context is in `APIRouter(prefix='/admin')` or the path, not in the decorator/name; helpers return the value |
+| Object dump | `r5-cred-01` | `dict(user.__dict__)` is not recognised by `_dump_names` |
+| Intermediate token/key | `r5-rst-02`, `r5-key-03` | The token/key is put into an f-string or `%` variable and then passed to a redirect |
+| Helper retention (FP) | `r5-del-06` | The cutoff comes from `_retention_cutoff()`; the helper is not resolved |
+| Prose word (FP) | `r5-log-05/06` | "email" in a message ("invoice email", "with_email=%d") is matched as a value |
+
+This is the interprocedural ceiling: pattern matching is precise on local flows and does not follow
+helper returns, intermediate formatted variables or router prefixes. Prose matching also needs a
+value context ("email=" with a string, not "invoice email").
+
+## Fixes after blind round 5
+
+Six of the ten failures were fixed and promoted to the regression corpus:
+
+| Case | Fix |
+|---|---|
+| `r5-log-05/06` (FP) | prose synonyms need a value context; derived prefixes (`with_`, `has_`, `is_`) and aggregations (`sum`, `len`, `count`, `bool`, `any`, `all`) are not tainted |
+| `r5-adm-01` | admin context includes the file path, not only the function/decorator/class |
+| `r5-adm-03` | dict keys use the fuzzy field matcher with metadata guards |
+| `r5-cred-01` | `dict(obj.__dict__)` is recognised as an attribute dump |
+| `r5-del-06` | helper cutoffs and default arguments resolve to constants, but only when the cutoff feeds the delete |
+
+Regression state: regression corpus **110/110** (104 + 6), full suite **436 passed**. The four
+remaining failures are interprocedural: helper return (`r5-log-01`), helper phone (`r5-adm-02`),
+formatted token/key variable (`r5-rst-02`, `r5-key-03`). The 32/42 is the pre-fix measurement; a
+round 6 is required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -303,6 +356,12 @@ these fixes. A round 5 is required for the post-fix number.
   "run" were fixed; round 3 produced no false positives.
 - Round 4's four gaps were fixed and are now regression cases (104/104). The 31/35 number remains
   the pre-fix measurement; only a round 5 can estimate the post-fix recall.
+- Round 5 is the first interprocedural-dominated round: helper returns, intermediate f-strings and
+  `%` variables, router prefixes and helper cutoffs. Local matching stays precise; compositions are
+  not followed. The prose matches ("invoice email", "with_email=%d") add false positives. This is a
+  design fork: extend interprocedural taint or document the ceiling.
+- The cheap round-5 fixes (prose value context, admin path, dict keys, `dict(__dict__)`, helper
+  cutoffs) close six failures; the remaining four are interprocedural by construction.
 
 ## Limitations
 
@@ -314,22 +373,27 @@ these fixes. A round 5 is required for the post-fix number.
 - Round 3's post-fix result is regression-only: a fresh blind round is required to estimate it.
 - Round 4's post-fix result is also regression-only; the detector now has coverage for Flask,
   SQLAlchemy, GraphQL and Celery idioms, but no fresh measurement yet.
+- Round 5 is not in the regression corpus: its failures are interprocedural and require a design
+  change, not a pattern fix. Six of its cases were fixed and promoted; the four interprocedural ones
+  remain outside the corpus.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Author a fresh blind round 5 after the round-4 fixes, with a human adjudicator if possible.
-2. Include real code from the target app and public repositories, not only snippets.
-3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+1. Decide between extending interprocedural taint (helper returns, formatted intermediates, router
+   prefixes, helper cutoffs) and documenting the ceiling.
+2. Author a fresh blind round 6 after the cheap round-5 fixes.
+3. Include real code from the target app and public repositories, not only snippets.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json`, `cases_blind_round2.json`, `cases_blind_round3.json` and
-  `cases_blind_round4.json` with their `.sha256` seals.
+  `cases_blind_round1.json`, `cases_blind_round2.json`, `cases_blind_round3.json`,
+  `cases_blind_round4.json` and `cases_blind_round5.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`,
-  `blind_round2_metrics.json`, `blind_round3_metrics.json`, `blind_round4_metrics.json`.
+  `blind_round2_metrics.json`, `blind_round3_metrics.json`, `blind_round4_metrics.json`,
+  `blind_round5_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.
