@@ -5,10 +5,11 @@ from src.harness.contracts import TaskSpec
 from src.harness.normative_pack import load_legacy_view, load_pack
 from src.harness.payment_policy import PaymentDataStoragePolicy
 from src.harness.policy_engine import PolicyEngine
-from src.harness.precommit import POLICY_CONTROLS, evaluate
+from src.harness.precommit import LEGACY_CONTROLS, evaluate
 
 ROOT = Path(__file__).resolve().parents[2]
 PACK = ROOT / ".harness" / "packs" / "cl-ley-21719.json"
+CATALOG_PACK = ROOT / ".harness" / "packs" / "catalog.full.json"
 SPEC = TaskSpec(task_id="t", goal="t", allowed_paths=["*"])
 ORM = "from sqlalchemy import Column\n\nclass P(Base):\n    __tablename__ = 'p'\n    {field}\n"
 
@@ -44,11 +45,11 @@ def test_syntax_errors_do_not_crash_the_policy():
 def test_policy_is_in_the_default_engine_and_the_gate():
     code = ORM.format(field="card_number = Column(String(19))")
     assert {f.policy_id for f in PolicyEngine().evaluate_changes(SPEC, {"src/m.py": code})} >= {"privacy.payment_data_storage"}
-    assert evaluate({"src/m.py": code}, PACK).blocked
+    assert evaluate({"src/m.py": code}, CATALOG_PACK).blocked
 
 
 def test_policy_maps_to_the_ecommerce_card_control():
-    assert POLICY_CONTROLS["privacy.payment_data_storage"] == ("ECOM-CHECK-003",)
+    assert LEGACY_CONTROLS["privacy.payment_data_storage"] == ("ECOM-CHECK-003",)
     assert "privacy.payment_data_storage" in TARGETS
 
 

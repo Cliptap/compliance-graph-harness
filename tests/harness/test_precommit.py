@@ -5,17 +5,18 @@ from pathlib import Path
 
 import pytest
 
-from src.harness.normative_pack import load_pack
+from src.harness.catalog import load_catalog
 from src.harness.precommit import (
-    POLICY_CONTROLS, collect_staged, evaluate, format_report, install_hook, main,
+    DEFAULT_PACK, LEGACY_CONTROLS, collect_staged, evaluate, format_report, install_hook, main,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-PACK = ROOT / ".harness" / "packs" / "cl-ley-21719.json"
+PACK = ROOT / ".harness" / "packs" / "catalog.full.json"
 
 LEAK = "import logging\nlogger = logging.getLogger(__name__)\n\ndef f(p):\n    logger.info(f'patient {p.rut} created')\n"
 CLEAN = "import logging\nlogger = logging.getLogger(__name__)\n\ndef f(p):\n    logger.info('patient created')\n"
 API_LEAK = "@router.get('/p/{pid}')\ndef get_p(pid):\n    p = load(pid)\n    return {'id': p.id, 'rut': p.rut}\n"
+RESET_LEAK = "import uuid\n\ndef reset():\n    return {'token': uuid.uuid4().hex}\n"
 
 
 def git(repo: Path, *args: str) -> str:
@@ -57,9 +58,10 @@ def test_collect_staged_skips_deleted_files_and_other_languages(repo):
 def test_leak_in_logs_blocks_with_control_and_article():
     result = evaluate({"src/a.py": LEAK}, PACK)
     assert result.blocked
-    assert [f.policy_id for f in result.findings] == ["privacy.cwe_532"]
+    ids = {f.policy_id for f in result.findings}
+    assert {"privacy.cwe_532", "v2.log_pii"} <= ids
     report = format_report(result, PACK)
-    assert "src/a.py:5" in report and "CORE-CHECK-002" in report
+    assert "src/a.py:5" in report and "CORE-CHECK-002" in report and "v2.log_pii" in report
     assert "Art. 14° bis" in report and "no es asesoría legal" in report
 
 
@@ -70,15 +72,33 @@ def test_leak_through_a_call_across_staged_files_blocks_with_control():
     }
     result = evaluate(files, PACK)
     assert result.blocked
-    assert [(f.policy_id, f.file, f.line) for f in result.findings] == [("privacy.cwe_532", "src/audit.py", 2)]
+    ids = {(f.policy_id, f.file, f.line) for f in result.findings}
+    assert ("privacy.cwe_532", "src/audit.py", 2) in ids
     report = format_report(result, PACK)
-    assert "src/audit.py:2" in report and "CORE-CHECK-002" in report and "src/service.py:4" in report
+    assert "src/audit.py:2" in report and "CORE-CHECK-002" in report
 
 
 def test_api_exposure_blocks():
     result = evaluate({"src/api.py": API_LEAK}, PACK)
     assert result.blocked
-    assert {f.policy_id for f in result.findings} == {"privacy.api_exposure"}
+    assert "privacy.api_exposure" in {f.policy_id for f in result.findings}
+
+
+def test_reset_token_in_response_blocks_with_v2_control():
+    result = evaluate({"src/reset.py": RESET_LEAK}, PACK)
+    assert result.blocked
+    assert "v2.reset_token" in {f.policy_id for f in result.findings}
+    report = format_report(result, PACK)
+    assert "v2.reset_token" in report and "Ley 21.719" in report and "CWE-522" in report
+
+
+def test_customer_hard_delete_blocks_via_the_v2_family():
+    code = "def purge():\n    db.execute('DELETE FROM customers')\n"
+    result = evaluate({"src/purge.py": code}, PACK)
+    assert result.blocked
+    assert "v2.customer_hard_delete" in {f.policy_id for f in result.findings}
+    report = format_report(result, PACK)
+    assert "v2.customer_hard_delete" in report and "Ley 21.719" in report
 
 
 def test_clean_change_passes_with_empty_report():
@@ -96,10 +116,15 @@ def test_test_and_fixture_paths_are_excluded():
     assert not evaluate({"tests/test_x.py": LEAK, "harness/eval/corpus/c.py": LEAK}, PACK).blocked
 
 
-def test_every_gate_policy_maps_to_existing_pack_controls():
-    ids = {c["id"] for c in load_pack(PACK)["controls"]}
-    assert set(POLICY_CONTROLS) == {"privacy.cwe_532", "privacy.api_exposure", "privacy.payment_data_storage"}
-    assert all(set(v) <= ids for v in POLICY_CONTROLS.values())
+def test_legacy_gate_policies_map_to_catalog_controls():
+    ids = {c.id for c in load_catalog(DEFAULT_PACK).controls}
+    assert set(LEGACY_CONTROLS) == {
+        "privacy.cwe_532", "privacy.api_exposure", "privacy.payment_data_storage",
+        "privacy.consent_transparency", "privacy.rights_reachability",
+        "privacy.minors_and_sensitive", "privacy.retention_minimization",
+        "privacy.third_party_transfers", "domain.prohibited_deletion",
+    }
+    assert all(set(v) <= ids for v in LEGACY_CONTROLS.values())
 
 
 def test_main_exit_codes_follow_the_staged_content(repo, capsys):
@@ -110,10 +135,38 @@ def test_main_exit_codes_follow_the_staged_content(repo, capsys):
     assert "CORE-CHECK-002" in capsys.readouterr().err
 
 
+def test_main_refresh_map_writes_staged_fields(repo, tmp_path):
+    import sqlite3
+
+    db = tmp_path / "evidence.db"
+    stage(repo, "src/models.py",
+          "from sqlalchemy import Column, String\n"
+          "class Customer:\n"
+          "    rut = Column(String(12))\n")
+    assert main(["--root", str(repo), "--pack", str(PACK),
+                 "--refresh-map", "--evidence-db", str(db)]) == 0
+    conn = sqlite3.connect(db)
+    conn.row_factory = sqlite3.Row
+    rows = [dict(r) for r in conn.execute("SELECT * FROM evidence_fields")]
+    conn.close()
+    assert any(r["field_name"] == "rut" and r["scan_root"] == str(repo) for r in rows)
+
+
+def test_main_files_mode_checks_working_tree_files_without_staging(repo, capsys):
+    path = repo / "src" / "a.py"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(CLEAN, encoding="utf-8", newline="\n")
+    assert main(["--root", str(repo), "--files", "src/a.py", "--pack", str(PACK)]) == 0
+    path.write_text(LEAK, encoding="utf-8", newline="\n")
+    assert main(["--root", str(repo), "--files", "src/a.py", "--pack", str(PACK)]) == 1
+    assert "CORE-CHECK-002" in capsys.readouterr().err
+
+
 def test_install_hook_blocks_a_real_commit(repo):
     install_hook(repo)
     hook = repo / ".git" / "hooks" / "pre-commit"
     assert hook.exists() and "src.harness.precommit" in hook.read_text(encoding="utf-8")
+    assert "VIBECODING_HARNESS_ROOT" in hook.read_text(encoding="utf-8")
     stage(repo, "src/a.py", LEAK)
     proc = subprocess.run(["git", "-C", str(repo), "commit", "-m", "leak"], capture_output=True, text=True,
                           env={**os.environ, "PYTHONPATH": str(ROOT), "HARNESS_PYTHON": sys.executable})

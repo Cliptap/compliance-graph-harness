@@ -43,6 +43,11 @@ Antes de terminar cualquier tarea que modifique código, llama a la herramienta
 `compliance_check` con la lista de archivos que cambiaste (rutas relativas a la raíz).
 Si informa infracciones, corrígelas y vuelve a llamarla. No termines mientras
 `compliance_check` reporte infracciones.
+
+Un gate limpio no es prueba de cumplimiento: la compuerta es una red de seguridad, no la política
+completa. Aunque no reporte hallazgos, verifica los controles del pack: solicitud de supresión y
+conservación antes de borrar, minimización y retención, y enmascaramiento de RUT, correo y teléfono
+en respuestas de administración.
 """
 
 

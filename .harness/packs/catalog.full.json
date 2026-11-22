@@ -1,0 +1,1551 @@
+{
+  "pack_id": "cl-ley-21719",
+  "version": 2,
+  "jurisdiction": "CL",
+  "description": "Multi-framework control catalog. A control maps one or more framework references (law, ISO 27001, CWE) to a reusable detection family.",
+  "frameworks": {
+    "Ley 21.719": {
+      "kind": "law",
+      "url": "https://www.bcn.cl/leychile/navegar?idNorma=1209272"
+    },
+    "ISO/IEC 27001:2022": {
+      "kind": "standard",
+      "url": "https://www.iso.org/standard/27001"
+    },
+    "CWE": {
+      "kind": "taxonomy",
+      "url": "https://cwe.mitre.org"
+    },
+    "Ley 19.628": {
+      "kind": "law"
+    },
+    "Ley 20.584": {
+      "kind": "law"
+    },
+    "Ley 21.668": {
+      "kind": "law"
+    },
+    "Ley 19.496": {
+      "kind": "law"
+    },
+    "DL 825": {
+      "kind": "law"
+    },
+    "DL 830": {
+      "kind": "law"
+    },
+    "Código Tributario": {
+      "kind": "law"
+    }
+  },
+  "data_categories": {
+    "IDENTIFIER_RUT": {
+      "sensitivity": "high",
+      "synonyms": [
+        "rut",
+        "run",
+        "national_id",
+        "national-id",
+        "dni"
+      ]
+    },
+    "PERSONAL_CONTACT": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "email",
+        "correo",
+        "e-mail",
+        "phone",
+        "telefono",
+        "teléfono",
+        "address",
+        "direccion",
+        "dirección"
+      ]
+    },
+    "CREDENTIAL": {
+      "sensitivity": "high",
+      "synonyms": [
+        "password",
+        "hashed_password",
+        "password_hash",
+        "private_key",
+        "secret",
+        "token",
+        "reset_token",
+        "api_key",
+        "api-key",
+        "session",
+        "cookie"
+      ]
+    },
+    "PAYMENT": {
+      "sensitivity": "high",
+      "synonyms": [
+        "card_number",
+        "pan",
+        "cvv",
+        "cvc",
+        "security_code",
+        "expiry"
+      ]
+    },
+    "SENSITIVE_HEALTH": {
+      "sensitivity": "critical",
+      "synonyms": [
+        "diagnosis",
+        "diagnostico",
+        "diagnóstico",
+        "clinical_notes",
+        "medical_record",
+        "treatment",
+        "health_status"
+      ]
+    },
+    "SENSITIVE_BIOMETRIC": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "biometric",
+        "fingerprint",
+        "huella",
+        "iris",
+        "face"
+      ]
+    },
+    "SECURITY_METADATA": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "ip",
+        "user_agent",
+        "metadata",
+        "log"
+      ]
+    },
+    "SENSITIVE_ETHNIC_RACIAL_ORIGIN": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "ethnic",
+        "racial",
+        "etnia",
+        "raza"
+      ]
+    },
+    "SENSITIVE_POLITICAL_UNION_AFFILIATION": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "political",
+        "union",
+        "sindicato",
+        "partido"
+      ]
+    },
+    "SENSITIVE_BELIEFS": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "belief",
+        "religion",
+        "creencia"
+      ]
+    },
+    "SENSITIVE_SOCIOECONOMIC": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "income",
+        "socioeconomic",
+        "ingreso"
+      ]
+    },
+    "SENSITIVE_SEXUAL_LIFE_ORIENTATION": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "sexual",
+        "orientation"
+      ]
+    },
+    "SENSITIVE_GENDER_IDENTITY": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "gender",
+        "identidad_genero"
+      ]
+    },
+    "SENSITIVE_BIOLOGICAL_PROFILE": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "biological",
+        "genetic",
+        "genetico"
+      ]
+    },
+    "CHILDREN_DATA": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "minor",
+        "children",
+        "menor",
+        "birth_date"
+      ]
+    },
+    "PERSONAL_DATA": {
+      "sensitivity": "medium",
+      "synonyms": [
+        "personal_data",
+        "customer",
+        "user",
+        "client"
+      ]
+    }
+  },
+  "sinks": {
+    "log": {
+      "patterns": [
+        "print",
+        "logger.",
+        "logging.",
+        "console.log",
+        "console.error",
+        "sys.stdout",
+        "sys.stderr"
+      ]
+    },
+    "response": {
+      "patterns": [
+        "return",
+        "JSONResponse",
+        "Response",
+        "jsonify"
+      ]
+    },
+    "redirect": {
+      "patterns": [
+        "RedirectResponse",
+        "redirect"
+      ]
+    },
+    "csv": {
+      "patterns": [
+        "csv.writer",
+        "writerow",
+        "DictWriter"
+      ]
+    },
+    "http": {
+      "patterns": [
+        "requests.",
+        "httpx.",
+        "fetch(",
+        "axios."
+      ]
+    },
+    "db": {
+      "patterns": [
+        "INSERT",
+        "UPDATE",
+        "Column",
+        "mapped_column"
+      ]
+    },
+    "cache": {
+      "patterns": [
+        "redis.set",
+        "cache.put",
+        "memcached.set"
+      ]
+    },
+    "file": {
+      "patterns": [
+        "open(",
+        ".write("
+      ]
+    }
+  },
+  "sanitizers": {
+    "mask": [
+      "mask",
+      "redact",
+      "enmascar"
+    ],
+    "hash": [
+      "hash",
+      "sha256",
+      "bcrypt",
+      "argon"
+    ],
+    "fingerprint": [
+      "fingerprint",
+      "hmac"
+    ],
+    "tokenize": [
+      "tokeniz",
+      "tokenize"
+    ],
+    "encrypt": [
+      "encrypt",
+      "fernet",
+      "kms"
+    ],
+    "pseudonymize": [
+      "pseudon",
+      "seudon",
+      "anon"
+    ]
+  },
+  "controls": [
+    {
+      "id": "CL-DATAPROT-001",
+      "pack_control": "CL-DATAPROT-001",
+      "title": "Fuga de datos clínicos sensibles o RUT hacia logs del sistema o telemetría",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° bis"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quinquies"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 34° ter let. i), Art. 34° quáter let. d)"
+        },
+        {
+          "framework": "Ley 20.584",
+          "ref": "Art. 12"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-532"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.12",
+          "title": "Data leakage prevention"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.cwe_532"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "replaced by v2.log_pii"
+    },
+    {
+      "id": "CL-DATAPROT-002",
+      "pack_control": "CL-DATAPROT-002",
+      "title": "Exposición de registros médicos en capas de caché sin cifrado en reposo",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 2° let. g)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quinquies inc. 2° let. a)"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-311"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.24",
+          "title": "Use of cryptography"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "No detector: cache encryptor sinks (redis.set/cache.put) are not analyzed yet."
+    },
+    {
+      "id": "CL-DATAPROT-003",
+      "pack_control": "CL-DATAPROT-003",
+      "title": "Persistencia de entidades de salud sin cifrado a nivel de campo (FLE) en modelo ORM",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quáter"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quinquies"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-312"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.24",
+          "title": "Use of cryptography"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "No detector: ORM encryption-transformer coverage is not statically verifiable yet."
+    },
+    {
+      "id": "CL-DATAPROT-004",
+      "pack_control": "CL-DATAPROT-004",
+      "title": "Borrado físico prematuro de fichas clínicas (deber de conservación de 15 años)",
+      "frameworks": [
+        {
+          "framework": "Ley 20.584",
+          "ref": "Art. 13"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 7° inc. 2° N° ii"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 8° ter"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-404"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.10",
+          "title": "Information deletion"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "domain.prohibited_deletion"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CL-DATAPROT-005",
+      "pack_control": "CL-DATAPROT-005",
+      "title": "Exposición de endpoints clínicos sin control de acceso",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quáter"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quinquies"
+        },
+        {
+          "framework": "Ley 20.584",
+          "ref": "Art. 13 inc. 4°"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-285"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.3",
+          "title": "Information access restriction"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "No detector: route authorization coverage needs the T16 rights reachability work; only CORE-CHECK-003 indicators exist."
+    },
+    {
+      "id": "CL-DATAPROT-006",
+      "pack_control": "CL-DATAPROT-006",
+      "title": "Decisión clínica automatizada sin garantías de explicación, intervención humana y revisión",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 8° bis"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-693"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.28",
+          "title": "Secure coding"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Manual assessment: automated clinical decisions need human review evidence."
+    },
+    {
+      "id": "CL-DATAPROT-007",
+      "pack_control": "CL-DATAPROT-007",
+      "title": "Exportación de portabilidad de ficha clínica en formato no estructurado",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 9°"
+        },
+        {
+          "framework": "Ley 20.584",
+          "ref": "Art. 13 inc. 1°"
+        },
+        {
+          "framework": "Ley 21.668",
+          "ref": "Artículo único"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-20"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.28",
+          "title": "Secure coding"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "MEDIUM",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "No detector: export format (FHIR/raw) is not verified by code."
+    },
+    {
+      "id": "CORE-CHECK-001",
+      "pack_control": "CORE-CHECK-001",
+      "title": "Privacidad desde el diseño, minimización y seudonimización o cifrado según el riesgo",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quáter"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quinquies inc. 2° let. a)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Only the legacy stateless auditor heuristic masks identifiers; not a PolicyEngine detector and not counted in the score."
+    },
+    {
+      "id": "CORE-CHECK-002",
+      "pack_control": "CORE-CHECK-002",
+      "title": "Deber de secreto y prevención de fugas en logs, consolas y cachés",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° bis"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 34° ter let. i), Art. 34° quáter let. d)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.cwe_532"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CORE-CHECK-003",
+      "pack_control": "CORE-CHECK-003",
+      "title": "Derechos del titular (acceso, rectificación, supresión, oposición, portabilidad y bloqueo) y control de acceso",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Arts. 4° al 11°"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quáter"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Only access-control indicators (current_user/rbac); T16 covers data-subject rights, not authentication."
+    },
+    {
+      "id": "CORE-CHECK-004",
+      "pack_control": "CORE-CHECK-004",
+      "title": "Decisiones automatizadas: derecho de oposición y garantías de intervención humana",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 8° bis"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Human-in-the-loop review is documentary; the legacy auditor has a heuristic only."
+    },
+    {
+      "id": "HEALTH-CHECK-001",
+      "pack_control": "HEALTH-CHECK-001",
+      "title": "Conservación de 15 años de la ficha clínica frente a solicitudes de supresión",
+      "frameworks": [
+        {
+          "framework": "Ley 20.584",
+          "ref": "Art. 13"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 7° inc. 2° N° ii"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 8° ter"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "domain.prohibited_deletion"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "HEALTH-CHECK-002",
+      "pack_control": "HEALTH-CHECK-002",
+      "title": "Interoperabilidad de la ficha clínica bajo HL7 FHIR R4 CL Core (estándar del proyecto)",
+      "frameworks": [
+        {
+          "framework": "Ley 20.584",
+          "ref": "Art. 13 inc. 1° y 2°"
+        },
+        {
+          "framework": "Ley 21.668",
+          "ref": "Artículo único"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 9°"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "MEDIUM",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "FHIR interoperability is documentary/format review; the legacy auditor has a heuristic only."
+    },
+    {
+      "id": "HEALTH-CHECK-003",
+      "pack_control": "HEALTH-CHECK-003",
+      "title": "Protección reforzada de datos de salud (aislamiento y cifrado según el riesgo)",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 2° let. g)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 16° bis"
+        }
+      ],
+      "data_categories": [
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Health-data isolation is documentary; the legacy auditor has a heuristic only."
+    },
+    {
+      "id": "CORE-CHECK-005",
+      "pack_control": "CORE-CHECK-005",
+      "title": "Licitud del tratamiento y consentimiento",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 12°"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 13°"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 2° let. p)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.consent_transparency"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CORE-CHECK-006",
+      "pack_control": "CORE-CHECK-006",
+      "title": "Atención de los derechos del titular: procedimiento y plazos",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Arts. 4° al 11°"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.rights_reachability"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CORE-CHECK-007",
+      "pack_control": "CORE-CHECK-007",
+      "title": "Deber de información y transparencia (política de tratamiento pública)",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° ter"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 3° let. g)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.consent_transparency"
+        }
+      },
+      "severity": "MEDIUM",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CORE-CHECK-008",
+      "pack_control": "CORE-CHECK-008",
+      "title": "Registro y comunicación de vulneraciones de seguridad",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° sexies"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 34° quáter let. f)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Incident register and breach notification are documentary evidence only."
+    },
+    {
+      "id": "CORE-CHECK-009",
+      "pack_control": "CORE-CHECK-009",
+      "title": "Evaluación de impacto en protección de datos",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 15° ter"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 34° quáter let. k)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Impact assessment (EIPD) is documentary evidence only."
+    },
+    {
+      "id": "CORE-CHECK-010",
+      "pack_control": "CORE-CHECK-010",
+      "title": "Encargados del tratamiento y cesión de datos",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 15° bis"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 15°"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.third_party_transfers"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CORE-CHECK-011",
+      "pack_control": "CORE-CHECK-011",
+      "title": "Transferencias internacionales de datos",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 27°"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 28°"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° ter let. h)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.third_party_transfers"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CORE-CHECK-012",
+      "pack_control": "CORE-CHECK-012",
+      "title": "Datos personales de niños, niñas y adolescentes",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 16° quáter"
+        }
+      ],
+      "data_categories": [
+        "CHILDREN_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.minors_and_sensitive"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "CORE-CHECK-013",
+      "pack_control": "CORE-CHECK-013",
+      "title": "Conservación, supresión y limitación de la finalidad",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 3° let. b)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 3° let. c)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° let. d)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 7° inc. 2° N° ii"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.retention_minimization"
+        }
+      },
+      "severity": "MEDIUM",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "ECOM-CHECK-001",
+      "pack_control": "ECOM-CHECK-001",
+      "title": "Comunicaciones promocionales y oposición al marketing directo",
+      "frameworks": [
+        {
+          "framework": "Ley 19.496",
+          "ref": "Art. 28 B"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 12°"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 13°"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 8° let. b)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.consent_transparency"
+        }
+      },
+      "severity": "MEDIUM",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "ECOM-CHECK-002",
+      "pack_control": "ECOM-CHECK-002",
+      "title": "Perfilamiento y recomendaciones personalizadas",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 2° let. w)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 8° let. b)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 8° bis"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 15° ter"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° ter let. l)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Profiling and recommendation notices are documentary evidence only."
+    },
+    {
+      "id": "ECOM-CHECK-003",
+      "pack_control": "ECOM-CHECK-003",
+      "title": "Datos de tarjetas de pago: secreto, seguridad y comunicación de vulneraciones",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° bis"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quinquies"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° sexies"
+        }
+      ],
+      "data_categories": [
+        "PAYMENT"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.payment_data_storage"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "ECOM-CHECK-004",
+      "pack_control": "ECOM-CHECK-004",
+      "title": "Cumplimiento PCI DSS para datos de tarjetas (estándar contractual)",
+      "frameworks": [
+        {
+          "framework": "Código Tributario",
+          "ref": "Cláusula 10.9"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 14° quinquies"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "PCI DSS is contractual evidence, never code evidence."
+    },
+    {
+      "id": "ECOM-CHECK-005",
+      "pack_control": "ECOM-CHECK-005",
+      "title": "Pasarelas de pago, operadores logísticos y otros encargados",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 15° bis"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 15°"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.third_party_transfers"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "ECOM-CHECK-006",
+      "pack_control": "ECOM-CHECK-006",
+      "title": "Conservación de documentos tributarios como excepción a la supresión",
+      "frameworks": [
+        {
+          "framework": "DL 825",
+          "ref": "Art. 58"
+        },
+        {
+          "framework": "DL 830",
+          "ref": "Art. 17"
+        },
+        {
+          "framework": "DL 830",
+          "ref": "Art. 200"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 7° inc. 2° N° ii"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 3° let. c)"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": ""
+        }
+      },
+      "severity": "MEDIUM",
+      "remediation": "Remediate the finding.",
+      "implemented": false,
+      "gap_reason": "Billing-record retention is documentary (DL 825 Art. 58, Código Tributario)."
+    },
+    {
+      "id": "ECOM-CHECK-007",
+      "pack_control": "ECOM-CHECK-007",
+      "title": "Situación socioeconómica y puntajes de crédito como datos sensibles",
+      "frameworks": [
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 2° let. g)"
+        },
+        {
+          "framework": "Ley 19.628",
+          "ref": "Art. 16°"
+        }
+      ],
+      "data_categories": [
+        "CHILDREN_DATA"
+      ],
+      "detection": {
+        "policy": "legacy",
+        "params": {
+          "legacy_policy": "privacy.minors_and_sensitive"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remediate the finding.",
+      "implemented": true
+    },
+    {
+      "id": "v2.log_pii",
+      "title": "Personal data written to logs",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.12",
+          "title": "Data leakage prevention"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-532"
+        }
+      ],
+      "data_categories": [
+        "IDENTIFIER_RUT",
+        "PERSONAL_CONTACT",
+        "CREDENTIAL",
+        "SENSITIVE_HEALTH"
+      ],
+      "detection": {
+        "policy": "sink_exposure",
+        "sinks": [
+          "log"
+        ],
+        "context": {
+          "route": "any"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Remove the field or use an approved masking, hashing or pseudonymisation function before logging.",
+      "implemented": true,
+      "pack_control": "CL-DATAPROT-001"
+    },
+    {
+      "id": "v2.admin_exposure",
+      "title": "Unmasked personal data in a response",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.12",
+          "title": "Data leakage prevention"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.11",
+          "title": "Data masking"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-200"
+        }
+      ],
+      "data_categories": [
+        "IDENTIFIER_RUT",
+        "PERSONAL_CONTACT"
+      ],
+      "detection": {
+        "policy": "sink_exposure",
+        "sinks": [
+          "response"
+        ],
+        "context": {
+          "route": "admin"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Return only the fields the endpoint needs and mask RUT, email and phone in admin responses.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-003"
+    },
+    {
+      "id": "v2.customer_hard_delete",
+      "title": "Customer hard delete inside retention",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 4 y Art. 10"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.10",
+          "title": "Information deletion"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-404"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_CONTACT"
+      ],
+      "detection": {
+        "policy": "retention_deletion",
+        "params": {
+          "tables": [
+            "customers"
+          ],
+          "retention_days": 730,
+          "retention_field": "retention_days"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Register the erasure request and retain the record until the retention period; do not hard-delete it.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-006"
+    },
+    {
+      "id": "v2.billing_retention",
+      "title": "Billing records deleted before retention",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 3 c)"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.10",
+          "title": "Information deletion"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-404"
+        }
+      ],
+      "data_categories": [
+        "PERSONAL_CONTACT"
+      ],
+      "detection": {
+        "policy": "retention_deletion",
+        "params": {
+          "tables": [
+            "orders",
+            "invoices"
+          ],
+          "retention_days": 2190,
+          "retention_field": "retention_days"
+        }
+      },
+      "severity": "HIGH",
+      "remediation": "Compare the delete cutoff with the billing retention period (six years) instead of a short cleanup window.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-013"
+    },
+    {
+      "id": "v2.reset_token",
+      "title": "Password-reset token returned to the client",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.24",
+          "title": "Use of cryptography"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-522"
+        }
+      ],
+      "data_categories": [
+        "CREDENTIAL"
+      ],
+      "detection": {
+        "policy": "credential_exposure",
+        "sinks": [
+          "response",
+          "redirect",
+          "log"
+        ],
+        "params": {
+          "keys": [
+            "token",
+            "reset_token"
+          ],
+          "value_pattern": "[a-f0-9]{32,}"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Send the token through the recovery channel; return a generic message and never put it in the response or redirect URL.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-002"
+    },
+    {
+      "id": "v2.api_key",
+      "title": "API key or secret returned to the client",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.24",
+          "title": "Use of cryptography"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-798"
+        }
+      ],
+      "data_categories": [
+        "CREDENTIAL"
+      ],
+      "detection": {
+        "policy": "credential_exposure",
+        "sinks": [
+          "response",
+          "redirect",
+          "log"
+        ],
+        "params": {
+          "keys": [
+            "api_key",
+            "api-key",
+            "secret"
+          ],
+          "value_pattern": "sk_[a-z0-9_]{8,}"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Never return secrets; expose only a configured/not-configured flag or a masked value.",
+      "implemented": true,
+      "pack_control": "CORE-CHECK-002"
+    },
+    {
+      "id": "v2.credential_response",
+      "pack_control": "CORE-CHECK-002",
+      "title": "Credential exposed in a response",
+      "frameworks": [
+        {
+          "framework": "Ley 21.719",
+          "ref": "Art. 14 bis"
+        },
+        {
+          "framework": "ISO/IEC 27001:2022",
+          "ref": "A.8.12",
+          "title": "Data leakage prevention"
+        },
+        {
+          "framework": "CWE",
+          "ref": "CWE-200"
+        }
+      ],
+      "data_categories": [
+        "CREDENTIAL"
+      ],
+      "detection": {
+        "policy": "sink_exposure",
+        "sinks": [
+          "response"
+        ],
+        "context": {
+          "route": "any"
+        }
+      },
+      "severity": "CRITICAL",
+      "remediation": "Never return password hashes, tokens or secrets; project only the required fields.",
+      "implemented": true
+    }
+  ],
+  "tables": {
+    "customers": [
+      "IDENTIFIER_RUT",
+      "PERSONAL_CONTACT",
+      "CREDENTIAL"
+    ],
+    "addresses": [
+      "PERSONAL_CONTACT"
+    ],
+    "orders": [
+      "PERSONAL_CONTACT",
+      "PAYMENT"
+    ],
+    "order_items": [
+      "PAYMENT"
+    ],
+    "points_ledger": [
+      "PERSONAL_CONTACT"
+    ],
+    "consents": [
+      "PERSONAL_CONTACT"
+    ],
+    "rights_requests": [
+      "PERSONAL_CONTACT"
+    ],
+    "cookie_consents": [
+      "PERSONAL_CONTACT"
+    ],
+    "marketing_messages": [
+      "PERSONAL_CONTACT"
+    ]
+  },
+  "generated_by": "scripts/migrate_catalog.py"
+}

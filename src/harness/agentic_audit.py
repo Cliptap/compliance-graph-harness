@@ -15,6 +15,7 @@ from src.harness.db import (
     RULES_PATH,
     WORKSPACE_ROOT,
     get_db_connection,
+    init_harness_db,
     log_agent_reasoning,
 )
 from src.harness.graph_engine import subgraph_slice
@@ -516,6 +517,7 @@ class AgenticAuditOrchestrator:
         from src.harness.pipeline import DeveloperPatcherAgent
 
         active_criteria = self.registry.get_active_criteria(sectorial_plugin=sectorial_plugin)
+        init_harness_db(self.db_path)
         conn = get_db_connection(self.db_path)
 
         # Identificar archivos prioritarios para la auditoría (API y Base de Datos)

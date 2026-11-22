@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "compliance-graph-harness"
+version = "0.1.0"
+description = "Development and audit harness for Chile's Ley 21.719: rules, skills, a static compliance gate and an evidence register."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Compliance Graph Harness contributors" }]
+keywords = ["compliance", "ley-21719", "privacy", "harness", "audit", "chile"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = ["pydantic>=2.6"]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.0.3",
+  "pytest-asyncio==1.3.0",
+  "httpx==0.28.1",
+  "aiosqlite==0.22.1",
+  "pyyaml==6.0.3",
+  "python-dotenv>=1.0",
+]
+
+[project.scripts]
+compliance-check = "src.harness.precommit:main"
+harness-antecedentes = "src.harness.antecedentes:main"
+harness-doctor = "src.harness.doctor:main"
+
+[project.urls]
+Repository = "https://github.com/Cliptap/compliance-graph-harness"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src", "src.harness"]
+namespaces = true

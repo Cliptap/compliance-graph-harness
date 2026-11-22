@@ -2,6 +2,10 @@
 
 > **Instalador multi-IDE portable.** Copiá esta carpeta a cualquier proyecto, ejecutá un comando, y la IA empieza a **preguntar en vez de asumir**.
 
+> **En este repositorio** el instalador está en `harness/install.ps1`; en los ejemplos de abajo,
+> `vibecoding-harness/` es el nombre de la carpeta cuando la copiás a otro proyecto. Para instalar
+> las reglas y skills en este repo: `.\harness\install.ps1`.
+
 ## Requisitos
 
 - Windows (PowerShell 5.1+) o Unix (bash)

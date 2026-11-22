@@ -44,6 +44,55 @@ def test_syntax_error_is_ignored():
     assert run("def broken(:\n") == []
 
 
+def test_json_response_with_raw_rut_is_flagged():
+    code = (
+        "@router.get('/admin/x')\ndef list_x():\n"
+        "    return JSONResponse({'rut': row['rut'], 'email': row['email']})\n"
+    )
+    f = run(code)
+    assert {x.status for x in f} == {"VIOLATION"}
+    assert any("rut" in x.message for x in f)
+
+
+def test_list_of_dicts_with_raw_rut_is_flagged():
+    code = (
+        "@router.get('/admin/customers')\ndef customers():\n"
+        "    return [{'rut': row['rut'], 'name': row['name']} for row in rows]\n"
+    )
+    f = run(code)
+    assert len(f) == 1 and f[0].line == 3
+
+
+def test_admin_contact_fields_are_flagged_but_own_profile_is_clean():
+    admin = (
+        "@router.get('/admin/customers')\ndef customers():\n"
+        "    return [{'email': row['email'], 'phone': row['phone']}]\n"
+    )
+    own = (
+        "@router.get('/profile')\ndef profile():\n"
+        "    return {'email': customer.email, 'phone': customer.phone}\n"
+    )
+    assert len(run(admin)) == 2
+    assert run(own) == []
+
+
+def test_admin_raw_row_serialisation_is_a_warning():
+    code = (
+        "@router.get('/admin/customers')\ndef customers(rows):\n"
+        "    return [dict(row) for row in rows]\n"
+    )
+    f = run(code)
+    assert [x.status for x in f] == ["WARNING"]
+
+
+def test_masked_list_payload_is_clean():
+    code = (
+        "@router.get('/admin/customers')\ndef customers():\n"
+        "    return [{'rut': mask_rut(row['rut']), 'email': redact(row['email'])}]\n"
+    )
+    assert run(code) == []
+
+
 def test_registered_in_default_engine():
     ids = [type(p).__name__ for p in PolicyEngine().policies]
     assert "ApiPersonalDataExposurePolicy" in ids

@@ -1,6 +1,6 @@
 {
   "name": "@vibecoding/harness",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Harness de desarrollo asistido por IA — skills, reglas y hooks para que el modelo pregunte en vez de asumir",
   "keywords": [
     "vibecoding",
@@ -16,13 +16,11 @@
   "author": "Proyecto 3 — VibeCoding",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vibecoding/harness"
+    "url": "https://github.com/Cliptap/compliance-graph-harness"
   },
   "scripts": {
-    "install:claude": "node scripts/install.js claude",
-    "install:opencode": "node scripts/install.js opencode",
-    "install:cursor": "node scripts/install.js cursor",
-    "eval": "node eval/run.js"
+    "install:windows": "powershell -ExecutionPolicy Bypass -File install.ps1",
+    "install:unix": "bash install.sh"
   },
   "files": [
     "rules/",
@@ -35,7 +33,7 @@
     "install.sh"
   ],
   "vibecoding": {
-    "harnessVersion": "1.0.0",
+    "harnessVersion": "2.1.0",
     "minAgentVersion": "1.0.0",
     "supportedHarnesses": [
       "claude_code",

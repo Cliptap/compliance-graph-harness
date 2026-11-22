@@ -43,7 +43,11 @@ def build(task: dict, dest: Path, git: bool = True) -> Path:
     (dest / "TASK.md").write_text(
         f"# {task['id']} — {task['title']}\n\n{task['prompt']}\n\n"
         f"## Scope\n\nAllowed paths: {', '.join(task['allowed_paths'])}.\n"
-        "Do not modify files outside the allowed paths.\n",
+        "Do not modify files outside the allowed paths.\n\n"
+        "## Definition of done\n\n"
+        "Implement the smallest complete change. Run the relevant hidden behavior locally when "
+        "possible, then `python -m pytest tests -q`, then `python compliance_check.py` when the "
+        "gate is available. Do not start unrelated refactors.\n",
         encoding="utf-8",
         newline="\n",
     )

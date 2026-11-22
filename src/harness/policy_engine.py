@@ -10,6 +10,9 @@ Implementa evaluadores deterministas independientes en Python para:
 from __future__ import annotations
 
 import ast
+import io
+import re
+import tokenize
 from abc import ABC, abstractmethod
 from fnmatch import fnmatch
 from pathlib import Path
@@ -146,7 +149,8 @@ class SensitiveLoggingPolicy(BasePolicy):
         )
         self.track_flows = track_flows
 
-    MASK_MARKERS = ("mask", "redact", "hash", "anon", "seudon", "[redacted]")
+    MASK_MARKERS = ("mask", "redact", "hash", "anon", "seudon", "pseudon", "finger",
+                    "tokeniz", "[redacted]")
     FLOW_AMBIGUOUS_NAMES = frozenset({"run"})
     REMEDIATION = (
         "No emitir RUT ni datos médicos en texto plano. Aplicar función de enmascaramiento "
@@ -296,7 +300,9 @@ class SensitiveLoggingPolicy(BasePolicy):
                     continue
 
                 # Exención: si la línea explícitamente aplica una función de redacción/enmascaramiento
-                has_masking = any(m in line_lower for m in ["mask", "redact", "hash", "anon", "seudon", "[redacted]"])
+                has_masking = any(m in line_lower for m in [
+                    "mask", "redact", "hash", "anon", "seudon", "pseudon", "finger", "tokeniz",
+                    "[redacted]"])
                 if has_masking:
                     continue
 
@@ -362,8 +368,11 @@ class DomainInvariantPolicy(BasePolicy):
         for file_path, content in modified_files.items():
             normalized_path = file_path.replace("\\", "/")
             lines = content.splitlines()
+            code_lines = _code_line_numbers(content)
 
             for idx, line in enumerate(lines, 1):
+                if code_lines is not None and idx not in code_lines:
+                    continue
                 line_lower = line.lower()
 
                 has_destructive = any(dp in line_lower for dp in self.DESTRUCTIVE_PATTERNS)
@@ -392,6 +401,108 @@ class DomainInvariantPolicy(BasePolicy):
                     )
 
         return findings
+
+
+def _code_line_numbers(content: str) -> set[int] | None:
+    """Líneas con código real: excluye comentarios, strings y docstrings.
+
+    Devuelve ``None`` si el contenido no tokeniza (sintaxis inválida), para que el
+    evaluador conserve el comportamiento anterior en ese caso.
+    """
+    skipped = {
+        tokenize.COMMENT,
+        tokenize.STRING,
+        tokenize.FSTRING_START,
+        tokenize.FSTRING_MIDDLE,
+        tokenize.FSTRING_END,
+        tokenize.NL,
+        tokenize.NEWLINE,
+        tokenize.INDENT,
+        tokenize.DEDENT,
+        tokenize.ENCODING,
+        tokenize.ENDMARKER,
+    }
+    try:
+        code: set[int] = set()
+        for tok in tokenize.generate_tokens(io.StringIO(content).readline):
+            if tok.type not in skipped:
+                code.add(tok.start[0])
+        return code
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return None
+
+
+class CustomerDeletionPolicy(BasePolicy):
+    """Flags physical deletion of customer or account records (Ley 21.719 Arts. 3 c, 4, 10).
+
+    An erasure request must be registered and the personal data kept under the retention rule, or
+    anonymised. A raw ``DELETE FROM customers`` or ``session.delete(customer)`` removes the record
+    and the evidence needed to answer the rights request, so it counts as a retention violation.
+    """
+
+    CUSTOMER_TARGETS = (
+        "customer", "customers", "client", "clients", "clientes", "cuenta", "cuentas",
+        "account", "accounts", "usuario", "usuarios", "customer_id",
+    )
+    SQL_DELETE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)")
+    TRUNCATE = re.compile(r"\btruncate\s+table\s+[\"'`]?([a-z_][a-z0-9_]*)")
+    ORM_DELETE = (
+        "session.delete", "db.session.delete", ".delete()", "delete(", "hard_delete", "drop table",
+    )
+
+    def __init__(self):
+        super().__init__(
+            policy_id="privacy.customer_hard_delete",
+            description="Customer and account records must not be physically deleted before the retention rule.",
+            severity="HIGH",
+        )
+
+    def evaluate(
+        self,
+        task_spec: TaskSpec,
+        modified_files: dict[str, str],
+        diff: str | None = None,
+    ) -> list[Finding]:
+        findings: list[Finding] = []
+        for file_path, content in modified_files.items():
+            normalized_path = file_path.replace("\\", "/")
+            code_lines = _code_line_numbers(content)
+            for idx, line in enumerate(content.splitlines(), 1):
+                if code_lines is not None and idx not in code_lines:
+                    continue
+                if not self._deletes_customer(line):
+                    continue
+                findings.append(
+                    Finding(
+                        policy_id=self.policy_id,
+                        severity="HIGH",
+                        status="VIOLATION",
+                        file=normalized_path,
+                        line=idx,
+                        message=(
+                            "Borrado físico de registros de cliente/cuenta: impide atender la solicitud de "
+                            "supresión (Ley 21.719 Art. 4 y Art. 10) y borra la evidencia de conservación "
+                            "(Art. 3 c)."
+                        ),
+                        evidence=line.strip(),
+                        remediation_advice=(
+                            "Registrar una solicitud de supresión y conservar el registro hasta que venza "
+                            "el plazo de conservación; no eliminar ni anonimizar los datos personales antes "
+                            "de ese plazo."
+                        ),
+                    )
+                )
+        return findings
+
+    def _deletes_customer(self, line: str) -> bool:
+        lowered = line.lower()
+        match = self.SQL_DELETE.search(lowered) or self.TRUNCATE.search(lowered)
+        if match:
+            return any(target in match.group(1) for target in self.CUSTOMER_TARGETS)
+        has_destructive = any(orm in lowered for orm in self.ORM_DELETE)
+        if not has_destructive:
+            return False
+        return any(target in lowered for target in self.CUSTOMER_TARGETS)
 
 
 class DependencyPolicy(BasePolicy):
@@ -458,6 +569,7 @@ class PolicyEngine:
                 PaymentDataStoragePolicy(),
                 PersonalDataDimensionsPolicy(),
                 DomainInvariantPolicy(),
+                CustomerDeletionPolicy(),
                 DependencyPolicy(),
             ]
         else:

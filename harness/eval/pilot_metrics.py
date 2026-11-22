@@ -10,8 +10,16 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+from src.harness.catalog import load_catalog
+from src.harness.catalog_engine import CatalogEngine
 from src.harness.contracts import Finding, TaskSpec
 from src.harness.policy_engine import PolicyEngine
+
+_PACKS = Path(__file__).resolve().parents[2] / ".harness" / "packs"
+CATALOG_PATH = _PACKS / "catalog.full.json"
+if not CATALOG_PATH.is_file():
+    CATALOG_PATH = _PACKS / "catalog.v2.json"
+_CATALOG_ENGINE: CatalogEngine | None = None
 
 READ_TOOLS = {"read", "read_file", "readfile"}
 PATH_KEYS = ("path", "file_path", "filePath", "target_file", "file")
@@ -100,7 +108,30 @@ def evaluate_policies(ws: Path, changed: Iterable[str], scope: dict[str, Any]) -
     for rel in changed:
         target = ws / rel
         modified[rel] = target.read_text(encoding="utf-8", errors="replace") if target.is_file() else ""
-    return PolicyEngine().evaluate_changes(spec, modified)
+    findings = PolicyEngine().evaluate_changes(spec, modified)
+    engine = _catalog_engine()
+    if engine is not None:
+        findings = _merge_findings(findings, engine.evaluate(spec, modified))
+    return findings
+
+
+def _catalog_engine() -> CatalogEngine | None:
+    global _CATALOG_ENGINE
+    if _CATALOG_ENGINE is None:
+        if not CATALOG_PATH.is_file():
+            return None
+        _CATALOG_ENGINE = CatalogEngine(load_catalog(CATALOG_PATH), include_legacy=False)
+    return _CATALOG_ENGINE
+
+
+def _merge_findings(left: list[Finding], right: list[Finding]) -> list[Finding]:
+    seen = {(f.policy_id, f.file, f.line, f.message) for f in left}
+    for finding in right:
+        key = (finding.policy_id, finding.file, finding.line, finding.message)
+        if key not in seen:
+            seen.add(key)
+            left.append(finding)
+    return left
 
 
 def compliance_score(findings: Iterable[Finding]) -> float:
