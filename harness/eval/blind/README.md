@@ -62,3 +62,7 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   required for a post-fix number.
 - Round 7 closed: the imported producer name was added as a name-based cross-module rule; the sealed
   set now passes 42/42 as regression (127/127 corpus).
+- Round 8: sealed, run once, 34/42, sinks inside helpers and keyword flows. The boundary cases held;
+  the failures were class-state payloads, a `PlainTextResponse`, a `session=%s` label, an `IfExp`
+  truncation and a keyword-only retention default. The eight cases were fixed and promoted
+  (42/42 regression). A round 9 is required for a post-fix number.

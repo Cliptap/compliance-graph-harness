@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -890,6 +890,62 @@
       "expected": "violation",
       "path": "app/views/admin_export.py",
       "code": "from flask import Blueprint, jsonify\n\nfrom app.identifiers import format_rut_and_email\nfrom app.models import Customer\n\nadmin_bp = Blueprint('admin', __name__)\n\n\nclass CustomerExport:\n    def __init__(self, limit):\n        self.limit = limit\n\n    def rows(self):\n        out = []\n        for customer in Customer.query.limit(self.limit):\n            out.append({'id': customer.id, 'label': format_rut_and_email(customer)})\n        return out\n\n\n@admin_bp.get('/admin/customers/export')\ndef export_customers():\n    job = CustomerExport(limit=200)\n    return jsonify({'rows': job.rows()})\n\n\n@admin_bp.get('/admin/customers/export/status')\ndef export_status():\n    return jsonify({'ready': True})\n"
+    },
+    {
+      "id": "r8-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/telemetry/session.py",
+      "code": "import hashlib\nimport logging\n\nlogger = logging.getLogger(__name__)\n\n\nclass SessionTelemetry:\n    def __init__(self, session_id: str, salt: str):\n        self.session_id = session_id\n        self._salt = salt\n        self._tags = []\n\n    def with_actor(self, email: str):\n        digest = hashlib.sha256((self._salt + email).encode()).hexdigest()[:16]\n        self._tags.append(f'actor:{digest}')\n        return self\n\n    def with_step(self, step: str):\n        self._tags.append(f'step:{step}')\n        return self\n\n    def emit(self) -> None:\n        logger.info('session=%s tags=%s', self.session_id, ','.join(self._tags))\n\n\ndef track(*, session_id: str, salt: str, email: str) -> None:\n    SessionTelemetry(session_id, salt).with_actor(email).with_step('open').emit()\n"
+    },
+    {
+      "id": "r8-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/customer_summary.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nfrom app.models import Customer\n\nrouter = APIRouter()\n\n\nclass AdminCustomerView:\n    def __init__(self, customer):\n        self.customer = customer\n        self._payload = {'id': customer.id}\n\n    def with_contact(self):\n        self._payload['email'] = self.customer.email\n        return self\n\n    def with_billing(self):\n        self._payload['phone'] = self.customer.phone\n        return self\n\n    def render(self) -> JSONResponse:\n        return JSONResponse(self._payload)\n\n\n@router.get('/admin/customers/{customer_id}/summary')\ndef admin_customer_summary(customer_id: int):\n    customer = Customer.objects.get(pk=customer_id)\n    return AdminCustomerView(customer).with_contact().with_billing().render()\n"
+    },
+    {
+      "id": "r8-cred-02",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/admin/integrations.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nfrom app.models import Integration\n\nrouter = APIRouter()\n\n\nclass IntegrationView:\n    def __init__(self, integration):\n        self.integration = integration\n        self._payload = {'slug': integration.slug}\n\n    def with_endpoint(self):\n        self._payload['endpoint'] = self.integration.endpoint\n        return self\n\n    def with_credentials(self):\n        self._payload['api_key'] = self.integration.api_key\n        self._payload['secret'] = self.integration.secret\n        return self\n\n    def render(self) -> JSONResponse:\n        return JSONResponse(self._payload)\n\n\n@router.get('/admin/integrations/{slug}')\ndef integration_detail(slug: str):\n    integration = Integration.objects.get(slug=slug)\n    return IntegrationView(integration).with_endpoint().with_credentials().render()\n"
+    },
+    {
+      "id": "r8-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/internal/signing.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import PlainTextResponse\n\nfrom app.security.vault import read_private_key_pem\n\nrouter = APIRouter()\n\n\ndef current_key_id() -> str:\n    return load_active_key_id()\n\n\n@router.get('/internal/signing-key')\ndef signing_key():\n    key_id = current_key_id()\n    pem = read_private_key_pem(key_id=key_id)\n    return PlainTextResponse(pem)\n"
+    },
+    {
+      "id": "r8-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/admin/account_security.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nrouter = APIRouter()\n\n\ndef account_security_payload(*, account_id: int, password_hash: str, api_key: str) -> dict:\n    return {\n        'id': account_id,\n        'password_set': bool(password_hash),\n        'api_key_suffix': api_key[-4:] if api_key else None,\n    }\n\n\n@router.get('/admin/accounts/{account_id}/security')\ndef account_security(account_id: int):\n    account = Account.objects.get(pk=account_id)\n    return JSONResponse(account_security_payload(\n        account_id=account.id,\n        password_hash=account.password_hash,\n        api_key=account.api_key,\n    ))\n"
+    },
+    {
+      "id": "r8-bill-04",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/billing/order_cleanup.py",
+      "code": "from datetime import timedelta\n\nfrom django.utils import timezone\n\nfrom app.models import Order\n\nORDER_RETENTION_DAYS = 2190\n\n\ndef delete_orders_before(*, days: int) -> int:\n    cutoff = timezone.now() - timedelta(days=days)\n    removed, _ = Order.objects.filter(created_at__lt=cutoff).delete()\n    return removed\n\n\ndef run_order_cleanup(*, days: int = ORDER_RETENTION_DAYS) -> dict:\n    if days < ORDER_RETENTION_DAYS:\n        raise ValueError('order retention window is below policy')\n    removed = delete_orders_before(days=days)\n    return {'orders_removed': removed}\n"
+    },
+    {
+      "id": "r8-reset-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/auth/reset_start.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nfrom app.models import User\nfrom app.services.tokens import issue_reset_token\n\nrouter = APIRouter()\n\n\nclass ResetFlow:\n    def __init__(self, user):\n        self.user = user\n        self._payload = {}\n\n    def issue(self):\n        self._payload['token'] = issue_reset_token(user_id=self.user.id)\n        return self\n\n    def with_expiry(self):\n        self._payload['expires_in'] = 900\n        return self\n\n    def render(self) -> JSONResponse:\n        return JSONResponse(self._payload)\n\n\n@router.post('/auth/reset/start')\ndef start_reset(email: str):\n    user = User.objects.filter(email=email).first()\n    if user is None:\n        return JSONResponse({'detail': 'if the account exists, an email was sent'})\n    return ResetFlow(user).issue().with_expiry().render()\n"
+    },
+    {
+      "id": "r8-apikey-02",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/admin/webhooks.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nfrom app.models import WebhookEndpoint\n\nrouter = APIRouter()\n\n\nclass WebhookView:\n    def __init__(self, endpoint):\n        self.endpoint = endpoint\n        self._payload = {'id': endpoint.id, 'url': endpoint.url}\n\n    def with_headers(self):\n        self._payload['headers'] = {'X-Api-Key': self.endpoint.api_key}\n        return self\n\n    def with_retries(self):\n        self._payload['retries'] = self.endpoint.retries\n        return self\n\n    def render(self) -> JSONResponse:\n        return JSONResponse(self._payload)\n\n\n@router.get('/admin/webhooks/{endpoint_id}')\ndef webhook_detail(endpoint_id: int):\n    endpoint = WebhookEndpoint.objects.get(pk=endpoint_id)\n    return WebhookView(endpoint).with_headers().with_retries().render()\n"
     }
   ]
 }

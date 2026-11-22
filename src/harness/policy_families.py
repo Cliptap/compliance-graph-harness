@@ -16,7 +16,7 @@ from src.harness.contracts import Finding, TaskSpec
 
 RUT_VALUE_RE = re.compile(r"\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b")
 AMBIGUOUS_TEXT_SYNONYMS = {"run"}
-PROSE_SYNONYMS = {"email", "phone", "address", "token", "secret", "password"}
+PROSE_SYNONYMS = {"email", "phone", "address", "token", "secret", "password", "session", "cookie"}
 
 
 def _constant_matches(text: str, synonyms: list[str]) -> bool:
@@ -43,7 +43,8 @@ def _constant_matches(text: str, synonyms: list[str]) -> bool:
 
 LOG_PATTERNS = ("print", "logger.", "logging.", "console.log", "console.error",
                 "sys.stdout", "sys.stderr", "stdout.write", "stderr.write")
-RESPONSE_PATTERNS = ("JSONResponse", "JsonResponse", "Response", "jsonify")
+RESPONSE_PATTERNS = ("JSONResponse", "JsonResponse", "Response", "jsonify", "PlainTextResponse",
+                    "HTMLResponse", "HttpResponse", "StreamingResponse")
 REDIRECT_PATTERNS = ("RedirectResponse", "redirect")
 DELETE_RE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)", re.IGNORECASE)
 DJANGO_OBJECTS_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\.objects\b")
@@ -123,6 +124,10 @@ def _value_is_masked(catalog: Catalog, value: ast.AST) -> bool:
         return catalog.is_sanitizer(ast.unparse(value))
     if isinstance(value, ast.Subscript):
         return not (isinstance(value.slice, ast.Constant) and isinstance(value.slice.value, str))
+    if isinstance(value, ast.IfExp):
+        return _value_is_masked(catalog, value.body) and _value_is_masked(catalog, value.orelse)
+    if isinstance(value, ast.Constant) and value.value is None:
+        return True
     if isinstance(value, (ast.Name, ast.Attribute)):
         token = _identifier(value)
         if not token or _exact_category(catalog, token):
@@ -287,6 +292,10 @@ def _name_categories(catalog: Catalog, name: str) -> set[str]:
         synonyms = catalog.synonyms(category)
         if any(token in synonyms for token in tokens):
             found.add(category)
+            continue
+        lowered = name.lower().replace("-", "_")
+        if any(len(synonym) > 3 and synonym.replace("-", "_") in lowered for synonym in synonyms):
+            found.add(category)
     return found
 
 
@@ -318,7 +327,8 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                      env: dict[str, set[str]] | None = None,
                      summaries: dict[str, set[str]] | None = None,
                      param_returns: dict[str, set[int | str]] | None = None,
-                     field_lists: dict[str, set[str]] | None = None) -> set[str]:
+                     field_lists: dict[str, set[str]] | None = None,
+                     attr_categories: dict[str, set[str]] | None = None) -> set[str]:
     """Categories that reach a sink, following local variables and helper summaries."""
     found: set[str] = set()
     comprehension_skip = _skip_nodes(node)
@@ -334,16 +344,20 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
         if child is node or not isinstance(child, ast.Call):
             continue
         leaf = _call_name(child).rsplit(".", 1)[-1]
-        positions = (param_returns or {}).get(leaf, set())
-        propagates = bool((summaries or {}).get(leaf)) or any(
-            index in positions for index in range(len(child.args))) or any(
-            keyword.arg in positions for keyword in child.keywords if keyword.arg)
-        if (leaf in PASSTHROUGH_CALLS or propagates or _is_masking_name(leaf)
+        if (leaf in PASSTHROUGH_CALLS or _is_masking_name(leaf)
                 or leaf in RESPONSE_PATTERNS or leaf in REDIRECT_PATTERNS or _is_log_sink(leaf)
                 or leaf in CSV_SINKS):
             continue
-        for arg in list(child.args) + [keyword.value for keyword in child.keywords]:
+        positions = (param_returns or {}).get(leaf, set())
+        for index, arg in enumerate(child.args):
+            if index in positions and not _value_is_masked(catalog, arg):
+                continue
             for nested in ast.walk(arg):
+                blocked_args.add(id(nested))
+        for keyword in child.keywords:
+            if keyword.arg in positions and not _value_is_masked(catalog, keyword.value):
+                continue
+            for nested in ast.walk(keyword.value):
                 blocked_args.add(id(nested))
     blocked: set[int] = set()
     for child in ast.walk(node):
@@ -362,11 +376,11 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                 found |= (summaries or {}).get(leaf, set()) & allowed
                 positions = (param_returns or {}).get(leaf, set())
                 for index, arg in enumerate(child.args):
-                    if index in positions:
+                    if index in positions and not _value_is_masked(catalog, arg):
                         found |= _sink_categories(catalog, arg, allowed, env, summaries,
                                                   param_returns, field_lists)
                 for keyword in child.keywords:
-                    if keyword.arg in positions:
+                    if keyword.arg in positions and not _value_is_masked(catalog, keyword.value):
                         found |= _sink_categories(catalog, keyword.value, allowed, env, summaries,
                                                   param_returns, field_lists)
         elif isinstance(child, ast.Dict):
@@ -391,6 +405,9 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
         elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
             if id(child) in callees:
                 continue
+            if isinstance(child, ast.Attribute) and attr_categories \
+                    and isinstance(child.value, ast.Name) and child.value.id in {"self", "cls"}:
+                found |= attr_categories.get(child.attr, set()) & allowed
             token = _identifier(child)
             category = _field_category(catalog, token) if token else None
             if category in allowed:
@@ -402,21 +419,75 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
     return found
 
 
+def _self_attribute(target: ast.AST) -> str | None:
+    if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name) \
+            and target.value.id in {"self", "cls"}:
+        return target.attr
+    if isinstance(target, ast.Subscript):
+        base = target.value
+        if isinstance(base, ast.Attribute) and isinstance(base.value, ast.Name) \
+                and base.value.id in {"self", "cls"}:
+            return base.attr
+    return None
+
+
+def _class_attr_categories(tree: ast.AST, catalog: Catalog, categories: set[str],
+                           summaries: dict[str, set[str]],
+                           param_returns: dict[str, set[int | str]] | None = None
+                           ) -> dict[str, dict[str, set[str]]]:
+    """Instance attributes mutated with sensitive values (``self._payload['email']``)."""
+    result: dict[str, dict[str, set[str]]] = {}
+    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+        attrs: dict[str, set[str]] = {}
+        methods = [item for item in cls.body
+                   if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        for _ in range(2):
+            changed = False
+            for method in methods:
+                env = _TaintTracker(catalog, categories, summaries, param_returns, attrs).scan(method)
+                for node in ast.walk(method):
+                    if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+                        continue
+                    if _value_is_masked(catalog, node.value):
+                        continue
+                    found = _sink_categories(catalog, node.value, categories, env, summaries,
+                                             param_returns, None, attrs)
+                    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                    for target in targets:
+                        attr = _self_attribute(target)
+                        if attr is None:
+                            continue
+                        if isinstance(target, ast.Subscript) and isinstance(target.slice, ast.Constant) \
+                                and isinstance(target.slice.value, str):
+                            category = _field_category(catalog, target.slice.value)
+                            if category in categories:
+                                found = found | {category}
+                        if found - attrs.get(attr, set()):
+                            attrs[attr] = attrs.get(attr, set()) | found
+                            changed = True
+            if not changed:
+                break
+        if attrs:
+            result[cls.name] = attrs
+    return result
+
+
 def _effect_matched(catalog: Catalog, node: ast.Call, positions: set[int | str],
                     allowed: set[str], env: dict[str, set[str]] | None,
                     summaries: dict[str, set[str]] | None,
                     param_returns: dict[str, set[int | str]] | None,
-                    field_lists: dict[str, set[str]] | None) -> set[str]:
+                    field_lists: dict[str, set[str]] | None,
+                    attr_categories: dict[str, set[str]] | None = None) -> set[str]:
     """Categories carried by the arguments whose parameter positions reach a sink."""
     matched: set[str] = set()
     for index, arg in enumerate(node.args):
-        if index in positions:
+        if index in positions and not _value_is_masked(catalog, arg):
             matched |= _sink_categories(catalog, arg, allowed, env, summaries,
-                                        param_returns, field_lists)
+                                        param_returns, field_lists, attr_categories)
     for keyword in node.keywords:
-        if keyword.arg in positions:
+        if keyword.arg in positions and not _value_is_masked(catalog, keyword.value):
             matched |= _sink_categories(catalog, keyword.value, allowed, env, summaries,
-                                        param_returns, field_lists)
+                                        param_returns, field_lists, attr_categories)
     return matched
 
 
@@ -425,11 +496,13 @@ class _TaintTracker(ast.NodeVisitor):
 
     def __init__(self, catalog: Catalog, categories: set[str],
                  summaries: dict[str, set[str]] | None = None,
-                 param_returns: dict[str, set[int | str]] | None = None):
+                 param_returns: dict[str, set[int | str]] | None = None,
+                 attr_categories: dict[str, set[str]] | None = None):
         self.catalog = catalog
         self.categories = set(categories)
         self.summaries = summaries or {}
         self.param_returns = param_returns or {}
+        self.attr_categories = attr_categories or {}
         self.env: dict[str, set[str]] = {}
 
     def scan(self, node: ast.AST) -> dict[str, set[str]]:
@@ -438,6 +511,8 @@ class _TaintTracker(ast.NodeVisitor):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         categories = self._categories(node.value) | self._source_categories(node.targets, node.value)
+        if _value_is_masked(self.catalog, node.value):
+            categories = set()
         for target in node.targets:
             self._taint(target, categories)
         self.generic_visit(node)
@@ -445,6 +520,8 @@ class _TaintTracker(ast.NodeVisitor):
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         if node.value is not None:
             categories = self._categories(node.value) | self._source_categories([node.target], node.value)
+            if _value_is_masked(self.catalog, node.value):
+                categories = set()
             self._taint(node.target, categories)
         self.generic_visit(node)
 
@@ -522,15 +599,18 @@ class _TaintTracker(ast.NodeVisitor):
             if not isinstance(child, ast.Call):
                 continue
             leaf = _call_name(child).rsplit(".", 1)[-1]
-            propagates = bool(self.summaries.get(leaf)) or any(
-                index in self.param_returns.get(leaf, set()) for index in range(len(child.args)))
-            propagates = propagates or any(
-                keyword.arg in self.param_returns.get(leaf, set())
-                for keyword in child.keywords if keyword.arg)
-            if (leaf in PASSTHROUGH_CALLS or propagates or _is_masking_name(leaf)):
+            if leaf in PASSTHROUGH_CALLS or _is_masking_name(leaf):
                 continue
-            for arg in list(child.args) + [keyword.value for keyword in child.keywords]:
+            positions = self.param_returns.get(leaf, set())
+            for index, arg in enumerate(child.args):
+                if index in positions and not _value_is_masked(self.catalog, arg):
+                    continue
                 for nested in ast.walk(arg):
+                    blocked_args.add(id(nested))
+            for keyword in child.keywords:
+                if keyword.arg in positions and not _value_is_masked(self.catalog, keyword.value):
+                    continue
+                for nested in ast.walk(keyword.value):
                     blocked_args.add(id(nested))
         dict_keys: set[int] = set()
         skip = _skip_nodes(node)
@@ -557,10 +637,10 @@ class _TaintTracker(ast.NodeVisitor):
                 found |= self.summaries.get(leaf, set())
                 positions = self.param_returns.get(leaf, set())
                 for index, arg in enumerate(child.args):
-                    if index in positions:
+                    if index in positions and not _value_is_masked(self.catalog, arg):
                         found |= self._categories(arg)
                 for keyword in child.keywords:
-                    if keyword.arg in positions:
+                    if keyword.arg in positions and not _value_is_masked(self.catalog, keyword.value):
                         found |= self._categories(keyword.value)
             elif isinstance(child, ast.Constant) and isinstance(child.value, str) and id(child) not in dict_keys:
                 for table in TABLE_RE.findall(child.value.lower()):
@@ -571,6 +651,10 @@ class _TaintTracker(ast.NodeVisitor):
             elif isinstance(child, (ast.Attribute, ast.Subscript)):
                 if id(child) in callees:
                     continue
+                if isinstance(child, ast.Attribute) and self.attr_categories \
+                        and isinstance(child.value, ast.Name) \
+                        and child.value.id in {"self", "cls"}:
+                    found |= self.attr_categories.get(child.attr, set())
                 token = _identifier(child)
                 if token:
                     category = _field_category(self.catalog, token)
@@ -633,7 +717,8 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
     """
     functions = {node.name: node for node in ast.walk(tree)
                  if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
-    params = {name: [arg.arg for arg in func.args.args if arg.arg not in {"self", "cls"}]
+    params = {name: [arg.arg for arg in list(func.args.args) + list(func.args.kwonlyargs)
+                     if arg.arg not in {"self", "cls"}]
               for name, func in functions.items()}
     field_lists = _field_lists(tree, catalog, categories)
     param_returns: dict[str, set[int | str]] = {name: set() for name in functions}
@@ -740,29 +825,35 @@ class SinkExposureFamily(PolicyFamily):
             (param_returns, param_logs,
              param_responses, param_redirects) = _call_effects(tree, self.catalog, categories,
                                                                summaries)
+            attr_map = _class_attr_categories(tree, self.catalog, categories, summaries,
+                                              param_returns)
             if "log" in sinks:
                 findings.extend(self._scan_logs(control, path, tree, categories, summaries,
-                                                param_returns, param_logs, field_lists))
+                                                param_returns, param_logs, field_lists, attr_map))
             if "response" in sinks:
                 findings.extend(self._scan_responses(control, path, tree, categories, summaries,
-                                                     param_returns, field_lists, param_responses))
+                                                     param_returns, field_lists, param_responses,
+                                                     attr_map))
                 findings.extend(self._scan_serializers(control, path, tree, categories))
                 findings.extend(self._scan_graphql_types(control, path, tree, categories))
                 if control.detection.context.get("route") == "admin":
                     findings.extend(self._scan_admin_classes(control, path, tree, categories))
             if "redirect" in sinks:
                 findings.extend(self._scan_redirects(control, path, tree, categories, summaries,
-                                                     param_returns, field_lists, param_redirects))
+                                                     param_returns, field_lists, param_redirects,
+                                                     attr_map))
             if "csv" in sinks:
                 findings.extend(self._scan_csv(control, path, tree, categories, summaries,
-                                               param_returns, field_lists))
+                                               param_returns, field_lists, attr_map))
         return self._dedupe(findings)
 
     def _scan_logs(self, control, path, tree, categories, summaries,
-                   param_returns, param_logs, field_lists) -> list[Finding]:
+                   param_returns, param_logs, field_lists, attr_map) -> list[Finding]:
         out = []
+        enclosing = _enclosing_classes(tree)
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
+            attrs = attr_map.get(enclosing.get(id(func), ""), {})
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call):
                     continue
@@ -772,7 +863,7 @@ class SinkExposureFamily(PolicyFamily):
                     if self.catalog.is_sanitizer(text):
                         continue
                     matched = self._categories(node, categories, env, summaries,
-                                               param_returns, field_lists)
+                                               param_returns, field_lists, attrs)
                     if matched:
                         out.append(_finding(control, path, node.lineno,
                                             f"Log call exposes {sorted(matched)} without masking.", text))
@@ -782,13 +873,13 @@ class SinkExposureFamily(PolicyFamily):
                     continue
                 matched: set[str] = set()
                 for index, arg in enumerate(node.args):
-                    if index in positions:
+                    if index in positions and not _value_is_masked(self.catalog, arg):
                         matched |= self._categories(arg, categories, env, summaries,
-                                                    param_returns, field_lists)
+                                                    param_returns, field_lists, attrs)
                 for keyword in node.keywords:
-                    if keyword.arg in positions:
+                    if keyword.arg in positions and not _value_is_masked(self.catalog, keyword.value):
                         matched |= self._categories(keyword.value, categories, env, summaries,
-                                                    param_returns, field_lists)
+                                                    param_returns, field_lists, attrs)
                 if matched:
                     out.append(_finding(
                         control, path, node.lineno,
@@ -797,7 +888,7 @@ class SinkExposureFamily(PolicyFamily):
         return out
 
     def _scan_responses(self, control, path, tree, categories, summaries,
-                        param_returns, field_lists, param_responses) -> list[Finding]:
+                        param_returns, field_lists, param_responses, attr_map) -> list[Finding]:
         out = []
         admin_only = control.detection.context.get("route") == "admin"
         enclosing = _enclosing_classes(tree)
@@ -808,7 +899,8 @@ class SinkExposureFamily(PolicyFamily):
                     and "admin" not in class_name.lower()
                     and "admin" not in path.lower()):
                 continue
-            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns,
+                                attr_map.get(class_name, {})).scan(func)
             dumps = _dump_names(func)
             for node in ast.walk(func):
                 payload = None
@@ -833,7 +925,8 @@ class SinkExposureFamily(PolicyFamily):
                 if self.catalog.is_sanitizer(text):
                     continue
                 matched = self._categories(payload, categories, env, summaries,
-                                           param_returns, field_lists)
+                                           param_returns, field_lists,
+                                           attr_map.get(class_name, {}))
                 if matched:
                     out.append(_finding(control, path, payload.lineno,
                                         f"Response exposes {sorted(matched)} without masking.", text))
@@ -844,7 +937,8 @@ class SinkExposureFamily(PolicyFamily):
                 if not positions:
                     continue
                 matched = _effect_matched(self.catalog, node, positions, categories, env,
-                                          summaries, param_returns, field_lists)
+                                          summaries, param_returns, field_lists,
+                                          attr_map.get(class_name, {}))
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"Response inside '{_call_name(node)}' exposes "
@@ -946,10 +1040,12 @@ class SinkExposureFamily(PolicyFamily):
         return out
 
     def _scan_redirects(self, control, path, tree, categories, summaries,
-                        param_returns, field_lists, param_redirects) -> list[Finding]:
+                        param_returns, field_lists, param_redirects, attr_map) -> list[Finding]:
         out = []
+        enclosing = _enclosing_classes(tree)
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
+            attrs = attr_map.get(enclosing.get(id(func), ""), {})
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in REDIRECT_PATTERNS:
                     continue
@@ -968,7 +1064,7 @@ class SinkExposureFamily(PolicyFamily):
                 if not positions:
                     continue
                 matched = _effect_matched(self.catalog, node, positions, categories, env,
-                                          summaries, param_returns, field_lists)
+                                          summaries, param_returns, field_lists, attrs)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"Redirect inside '{_call_name(node)}' exposes "
@@ -976,10 +1072,12 @@ class SinkExposureFamily(PolicyFamily):
         return out
 
     def _scan_csv(self, control, path, tree, categories, summaries,
-                  param_returns, field_lists) -> list[Finding]:
+                  param_returns, field_lists, attr_map) -> list[Finding]:
         out = []
+        enclosing = _enclosing_classes(tree)
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
+            attrs = attr_map.get(enclosing.get(id(func), ""), {})
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in CSV_SINKS:
                     continue
@@ -987,7 +1085,7 @@ class SinkExposureFamily(PolicyFamily):
                 if self.catalog.is_sanitizer(text):
                     continue
                 matched = self._categories(node, categories, env, summaries,
-                                           param_returns, field_lists)
+                                           param_returns, field_lists, attrs)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"CSV row exposes {sorted(matched)} without masking.", text))
@@ -999,10 +1097,11 @@ class SinkExposureFamily(PolicyFamily):
     def _categories(self, node: ast.AST, allowed: set[str],
                     env: dict[str, set[str]] | None = None,
                     summaries: dict[str, set[str]] | None = None,
-                    param_returns: dict[str, set[int]] | None = None,
-                    field_lists: dict[str, set[str]] | None = None) -> set[str]:
+                    param_returns: dict[str, set[int | str]] | None = None,
+                    field_lists: dict[str, set[str]] | None = None,
+                    attr_categories: dict[str, set[str]] | None = None) -> set[str]:
         return _sink_categories(self.catalog, node, allowed, env, summaries,
-                                param_returns, field_lists)
+                                param_returns, field_lists, attr_categories)
 
     @staticmethod
     def _decorators(func: ast.AST) -> str:
@@ -1123,10 +1222,16 @@ def _int_constants(tree: ast.AST) -> dict[str, int]:
             elif isinstance(target, ast.Attribute):
                 constants[target.attr] = value
     for node in ast.walk(tree):
-        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or not node.args.defaults:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        args = node.args.args[-len(node.args.defaults):]
-        for arg, default in zip(args, node.args.defaults):
+        args = list(node.args.args)
+        defaults = list(node.args.defaults)
+        for arg, default in zip(args[-len(defaults):] if defaults else [], defaults):
+            if isinstance(default, ast.Constant) and isinstance(default.value, int):
+                constants[arg.arg] = default.value
+            elif isinstance(default, ast.Name) and default.id in constants:
+                constants[arg.arg] = constants[default.id]
+        for arg, default in zip(node.args.kwonlyargs, node.args.kw_defaults):
             if isinstance(default, ast.Constant) and isinstance(default.value, int):
                 constants[arg.arg] = default.value
             elif isinstance(default, ast.Name) and default.id in constants:
@@ -1433,13 +1538,21 @@ class CredentialExposureFamily(PolicyFamily):
             header_bindings = _secret_header_bindings(tree)
             summaries = _function_summaries(tree, self.catalog, categories)
             field_lists = _field_lists(tree, self.catalog, categories)
-            param_returns, param_logs, param_responses, param_redirects = _call_effects(
-                tree, self.catalog, categories, summaries)
+            (param_returns, param_logs,
+             param_responses, param_redirects) = _call_effects(tree, self.catalog, categories,
+                                                               summaries)
+            attr_map = _class_attr_categories(tree, self.catalog, categories, summaries,
+                                              param_returns)
+            enclosing = _enclosing_classes(tree)
             env_by_node: dict[int, dict[str, set[str]]] = {}
+            attrs_by_node: dict[int, dict[str, set[str]]] = {}
             for func in _leaf_functions(tree):
-                env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
+                attrs = attr_map.get(enclosing.get(id(func), ""), {})
+                env = _TaintTracker(self.catalog, categories, summaries, param_returns,
+                                    attrs).scan(func)
                 for child in ast.walk(func):
                     env_by_node[id(child)] = env
+                    attrs_by_node[id(child)] = attrs
             for node in ast.walk(tree):
                 if not self._is_sink(node, sinks):
                     continue
@@ -1448,7 +1561,8 @@ class CredentialExposureFamily(PolicyFamily):
                     continue
                 tainted = _sink_categories(self.catalog, node, categories,
                                            env_by_node.get(id(node)), summaries,
-                                           param_returns, field_lists)
+                                           param_returns, field_lists,
+                                           attrs_by_node.get(id(node)))
                 if (tainted
                         or self._matches(text, keys, value_pattern)
                         or self._logs_token(node, sinks, keys)
@@ -1465,15 +1579,16 @@ class CredentialExposureFamily(PolicyFamily):
                     if not positions or not isinstance(node, ast.Call):
                         continue
                     env = env_by_node.get(id(node))
+                    attrs = attrs_by_node.get(id(node))
                     matched: set[str] = set()
                     for index, arg in enumerate(node.args):
-                        if index in positions:
+                        if index in positions and not _value_is_masked(self.catalog, arg):
                             matched |= _sink_categories(self.catalog, arg, categories, env,
-                                                        summaries, param_returns, field_lists)
+                                                        summaries, param_returns, field_lists, attrs)
                     for keyword in node.keywords:
-                        if keyword.arg in positions:
+                        if keyword.arg in positions and not _value_is_masked(self.catalog, keyword.value):
                             matched |= _sink_categories(self.catalog, keyword.value, categories, env,
-                                                        summaries, param_returns, field_lists)
+                                                        summaries, param_returns, field_lists, attrs)
                     if matched:
                         out.append(_finding(control, path, node.lineno,
                                             "A credential reaches a log inside a helper.",
@@ -1493,7 +1608,8 @@ class CredentialExposureFamily(PolicyFamily):
                         continue
                     matched = _effect_matched(self.catalog, node, positions, categories,
                                               env_by_node.get(id(node)), summaries,
-                                              param_returns, field_lists)
+                                              param_returns, field_lists,
+                                              attrs_by_node.get(id(node)))
                     if matched:
                         out.append(_finding(control, path, node.lineno, message,
                                             ast.unparse(node)))
