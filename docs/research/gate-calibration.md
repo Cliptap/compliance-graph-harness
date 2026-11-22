@@ -29,6 +29,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 1 (sealed) | 36 | **26/36** | 8 false negatives, 2 false positives |
 | Blind round 2 (sealed, post-fix) | 42 | **37/42** | 4 false negatives, 1 false positive |
 | Blind round 3 (sealed, post-fix) | 38 | **25/38** | 14 false negatives, 0 false positives |
+| Blind round 4 (sealed, post-fix) | 35 | **31/35** | 4 false negatives, 0 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -223,6 +224,65 @@ The 14 false negatives are framework coverage, not edge cases:
 There were no false positives: the precision fixes of rounds 1 and 2 held. The detector is precise on
 what it recognises and web-request-centric; it is not yet a general Django/DRF/ORM/CLI auditor.
 
+## Fixes after blind round 3
+
+The 14 framework false negatives were fixed and promoted to the regression corpus:
+
+| Group | Fix |
+|---|---|
+| Django `JsonResponse` | added to `RESPONSE_PATTERNS` |
+| DRF serializers | `Meta.fields` scanned; method fields masked with a sanitizer are skipped; derived suffixes (`_configured`, `_suffix`, `_last4`, `_preview`) ignored |
+| Django admin | `list_display`, `search_fields` and `list_filter` scanned for personal fields |
+| Django ORM | `Model.objects.filter(...).delete()` and `Manager.delete()` map to table candidates |
+| CLI stdout | `stdout.write` and `stderr.write` are log sinks; token arguments are detected |
+| Header dict | `X-Api-Key`/`Authorization` bindings passed to a log are flagged for api-key controls |
+| Credential names | `temporary_password`, `temp_password`, `api_secret` and `client_secret` added to `CREDENTIAL` |
+
+Regression state: curated 22/22, regression corpus **69/69** (31 previous + 38 round-3 cases), full
+suite **423 passed**. The sealed round-3 set was not re-scored; 25/38 is the measurement **before**
+these fixes. A round 4 is required for the post-fix number.
+
+## Blind round 4 (sealed, post-fix)
+
+A fourth fresh author wrote 35 cases (5 per control, at least 2 violations each) with Flask
+blueprints, SQLAlchemy sessions, FastAPI dependency injection, GraphQL types and Celery tasks. The
+file was sealed before the run (`cases_blind_round4.json.sha256`,
+`6bec731128b9642bee6637faaccc48f2066cd6056e587d5d60e083605df7719a`) and run once.
+
+Result: **31/35**. Aggregate: precision **1.000** [0.806, 1.000], recall **0.800** [0.584, 0.919],
+accuracy 0.886 [0.740, 0.955].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 0 | 1 | 2 | 1.00 | 0.67 |
+| `v2.api_key` | 2 | 0 | 1 | 2 | 1.00 | 0.67 |
+| `v2.billing_retention` | 3 | 0 | 0 | 2 | 1.00 | 1.00 |
+| `v2.credential_response` | 2 | 0 | 1 | 2 | 1.00 | 0.67 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 2 | 1.00 | 1.00 |
+| `v2.log_pii` | 1 | 0 | 1 | 3 | 1.00 | 0.50 |
+| `v2.reset_token` | 3 | 0 | 0 | 2 | 1.00 | 1.00 |
+
+The four false negatives:
+
+| Case | Cause |
+|---|---|
+| `r4_log_sms_phone` | `phone_number` is an identifier, not an exact synonym |
+| `r4_admin_graphql_rut` | GraphQL type fields are not inspected |
+| `r4_cred_graphql_api_secret` | same GraphQL type gap |
+| `r4_key_graphql_log_secret` | a `secret` name in a log is not matched; `v2.log_pii` fires instead |
+
+## Fixes after blind round 4
+
+| Case | Fix |
+|---|---|
+| `r4_log_sms_phone` | fuzzy identifier matching, guarded by metadata suffixes (`_id`, `_ttl`, `_minutes`, `_fp`, `_hash`, ...) |
+| GraphQL types | Strawberry `AnnAssign` fields are scanned like serializers |
+| `r4_key_graphql_log_secret` | api-key log arguments with `secret`/`api_key` names are flagged; the log helpers are scoped to log sinks to avoid `Response`/`JsonResponse` false positives |
+
+Regression state: curated 22/22, regression corpus **104/104** (69 previous + 35 round-4 cases), full
+suite **427 passed**. The sealed round-4 set was not re-scored; 31/35 is the measurement **before**
+these fixes. A round 5 is required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -230,16 +290,19 @@ what it recognises and web-request-centric; it is not yet a general Django/DRF/O
 - The author-held-out round found one false negative that the curated set missed. The blind round
   found ten failures (8 FN, 2 FP), including common idioms: ORM deletes, class-based admin views,
   `log.info`, `private_key`, a boolean credential projection and manual f-string masking.
-- The calibration now has three sealed rounds. Round 1 pre-fix: precision 0.867 [0.621, 0.963],
+- The calibration now has four sealed rounds. Round 1 pre-fix: precision 0.867 [0.621, 0.963],
   recall 0.619 [0.409, 0.792]. Round 2 post-round-1: 0.944 [0.742, 0.990] / 0.810 [0.600, 0.923].
-  Round 3 post-run-fix: 1.000 [0.676, 1.000] / 0.364 [0.197, 0.570]. The samples are small; report
-  the intervals.
-- The round-2 gaps were fixed and regression-tested. Round 3 moves the frontier to framework
+  Round 3 post-run-fix: 1.000 [0.676, 1.000] / 0.364 [0.197, 0.570]. Round 4 post-framework:
+  1.000 [0.806, 1.000] / 0.800 [0.584, 0.919]. The samples are small; report the intervals.
+- The round-2 gaps were fixed and regression-tested. Round 3 moved the frontier to framework
   coverage: Django `JsonResponse`, DRF serializer fields, Django admin, ORM manager deletes, CLI
-  stdout and header dicts. The detector is precise on what it recognises and web-request-centric;
-  recall collapses on those idioms.
+  stdout and header dicts. The detector was precise but web-request-centric; recall collapsed on
+  those idioms. The 14 gaps were fixed after the measurement and are now regression cases; 25/38
+  remains the pre-fix number until round 4.
 - The false positives matter: a boolean projection, a manual f-string mask and the English word
   "run" were fixed; round 3 produced no false positives.
+- Round 4's four gaps were fixed and are now regression cases (104/104). The 31/35 number remains
+  the pre-fix measurement; only a round 5 can estimate the post-fix recall.
 
 ## Limitations
 
@@ -248,24 +311,25 @@ what it recognises and web-request-centric; it is not yet a general Django/DRF/O
 - Minimal snippets, 7 of 37 controls, and only the v2 families. Legacy policies (`privacy.cwe_532`,
   `privacy.api_exposure`) are outside this calibration.
 - Round 3 is deliberately Django/DRF-heavy; other frameworks and ORMs are less covered.
+- Round 3's post-fix result is regression-only: a fresh blind round is required to estimate it.
+- Round 4's post-fix result is also regression-only; the detector now has coverage for Flask,
+  SQLAlchemy, GraphQL and Celery idioms, but no fresh measurement yet.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Add framework coverage: Django `JsonResponse`, DRF serializer `Meta.fields`, Django admin
-   `list_display`, ORM manager deletes, CLI `stdout.write` and `X-Api-Key` header dicts.
-2. Author a fresh blind round 4 after those fixes, with a human adjudicator if possible.
-3. Include real code from the target app and public repositories, not only snippets.
-4. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+1. Author a fresh blind round 5 after the round-4 fixes, with a human adjudicator if possible.
+2. Include real code from the target app and public repositories, not only snippets.
+3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json`, `cases_blind_round2.json` and `cases_blind_round3.json` with their
-  `.sha256` seals.
+  `cases_blind_round1.json`, `cases_blind_round2.json`, `cases_blind_round3.json` and
+  `cases_blind_round4.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`,
-  `blind_round2_metrics.json`, `blind_round3_metrics.json`.
-- `src/harness/catalog.py` (`is_sanitizer`), `tests/harness/test_catalog.py`,
-  `tests/harness/test_catalog_corpus.py`.
+  `blind_round2_metrics.json`, `blind_round3_metrics.json`, `blind_round4_metrics.json`.
+- `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
+  `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.
