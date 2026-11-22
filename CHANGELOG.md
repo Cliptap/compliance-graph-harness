@@ -27,6 +27,9 @@ semántico.
 - Detectores: `log.*`, contexto admin por clase, `private_key`, máscaras f-string, proyecciones
   booleanas, deletes ORM, intervalos SQL, dumps de objetos, tokens en logs y secretos bajo claves
   genéricas.
+- Taint interprocedural intra-archivo: resúmenes de retorno de helpers, `append`/`extend`/`update`,
+  fuentes de credenciales (`tokens.create`, `secrets.get_active`, `load_secret`) y truncamientos
+  (`api_key[-4:]`) tratados como máscara.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.

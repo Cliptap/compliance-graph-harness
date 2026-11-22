@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -771,6 +771,34 @@
       "expected": "clean",
       "path": "app/jobs/retention_sweep.py",
       "code": "from datetime import datetime, timedelta\n\nfrom sqlalchemy import delete\n\nfrom app.models import Customer\n\nRETENTION_DAYS = 730\n\n\ndef _retention_cutoff(days=RETENTION_DAYS):\n    return datetime.utcnow() - timedelta(days=days)\n\n\ndef purge_expired(session):\n    cutoff = _retention_cutoff()\n    result = session.execute(delete(Customer).where(Customer.created_at < cutoff))\n    session.commit()\n    return result.rowcount\n"
+    },
+    {
+      "id": "r5-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/services/customer_notify.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef build_audit_line(customer):\n    return f'notify customer {customer.email} rut={customer.rut}'\n\n\ndef notify(customer, sender):\n    line = build_audit_line(customer)\n    logger.info(line)\n    sender.send(customer.email, 'Bienvenido')\n"
+    },
+    {
+      "id": "r5-adm-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/customer_export.py",
+      "code": "from fastapi import APIRouter\n\nrouter = APIRouter(prefix='/admin')\n\n\ndef _contact_column(customer):\n    phone = customer.phone_e164\n    return f'+{phone[:2]} {phone[2:]}'\n\n\n@router.get('/customers/export')\ndef export_customers(repo):\n    payload = []\n    for customer in repo.all_active():\n        payload.append({'customer_id': customer.id, 'contact': _contact_column(customer)})\n    return {'rows': payload}\n"
+    },
+    {
+      "id": "r5-rst-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/auth/reset_link.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import RedirectResponse\n\nrouter = APIRouter(prefix='/auth')\n\n\n@router.get('/password/reset-link')\ndef reset_link(user_id: int, users, tokens):\n    user = users.get(user_id)\n    token = tokens.create(user.id, ttl_minutes=30)\n    url = f'https://app.example.com/reset?token={token}'\n    return RedirectResponse(url, status_code=303)\n"
+    },
+    {
+      "id": "r5-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/connect.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import RedirectResponse\n\nrouter = APIRouter(prefix='/integrations')\n\n\n@router.get('/connect')\ndef connect(account, secrets):\n    key = secrets.get_active(account.id)\n    target = 'https://dashboard.example.com/connect?key=%s' % key.value\n    return RedirectResponse(target, status_code=302)\n"
     }
   ]
 }
