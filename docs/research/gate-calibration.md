@@ -32,6 +32,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 4 (sealed, post-fix) | 35 | **31/35** | 4 false negatives, 0 false positives |
 | Blind round 5 (sealed) | 42 | **32/42** | 7 false negatives, 3 false positives |
 | Blind round 6 (sealed, post-taint) | 42 | **37/42** | 4 false negatives, 1 false positive |
+| Blind round 7 (sealed, post-taint) | 42 | **34/42** | 7 false positives, 1 false negative |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -406,6 +407,58 @@ Regression state: sealed round-6 set **42/42**, curated 22/22, regression corpus
 full suite **449 passed**. The 37/42 remains the pre-fix measurement; a round 7 is required for the
 post-fix number.
 
+## Blind round 7 (sealed, post-taint)
+
+A seventh fresh author wrote 42 modules with keyword-argument flows, parameters that reach responses
+and redirects, and explicit-name cross-file imports. The file was sealed before the run
+(`cases_blind_round7.json.sha256`, `d1e568a53c033c816a55916ec7ce3046ca1ed8520fcd0ff57fc0acc5665682cd`)
+and run once.
+
+Result: **34/42**. Aggregate: precision **0.741** [0.553, 0.868], recall **0.952** [0.773, 0.992],
+accuracy 0.810 [0.667, 0.900]. Recall is the best of any round; the cost was precision.
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 2 | 1 | 1 | 0.50 | 0.67 |
+| `v2.api_key` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.billing_retention` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.credential_response` | 3 | 2 | 0 | 1 | 0.60 | 1.00 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 3 | 2 | 0 | 1 | 0.60 | 1.00 |
+| `v2.reset_token` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+
+The false positives share one theme: a value that was masked, derived or unrelated got matched
+through a format label, a callee argument or a fuzzy key.
+
+| Case | Cause |
+|---|---|
+| `r7-log-04/06` (FP) | the format label `email=%s` / `address=%s` counted as a value even though the argument was masked |
+| `r7-adm-04` (FP) | dict key `email` with a masked value passed as a parameter; the value name was not recognised as a mask |
+| `r7-adm-06` (FP) | `_phone_suffix(phone=customer.phone)`; the masking call's argument leaked |
+| `r7-cred-04` (FP) | `password_algorithm` and `password_changed_at` matched `password` by fuzzy substring |
+| `r7-cred-05` (FP) | `User.objects.create(password=make_password(raw))`; a credential-shaped nested call tainted the returned user |
+| `r7-bil-06` (FP) | the cutoff came from a constructor keyword (`Job(days=LEGAL_HOLD_DAYS)`) and was not resolved |
+| `r7-adm-03` (FN) | `format_rut_and_email` is imported from another module; cross-module returns are not followed |
+
+## Fixes after blind round 7
+
+| Case | Fix |
+|---|---|
+| `r7-log-04/06` | prose synonyms no longer treat `%s`/`{}` placeholders as literal values |
+| `r7-adm-04` | a value whose name carries a masking hint (`masked`, `email_masked`) is not exposed |
+| `r7-adm-06` | masking calls are recognised by name suffix (`_suffix`, `_last4`, `_fp`, `_hash`) and their arguments are not read |
+| `r7-cred-04` | metadata suffixes `_at`, `_algorithm`, `_status`, `_policy`, `_ref`, `_version` stop matching `password`/`secret` |
+| `r7-cred-05` | credential sources follow only the call chain, not nested arguments |
+| `r7-bil-06` | a constructor keyword resolved from a constant gates the retention window |
+| keyword flows | parameter effects include parameter names, so keyword arguments propagate at call sites |
+| receiver methods | `self`/`cls` are not treated as parameter positions |
+| parameter sinks | a parameter that reaches a response or redirect inside a helper is flagged at the call site |
+| `r7-adm-03` | imported producer names (`format_rut_and_email`) seed their categories from the name; maskers and senders are excluded |
+
+Regression state: sealed round-7 set **42/42**, curated 22/22, regression corpus **127/127**
+(119 + 8), full suite **463 passed**. The 34/42 remains the pre-fix measurement; a round 8 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -446,6 +499,16 @@ post-fix number.
   results carry their table into instance deletes, tables propagate through helpers, and
   parameter-position effects model returns and logs. The sealed set is 42/42 as regression; the
   37/42 remains the pre-fix measurement.
+- Round 7 moved recall to 0.952 at the cost of precision (0.741): keyword flows work, but format
+  labels, masked names and nested credential-shaped arguments produced seven false positives. The
+  fixes narrow those matches and the sealed set passes 42/42 as regression, including the imported
+  producer name.
+- The precision lesson is consistent: the detector must distinguish *where a value is* from *a label
+  that names it*. Placeholders, masked identifiers, metadata suffixes and callee arguments are not
+  values.
+- The cross-module fix is name-based, not dataflow: an imported producer whose name states its
+  payload (`format_rut_and_email`) is trusted, while maskers and senders are excluded. A function
+  that hides its payload behind a neutral name is still a false negative.
 
 ## Limitations
 
@@ -465,18 +528,20 @@ post-fix number.
   false negative candidate.
 - Round 6 is burned like the previous sets. Its 37/42 is the measurement **before** the fixes; the
   five failing cases were fixed and promoted, so the sealed set now passes 42/42 as regression.
-- Parameter effects cover positional arguments and log sinks. Keyword arguments, response/redirect
-  propagation and cross-module effects are not modeled.
+- Round 7 is burned. Its 34/42 is the measurement **before** the fixes; the eight failing cases
+  were fixed and promoted.
+- Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
+  Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
+  are not followed.
 - The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Author a fresh blind round 7 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 8 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe the remaining taint limits: cross-file helper returns, keyword-argument effects and
-   response/redirect propagation through parameters.
-3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+2. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+3. Decide whether neutrally named cross-module returns justify an import-aware pass.
 
 ## Artifacts
 
