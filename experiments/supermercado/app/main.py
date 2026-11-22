@@ -43,7 +43,7 @@ RIGHT_TYPES = ("access", "rectification", "erasure", "opposition", "portability"
 PICKUP_STORES = ("Sucursal Centro", "Sucursal Providencia", "Sucursal Ñuñoa")
 SECRET_DEFAULT = "dev-only-secret-change-me"
 PER_PAGE = 24
-ASSET_VERSION = "5"
+ASSET_VERSION = "8"
 PHOTOS_PATH = BASE_DIR / "static" / "photos" / "photos.json"
 PRODUCT_PHOTOS_PATH = BASE_DIR / "static" / "photos" / "product_photos.json"
 

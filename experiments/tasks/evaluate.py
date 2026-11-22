@@ -44,20 +44,26 @@ def run_hidden(workspace: Path, task: dict) -> tuple[bool, str]:
     shutil.copy2(HIDDEN / "conftest.py", target / "conftest.py")
     shutil.copy2(tests[0], target / tests[0].name)
     try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pytest", f"hidden/{tests[0].name}", "-q", "-p", "no:cacheprovider"],
-            cwd=workspace, capture_output=True, text=True, timeout=180,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "pytest", f"hidden/{tests[0].name}", "-q", "-p", "no:cacheprovider"],
+                cwd=workspace, capture_output=True, text=True, timeout=180,
+            )
+        except subprocess.TimeoutExpired:
+            return False, "hidden test timed out after 180s"
         return result.returncode == 0, (result.stdout + result.stderr)[-4000:]
     finally:
         shutil.rmtree(target, ignore_errors=True)
 
 
 def run_semgrep(workspace: Path) -> dict:
-    result = subprocess.run(
-        ["semgrep", "--config", str(RULES), "--json", "--quiet", str(workspace)],
-        capture_output=True, text=True, timeout=300,
-    )
+    try:
+        result = subprocess.run(
+            ["semgrep", "--config", str(RULES), "--json", "--quiet", str(workspace)],
+            capture_output=True, text=True, timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        return {"error": "semgrep timed out after 300s", "findings": []}
     try:
         data = json.loads(result.stdout or "{}")
     except json.JSONDecodeError:

@@ -23,7 +23,7 @@ rules:
     languages: [generic]
     severity: ERROR
     message: "A log or console call mentions personal or payment data."
-    pattern-regex: (?i)(print|logger\.[a-z]+|logging\.[a-z]+|console\.log)\([^\n]*(rut|run|email|phone|card|cvv|password|token)[^\n]*\)
+    pattern-regex: (?i)\b(print|logger\.[a-z]+|logging\.[a-z]+|console\.log)\([^\n]*(rut|run|email|phone|card|cvv|password|token)[^\n]*\)
 
   - id: dumbo.password-response
     languages: [python]
@@ -41,6 +41,58 @@ rules:
     severity: ERROR
     message: "Physical deletion of customer data."
     pattern-regex: (?i)(delete\s+from\s+customers|session\.delete\([^)]*customer|hard_delete)
+
+  - id: dumbo.hard-delete-orders
+    languages: [generic]
+    severity: ERROR
+    message: "Physical deletion of billing records inside the retention period."
+    pattern-regex: (?i)delete\s+from\s+orders
+
+  - id: dumbo.reset-token-response
+    languages: [python]
+    severity: ERROR
+    message: "A password-reset token is returned to the client."
+    patterns:
+      - pattern-either:
+          - pattern: 'return {..., "token": $V, ...}'
+          - pattern: 'return {..., "reset_token": $V, ...}'
+          - pattern: 'JSONResponse({..., "token": $V, ...})'
+          - pattern: 'JSONResponse({..., "reset_token": $V, ...})'
+
+  - id: dumbo.log-request-body
+    languages: [generic]
+    severity: ERROR
+    message: "A log call writes the raw request body."
+    pattern-regex: >-
+      (?i)(logger\.[a-z]+|logging\.[a-z]+|print)\([^\n]*(request\.body|await request\.body)
+
+  - id: dumbo.admin-raw-row
+    languages: [python]
+    severity: ERROR
+    message: "An endpoint serialises a raw database row and exposes every column."
+    patterns:
+      - pattern-either:
+          - pattern: return dict($ROW)
+          - pattern: return [dict($ROW) for $X in $ROWS]
+
+  - id: dumbo.api-key-response
+    languages: [python]
+    severity: ERROR
+    message: "A response exposes an API key or secret."
+    patterns:
+      - pattern-either:
+          - pattern: 'return {..., "api_key": $V, ...}'
+          - pattern: 'return {..., "api-key": $V, ...}'
+          - pattern: 'return {..., "secret": $V, ...}'
+          - pattern: 'JSONResponse({..., "api_key": $V, ...})'
+          - pattern: 'JSONResponse({..., "secret": $V, ...})'
+
+  - id: dumbo.reset-token-redirect
+    languages: [generic]
+    severity: ERROR
+    message: "A password-reset token is placed in a redirect URL."
+    pattern-regex: >-
+      (?i)redirectresponse\([^\n]*token=
 
   - id: dumbo.prechecked-consent
     languages: [generic]
@@ -62,3 +114,10 @@ rules:
       - pattern-either:
           - pattern: 'return {..., "rut": $V, ...}'
           - pattern: 'return {..., "run": $V, ...}'
+
+  - id: dumbo.unmasked-rut-list
+    languages: [generic]
+    severity: ERROR
+    message: "A list payload exposes the full RUT without a masking call."
+    pattern-regex: >-
+      (?i)\[\s*\{[^\n]*["'](?:rut|run)["']\s*:\s*[a-z_][a-z0-9_.\[\]"']*\s*[,}]

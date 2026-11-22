@@ -13,7 +13,10 @@ TASKS = [
     "T05-account-delete", "T06-points-redeem", "T07-profile-edit", "T08-birthday",
     "T09-geolocation", "T10-analytics", "T11-password-reset", "T12-admin-customers",
 ]
-ARMS = ["baseline", "harness", "harness_compliance"]
+CURSOR_ARMS = ["baseline", "harness", "harness_compliance"]
+OPENCODE_ARMS = ["baseline", "rules", "rules_skills", "rules_skills_gate",
+                 "rules_skills_gate_enforced", "harness", "harness_compliance"]
+ARMS = OPENCODE_ARMS
 
 
 def load(path: Path) -> dict | None:
@@ -47,13 +50,20 @@ def main() -> int:
     parser.add_argument("--rep", type=int, required=True)
     parser.add_argument("--arm", choices=ARMS, required=True)
     parser.add_argument("--tasks", default=",".join(TASKS))
-    parser.add_argument("--model", default="composer-2.5")
+    parser.add_argument("--runner", choices=("cursor", "opencode"), default="cursor")
+    parser.add_argument("--model", default="")
     parser.add_argument("--max-rounds", type=int, default=3)
     parser.add_argument("--timeout", type=int, default=600)
+    parser.add_argument("--out-dir", default="")
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
+    if args.runner == "cursor" and args.arm not in CURSOR_ARMS:
+        raise SystemExit(f"the Cursor runner only supports {CURSOR_ARMS}")
     tasks = [task for task in args.tasks.split(",") if task]
-    out_dir = ROOT / "qa_reports" / "formal"
+    model = args.model or ("opencode-go/deepseek-v4.1-flash" if args.runner == "opencode"
+                           else "composer-2.5")
+    default_dir = "qa_reports/formal-opencode" if args.runner == "opencode" else "qa_reports/formal"
+    out_dir = ROOT / (args.out_dir or default_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = []
     for task in tasks:
@@ -62,10 +72,15 @@ def main() -> int:
         if report is not None and report.get("live", {}).get("status") != "finished":
             report = None
         if report is None:
-            command = [sys.executable, "experiments/tasks/run_arm.py", "--task", task,
-                       "--arm", args.arm, "--model", args.model,
-                       "--max-rounds", str(args.max_rounds), "--timeout", str(args.timeout),
-                       "--out", str(out)]
+            if args.runner == "opencode":
+                command = [sys.executable, "experiments/tasks/opencode_run.py", "--task", task,
+                           "--arm", args.arm, "--model", model,
+                           "--timeout", str(args.timeout), "--out", str(out)]
+            else:
+                command = [sys.executable, "experiments/tasks/run_arm.py", "--task", task,
+                           "--arm", args.arm, "--model", model,
+                           "--max-rounds", str(args.max_rounds), "--timeout", str(args.timeout),
+                           "--out", str(out)]
             result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
             report = load(out)
             if report is None:

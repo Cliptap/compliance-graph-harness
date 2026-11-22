@@ -1,6 +1,7 @@
 """Progress monitor for the formal T7 run."""
 from __future__ import annotations
 
+import argparse
 import json
 import time
 from pathlib import Path
@@ -20,6 +21,12 @@ def load(path: Path) -> dict | None:
 
 
 def main() -> int:
+    global OUT
+    parser = argparse.ArgumentParser(prog="python experiments/tasks/formal_status.py")
+    parser.add_argument("--dir", default=str(OUT))
+    parser.add_argument("--total", type=int, default=108)
+    args = parser.parse_args()
+    OUT = Path(args.dir)
     rows = []
     for path in sorted(OUT.glob("rep*_*.json")):
         report = load(path)
@@ -38,10 +45,13 @@ def main() -> int:
             "oracle": len(findings),
             "mtime": path.stat().st_mtime,
         })
-    total = len(REPS) * len(ARMS) * TASKS
+    total = args.total
     print(f"completed {len(rows)}/{total} runs")
-    for arm in ARMS:
-        for rep in REPS:
+    present_arms = sorted({row["arm"] for row in rows if row.get("arm")})
+    present_reps = sorted({int(row["path"].name.split("_", 1)[0].removeprefix("rep"))
+                           for row in rows})
+    for arm in present_arms:
+        for rep in present_reps:
             subset = [row for row in rows if row["arm"] == arm and f"rep{rep}_" in row["path"].name]
             if not subset:
                 continue
