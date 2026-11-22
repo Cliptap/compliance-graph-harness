@@ -1,5 +1,24 @@
 # T7 experiment handoff — 2026-10-30
 
+> **Update 2026-11-01 — the OpenCode formal run is done.** 108/108 runs finished, 0 invalid, model
+> `opencode-go/deepseek-v4.1-flash`. Read `docs/research/formal-conclusions-opencode.md` (the
+> interpretation) and `docs/research/formal-results-opencode.md` (the generated tables). Headline:
+> confirmed violations baseline 3 / harness 3 / compliance 0, time difference not significant
+> (p=0.62), compliance +28% tokens, confirmed-only McNemar p=0.25 (underpowered). The T05 hidden test
+> was corrected after the run to accept anonymisation plus an erasure request; the two T05 compliance
+> cells are adjudicated as not violations. The Cursor results remain provisional and are not pooled.
+> The aggressive explicit-trap pack (T15-T17) was refused by every arm and is a negative appendix.
+
+> **Update 2026-11-02 — the dose experiment is the final attribution.** 5 arms × 4 tasks × 5
+> reps = 100/100 runs, 0 invalid. Confirmed violations: baseline 8, rules 7, rules_skills 3,
+> rules_skills_gate 0, rules_skills_gate_enforced 0. Gate vs baseline 8/0, p=0.0078; rules p=1.0;
+> skills 6/1, p=0.125; the external enforcement never fired (0 rounds). Privacy: 40/40 gate cells
+> without a confirmed violation. Completion: 20/20 advisory, 18/20 enforced (2 T31 404, not
+> privacy). The T34 test and the T33 Semgrep false positive were corrected after the run; the formal
+> is not re-scored. Read `docs/research/dose-conclusions.md` and
+> `docs/research/formal-results-dose.md`. The 2026-11-01 12-task run is the first formal (3/3/0,
+> p=0.25, underpowered); the dose is the final result.
+
 ## What is done
 
 - **Task pack**: `experiments/tasks/` — 12 development tasks with a plausible privacy trap,
