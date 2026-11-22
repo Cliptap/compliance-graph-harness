@@ -28,6 +28,7 @@ controls firing on the same code are recorded but do not count.
 | Author-held-out round 1 (post-fix) | 16 | 16/16 | Regression on the same set, no longer held-out |
 | Blind round 1 (sealed) | 36 | **26/36** | 8 false negatives, 2 false positives |
 | Blind round 2 (sealed, post-fix) | 42 | **37/42** | 4 false negatives, 1 false positive |
+| Blind round 3 (sealed, post-fix) | 38 | **25/38** | 14 false negatives, 0 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -181,6 +182,47 @@ Regression state: curated 22/22, author-held-out plus the blind cases 31/31, ful
 The sealed round-2 set was not re-scored; 37/42 is the measurement **before** these five fixes. A
 round 3 is required for the next number.
 
+### The run false positive
+
+Before round 3, the pre-commit hook flagged `print("formal run finished")` because `run` is a RUT
+synonym. The fix requires a RUT-shaped value (`\d{1,2}.?\d{3}.?\d{3}-?[\dkK]`) for `run` in free
+text, in both the legacy policy and the v2 family; a field named `run` still maps to RUT. Tests cover
+prose (clean) and `run=12.345.678-5` (flagged).
+
+## Blind round 3 (sealed, post-fix)
+
+A third fresh author wrote 38 cases (5-6 per control, at least 3 violations each) using CLI and
+management commands, background workers, serializers/DTOs, middleware and ORM models. The file was
+sealed before the run (`cases_blind_round3.json.sha256`,
+`47ab8920c7e90fed54bea5ff37ad174b42132f663817f65b305831e3152fb381`) and run once.
+
+Result: **25/38**. Aggregate: precision **1.000** [0.676, 1.000], recall **0.364** [0.197, 0.570],
+accuracy 0.632 [0.473, 0.766].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 0 | 0 | 3 | 2 | — | 0.00 |
+| `v2.api_key` | 0 | 0 | 3 | 3 | — | 0.00 |
+| `v2.billing_retention` | 1 | 0 | 2 | 2 | 1.00 | 0.33 |
+| `v2.credential_response` | 1 | 0 | 2 | 2 | 1.00 | 0.33 |
+| `v2.customer_hard_delete` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.log_pii` | 3 | 0 | 0 | 2 | 1.00 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 2 | 2 | 1.00 | 0.50 |
+
+The 14 false negatives are framework coverage, not edge cases:
+
+| Group | Cases | Cause |
+|---|---|---|
+| Django `JsonResponse` | `ae_view_addr`, `cr_view_reset_pw`, `rt_view_body`, `ak_rotate_raw` | `JsonResponse` is not in `RESPONSE_PATTERNS` |
+| DRF serializer fields | `ae_ser_admin`, `cr_ser_secret` | `Meta.fields` lists are not inspected as response schemas |
+| Django admin | `ae_modeladmin` | `list_display` and `search_fields` are not inspected |
+| Django ORM deletes | `ch_cli_purge`, `ch_orm_manager`, `br_cli_365`, `br_worker_730` | `Model.objects.filter(...).delete()` is not mapped to a table |
+| CLI stdout | `rt_cli_token`, `ak_cli_decrypt` | `self.stdout.write` is not a log sink |
+| Header dict | `ak_worker_log` | `X-Api-Key` is not matched; `v2.log_pii` fires instead |
+
+There were no false positives: the precision fixes of rounds 1 and 2 held. The detector is precise on
+what it recognises and web-request-centric; it is not yet a general Django/DRF/ORM/CLI auditor.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -188,14 +230,16 @@ round 3 is required for the next number.
 - The author-held-out round found one false negative that the curated set missed. The blind round
   found ten failures (8 FN, 2 FP), including common idioms: ORM deletes, class-based admin views,
   `log.info`, `private_key`, a boolean credential projection and manual f-string masking.
-- The calibration now has two sealed rounds. Pre-fix (round 1): precision 0.867 [0.621, 0.963],
-  recall 0.619 [0.409, 0.792]. Post-fix (round 2): precision 0.944 [0.742, 0.990], recall 0.810
-  [0.600, 0.923]. Both are small-sample estimates; report the intervals.
-- The remaining round-2 gaps are object dumps (`vars(user)`), default-argument retention, SQL
-  `interval` cutoffs, credentials under generic keys, and reset-token logs. The last one is still
-  blocked by `v2.log_pii`, but not by the control the author named.
-- The two false positives matter: a boolean projection and a manually masked f-string are safe
-  responses that the gate flags. Precision is part of the cost of the harness.
+- The calibration now has three sealed rounds. Round 1 pre-fix: precision 0.867 [0.621, 0.963],
+  recall 0.619 [0.409, 0.792]. Round 2 post-round-1: 0.944 [0.742, 0.990] / 0.810 [0.600, 0.923].
+  Round 3 post-run-fix: 1.000 [0.676, 1.000] / 0.364 [0.197, 0.570]. The samples are small; report
+  the intervals.
+- The round-2 gaps were fixed and regression-tested. Round 3 moves the frontier to framework
+  coverage: Django `JsonResponse`, DRF serializer fields, Django admin, ORM manager deletes, CLI
+  stdout and header dicts. The detector is precise on what it recognises and web-request-centric;
+  recall collapses on those idioms.
+- The false positives matter: a boolean projection, a manual f-string mask and the English word
+  "run" were fixed; round 3 produced no false positives.
 
 ## Limitations
 
@@ -203,21 +247,25 @@ round 3 is required for the next number.
   not independently reviewed, and the author is still an LLM, not a domain expert.
 - Minimal snippets, 7 of 37 controls, and only the v2 families. Legacy policies (`privacy.cwe_532`,
   `privacy.api_exposure`) are outside this calibration.
-- The sealed blind set is burned: after the first run, fixes cannot be measured against it. A new
+- Round 3 is deliberately Django/DRF-heavy; other frameworks and ORMs are less covered.
+- The sealed blind sets are burned: after the first run, fixes cannot be measured against them. A new
   blind set is required for the next number.
 
 ## Next
 
-1. Author a fresh blind round 3 after these fixes, with a human adjudicator if possible.
-2. Include real code from the target app and public repositories, not only snippets.
-3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
+1. Add framework coverage: Django `JsonResponse`, DRF serializer `Meta.fields`, Django admin
+   `list_display`, ORM manager deletes, CLI `stdout.write` and `X-Api-Key` header dicts.
+2. Author a fresh blind round 4 after those fixes, with a human adjudicator if possible.
+3. Include real code from the target app and public repositories, not only snippets.
+4. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json` and `cases_blind_round2.json` with their `.sha256` seals.
+  `cases_blind_round1.json`, `cases_blind_round2.json` and `cases_blind_round3.json` with their
+  `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`,
-  `blind_round2_metrics.json`.
+  `blind_round2_metrics.json`, `blind_round3_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `tests/harness/test_catalog.py`,
   `tests/harness/test_catalog_corpus.py`.

@@ -41,5 +41,6 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
 ## Status
 
 - Round 1: sealed, run once, 26/36 pre-fix. See `docs/research/gate-calibration.md`.
-- Round 2: authoring, fresh author, emphasis on service/repository/async shapes. Must be sealed
-  before its one-shot run.
+- Round 2: sealed, run once, 37/42 post-round-1, focused on service/repository/async shapes.
+- Round 3: sealed, run once, 25/38 post-run-fix, focused on CLI, workers, serializers and ORM
+  models. The remaining gaps are framework coverage, not edge cases.
