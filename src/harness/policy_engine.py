@@ -18,6 +18,16 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
+RUT_VALUE_RE = re.compile(r"\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b")
+AMBIGUOUS_TOKENS = {"run"}
+
+
+def _sensitive_token_in(token: str, text: str) -> bool:
+    """``run`` is also English prose; only count it next to a RUT-shaped value."""
+    if token in AMBIGUOUS_TOKENS:
+        return bool(RUT_VALUE_RE.search(text))
+    return token in text.lower()
+
 from src.harness.contracts import Finding, TaskSpec
 
 
@@ -238,7 +248,9 @@ class SensitiveLoggingPolicy(BasePolicy):
                         words.add(sub.attr.lower())
                     elif isinstance(sub, ast.Constant) and isinstance(sub.value, str):
                         words.update(sub.value.lower().replace("=", " ").replace(":", " ").split())
-            matched = sorted(t for t in self.SENSITIVE_TOKENS if t in words)
+            matched = sorted(t for t in self.SENSITIVE_TOKENS
+                             if t in words and _sensitive_token_in(
+                                 t, lines[node.lineno - 1] if node.lineno <= len(lines) else ""))
             if not matched:
                 continue
             findings.append(
@@ -295,7 +307,8 @@ class SensitiveLoggingPolicy(BasePolicy):
                     continue
 
                 # Detectar si se está inyectando o concatenando un token sensible sin enmascarar
-                matched_tokens = [t for t in self.SENSITIVE_TOKENS if t in line_lower]
+                matched_tokens = [t for t in self.SENSITIVE_TOKENS
+                                  if t in line_lower and _sensitive_token_in(t, line_lower)]
                 if not matched_tokens:
                     continue
 

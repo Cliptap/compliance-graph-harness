@@ -184,3 +184,19 @@ def test_install_hook_does_not_overwrite_a_foreign_hook(repo):
     assert "mine" in hook.read_text(encoding="utf-8")
     install_hook(repo, force=True)
     assert "src.harness.precommit" in hook.read_text(encoding="utf-8")
+
+
+
+def test_run_word_in_a_message_is_clean():
+    code = 'def f():\n    print("=== formal run finished ===")\n'
+    result = evaluate({"app/x.py": code}, PACK)
+    ids = {f.policy_id for f in result.findings}
+    assert "privacy.cwe_532" not in ids
+    assert "v2.log_pii" not in ids
+
+
+def test_run_with_a_rut_value_is_flagged():
+    code = 'def f():\n    print("run=12.345.678-5")\n'
+    result = evaluate({"app/x.py": code}, PACK)
+    ids = {f.policy_id for f in result.findings}
+    assert "privacy.cwe_532" in ids or "v2.log_pii" in ids
