@@ -231,13 +231,40 @@ def _identifier(node: ast.AST) -> str | None:
     return None
 
 
+def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[str, set[str]]:
+    """Literal field lists (``self.columns = ['id', 'rut', 'email']``) by name."""
+    mapping: dict[str, set[str]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+            continue
+        if not isinstance(node.value, (ast.List, ast.Tuple)):
+            continue
+        found: set[str] = set()
+        for element in node.value.elts:
+            if isinstance(element, ast.Constant) and isinstance(element.value, str):
+                category = _field_category(catalog, element.value)
+                if category in categories:
+                    found.add(category)
+        if not found:
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for target in targets:
+            token = _identifier(target)
+            if token:
+                mapping[token] = mapping.get(token, set()) | found
+    return mapping
+
+
 def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                      env: dict[str, set[str]] | None = None,
-                     summaries: dict[str, set[str]] | None = None) -> set[str]:
+                     summaries: dict[str, set[str]] | None = None,
+                     param_returns: dict[str, set[int]] | None = None,
+                     field_lists: dict[str, set[str]] | None = None) -> set[str]:
     """Categories that reach a sink, following local variables and helper summaries."""
     found: set[str] = set()
     comprehension_skip = _skip_nodes(node)
     projection = _projection_tokens(node)
+    callees = {id(child.func) for child in ast.walk(node) if isinstance(child, ast.Call)}
     blocked: set[int] = set()
     for child in ast.walk(node):
         if id(child) in blocked or id(child) in comprehension_skip:
@@ -248,10 +275,15 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
             continue
         if isinstance(child, ast.Name) and env and child.id in env:
             found |= env[child.id] & allowed
-        elif isinstance(child, ast.Call) and summaries:
+        elif isinstance(child, ast.Call):
             leaf = _call_name(child).rsplit(".", 1)[-1]
             if not _is_masking_name(leaf):
-                found |= summaries.get(leaf, set()) & allowed
+                found |= (summaries or {}).get(leaf, set()) & allowed
+                positions = (param_returns or {}).get(leaf, set())
+                for index, arg in enumerate(child.args):
+                    if index in positions:
+                        found |= _sink_categories(catalog, arg, allowed, env, summaries,
+                                                  param_returns, field_lists)
         elif isinstance(child, ast.Dict):
             for key, value in zip(child.keys, child.values):
                 if _value_is_masked(catalog, value):
@@ -263,7 +295,17 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                     category = _field_category(catalog, key.value)
                     if category in allowed:
                         found.add(category)
+        elif isinstance(child, ast.DictComp) and field_lists:
+            key = child.key
+            for generator in child.generators:
+                token = _identifier(generator.iter)
+                if token in field_lists and isinstance(key, ast.Name) \
+                        and isinstance(generator.target, ast.Name) \
+                        and generator.target.id == key.id:
+                    found |= field_lists[token] & allowed
         elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
+            if id(child) in callees:
+                continue
             token = _identifier(child)
             category = _field_category(catalog, token) if token else None
             if category in allowed:
@@ -279,10 +321,12 @@ class _TaintTracker(ast.NodeVisitor):
     """Propagate sensitive categories through simple assignments and SQL reads."""
 
     def __init__(self, catalog: Catalog, categories: set[str],
-                 summaries: dict[str, set[str]] | None = None):
+                 summaries: dict[str, set[str]] | None = None,
+                 param_returns: dict[str, set[int]] | None = None):
         self.catalog = catalog
         self.categories = set(categories)
         self.summaries = summaries or {}
+        self.param_returns = param_returns or {}
         self.env: dict[str, set[str]] = {}
 
     def scan(self, node: ast.AST) -> dict[str, set[str]]:
@@ -373,6 +417,7 @@ class _TaintTracker(ast.NodeVisitor):
         dict_keys: set[int] = set()
         skip = _skip_nodes(node)
         projection = _projection_tokens(node)
+        callees = {id(child.func) for child in ast.walk(node) if isinstance(child, ast.Call)}
         for child in ast.walk(node):
             if id(child) in sanitized:
                 continue
@@ -384,13 +429,17 @@ class _TaintTracker(ast.NodeVisitor):
                         if category in self.categories and not self.catalog.is_sanitizer(ast.unparse(value)):
                             found.add(category)
             elif isinstance(child, ast.Name) and child.id in self.env and id(child) not in skip:
-                if id(child) in projection and not _projects_value(
-                        self.catalog, projection[id(child)]):
+                if id(child) in callees or (
+                        id(child) in projection
+                        and not _projects_value(self.catalog, projection[id(child)])):
                     continue
                 found |= self.env[child.id]
             elif isinstance(child, ast.Call):
                 leaf = _call_name(child).rsplit(".", 1)[-1]
                 found |= self.summaries.get(leaf, set())
+                for index, arg in enumerate(child.args):
+                    if index in self.param_returns.get(leaf, set()):
+                        found |= self._categories(arg)
             elif isinstance(child, ast.Constant) and isinstance(child.value, str) and id(child) not in dict_keys:
                 for table in TABLE_RE.findall(child.value.lower()):
                     found |= set(self.catalog.tables.get(table, ()))
@@ -398,6 +447,8 @@ class _TaintTracker(ast.NodeVisitor):
                     if _constant_matches(child.value, self.catalog.synonyms(category)):
                         found.add(category)
             elif isinstance(child, (ast.Attribute, ast.Subscript)):
+                if id(child) in callees:
+                    continue
                 token = _identifier(child)
                 if token:
                     category = _field_category(self.catalog, token)
@@ -418,6 +469,7 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
                  if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
     if not functions:
         return {}
+    field_lists = _field_lists(tree, catalog, categories)
     summaries: dict[str, set[str]] = {}
     for _ in range(len(functions) + 1):
         changed = False
@@ -431,7 +483,8 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
                         if isinstance(node.value, ast.Call) and _call_name(node.value) in (
                                 set(RESPONSE_PATTERNS) | set(REDIRECT_PATTERNS) | set(CSV_SINKS)):
                             continue
-                        found |= _sink_categories(catalog, node.value, categories, env, summaries)
+                        found |= _sink_categories(catalog, node.value, categories, env, summaries,
+                                                  field_lists=field_lists)
             found &= categories
             if found != summaries.get(name, set()):
                 summaries[name] = found
@@ -439,6 +492,57 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
         if not changed:
             break
     return {name: values for name, values in summaries.items() if values}
+
+
+def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
+                  summaries: dict[str, set[str]]) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
+    """Parameter positions that reach a return value or a log sink.
+
+    ``_auth_header(key)`` returns its first parameter; a caller that passes a
+    credential inherits it. ``_audit(org, key)`` logs its second parameter; a
+    caller with a tainted key must be flagged without inlining the helper.
+    """
+    functions = {node.name: node for node in ast.walk(tree)
+                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    params = {name: [arg.arg for arg in func.args.args] for name, func in functions.items()}
+    field_lists = _field_lists(tree, catalog, categories)
+    param_returns: dict[str, set[int]] = {name: set() for name in functions}
+    for _ in range(len(functions) + 1):
+        changed = False
+        for name, func in functions.items():
+            for index, param in enumerate(params[name]):
+                tracker = _TaintTracker(catalog, categories, summaries, param_returns)
+                tracker.env[param] = set(categories)
+                env = tracker.scan(func)
+                hit = False
+                for node in ast.walk(func):
+                    if not isinstance(node, ast.Return) or node.value is None:
+                        continue
+                    if _value_is_masked(catalog, node.value):
+                        continue
+                    if _sink_categories(catalog, node.value, categories, env, summaries,
+                                        param_returns, field_lists):
+                        hit = True
+                        break
+                if hit and index not in param_returns[name]:
+                    param_returns[name].add(index)
+                    changed = True
+        if not changed:
+            break
+    param_logs: dict[str, set[int]] = {name: set() for name in functions}
+    for name, func in functions.items():
+        for index, param in enumerate(params[name]):
+            tracker = _TaintTracker(catalog, categories, summaries, param_returns)
+            tracker.env[param] = set(categories)
+            env = tracker.scan(func)
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Call) or not _is_log_sink(_call_name(node)):
+                    continue
+                if _sink_categories(catalog, node, categories, env, summaries,
+                                    param_returns, field_lists):
+                    param_logs[name].add(index)
+                    break
+    return param_returns, param_logs
 
 
 class PolicyFamily:
@@ -475,40 +579,63 @@ class SinkExposureFamily(PolicyFamily):
             except SyntaxError:
                 continue
             summaries = _function_summaries(tree, self.catalog, categories)
+            field_lists = _field_lists(tree, self.catalog, categories)
+            param_returns, param_logs = _call_effects(tree, self.catalog, categories, summaries)
             if "log" in sinks:
-                findings.extend(self._scan_logs(control, path, tree, categories, summaries))
+                findings.extend(self._scan_logs(control, path, tree, categories, summaries,
+                                                param_returns, param_logs, field_lists))
             if "response" in sinks:
-                findings.extend(self._scan_responses(control, path, tree, categories, summaries))
+                findings.extend(self._scan_responses(control, path, tree, categories, summaries,
+                                                     param_returns, field_lists))
                 findings.extend(self._scan_serializers(control, path, tree, categories))
                 findings.extend(self._scan_graphql_types(control, path, tree, categories))
                 if control.detection.context.get("route") == "admin":
                     findings.extend(self._scan_admin_classes(control, path, tree, categories))
             if "redirect" in sinks:
-                findings.extend(self._scan_redirects(control, path, tree, categories, summaries))
+                findings.extend(self._scan_redirects(control, path, tree, categories, summaries,
+                                                     param_returns, field_lists))
             if "csv" in sinks:
-                findings.extend(self._scan_csv(control, path, tree, categories, summaries))
+                findings.extend(self._scan_csv(control, path, tree, categories, summaries,
+                                               param_returns, field_lists))
         return self._dedupe(findings)
 
-    def _scan_logs(self, control, path, tree, categories, summaries) -> list[Finding]:
+    def _scan_logs(self, control, path, tree, categories, summaries,
+                   param_returns, param_logs, field_lists) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call):
                     continue
                 name = _call_name(node)
-                if not _is_log_sink(name):
+                if _is_log_sink(name):
+                    text = ast.unparse(node)
+                    if self.catalog.is_sanitizer(text):
+                        continue
+                    matched = self._categories(node, categories, env, summaries,
+                                               param_returns, field_lists)
+                    if matched:
+                        out.append(_finding(control, path, node.lineno,
+                                            f"Log call exposes {sorted(matched)} without masking.", text))
                     continue
-                text = ast.unparse(node)
-                if self.catalog.is_sanitizer(text):
+                positions = param_logs.get(name.rsplit(".", 1)[-1])
+                if not positions:
                     continue
-                matched = self._categories(node, categories, env, summaries)
-                if matched:
-                    out.append(_finding(control, path, node.lineno,
-                                        f"Log call exposes {sorted(matched)} without masking.", text))
+                for index, arg in enumerate(node.args):
+                    if index not in positions:
+                        continue
+                    matched = self._categories(arg, categories, env, summaries,
+                                               param_returns, field_lists)
+                    if matched:
+                        out.append(_finding(
+                            control, path, node.lineno,
+                            f"Log call inside '{_call_name(node)}' exposes {sorted(matched)} without masking.",
+                            ast.unparse(node)))
+                        break
         return out
 
-    def _scan_responses(self, control, path, tree, categories, summaries) -> list[Finding]:
+    def _scan_responses(self, control, path, tree, categories, summaries,
+                        param_returns, field_lists) -> list[Finding]:
         out = []
         admin_only = control.detection.context.get("route") == "admin"
         enclosing = _enclosing_classes(tree)
@@ -519,7 +646,7 @@ class SinkExposureFamily(PolicyFamily):
                     and "admin" not in class_name.lower()
                     and "admin" not in path.lower()):
                 continue
-            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
             dumps = _dump_names(func)
             for node in ast.walk(func):
                 payload = None
@@ -543,7 +670,8 @@ class SinkExposureFamily(PolicyFamily):
                 text = ast.unparse(payload)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(payload, categories, env, summaries)
+                matched = self._categories(payload, categories, env, summaries,
+                                           param_returns, field_lists)
                 if matched:
                     out.append(_finding(control, path, payload.lineno,
                                         f"Response exposes {sorted(matched)} without masking.", text))
@@ -642,33 +770,37 @@ class SinkExposureFamily(PolicyFamily):
                     break
         return out
 
-    def _scan_redirects(self, control, path, tree, categories, summaries) -> list[Finding]:
+    def _scan_redirects(self, control, path, tree, categories, summaries,
+                        param_returns, field_lists) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in REDIRECT_PATTERNS:
                     continue
                 text = ast.unparse(node)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(node, categories, env, summaries)
+                matched = self._categories(node, categories, env, summaries,
+                                           param_returns, field_lists)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"Redirect exposes {sorted(matched)}.", text))
         return out
 
-    def _scan_csv(self, control, path, tree, categories, summaries) -> list[Finding]:
+    def _scan_csv(self, control, path, tree, categories, summaries,
+                  param_returns, field_lists) -> list[Finding]:
         out = []
         for func in _leaf_functions(tree):
-            env = _TaintTracker(self.catalog, categories, summaries).scan(func)
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in CSV_SINKS:
                     continue
                 text = ast.unparse(node)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(node, categories, env, summaries)
+                matched = self._categories(node, categories, env, summaries,
+                                           param_returns, field_lists)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"CSV row exposes {sorted(matched)} without masking.", text))
@@ -679,8 +811,11 @@ class SinkExposureFamily(PolicyFamily):
 
     def _categories(self, node: ast.AST, allowed: set[str],
                     env: dict[str, set[str]] | None = None,
-                    summaries: dict[str, set[str]] | None = None) -> set[str]:
-        return _sink_categories(self.catalog, node, allowed, env, summaries)
+                    summaries: dict[str, set[str]] | None = None,
+                    param_returns: dict[str, set[int]] | None = None,
+                    field_lists: dict[str, set[str]] | None = None) -> set[str]:
+        return _sink_categories(self.catalog, node, allowed, env, summaries,
+                                param_returns, field_lists)
 
     @staticmethod
     def _decorators(func: ast.AST) -> str:
@@ -719,6 +854,7 @@ class RetentionDeletionFamily(PolicyFamily):
         enclosing = _enclosing_classes(tree)
         functions = {node.name: node for node in ast.walk(tree)
                      if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+        function_tables = _function_query_tables(tree)
         out: list[Finding] = []
         for func in _leaf_functions(tree):
             cutoff = _max_cutoff(func, constants)
@@ -728,7 +864,8 @@ class RetentionDeletionFamily(PolicyFamily):
                 continue
             if cutoff is None and _helper_retention_aware(func, functions, constants, retention_days):
                 continue
-            out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), "")))
+            out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), ""),
+                                        _name_tables(func, function_tables), function_tables))
         for stmt in tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
@@ -737,14 +874,19 @@ class RetentionDeletionFamily(PolicyFamily):
                 continue
             if cutoff is None and _mentions_retention_field(stmt, retention_field):
                 continue
-            out.extend(self._deletes_in(control, path, stmt, tables))
+            out.extend(self._deletes_in(control, path, stmt, tables, "",
+                                        _name_tables(stmt, function_tables), function_tables))
         return out
 
     @staticmethod
-    def _deletes_in(control, path, node, tables, class_name=""):
+    def _deletes_in(control, path, node, tables, class_name="", name_tables=None,
+                    function_tables=None):
         out: list[Finding] = []
         for child in ast.walk(node):
             matched = _delete_tables(child, class_name) & tables
+            if not matched:
+                matched = _resolved_delete_tables(child, name_tables or {},
+                                                  function_tables or {}) & tables
             if not matched:
                 continue
             table = sorted(matched)[0]
@@ -861,6 +1003,39 @@ def _helper_retention_aware(func: ast.AST, functions: dict[str, ast.AST],
             return True
         if any(re.search(rf"\b{re.escape(name)}\s*\(", expr) for name in adequate):
             return True
+    if _deleted_rows_are_gated(func, adequate):
+        return True
+    return False
+
+
+def _deleted_rows_are_gated(func: ast.AST, adequate: set[str]) -> bool:
+    """``for row in rows: session.delete(row)`` is gated if ``rows`` came from a safe helper."""
+    sources: dict[str, ast.AST] = {}
+    for node in ast.walk(func):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    sources[target.id] = node.value
+        elif isinstance(node, (ast.For, ast.AsyncFor)) and isinstance(node.target, ast.Name):
+            sources[node.target.id] = node.iter
+    deleted: set[str] = set()
+    for node in ast.walk(func):
+        if isinstance(node, ast.Call) and _call_name(node).rsplit(".", 1)[-1] == "delete":
+            deleted.update(arg.id for arg in node.args if isinstance(arg, ast.Name))
+    for name in deleted:
+        expression = sources.get(name)
+        seen: set[str] = set()
+        while expression is not None and name not in seen:
+            seen.add(name)
+            if any(isinstance(child, ast.Call)
+                   and _call_name(child).rsplit(".", 1)[-1] in adequate
+                   for child in ast.walk(expression)):
+                return True
+            if not isinstance(expression, ast.Name):
+                break
+            name = expression.id
+            expression = sources.get(name)
     return False
 
 
@@ -876,6 +1051,110 @@ def _delete_expressions(func: ast.AST) -> list[str]:
 def _table_candidates(name: str) -> set[str]:
     base = name.lower()
     return {base, base + "s", base.rstrip("s")}
+
+
+def _direct_query_tables(node: ast.AST) -> set[str]:
+    """Tables read or deleted by one statement: ``query(X)``, ``select(X)``, ``X.objects``."""
+    tables: set[str] = set()
+    if not isinstance(node, ast.Call):
+        return tables
+    name = _call_name(node)
+    leaf = name.rsplit(".", 1)[-1]
+    if (name == "query" or name.endswith(".query")) and node.args \
+            and isinstance(node.args[0], (ast.Name, ast.Attribute)):
+        token = _identifier(node.args[0])
+        if token:
+            tables |= _table_candidates(token)
+    if leaf in {"select", "delete"} and node.args \
+            and isinstance(node.args[0], (ast.Name, ast.Attribute)):
+        token = _identifier(node.args[0])
+        if token:
+            tables |= _table_candidates(token)
+    if ".objects" in name:
+        match = DJANGO_OBJECTS_RE.search(ast.unparse(node))
+        if match:
+            tables |= _table_candidates(match.group(1))
+    return tables
+
+
+def _function_query_tables(tree: ast.AST) -> dict[str, set[str]]:
+    """Tables each local function reads or deletes, following calls to other functions."""
+    functions = {node.name: node for node in ast.walk(tree)
+                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    tables: dict[str, set[str]] = {}
+    for _ in range(len(functions) + 1):
+        changed = False
+        for name, func in functions.items():
+            found: set[str] = set()
+            for node in ast.walk(func):
+                found |= _direct_query_tables(node)
+                if isinstance(node, ast.Call):
+                    leaf = _call_name(node).rsplit(".", 1)[-1]
+                    found |= tables.get(leaf, set())
+            if found != tables.get(name, set()):
+                tables[name] = found
+                changed = True
+        if not changed:
+            break
+    return tables
+
+
+def _tables_of_expr(expr: ast.AST, function_tables: dict[str, set[str]],
+                    env: dict[str, set[str]]) -> set[str]:
+    found: set[str] = set()
+    for child in ast.walk(expr):
+        found |= _direct_query_tables(child)
+        if isinstance(child, ast.Call):
+            found |= function_tables.get(_call_name(child).rsplit(".", 1)[-1], set())
+        if isinstance(child, ast.Name):
+            found |= env.get(child.id, set())
+    return found
+
+
+def _name_tables(func: ast.AST, function_tables: dict[str, set[str]]) -> dict[str, set[str]]:
+    """Names that hold a query result, so ``session.delete(row)`` resolves to a table."""
+    env: dict[str, set[str]] = {}
+    for _ in range(3):
+        changed = False
+        for node in ast.walk(func):
+            if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
+                found = _tables_of_expr(node.value, function_tables, env)
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                for target in targets:
+                    if isinstance(target, ast.Name) and found - env.get(target.id, set()):
+                        env[target.id] = env.get(target.id, set()) | found
+                        changed = True
+            elif isinstance(node, (ast.For, ast.AsyncFor)) and isinstance(node.target, ast.Name):
+                found = _tables_of_expr(node.iter, function_tables, env)
+                if found - env.get(node.target.id, set()):
+                    env[node.target.id] = env.get(node.target.id, set()) | found
+                    changed = True
+            elif isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+                for generator in node.generators:
+                    if not isinstance(generator.target, ast.Name):
+                        continue
+                    found = _tables_of_expr(generator.iter, function_tables, env)
+                    if found - env.get(generator.target.id, set()):
+                        env[generator.target.id] = env.get(generator.target.id, set()) | found
+                        changed = True
+        if not changed:
+            break
+    return env
+
+
+def _resolved_delete_tables(node: ast.AST, name_tables: dict[str, set[str]],
+                            function_tables: dict[str, set[str]]) -> set[str]:
+    """Instance deletes and deletes on a helper-built query."""
+    if not isinstance(node, ast.Call):
+        return set()
+    if not _call_name(node).endswith(".delete"):
+        return set()
+    if node.args and isinstance(node.args[0], ast.Name):
+        return name_tables.get(node.args[0].id, set())
+    if isinstance(node.func, ast.Attribute):
+        return _tables_of_expr(node.func.value, function_tables, name_tables)
+    return set()
+
 
 
 def _query_model(func: ast.AST) -> str | None:
@@ -953,9 +1232,11 @@ class CredentialExposureFamily(PolicyFamily):
                 continue
             header_bindings = _secret_header_bindings(tree)
             summaries = _function_summaries(tree, self.catalog, categories)
+            field_lists = _field_lists(tree, self.catalog, categories)
+            param_returns, param_logs = _call_effects(tree, self.catalog, categories, summaries)
             env_by_node: dict[int, dict[str, set[str]]] = {}
             for func in _leaf_functions(tree):
-                env = _TaintTracker(self.catalog, categories, summaries).scan(func)
+                env = _TaintTracker(self.catalog, categories, summaries, param_returns).scan(func)
                 for child in ast.walk(func):
                     env_by_node[id(child)] = env
             for node in ast.walk(tree):
@@ -965,7 +1246,8 @@ class CredentialExposureFamily(PolicyFamily):
                 if self.catalog.is_sanitizer(text):
                     continue
                 tainted = _sink_categories(self.catalog, node, categories,
-                                           env_by_node.get(id(node)), summaries)
+                                           env_by_node.get(id(node)), summaries,
+                                           param_returns, field_lists)
                 if (tainted
                         or self._matches(text, keys, value_pattern)
                         or self._logs_token(node, sinks, keys)
@@ -974,6 +1256,22 @@ class CredentialExposureFamily(PolicyFamily):
                         or self._logs_secret_header(node, header_bindings, keys)):
                     out.append(_finding(control, path, getattr(node, "lineno", 1),
                                         "A credential reaches a response, redirect or log.", text))
+            if "log" in sinks:
+                for node in ast.walk(tree):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    positions = param_logs.get(_call_name(node).rsplit(".", 1)[-1])
+                    if not positions or not isinstance(node, ast.Call):
+                        continue
+                    env = env_by_node.get(id(node))
+                    for index, arg in enumerate(node.args):
+                        if index in positions and _sink_categories(
+                                self.catalog, arg, categories, env, summaries,
+                                param_returns, field_lists):
+                            out.append(_finding(control, path, node.lineno,
+                                                "A credential reaches a log inside a helper.",
+                                                ast.unparse(node)))
+                            break
         return self._dedupe(out)
 
     @staticmethod

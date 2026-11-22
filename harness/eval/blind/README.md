@@ -50,3 +50,8 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   promoted to the regression corpus (prose value context, admin path, dict keys, `dict(__dict__)`,
   helper cutoffs); the four interprocedural cases were later closed by helper summaries, append
   taint and credential sources (42/42 regression). A round 6 is required for a post-fix number.
+- Round 6: sealed, run once, 37/42, realistic modules with class methods and 2–3 helper chains.
+  `log_pii` and `reset_token` are perfect; the four false negatives were dynamic columns, ORM
+  instance deletes, table resolution through helpers and parameter passthrough, plus one false
+  positive from a callee name. The five cases were fixed and promoted (42/42 regression). A round 7
+  is required for a post-fix number.

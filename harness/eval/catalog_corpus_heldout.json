@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -799,6 +799,41 @@
       "expected": "violation",
       "path": "app/integrations/connect.py",
       "code": "from fastapi import APIRouter\nfrom fastapi.responses import RedirectResponse\n\nrouter = APIRouter(prefix='/integrations')\n\n\n@router.get('/connect')\ndef connect(account, secrets):\n    key = secrets.get_active(account.id)\n    target = 'https://dashboard.example.com/connect?key=%s' % key.value\n    return RedirectResponse(target, status_code=302)\n"
+    },
+    {
+      "id": "r6-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/api/admin_reports.py",
+      "code": "from rest_framework.permissions import IsAdminUser\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\n\nclass CustomerReportView(APIView):\n    permission_classes = [IsAdminUser]\n\n    def __init__(self, **kwargs):\n        super().__init__(**kwargs)\n        self.columns = ['id', 'rut', 'email']\n\n    def _row(self, customer):\n        return {column: getattr(customer, column) for column in self.columns}\n\n    def _rows(self, queryset):\n        return [self._row(customer) for customer in queryset]\n\n    def get(self, request):\n        queryset = Customer.objects.filter(active=True)\n        return Response({'rows': self._rows(queryset)})"
+    },
+    {
+      "id": "r6-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/profile.py",
+      "code": "from fastapi import APIRouter, Depends\n\nrouter = APIRouter()\n\n\ndef _has_password(user):\n    return bool(user.password_hash)\n\n\ndef _public_fields(user):\n    return {\n        'id': user.id,\n        'email': user.email,\n        'created_at': user.created_at.isoformat(),\n        'has_password': _has_password(user),\n    }\n\n\ndef _load(repo, user_id):\n    user = repo.get_user(user_id)\n    if user is None:\n        raise ValueError('not found')\n    return user\n\n\n@router.get('/profile')\ndef profile(user_id: int, repo=Depends(get_repo)):\n    user = _load(repo, user_id)\n    return _public_fields(user)"
+    },
+    {
+      "id": "r6-del-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/tasks/customer_retention.py",
+      "code": "import logging\nfrom datetime import datetime, timedelta\n\nfrom celery import shared_task\n\nfrom app.db import SessionLocal\n\nlogger = logging.getLogger(__name__)\n\n\ndef _cutoff():\n    return datetime.utcnow() - timedelta(days=180)\n\n\ndef _candidates(session):\n    return session.query(Customer).filter(Customer.updated_at < _cutoff())\n\n\ndef _purge(session):\n    rows = _candidates(session).all()\n    for row in rows:\n        session.delete(row)\n    session.commit()\n    return len(rows)\n\n\n@shared_task\ndef purge_inactive_customers():\n    session = SessionLocal()\n    try:\n        removed = _purge(session)\n        logger.info('purged %s customer records', removed)\n        return removed\n    finally:\n        session.close()"
+    },
+    {
+      "id": "r6-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/jobs/order_purge.py",
+      "code": "from datetime import datetime, timedelta\n\nfrom sqlalchemy import delete\n\n\ndef _cutoff(days):\n    return datetime.utcnow() - timedelta(days=days)\n\n\ndef _expired_orders(session, cutoff):\n    return session.query(Order).filter(Order.created_at < cutoff)\n\n\ndef purge_old_orders(session, days=365):\n    cutoff = _cutoff(days)\n    removed = _expired_orders(session, cutoff).delete(synchronize_session=False)\n    session.commit()\n    return {'removed': removed}\n\n\ndef purge_all(session):\n    orders = purge_old_orders(session)\n    invoices = purge_old_invoices(session)\n    return {'orders': orders, 'invoices': invoices}"
+    },
+    {
+      "id": "r6-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/vendor_ping.py",
+      "code": "import logging\n\nfrom fastapi import APIRouter, Depends\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter()\n\n\ndef _auth_header(key):\n    return f'Bearer {key}'\n\n\ndef _audit_line(org_id, header):\n    return f'vendor call org={org_id} auth={header}'\n\n\ndef _audit(org_id, key):\n    header = _auth_header(key)\n    logger.info(_audit_line(org_id, header))\n    return header\n\n\n@router.post('/orgs/{org_id}/ping')\ndef ping_vendor(org_id: int, repo=Depends(get_repo)):\n    key = repo.get_api_key(org_id)\n    header = _audit(org_id, key)\n    return {'status': 'ok', 'used': bool(header)}"
     }
   ]
 }
