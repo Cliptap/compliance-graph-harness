@@ -178,3 +178,18 @@ def test_policy_engine_aggregates_findings():
     assert "privacy.cwe_532" in policy_ids
     assert "scope.unauthorized_file" in policy_ids
     assert "governance.unauthorized_dependency" in policy_ids
+
+
+
+def test_run_word_in_message_is_not_cwe_532():
+    policy = SensitiveLoggingPolicy()
+    code = 'def f():\n    print("=== formal run finished ===")\n'
+    findings = policy.evaluate(TaskSpec(task_id="T", goal="g"), {"app/x.py": code})
+    assert "privacy.cwe_532" not in {f.policy_id for f in findings}
+
+
+def test_run_with_rut_value_is_cwe_532():
+    policy = SensitiveLoggingPolicy()
+    code = 'def f():\n    print("run=12.345.678-5")\n'
+    findings = policy.evaluate(TaskSpec(task_id="T", goal="g"), {"app/x.py": code})
+    assert "privacy.cwe_532" in {f.policy_id for f in findings}

@@ -125,3 +125,12 @@ def test_comprehension_of_customer_rows_is_flagged():
         "    return [dict(row) for row in rows]\n"
     )
     assert "v2.admin_exposure" in ids(code)
+
+
+
+def test_run_word_in_message_is_not_log_pii():
+    assert "v2.log_pii" not in ids('def f():\n    print("=== formal run finished ===")\n')
+
+
+def test_run_with_rut_value_is_log_pii():
+    assert "v2.log_pii" in ids('def f():\n    print("run=12.345.678-5")\n')

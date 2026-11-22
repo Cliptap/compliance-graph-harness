@@ -14,6 +14,24 @@ from pathlib import Path
 from src.harness.catalog import Catalog, Control
 from src.harness.contracts import Finding, TaskSpec
 
+RUT_VALUE_RE = re.compile(r"\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b")
+AMBIGUOUS_TEXT_SYNONYMS = {"run"}
+
+
+def _constant_matches(text: str, synonyms: list[str]) -> bool:
+    """``run`` is also English prose; only count it next to a RUT-shaped value."""
+    lowered = text.lower()
+    has_rut_value = bool(RUT_VALUE_RE.search(text))
+    for synonym in synonyms:
+        term = synonym.lower()
+        if term in AMBIGUOUS_TEXT_SYNONYMS:
+            if term in lowered and has_rut_value:
+                return True
+            continue
+        if re.search(rf"\b{re.escape(synonym)}\b", text, re.IGNORECASE):
+            return True
+    return False
+
 LOG_PATTERNS = ("print", "logger.", "logging.", "console.log", "console.error",
                 "sys.stdout", "sys.stderr")
 RESPONSE_PATTERNS = ("JSONResponse", "Response", "jsonify")
@@ -197,8 +215,7 @@ class _TaintTracker(ast.NodeVisitor):
                 for table in TABLE_RE.findall(child.value.lower()):
                     found |= set(self.catalog.tables.get(table, ()))
                 for category in self.categories:
-                    if any(re.search(rf"\b{re.escape(synonym)}\b", child.value, re.IGNORECASE)
-                           for synonym in self.catalog.synonyms(category)):
+                    if _constant_matches(child.value, self.catalog.synonyms(category)):
                         found.add(category)
             elif isinstance(child, (ast.Attribute, ast.Subscript)):
                 token = _identifier(child)
@@ -375,8 +392,7 @@ class SinkExposureFamily(PolicyFamily):
                     found.add(category)
             elif isinstance(child, ast.Constant) and isinstance(child.value, str):
                 for category in allowed:
-                    if any(re.search(rf"\b{re.escape(s)}\b", child.value, re.IGNORECASE)
-                           for s in self.catalog.synonyms(category)):
+                    if _constant_matches(child.value, self.catalog.synonyms(category)):
                         found.add(category)
         return found
 
