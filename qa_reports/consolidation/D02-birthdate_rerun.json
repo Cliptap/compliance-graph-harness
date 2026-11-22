@@ -1,0 +1,105 @@
+{
+  "task": "D02-birthdate",
+  "arm": "rules_skills_gate",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D02-birthdate-rules_skills_gate",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "timeout",
+    "error": null,
+    "exit_code": null,
+    "timed_out": true,
+    "cycle_time_s": 900.12,
+    "tool_calls_by_name": {},
+    "files_read": [],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": null,
+    "cost": 0.0,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "timeout",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 900.12,
+      "latency_ms": 900120,
+      "rounds": 0,
+      "tool_calls": 0,
+      "turns": 0,
+      "usage_reported": false,
+      "tokens": null,
+      "cost_usd": 0.0
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [],
+    "tool_calls_by_name": {},
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "D02-birthdate",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n__________________ test_birth_date_is_stored_at_registration __________________\n\napp = <fastapi.applications.FastAPI object at 0x00000208D4A05E50>\nclient = <starlette.testclient.TestClient object at 0x00000208D4A1C830>\n\n    def test_birth_date_is_stored_at_registration(app, client):\n        response = client.post(\n            \"/register\",\n            data={\"rut\": \"12345678-5\", \"email\": \"ana@example.cl\", \"password\": \"secret123\",\n                  \"phone\": \"+56911111111\", \"full_name\": \"Ana Perez\", \"birth_date\": \"2000-01-01\"},\n            follow_redirects=False,\n        )\n        assert response.status_code in (200, 302, 303), f\"registration failed: {response.status_code}\"\n>       assert \"2000-01-01\" in db_dump(app), \"the birth date value was not stored\"\nE       AssertionError: the birth date value was not stored\nE       assert '2000-01-01' in \"{'id': 1, 'rut': '123456785', 'email': 'ana@example.cl', 'phone': '+56911111111', 'full_name': 'Ana Perez', 'password...'unit': '1 L', 'old_price_clp': None, 'description': 'Chimichurri de Dumbo. El toque que tu comida estaba esperando.'}\"\nE        +  where \"{'id': 1, 'rut': '123456785', 'email': 'ana@example.cl', 'phone': '+56911111111', 'full_name': 'Ana Perez', 'password...'unit': '1 L', 'old_price_clp': None, 'description': 'Chimichurri de Dumbo. El toque que tu comida estaba esperando.'}\" = db_dump(<fastapi.applications.FastAPI object at 0x00000208D4A05E50>)\n\nhidden\\test_d02_birthdate.py:12: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_d02_birthdate.py::test_birth_date_is_stored_at_registration\n1 failed in 0.40s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "register",
+        "expect": [
+          "age gate"
+        ],
+        "expect_pass": true,
+        "passed": false,
+        "missing": [
+          "age gate"
+        ],
+        "output": "# Processing register (RoPA draft) — C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D02-birthdate-rules_skills_gate\n\n**1 processing activities** derived from the code. Purpose and legal basis cannot be read from code: they are declared as pending gaps to be completed with documentary evidence.\n\n| Activity | Data | Retention | Recipients | Consent | Pending gaps |\n| --- | --- | --- | --- | --- | --- |\n| customers | `rut` (IDENTIFIER_RUT), `email` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT), `address_id` (PERSONAL_CONTACT) | declarada | — | registrado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental) |\n\nStatic code-derived draft: not a legal register, not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D02-birthdate-rules_skills_gate\\.harness\\evidence.db\n"
+      }
+    ],
+    "passed": false
+  }
+}

@@ -1,0 +1,356 @@
+{
+  "task": "T33-reset-token-redirect",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T33-reset-token-redirect-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 93.36,
+    "tool_calls_by_name": {
+      "bash": 10,
+      "edit": 7,
+      "write": 2
+    },
+    "files_read": [],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 452501,
+      "input_tokens": 54720,
+      "output_tokens": 2755,
+      "reasoning_tokens": 1810,
+      "cache_read_tokens": 393216,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.012127,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 93.36,
+      "latency_ms": 93360,
+      "rounds": 14,
+      "tool_calls": 19,
+      "turns": 14,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 452501,
+        "input_tokens": 54720,
+        "output_tokens": 2755,
+        "reasoning_tokens": 1810,
+        "cache_read_tokens": 393216,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.012127
+    },
+    "quality": {
+      "tests": {
+        "passed": 28,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 6,
+      "lines_added": 88,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 1,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 75.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": [
+        {
+          "policy_id": "v2.reset_token",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 490
+        }
+      ]
+    },
+    "context": {
+      "files_read": [],
+      "files_read_count": 0,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": null
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7493,
+          "input": 7404,
+          "output": 80,
+          "reasoning": 9,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.001164
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 8285,
+          "input": 6369,
+          "output": 124,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.001035126
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 26934,
+          "input": 26693,
+          "output": 131,
+          "reasoning": 110,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.00414855
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35712,
+          "input": 7967,
+          "output": 196,
+          "reasoning": 1053,
+          "cache": {
+            "write": 0,
+            "read": 26496
+          }
+        },
+        "cost": 0.002023938
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35883,
+          "input": 1422,
+          "output": 157,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 34304
+          }
+        },
+        "cost": 0.000410412
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36032,
+          "input": 313,
+          "output": 135,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 35584
+          }
+        },
+        "cost": 0.000234702
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36474,
+          "input": 334,
+          "output": 405,
+          "reasoning": 23,
+          "cache": {
+            "write": 0,
+            "read": 35712
+          }
+        },
+        "cost": 0.000414036
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 37072,
+          "input": 648,
+          "output": 490,
+          "reasoning": 94,
+          "cache": {
+            "write": 0,
+            "read": 35840
+          }
+        },
+        "cost": 0.00055512
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 37283,
+          "input": 875,
+          "output": 184,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 36224
+          }
+        },
+        "cost": 0.000350322
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 37445,
+          "input": 433,
+          "output": 68,
+          "reasoning": 80,
+          "cache": {
+            "write": 0,
+            "read": 36864
+          }
+        },
+        "cost": 0.000264342
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 37999,
+          "input": 361,
+          "output": 185,
+          "reasoning": 333,
+          "cache": {
+            "write": 0,
+            "read": 37120
+          }
+        },
+        "cost": 0.00047631
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38518,
+          "input": 765,
+          "output": 420,
+          "reasoning": 85,
+          "cache": {
+            "write": 0,
+            "read": 37248
+          }
+        },
+        "cost": 0.000529494
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38600,
+          "input": 772,
+          "output": 68,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 37760
+          }
+        },
+        "cost": 0.00026988
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 38771,
+          "input": 364,
+          "output": 112,
+          "reasoning": 23,
+          "cache": {
+            "write": 0,
+            "read": 38272
+          }
+        },
+        "cost": 0.000250416
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 10,
+      "edit": 7,
+      "write": 2
+    },
+    "changed_files": {
+      "app/main.py": [
+        28,
+        0
+      ],
+      "app/templates/login.html": [
+        1,
+        0
+      ],
+      "app/templates/password_reset.html": [
+        11,
+        0
+      ],
+      "app/templates/password_reset_sent.html": [
+        12,
+        0
+      ],
+      "schema.sql": [
+        10,
+        0
+      ],
+      "tests/test_app.py": [
+        26,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "T33-reset-token-redirect",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n__________________ test_reset_redirect_does_not_carry_token ___________________\n\nclient = <starlette.testclient.TestClient object at 0x0000021B0FF48830>\n\n    def test_reset_redirect_does_not_carry_token(client):\n        register(client)\n        response = client.post(\"/password-reset\", data={\"email\": \"ana@example.cl\"},\n                               follow_redirects=False)\n        assert response.status_code != 404, \"the endpoint was not implemented\"\n        text = (response.text + response.headers.get(\"location\", \"\")).lower()\n>       assert \"token=\" not in text, \"the reset token is in the redirect URL\"\nE       AssertionError: the reset token is in the redirect URL\nE       assert 'token=' not in '/password-r...9sysg_1f7coq'\nE         \nE         'token=' is contained here:\nE           /password-reset/sent?token=vadnmgdqnhmtdlpy8lfmuguxvdeox9u9sysg_1f7coq\nE         ?                      ++++++\n\nhidden\\test_t33_reset_token_redirect.py:12: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_t33_reset_token_redirect.py::test_reset_redirect_does_not_carry_token\n1 failed in 0.46s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.reset-token-response"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  }
+}

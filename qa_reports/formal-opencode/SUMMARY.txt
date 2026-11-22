@@ -1,0 +1,14 @@
+﻿T7 OpenCode formal run
+model: opencode-go/deepseek-v4.1-flash
+runs: 108  finished: 108  invalid: 0
+
+arms:
+  baseline: n=36 hidden=33 semgrep=6 confirmed=3 behavioral=0 latent=2 clean=31 gate_rounds=0
+  harness: n=36 hidden=32 semgrep=5 confirmed=3 behavioral=1 latent=2 clean=30 gate_rounds=0
+  harness_compliance: n=36 hidden=34 semgrep=0 confirmed=0 behavioral=2 latent=0 clean=34 gate_rounds=0
+
+paired: n=36 mean=17.561944444444446 sd=109.25913931878897
+mcnemar_hidden: {"discordant":1,"only_left":0,"only_right":1,"p_value":1.0}
+mcnemar_confirmed: {"discordant":1,"only_left":1,"only_right":0,"p_value":1.0}
+
+report: C:\Users\andre\Documents\VSC Projects\Gentle-AI\vibecoding\docs\research\formal-results-opencode.md

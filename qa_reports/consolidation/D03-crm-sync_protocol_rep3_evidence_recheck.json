@@ -1,0 +1,31 @@
+{
+  "checks": [
+    {
+      "command": "register",
+      "expect": [
+        "crm.example-store.com"
+      ],
+      "expect_pass": true,
+      "passed": true,
+      "missing": [],
+      "output": "# Processing register (RoPA draft) ù C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-rules_skills_gate\n\n**2 processing activities** derived from the code. Purpose and legal basis cannot be read from code: they are declared as pending gaps to be completed with documentary evidence.\n\n| Activity | Data | Retention | Recipients | Consent | Pending gaps |\n| --- | --- | --- | --- | --- | --- |\n| CrmContact | `telecom` (PERSONAL_CONTACT) | no aplica (no persistido) | crm.example-store.com | no declarado | finalidad no declarada en el c¾digo (documental)<br>base legal no declarada en el c¾digo (documental)<br>Third parties that may receive personal data need a contract and a transfer basis (Arts. 15 bis, 27). |\n\n| customers | `rut` (IDENTIFIER_RUT), `email` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT), `address_id` (PERSONAL_CONTACT) | declarada | ù | registrado | finalidad no declarada en el c¾digo (documental)<br>base legal no declarada en el c¾digo (documental) |\n\nStatic code-derived draft: not a legal register, not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-rules_skills_gate\\.harness\\evidence.db\n"
+    },
+    {
+      "command": "subject",
+      "args": [
+        "--field",
+        "email"
+      ],
+      "expect": [
+        "crm.example-store.com"
+      ],
+      "expect_pass": false,
+      "informational": true,
+      "passed": false,
+      "missing": [],
+      "output": "# Subject evidence ù field `email`\n\nStatic package: code-derived locations and flows; access log entries are pointed to their tables, not queried live. Not legal advice.\n\n## 1. Where the datum lives\n\n| Field | Entity | Location | Persisted | Controls |\n| --- | --- | --- | :-: | --- |\n| `email` | customers | schema.sql:6 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` |\n\n## 2. Flows (sinks in files that reference the subject fields)\n\n- `print` ù app/retention.py:41 (print)\n\n## 4. Consent and rights records\n\n- `blocked` ù schema.sql:10\n- `marketing_opt_in` ù schema.sql:11\n- `purpose` ù schema.sql:73\n- `granted_at` ù schema.sql:75\n- `withdrawn_at` ù schema.sql:76\n- `purpose` ù schema.sql:113\n\n## 5. Processing state\n\n## 6. Third-party recipients\n\n- `crm.example-store.com`\n- `www.w3.org`\n\n| Entity | Retention | Consent | Recipients |\n| --- | --- | --- | --- |\n| customers | declarada | registrado | ù |\n\n"
+    }
+  ],
+  "passed": true,
+  "note": "Recheck of D03 protocol_rep3 evidence under the informational-check semantics; the agent closed the documented gap, so the subject check no longer matches its expected state but does not gate."
+}

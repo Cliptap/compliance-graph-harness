@@ -1,0 +1,187 @@
+{
+  "task": "T35-session-token-logs",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T35-session-token-logs-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 25.05,
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 1,
+      "read": 6
+    },
+    "files_read": [
+      "app/security.py",
+      "app/main.py",
+      "TASK.md",
+      "README.md",
+      "tests/test_app.py",
+      "tests/conftest.py"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 73022,
+      "input_tokens": 34097,
+      "output_tokens": 656,
+      "reasoning_tokens": 637,
+      "cache_read_tokens": 37632,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.006003,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 25.05,
+      "latency_ms": 25050,
+      "rounds": 4,
+      "tool_calls": 8,
+      "turns": 4,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 73022,
+        "input_tokens": 34097,
+        "output_tokens": 656,
+        "reasoning_tokens": 637,
+        "cache_read_tokens": 37632,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.006003
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "app/security.py",
+        "app/main.py",
+        "TASK.md",
+        "README.md",
+        "tests/test_app.py",
+        "tests/conftest.py"
+      ],
+      "files_read_count": 6,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.16666666666666666
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7560,
+          "input": 5600,
+          "output": 74,
+          "reasoning": 94,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000946176
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 10122,
+          "input": 8045,
+          "output": 260,
+          "reasoning": 25,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.001383126
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 24930,
+          "input": 14997,
+          "output": 140,
+          "reasoning": 193,
+          "cache": {
+            "write": 0,
+            "read": 9600
+          }
+        },
+        "cost": 0.00247815
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 30410,
+          "input": 5455,
+          "output": 182,
+          "reasoning": 325,
+          "cache": {
+            "write": 0,
+            "read": 24448
+          }
+        },
+        "cost": 0.001195794
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 1,
+      "read": 6
+    },
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "T35-session-token-logs",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.22s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.log-sensitive"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  }
+}

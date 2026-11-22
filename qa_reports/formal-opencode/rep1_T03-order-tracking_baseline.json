@@ -1,0 +1,334 @@
+{
+  "task": "T03-order-tracking",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T03-order-tracking-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 69.94,
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 14,
+      "read": 12,
+      "edit": 2,
+      "write": 1
+    },
+    "files_read": [
+      "TASK.md",
+      "README.md",
+      "schema.sql",
+      "app/main.py",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "app/db.py",
+      "app/templates/order.html",
+      "app/templates/orders.html",
+      "C:/Users/andre/AppData/Local/Temp/opencode/check_tracking.py",
+      "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/T03-order-tracking-harness/app/templates/tracking.html",
+      "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/T03-order-tracking-harness/TASK.md"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 597761,
+      "input_tokens": 78351,
+      "output_tokens": 3518,
+      "reasoning_tokens": 2484,
+      "cache_read_tokens": 513408,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.016894,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 69.94,
+      "latency_ms": 69940,
+      "rounds": 12,
+      "tool_calls": 30,
+      "turns": 12,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 597761,
+        "input_tokens": 78351,
+        "output_tokens": 3518,
+        "reasoning_tokens": 2484,
+        "cache_read_tokens": 513408,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.016894
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 64,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "README.md",
+        "schema.sql",
+        "app/main.py",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "app/db.py",
+        "app/templates/order.html",
+        "app/templates/orders.html",
+        "C:/Users/andre/AppData/Local/Temp/opencode/check_tracking.py",
+        "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/T03-order-tracking-harness/app/templates/tracking.html",
+        "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/T03-order-tracking-harness/TASK.md"
+      ],
+      "files_read_count": 12,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.25
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7496,
+          "input": 7395,
+          "output": 94,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.00116985
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 9879,
+          "input": 2465,
+          "output": 246,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 7168
+          }
+        },
+        "cost": 0.000538854
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 25040,
+          "input": 15237,
+          "output": 318,
+          "reasoning": 13,
+          "cache": {
+            "write": 0,
+            "read": 9472
+          }
+        },
+        "cost": 0.002512566
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35284,
+          "input": 10536,
+          "output": 103,
+          "reasoning": 197,
+          "cache": {
+            "write": 0,
+            "read": 24448
+          }
+        },
+        "cost": 0.001833744
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38251,
+          "input": 2768,
+          "output": 159,
+          "reasoning": 508,
+          "cache": {
+            "write": 0,
+            "read": 34816
+          }
+        },
+        "cost": 0.000919848
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 40983,
+          "input": 3352,
+          "output": 202,
+          "reasoning": 53,
+          "cache": {
+            "write": 0,
+            "read": 37376
+          }
+        },
+        "cost": 0.000767928
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 67480,
+          "input": 26476,
+          "output": 355,
+          "reasoning": 73,
+          "cache": {
+            "write": 0,
+            "read": 40576
+          }
+        },
+        "cost": 0.004349928
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 69754,
+          "input": 2414,
+          "output": 428,
+          "reasoning": 96,
+          "cache": {
+            "write": 0,
+            "read": 66816
+          }
+        },
+        "cost": 0.000876948
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 75543,
+          "input": 3861,
+          "output": 1360,
+          "reasoning": 1330,
+          "cache": {
+            "write": 0,
+            "read": 68992
+          }
+        },
+        "cost": 0.002400126
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 75821,
+          "input": 2876,
+          "output": 135,
+          "reasoning": 106,
+          "cache": {
+            "write": 0,
+            "read": 72704
+          }
+        },
+        "cost": 0.000794112
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 76018,
+          "input": 479,
+          "output": 46,
+          "reasoning": 101,
+          "cache": {
+            "write": 0,
+            "read": 75392
+          }
+        },
+        "cost": 0.000386226
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 76212,
+          "input": 492,
+          "output": 72,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 75648
+          }
+        },
+        "cost": 0.000343944
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 14,
+      "read": 12,
+      "edit": 2,
+      "write": 1
+    },
+    "changed_files": {
+      "app/main.py": [
+        42,
+        0
+      ],
+      "app/templates/order.html": [
+        1,
+        0
+      ],
+      "app/templates/tracking.html": [
+        21,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "T03-order-tracking",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.30s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-003"
+  }
+}

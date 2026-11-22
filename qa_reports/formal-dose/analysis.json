@@ -1,0 +1,307 @@
+{
+  "runs": 100,
+  "finished": 100,
+  "invalid": 0,
+  "models": [
+    "opencode-go/deepseek-v4.1-flash"
+  ],
+  "arms": {
+    "baseline": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 87.2095,
+      "cycle_median": 80.43,
+      "hidden_pass": 6,
+      "oracle_findings": 11,
+      "tokens": 15616182,
+      "outcomes": {
+        "confirmed_violation": 8,
+        "behavioral_failure": 6,
+        "latent_risk": 2,
+        "clean": 4,
+        "unknown": 0
+      },
+      "failure_kinds": {
+        "task_completion": 0,
+        "test_artifact": 5,
+        "privacy_behavioral": 1
+      },
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0
+    },
+    "rules": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 65.45100000000001,
+      "cycle_median": 54.33,
+      "hidden_pass": 7,
+      "oracle_findings": 8,
+      "tokens": 8018926,
+      "outcomes": {
+        "confirmed_violation": 7,
+        "behavioral_failure": 6,
+        "latent_risk": 1,
+        "clean": 6,
+        "unknown": 0
+      },
+      "failure_kinds": {
+        "task_completion": 3,
+        "test_artifact": 3,
+        "privacy_behavioral": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0
+    },
+    "rules_skills": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 94.2985,
+      "cycle_median": 74.88,
+      "hidden_pass": 9,
+      "oracle_findings": 3,
+      "tokens": 12839933,
+      "outcomes": {
+        "confirmed_violation": 3,
+        "behavioral_failure": 8,
+        "latent_risk": 0,
+        "clean": 9,
+        "unknown": 0
+      },
+      "failure_kinds": {
+        "task_completion": 4,
+        "test_artifact": 4,
+        "privacy_behavioral": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0
+    },
+    "rules_skills_gate": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 133.558,
+      "cycle_median": 116.88499999999999,
+      "hidden_pass": 18,
+      "oracle_findings": 4,
+      "tokens": 35808267,
+      "outcomes": {
+        "confirmed_violation": 0,
+        "behavioral_failure": 2,
+        "latent_risk": 3,
+        "clean": 15,
+        "unknown": 0
+      },
+      "failure_kinds": {
+        "task_completion": 0,
+        "test_artifact": 2,
+        "privacy_behavioral": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 25,
+      "gate_unresolved": 0
+    },
+    "rules_skills_gate_enforced": {
+      "n": 20,
+      "invalid": 0,
+      "cycle_mean": 154.9615,
+      "cycle_median": 120.61,
+      "hidden_pass": 14,
+      "oracle_findings": 0,
+      "tokens": 35343560,
+      "outcomes": {
+        "confirmed_violation": 0,
+        "behavioral_failure": 6,
+        "latent_risk": 0,
+        "clean": 14,
+        "unknown": 0
+      },
+      "failure_kinds": {
+        "task_completion": 2,
+        "test_artifact": 4,
+        "privacy_behavioral": 0
+      },
+      "gate_rounds": 0,
+      "gate_calls": 25,
+      "gate_unresolved": 0
+    }
+  },
+  "paired": {
+    "n": 0,
+    "delta_compliance_mean": null,
+    "delta_compliance_sd": null,
+    "wilcoxon": {
+      "n": 0,
+      "note": "no pairs"
+    },
+    "mcnemar_hidden": {
+      "discordant": 0,
+      "only_left": 0,
+      "only_right": 0,
+      "p_value": 1.0
+    },
+    "mcnemar_confirmed": {
+      "discordant": 0,
+      "only_left": 0,
+      "only_right": 0,
+      "p_value": 1.0
+    },
+    "mcnemar_any_failure": {
+      "discordant": 0,
+      "only_left": 0,
+      "only_right": 0,
+      "p_value": 1.0
+    },
+    "rows": []
+  },
+  "contrasts": {
+    "rules": {
+      "n": 20,
+      "delta_mean": -21.758499999999998,
+      "delta_sd": 41.71529206859783,
+      "mcnemar_confirmed": {
+        "discordant": 5,
+        "only_left": 3,
+        "only_right": 2,
+        "p_value": 1.0
+      },
+      "mcnemar_any_failure": {
+        "discordant": 3,
+        "only_left": 2,
+        "only_right": 1,
+        "p_value": 1.0
+      }
+    },
+    "rules_skills": {
+      "n": 20,
+      "delta_mean": 7.089000000000001,
+      "delta_sd": 95.4387364752908,
+      "mcnemar_confirmed": {
+        "discordant": 7,
+        "only_left": 6,
+        "only_right": 1,
+        "p_value": 0.125
+      },
+      "mcnemar_any_failure": {
+        "discordant": 5,
+        "only_left": 4,
+        "only_right": 1,
+        "p_value": 0.375
+      }
+    },
+    "rules_skills_gate": {
+      "n": 20,
+      "delta_mean": 46.3485,
+      "delta_sd": 55.030207424745605,
+      "mcnemar_confirmed": {
+        "discordant": 8,
+        "only_left": 8,
+        "only_right": 0,
+        "p_value": 0.0078125
+      },
+      "mcnemar_any_failure": {
+        "discordant": 12,
+        "only_left": 12,
+        "only_right": 0,
+        "p_value": 0.00048828125
+      }
+    },
+    "rules_skills_gate_enforced": {
+      "n": 20,
+      "delta_mean": 67.752,
+      "delta_sd": 121.79664784947252,
+      "mcnemar_confirmed": {
+        "discordant": 8,
+        "only_left": 8,
+        "only_right": 0,
+        "p_value": 0.0078125
+      },
+      "mcnemar_any_failure": {
+        "discordant": 10,
+        "only_left": 9,
+        "only_right": 1,
+        "p_value": 0.021484375
+      }
+    }
+  },
+  "detector_vs_oracle": {
+    "baseline": {
+      "tp": 9,
+      "fp": 2,
+      "fn": 1,
+      "tn": 8,
+      "precision": 0.8181818181818182,
+      "recall": 0.9
+    },
+    "rules": {
+      "tp": 7,
+      "fp": 1,
+      "fn": 1,
+      "tn": 11,
+      "precision": 0.875,
+      "recall": 0.875
+    },
+    "rules_skills": {
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "tn": 16,
+      "precision": 0.75,
+      "recall": 1.0
+    },
+    "rules_skills_gate": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "tn": 17,
+      "precision": null,
+      "recall": 0.0
+    },
+    "rules_skills_gate_enforced": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 20,
+      "precision": null,
+      "recall": null
+    }
+  },
+  "outcomes": {
+    "baseline": {
+      "confirmed_violation": 8,
+      "behavioral_failure": 6,
+      "latent_risk": 2,
+      "clean": 4,
+      "unknown": 0
+    },
+    "rules": {
+      "confirmed_violation": 7,
+      "behavioral_failure": 6,
+      "latent_risk": 1,
+      "clean": 6,
+      "unknown": 0
+    },
+    "rules_skills": {
+      "confirmed_violation": 3,
+      "behavioral_failure": 8,
+      "latent_risk": 0,
+      "clean": 9,
+      "unknown": 0
+    },
+    "rules_skills_gate": {
+      "confirmed_violation": 0,
+      "behavioral_failure": 2,
+      "latent_risk": 3,
+      "clean": 15,
+      "unknown": 0
+    },
+    "rules_skills_gate_enforced": {
+      "confirmed_violation": 0,
+      "behavioral_failure": 6,
+      "latent_risk": 0,
+      "clean": 14,
+      "unknown": 0
+    }
+  }
+}

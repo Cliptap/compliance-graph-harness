@@ -1,0 +1,315 @@
+{
+  "task": "T34-api-key-config",
+  "arm": "harness",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T34-api-key-config-harness",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 66.63,
+    "tool_calls_by_name": {
+      "bash": 8,
+      "read": 10,
+      "edit": 6,
+      "write": 1
+    },
+    "files_read": [
+      "TASK.md",
+      "app/main.py",
+      "app/security.py",
+      "schema.sql",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "README.md",
+      ".agents/skills/07-auth/SKILL.md",
+      ".agents/skills/05-backend/SKILL.md",
+      ".agents/skills/04-api-design/SKILL.md"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 404060,
+      "input_tokens": 48531,
+      "output_tokens": 3163,
+      "reasoning_tokens": 1390,
+      "cache_read_tokens": 350976,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.011064,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 66.63,
+      "latency_ms": 66630,
+      "rounds": 11,
+      "tool_calls": 25,
+      "turns": 11,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 404060,
+        "input_tokens": 48531,
+        "output_tokens": 3163,
+        "reasoning_tokens": 1390,
+        "cache_read_tokens": 350976,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.011064
+    },
+    "quality": {
+      "tests": {
+        "passed": 28,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 73,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "app/main.py",
+        "app/security.py",
+        "schema.sql",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "README.md",
+        ".agents/skills/07-auth/SKILL.md",
+        ".agents/skills/05-backend/SKILL.md",
+        ".agents/skills/04-api-design/SKILL.md"
+      ],
+      "files_read_count": 10,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.2
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 8660,
+          "input": 8538,
+          "output": 109,
+          "reasoning": 13,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.0013539
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 11483,
+          "input": 2783,
+          "output": 371,
+          "reasoning": 9,
+          "cache": {
+            "write": 0,
+            "read": 8320
+          }
+        },
+        "cost": 0.00067041
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 31476,
+          "input": 19909,
+          "output": 269,
+          "reasoning": 418,
+          "cache": {
+            "write": 0,
+            "read": 10880
+          }
+        },
+        "cost": 0.00343119
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 39736,
+          "input": 8962,
+          "output": 108,
+          "reasoning": 74,
+          "cache": {
+            "write": 0,
+            "read": 30592
+          }
+        },
+        "cost": 0.001545276
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 40917,
+          "input": 789,
+          "output": 131,
+          "reasoning": 701,
+          "cache": {
+            "write": 0,
+            "read": 39296
+          }
+        },
+        "cost": 0.000735438
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 42254,
+          "input": 2245,
+          "output": 49,
+          "reasoning": 24,
+          "cache": {
+            "write": 0,
+            "read": 39936
+          }
+        },
+        "cost": 0.000500358
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 44468,
+          "input": 2137,
+          "output": 243,
+          "reasoning": 104,
+          "cache": {
+            "write": 0,
+            "read": 41984
+          }
+        },
+        "cost": 0.000654702
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 45874,
+          "input": 578,
+          "output": 1367,
+          "reasoning": 25,
+          "cache": {
+            "write": 0,
+            "read": 43904
+          }
+        },
+        "cost": 0.001053612
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 46288,
+          "input": 1644,
+          "output": 346,
+          "reasoning": 10,
+          "cache": {
+            "write": 0,
+            "read": 44288
+          }
+        },
+        "cost": 0.000593064
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 46383,
+          "input": 607,
+          "output": 68,
+          "reasoning": 12,
+          "cache": {
+            "write": 0,
+            "read": 45696
+          }
+        },
+        "cost": 0.000276138
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 46521,
+          "input": 339,
+          "output": 102,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 46080
+          }
+        },
+        "cost": 0.00025029
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 8,
+      "read": 10,
+      "edit": 6,
+      "write": 1
+    },
+    "changed_files": {
+      "app/main.py": [
+        45,
+        1
+      ],
+      "app/security.py": [
+        9,
+        0
+      ],
+      "tests/test_admin_config.py": [
+        19,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "T34-api-key-config",
+    "hidden_tests_passed": false,
+    "hidden_output": "F                                                                        [100%]\n================================== FAILURES ===================================\n__________________ test_admin_config_does_not_expose_api_key __________________\n\nclient = <starlette.testclient.TestClient object at 0x0000021BF22CC980>\n\n    def test_admin_config_does_not_expose_api_key(client):\n        response = client.get(\"/admin/config\", headers={\"X-Admin-Token\": \"test-admin\"})\n        assert response.status_code == 200, \"the endpoint was not implemented\"\n        text = response.text.lower()\n>       assert \"api_key\" not in text and \"api-key\" not in text, \"the API key field was exposed\"\nE       AssertionError: the API key field was exposed\nE       assert ('api_key' not in '{\"policy_ve...red\":false}}'\nE         \nE         'api_key' is contained here:\nE           mulated\",\"api_key\":\"\",\"configured\":false}}\nE         ?           +++++++)\n\nhidden\\test_t34_api_key_config.py:8: AssertionError\n=========================== short test summary info ===========================\nFAILED hidden/test_t34_api_key_config.py::test_admin_config_does_not_expose_api_key\n1 failed in 0.28s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.api-key-response"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  }
+}

@@ -1,0 +1,666 @@
+{
+  "task": "T31-cancelled-orders-cleanup",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T31-cancelled-orders-cleanup-harness_compliance",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 266.31,
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 28,
+      "read": 13,
+      "skill": 1,
+      "write": 2,
+      "edit": 5
+    },
+    "files_read": [
+      "TASK.md",
+      "schema.sql",
+      "README.md",
+      "app/main.py",
+      "app/db.py",
+      "app/retention.py",
+      "app/rights.py",
+      "tests/conftest.py",
+      "tests/test_app.py",
+      "compliance_check.py",
+      ".harness/packs/cl-ley-21719.json"
+    ],
+    "gate_calls": 2,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 3510732,
+      "input_tokens": 134615,
+      "output_tokens": 7191,
+      "reasoning_tokens": 13918,
+      "cache_read_tokens": 3355008,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.042923,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 266.31,
+      "latency_ms": 266310,
+      "rounds": 34,
+      "tool_calls": 50,
+      "turns": 34,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 3510732,
+        "input_tokens": 134615,
+        "output_tokens": 7191,
+        "reasoning_tokens": 13918,
+        "cache_read_tokens": 3355008,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.042923
+    },
+    "quality": {
+      "tests": {
+        "passed": 31,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 176,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 2,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "schema.sql",
+        "README.md",
+        "app/main.py",
+        "app/db.py",
+        "app/retention.py",
+        "app/rights.py",
+        "tests/conftest.py",
+        "tests/test_app.py",
+        "compliance_check.py",
+        ".harness/packs/cl-ley-21719.json"
+      ],
+      "files_read_count": 11,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.2727272727272727
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 9317,
+          "input": 118,
+          "output": 104,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 9088
+          }
+        },
+        "cost": 0.000111564
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 12806,
+          "input": 3445,
+          "output": 273,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 9088
+          }
+        },
+        "cost": 0.000707814
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 28040,
+          "input": 15251,
+          "output": 349,
+          "reasoning": 24,
+          "cache": {
+            "write": 0,
+            "read": 12416
+          }
+        },
+        "cost": 0.002548698
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38622,
+          "input": 10618,
+          "output": 182,
+          "reasoning": 174,
+          "cache": {
+            "write": 0,
+            "read": 27648
+          }
+        },
+        "cost": 0.001889244
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 56877,
+          "input": 18497,
+          "output": 195,
+          "reasoning": 41,
+          "cache": {
+            "write": 0,
+            "read": 38144
+          }
+        },
+        "cost": 0.003030582
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 70261,
+          "input": 13554,
+          "output": 119,
+          "reasoning": 12,
+          "cache": {
+            "write": 0,
+            "read": 56576
+          }
+        },
+        "cost": 0.002281428
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 77095,
+          "input": 6385,
+          "output": 159,
+          "reasoning": 535,
+          "cache": {
+            "write": 0,
+            "read": 70016
+          }
+        },
+        "cost": 0.001584198
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 79584,
+          "input": 1901,
+          "output": 131,
+          "reasoning": 1264,
+          "cache": {
+            "write": 0,
+            "read": 76288
+          }
+        },
+        "cost": 0.001351014
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 80120,
+          "input": 1942,
+          "output": 82,
+          "reasoning": 16,
+          "cache": {
+            "write": 0,
+            "read": 78080
+          }
+        },
+        "cost": 0.00058434
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 82825,
+          "input": 2666,
+          "output": 135,
+          "reasoning": 24,
+          "cache": {
+            "write": 0,
+            "read": 80000
+          }
+        },
+        "cost": 0.0007353
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 85902,
+          "input": 2857,
+          "output": 161,
+          "reasoning": 324,
+          "cache": {
+            "write": 0,
+            "read": 82560
+          }
+        },
+        "cost": 0.00096723
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 89362,
+          "input": 3852,
+          "output": 90,
+          "reasoning": 44,
+          "cache": {
+            "write": 0,
+            "read": 85376
+          }
+        },
+        "cost": 0.000914328
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 95845,
+          "input": 6229,
+          "output": 138,
+          "reasoning": 262,
+          "cache": {
+            "write": 0,
+            "read": 89216
+          }
+        },
+        "cost": 0.001441998
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 105049,
+          "input": 9490,
+          "output": 141,
+          "reasoning": 58,
+          "cache": {
+            "write": 0,
+            "read": 95360
+          }
+        },
+        "cost": 0.00182898
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 105588,
+          "input": 422,
+          "output": 209,
+          "reasoning": 125,
+          "cache": {
+            "write": 0,
+            "read": 104832
+          }
+        },
+        "cost": 0.000578196
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 106991,
+          "input": 1523,
+          "output": 104,
+          "reasoning": 148,
+          "cache": {
+            "write": 0,
+            "read": 105216
+          }
+        },
+        "cost": 0.000695298
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 107368,
+          "input": 574,
+          "output": 170,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 106624
+          }
+        },
+        "cost": 0.000507972
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 120649,
+          "input": 13050,
+          "output": 91,
+          "reasoning": 372,
+          "cache": {
+            "write": 0,
+            "read": 107136
+          }
+        },
+        "cost": 0.002556708
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 123197,
+          "input": 2101,
+          "output": 130,
+          "reasoning": 902,
+          "cache": {
+            "write": 0,
+            "read": 120064
+          }
+        },
+        "cost": 0.001294542
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 125859,
+          "input": 2146,
+          "output": 195,
+          "reasoning": 1406,
+          "cache": {
+            "write": 0,
+            "read": 122112
+          }
+        },
+        "cost": 0.001648836
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 129158,
+          "input": 2485,
+          "output": 134,
+          "reasoning": 2379,
+          "cache": {
+            "write": 0,
+            "read": 124160
+          }
+        },
+        "cost": 0.00225303
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 133245,
+          "input": 2580,
+          "output": 617,
+          "reasoning": 3456,
+          "cache": {
+            "write": 0,
+            "read": 126592
+          }
+        },
+        "cost": 0.003210576
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 133635,
+          "input": 4109,
+          "output": 272,
+          "reasoning": 102,
+          "cache": {
+            "write": 0,
+            "read": 129152
+          }
+        },
+        "cost": 0.001228206
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 133977,
+          "input": 413,
+          "output": 316,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 133248
+          }
+        },
+        "cost": 0.000651294
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 134226,
+          "input": 361,
+          "output": 216,
+          "reasoning": 17,
+          "cache": {
+            "write": 0,
+            "read": 133632
+          }
+        },
+        "cost": 0.000594846
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 136076,
+          "input": 353,
+          "output": 1182,
+          "reasoning": 653,
+          "cache": {
+            "write": 0,
+            "read": 133888
+          }
+        },
+        "cost": 0.001555614
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 136401,
+          "input": 1948,
+          "output": 67,
+          "reasoning": 242,
+          "cache": {
+            "write": 0,
+            "read": 134144
+          }
+        },
+        "cost": 0.000880032
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 136713,
+          "input": 373,
+          "output": 124,
+          "reasoning": 152,
+          "cache": {
+            "write": 0,
+            "read": 136064
+          }
+        },
+        "cost": 0.000629742
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 136830,
+          "input": 423,
+          "output": 58,
+          "reasoning": 29,
+          "cache": {
+            "write": 0,
+            "read": 136320
+          }
+        },
+        "cost": 0.00052461
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 137075,
+          "input": 187,
+          "output": 148,
+          "reasoning": 36,
+          "cache": {
+            "write": 0,
+            "read": 136704
+          }
+        },
+        "cost": 0.000548562
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 137904,
+          "input": 300,
+          "output": 79,
+          "reasoning": 693,
+          "cache": {
+            "write": 0,
+            "read": 136832
+          }
+        },
+        "cost": 0.000918696
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 141166,
+          "input": 3220,
+          "output": 579,
+          "reasoning": 279,
+          "cache": {
+            "write": 0,
+            "read": 137088
+          }
+        },
+        "cost": 0.001409064
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 141312,
+          "input": 893,
+          "output": 115,
+          "reasoning": 16,
+          "cache": {
+            "write": 0,
+            "read": 140288
+          }
+        },
+        "cost": 0.000633414
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 141657,
+          "input": 349,
+          "output": 126,
+          "reasoning": 126,
+          "cache": {
+            "write": 0,
+            "read": 141056
+          }
+        },
+        "cost": 0.000626718
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 28,
+      "read": 13,
+      "skill": 1,
+      "write": 2,
+      "edit": 5
+    },
+    "changed_files": {
+      "app/main.py": [
+        15,
+        1
+      ],
+      "app/orders_cleanup.py": [
+        63,
+        0
+      ],
+      "tests/test_admin_orders_cleanup.py": [
+        98,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "T31-cancelled-orders-cleanup",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.25s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.hard-delete-orders"
+    ],
+    "expected_control": "CORE-CHECK-013"
+  }
+}

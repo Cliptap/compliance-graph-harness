@@ -1,0 +1,464 @@
+{
+  "task": "D03-crm-sync",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 135.14,
+    "tool_calls_by_name": {
+      "bash": 20,
+      "read": 14,
+      "write": 2,
+      "edit": 8
+    },
+    "files_read": [
+      "README.md",
+      "TASK.md",
+      "app/main.py",
+      "app/marketing.py",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "app/third_parties.py",
+      "app/db.py",
+      "schema.sql",
+      "app/security.py",
+      "app/retention.py",
+      "app/templates/third_parties.html",
+      "app/templates/register.html",
+      "app/templates/privacy.html"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 1245238,
+      "input_tokens": 105157,
+      "output_tokens": 5237,
+      "reasoning_tokens": 2556,
+      "cache_read_tokens": 1132288,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.023846,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 135.14,
+      "latency_ms": 135140,
+      "rounds": 17,
+      "tool_calls": 44,
+      "turns": 17,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 1245238,
+        "input_tokens": 105157,
+        "output_tokens": 5237,
+        "reasoning_tokens": 2556,
+        "cache_read_tokens": 1132288,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.023846
+    },
+    "quality": {
+      "tests": {
+        "passed": 30,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 7,
+      "lines_added": 120,
+      "lines_deleted": 4,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "README.md",
+        "TASK.md",
+        "app/main.py",
+        "app/marketing.py",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "app/third_parties.py",
+        "app/db.py",
+        "schema.sql",
+        "app/security.py",
+        "app/retention.py",
+        "app/templates/third_parties.html",
+        "app/templates/register.html",
+        "app/templates/privacy.html"
+      ],
+      "files_read_count": 14,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.21428571428571427
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7486,
+          "input": 5628,
+          "output": 54,
+          "reasoning": 12,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000889176
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 13706,
+          "input": 6150,
+          "output": 253,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 7296
+          }
+        },
+        "cost": 0.001100388
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 28351,
+          "input": 14496,
+          "output": 260,
+          "reasoning": 155,
+          "cache": {
+            "write": 0,
+            "read": 13440
+          }
+        },
+        "cost": 0.00246372
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38425,
+          "input": 10126,
+          "output": 258,
+          "reasoning": 137,
+          "cache": {
+            "write": 0,
+            "read": 27904
+          }
+        },
+        "cost": 0.001839612
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 41732,
+          "input": 3330,
+          "output": 198,
+          "reasoning": 188,
+          "cache": {
+            "write": 0,
+            "read": 38016
+          }
+        },
+        "cost": 0.000845148
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 42537,
+          "input": 812,
+          "output": 179,
+          "reasoning": 202,
+          "cache": {
+            "write": 0,
+            "read": 41344
+          }
+        },
+        "cost": 0.000474432
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 74198,
+          "input": 31763,
+          "output": 250,
+          "reasoning": 73,
+          "cache": {
+            "write": 0,
+            "read": 42112
+          }
+        },
+        "cost": 0.005084586
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 88450,
+          "input": 14184,
+          "output": 269,
+          "reasoning": 141,
+          "cache": {
+            "write": 0,
+            "read": 73856
+          }
+        },
+        "cost": 0.002595168
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 91512,
+          "input": 3051,
+          "output": 304,
+          "reasoning": 221,
+          "cache": {
+            "write": 0,
+            "read": 87936
+          }
+        },
+        "cost": 0.001036458
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 93631,
+          "input": 2571,
+          "output": 78,
+          "reasoning": 102,
+          "cache": {
+            "write": 0,
+            "read": 90880
+          }
+        },
+        "cost": 0.00076629
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 96512,
+          "input": 2480,
+          "output": 327,
+          "reasoning": 265,
+          "cache": {
+            "write": 0,
+            "read": 93440
+          }
+        },
+        "cost": 0.00100752
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 101391,
+          "input": 4697,
+          "output": 138,
+          "reasoning": 684,
+          "cache": {
+            "write": 0,
+            "read": 95872
+          }
+        },
+        "cost": 0.001485366
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 104451,
+          "input": 2196,
+          "output": 1748,
+          "reasoning": 27,
+          "cache": {
+            "write": 0,
+            "read": 100480
+          }
+        },
+        "cost": 0.00169584
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 105428,
+          "input": 1898,
+          "output": 582,
+          "reasoning": 292,
+          "cache": {
+            "write": 0,
+            "read": 102656
+          }
+        },
+        "cost": 0.001117068
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 105550,
+          "input": 995,
+          "output": 107,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 104448
+          }
+        },
+        "cost": 0.000526794
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 105728,
+          "input": 243,
+          "output": 91,
+          "reasoning": 50,
+          "cache": {
+            "write": 0,
+            "read": 105344
+          }
+        },
+        "cost": 0.000437082
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 106150,
+          "input": 537,
+          "output": 141,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 105472
+          }
+        },
+        "cost": 0.000481566
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 20,
+      "read": 14,
+      "write": 2,
+      "edit": 8
+    },
+    "changed_files": {
+      "app/crm.py": [
+        29,
+        0
+      ],
+      "app/db.py": [
+        15,
+        0
+      ],
+      "app/main.py": [
+        6,
+        1
+      ],
+      "app/templates/privacy.html": [
+        2,
+        1
+      ],
+      "app/templates/register.html": [
+        1,
+        1
+      ],
+      "app/templates/third_parties.html": [
+        1,
+        1
+      ],
+      "tests/test_crm_sync.py": [
+        66,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "D03-crm-sync",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.02s\n",
+    "oracle": {
+      "error": null,
+      "findings": [
+        {
+          "rule": "experiments.tasks.oracle.dumbo.third-party",
+          "path": "app/crm.py",
+          "line": 8,
+          "message": "External host referenced by the target."
+        }
+      ]
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "register",
+        "expect": [
+          "crm.example-store.com"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "# Processing register (RoPA draft) — C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-baseline\n\n**1 processing activities** derived from the code. Purpose and legal basis cannot be read from code: they are declared as pending gaps to be completed with documentary evidence.\n\n| Activity | Data | Retention | Recipients | Consent | Pending gaps |\n| --- | --- | --- | --- | --- | --- |\n| customers | `rut` (IDENTIFIER_RUT), `email` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT), `address_id` (PERSONAL_CONTACT) | declarada | — | registrado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental) |\n\n**Third-party recipients referenced by the scanned code (static, may over-approximate):** crm.example-store.com\n\nStatic code-derived draft: not a legal register, not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D03-crm-sync-baseline\\.harness\\evidence.db\n"
+      },
+      {
+        "command": "subject",
+        "args": [
+          "--field",
+          "email"
+        ],
+        "expect": [
+          "crm.example-store.com"
+        ],
+        "expect_pass": false,
+        "informational": true,
+        "passed": false,
+        "missing": [],
+        "output": "# Subject evidence — field `email`\n\nStatic package: code-derived locations and flows; access log entries are pointed to their tables, not queried live. Not legal advice.\n\n## 1. Where the datum lives\n\n| Field | Entity | Location | Persisted | Controls |\n| --- | --- | --- | :-: | --- |\n| `email` | customers | schema.sql:6 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` |\n\n## 2. Flows (sinks in files that reference the subject fields)\n\n- `print` — app/retention.py:41 (print)\n\n## 4. Consent and rights records\n\n- `blocked` — schema.sql:10\n- `marketing_opt_in` — schema.sql:11\n- `purpose` — schema.sql:73\n- `granted_at` — schema.sql:75\n- `withdrawn_at` — schema.sql:76\n- `purpose` — schema.sql:113\n\n## 5. Processing state\n\n## 6. Third-party recipients\n\n- `crm.example-store.com`\n\n| Entity | Retention | Consent | Recipients |\n| --- | --- | --- | --- |\n| customers | declarada | registrado | — |\n\n"
+      }
+    ],
+    "passed": true
+  }
+}

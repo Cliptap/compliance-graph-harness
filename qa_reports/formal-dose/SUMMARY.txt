@@ -1,0 +1,15 @@
+Dose formal
+runs=100 finished=100 invalid=0
+
+baseline: n=20 hidden=6 semgrep=11 confirmed=8 task_completion=0 test_artifact=5 privacy_behavioral=1 latent=2 clean=4
+rules: n=20 hidden=7 semgrep=8 confirmed=7 task_completion=3 test_artifact=3 privacy_behavioral=0 latent=1 clean=6
+rules_skills: n=20 hidden=9 semgrep=3 confirmed=3 task_completion=4 test_artifact=4 privacy_behavioral=0 latent=0 clean=9
+rules_skills_gate: n=20 hidden=18 semgrep=4 confirmed=0 task_completion=0 test_artifact=2 privacy_behavioral=0 latent=3 clean=15
+rules_skills_gate_enforced: n=20 hidden=14 semgrep=0 confirmed=0 task_completion=2 test_artifact=4 privacy_behavioral=0 latent=0 clean=14
+
+rules vs baseline: n=20 delta=-21.758499999999998 mcnemar_confirmed={"discordant": 5, "only_left": 3, "only_right": 2, "p_value": 1.0} any={"discordant": 3, "only_left": 2, "only_right": 1, "p_value": 1.0}
+rules_skills vs baseline: n=20 delta=7.089000000000001 mcnemar_confirmed={"discordant": 7, "only_left": 6, "only_right": 1, "p_value": 0.125} any={"discordant": 5, "only_left": 4, "only_right": 1, "p_value": 0.375}
+rules_skills_gate vs baseline: n=20 delta=46.3485 mcnemar_confirmed={"discordant": 8, "only_left": 8, "only_right": 0, "p_value": 0.0078125} any={"discordant": 12, "only_left": 12, "only_right": 0, "p_value": 0.00048828125}
+rules_skills_gate_enforced vs baseline: n=20 delta=67.752 mcnemar_confirmed={"discordant": 8, "only_left": 8, "only_right": 0, "p_value": 0.0078125} any={"discordant": 10, "only_left": 9, "only_right": 1, "p_value": 0.021484375}
+
+report: docs/research/formal-results-dose.md

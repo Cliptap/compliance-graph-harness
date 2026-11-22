@@ -1,0 +1,404 @@
+{
+  "task": "D05-courier",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D05-courier-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 121.0,
+    "tool_calls_by_name": {
+      "bash": 19,
+      "write": 1,
+      "edit": 4,
+      "read": 1
+    },
+    "files_read": [
+      "app/templates/order.html"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 761813,
+      "input_tokens": 58717,
+      "output_tokens": 3381,
+      "reasoning_tokens": 1603,
+      "cache_read_tokens": 698112,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.013892,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 121.0,
+      "latency_ms": 121000,
+      "rounds": 16,
+      "tool_calls": 25,
+      "turns": 16,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 761813,
+        "input_tokens": 58717,
+        "output_tokens": 3381,
+        "reasoning_tokens": 1603,
+        "cache_read_tokens": 698112,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.013892
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 4,
+      "lines_added": 83,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 1,
+      "architecture_violations": null,
+      "compliance_score": 99.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": [
+        {
+          "policy_id": "privacy.third_party_transfers",
+          "severity": "LOW",
+          "status": "WARNING",
+          "file": "app/courier.py",
+          "line": 1
+        }
+      ]
+    },
+    "context": {
+      "files_read": [
+        "app/templates/order.html"
+      ],
+      "files_read_count": 1,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.0
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7496,
+          "input": 5627,
+          "output": 65,
+          "reasoning": 12,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000895626
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 10224,
+          "input": 2728,
+          "output": 193,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 7296
+          }
+        },
+        "cost": 0.000551088
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 34126,
+          "input": 23739,
+          "output": 232,
+          "reasoning": 171,
+          "cache": {
+            "write": 0,
+            "read": 9984
+          }
+        },
+        "cost": 0.003832602
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36759,
+          "input": 2643,
+          "output": 223,
+          "reasoning": 229,
+          "cache": {
+            "write": 0,
+            "read": 33664
+          }
+        },
+        "cost": 0.000768642
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38700,
+          "input": 2183,
+          "output": 229,
+          "reasoning": 64,
+          "cache": {
+            "write": 0,
+            "read": 36224
+          }
+        },
+        "cost": 0.000611922
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 53257,
+          "input": 14589,
+          "output": 175,
+          "reasoning": 93,
+          "cache": {
+            "write": 0,
+            "read": 38400
+          }
+        },
+        "cost": 0.00246435
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 54411,
+          "input": 1135,
+          "output": 387,
+          "reasoning": 25,
+          "cache": {
+            "write": 0,
+            "read": 52864
+          }
+        },
+        "cost": 0.000576042
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 57212,
+          "input": 2573,
+          "output": 340,
+          "reasoning": 411,
+          "cache": {
+            "write": 0,
+            "read": 53888
+          }
+        },
+        "cost": 0.000998214
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 57371,
+          "input": 779,
+          "output": 138,
+          "reasoning": 6,
+          "cache": {
+            "write": 0,
+            "read": 56448
+          }
+        },
+        "cost": 0.000372594
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 58114,
+          "input": 169,
+          "output": 513,
+          "reasoning": 216,
+          "cache": {
+            "write": 0,
+            "read": 57216
+          }
+        },
+        "cost": 0.000634398
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 58350,
+          "input": 784,
+          "output": 205,
+          "reasoning": 17,
+          "cache": {
+            "write": 0,
+            "read": 57344
+          }
+        },
+        "cost": 0.000422832
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 58508,
+          "input": 252,
+          "output": 89,
+          "reasoning": 55,
+          "cache": {
+            "write": 0,
+            "read": 58112
+          }
+        },
+        "cost": 0.000298536
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 58934,
+          "input": 444,
+          "output": 250,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 58240
+          }
+        },
+        "cost": 0.00039132
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 59219,
+          "input": 324,
+          "output": 120,
+          "reasoning": 151,
+          "cache": {
+            "write": 0,
+            "read": 58624
+          }
+        },
+        "cost": 0.000387072
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 59442,
+          "input": 375,
+          "output": 90,
+          "reasoning": 97,
+          "cache": {
+            "write": 0,
+            "read": 58880
+          }
+        },
+        "cost": 0.00034509
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 59690,
+          "input": 373,
+          "output": 132,
+          "reasoning": 49,
+          "cache": {
+            "write": 0,
+            "read": 59136
+          }
+        },
+        "cost": 0.000341958
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 19,
+      "write": 1,
+      "edit": 4,
+      "read": 1
+    },
+    "changed_files": {
+      "app/courier.py": [
+        41,
+        0
+      ],
+      "app/main.py": [
+        29,
+        0
+      ],
+      "app/templates/order.html": [
+        5,
+        0
+      ],
+      "schema.sql": [
+        8,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "D05-courier",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.03s\n",
+    "oracle": {
+      "error": null,
+      "findings": [
+        {
+          "rule": "experiments.tasks.oracle.dumbo.third-party",
+          "path": "app/courier.py",
+          "line": 14,
+          "message": "External host referenced by the target."
+        }
+      ]
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "register",
+        "expect": [
+          "courier.example-store.com"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "# Processing register (RoPA draft) — C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D05-courier-baseline\n\n**2 processing activities** derived from the code. Purpose and legal basis cannot be read from code: they are declared as pending gaps to be completed with documentary evidence.\n\n| Activity | Data | Retention | Recipients | Consent | Pending gaps |\n| --- | --- | --- | --- | --- | --- |\n| CourierShipment | `address` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT) | no aplica (no persistido) | courier.example-store.com | no declarado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental)<br>Third parties that may receive personal data need a contract and a transfer basis (Arts. 15 bis, 27). |\n\n| customers | `rut` (IDENTIFIER_RUT), `email` (PERSONAL_CONTACT), `phone` (PERSONAL_CONTACT), `address_id` (PERSONAL_CONTACT) | declarada | — | registrado | finalidad no declarada en el código (documental)<br>base legal no declarada en el código (documental) |\n\nStatic code-derived draft: not a legal register, not legal advice.\n\npersisted: C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D05-courier-baseline\\.harness\\evidence.db\n"
+      }
+    ],
+    "passed": true
+  }
+}

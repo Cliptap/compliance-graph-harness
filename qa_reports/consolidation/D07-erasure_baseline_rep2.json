@@ -1,0 +1,396 @@
+{
+  "task": "D07-erasure",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D07-erasure-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 95.7,
+    "tool_calls_by_name": {
+      "bash": 10,
+      "read": 12,
+      "write": 2,
+      "edit": 2
+    },
+    "files_read": [
+      "TASK.md",
+      "schema.sql",
+      "README.md",
+      "app/main.py",
+      "app/rights.py",
+      "app/db.py",
+      "app/retention.py",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "app/templates/rights.html",
+      "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D07-erasure-rules_skills_gate/tests/test_erasure.py",
+      "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D07-erasure-rules_skills_gate/app/erasure.py"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 532621,
+      "input_tokens": 45520,
+      "output_tokens": 3154,
+      "reasoning_tokens": 1259,
+      "cache_read_tokens": 482688,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.010924,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 95.7,
+      "latency_ms": 95700,
+      "rounds": 15,
+      "tool_calls": 26,
+      "turns": 15,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 532621,
+        "input_tokens": 45520,
+        "output_tokens": 3154,
+        "reasoning_tokens": 1259,
+        "cache_read_tokens": 482688,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.010924
+    },
+    "quality": {
+      "tests": {
+        "passed": 28,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 114,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "schema.sql",
+        "README.md",
+        "app/main.py",
+        "app/rights.py",
+        "app/db.py",
+        "app/retention.py",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "app/templates/rights.html",
+        "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D07-erasure-rules_skills_gate/tests/test_erasure.py",
+        "C:/Users/andre/AppData/Local/Temp/t7-opencode/workspaces/D07-erasure-rules_skills_gate/app/erasure.py"
+      ],
+      "files_read_count": 12,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.25
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7503,
+          "input": 5644,
+          "output": 67,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000892176
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 9512,
+          "input": 1905,
+          "output": 183,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 7424
+          }
+        },
+        "cost": 0.000417822
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 12476,
+          "input": 3012,
+          "output": 248,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 9216
+          }
+        },
+        "cost": 0.000628248
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 30070,
+          "input": 17702,
+          "output": 193,
+          "reasoning": 15,
+          "cache": {
+            "write": 0,
+            "read": 12160
+          }
+        },
+        "cost": 0.00281658
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36013,
+          "input": 5736,
+          "output": 90,
+          "reasoning": 363,
+          "cache": {
+            "write": 0,
+            "read": 29824
+          }
+        },
+        "cost": 0.001221672
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36658,
+          "input": 701,
+          "output": 142,
+          "reasoning": 359,
+          "cache": {
+            "write": 0,
+            "read": 35456
+          }
+        },
+        "cost": 0.000512118
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 38435,
+          "input": 2149,
+          "output": 87,
+          "reasoning": 103,
+          "cache": {
+            "write": 0,
+            "read": 36096
+          }
+        },
+        "cost": 0.000544638
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 42210,
+          "input": 3788,
+          "output": 250,
+          "reasoning": 28,
+          "cache": {
+            "write": 0,
+            "read": 38144
+          }
+        },
+        "cost": 0.000849432
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 43942,
+          "input": 1887,
+          "output": 78,
+          "reasoning": 121,
+          "cache": {
+            "write": 0,
+            "read": 41856
+          }
+        },
+        "cost": 0.000528018
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 45172,
+          "input": 578,
+          "output": 724,
+          "reasoning": 222,
+          "cache": {
+            "write": 0,
+            "read": 43648
+          }
+        },
+        "cost": 0.000785244
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 45522,
+          "input": 1027,
+          "output": 335,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 44160
+          }
+        },
+        "cost": 0.00048753
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 46144,
+          "input": 363,
+          "output": 558,
+          "reasoning": 39,
+          "cache": {
+            "write": 0,
+            "read": 45184
+          }
+        },
+        "cost": 0.000548202
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 46221,
+          "input": 719,
+          "output": 62,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 45440
+          }
+        },
+        "cost": 0.00028137
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 46308,
+          "input": 178,
+          "output": 41,
+          "reasoning": 9,
+          "cache": {
+            "write": 0,
+            "read": 46080
+          }
+        },
+        "cost": 0.00019494
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 46435,
+          "input": 131,
+          "output": 96,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 46208
+          }
+        },
+        "cost": 0.000215874
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 10,
+      "read": 12,
+      "write": 2,
+      "edit": 2
+    },
+    "changed_files": {
+      "app/erasure.py": [
+        60,
+        0
+      ],
+      "app/main.py": [
+        10,
+        0
+      ],
+      "tests/test_erasure.py": [
+        44,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "D07-erasure",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.23s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "subject",
+        "args": [
+          "--field",
+          "email"
+        ],
+        "expect": [
+          "email"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "# Subject evidence — field `email`\n\nStatic package: code-derived locations and flows; access log entries are pointed to their tables, not queried live. Not legal advice.\n\n## 1. Where the datum lives\n\n| Field | Entity | Location | Persisted | Controls |\n| --- | --- | --- | :-: | --- |\n| `email` | customers | schema.sql:6 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` |\n\n## 2. Flows (sinks in files that reference the subject fields)\n\n- `print` — app/retention.py:41 (print)\n\n## 4. Consent and rights records\n\n- `blocked` — schema.sql:10\n- `marketing_opt_in` — schema.sql:11\n- `purpose` — schema.sql:73\n- `granted_at` — schema.sql:75\n- `withdrawn_at` — schema.sql:76\n- `purpose` — schema.sql:113\n\n## 5. Processing state\n\n## 6. Third-party recipients\n\n- `www.w3.org`\n\n| Entity | Retention | Consent | Recipients |\n| --- | --- | --- | --- |\n| customers | declarada | registrado | — |\n\n"
+      }
+    ],
+    "passed": true
+  }
+}

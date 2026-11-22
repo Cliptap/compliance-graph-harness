@@ -1,0 +1,296 @@
+{
+  "task": "D10-consent-withdrawal",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\D10-consent-withdrawal-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 97.9,
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 8,
+      "read": 7,
+      "edit": 3
+    },
+    "files_read": [
+      "schema.sql",
+      "app/main.py",
+      "app/rights.py",
+      "app/db.py",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "TASK.md"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 293667,
+      "input_tokens": 41317,
+      "output_tokens": 2062,
+      "reasoning_tokens": 2608,
+      "cache_read_tokens": 247680,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.009743,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 97.9,
+      "latency_ms": 97900,
+      "rounds": 9,
+      "tool_calls": 19,
+      "turns": 9,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 293667,
+        "input_tokens": 41317,
+        "output_tokens": 2062,
+        "reasoning_tokens": 2608,
+        "cache_read_tokens": 247680,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.009743
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 19,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "schema.sql",
+        "app/main.py",
+        "app/rights.py",
+        "app/db.py",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "TASK.md"
+      ],
+      "files_read_count": 7,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.42857142857142855
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7602,
+          "input": 5638,
+          "output": 165,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000954276
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 9715,
+          "input": 1897,
+          "output": 385,
+          "reasoning": 9,
+          "cache": {
+            "write": 0,
+            "read": 7424
+          }
+        },
+        "cost": 0.000543222
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 32035,
+          "input": 22462,
+          "output": 137,
+          "reasoning": 220,
+          "cache": {
+            "write": 0,
+            "read": 9216
+          }
+        },
+        "cost": 0.003611148
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 37816,
+          "input": 4857,
+          "output": 153,
+          "reasoning": 1190,
+          "cache": {
+            "write": 0,
+            "read": 31616
+          }
+        },
+        "cost": 0.001629198
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 40362,
+          "input": 2659,
+          "output": 662,
+          "reasoning": 689,
+          "cache": {
+            "write": 0,
+            "read": 36352
+          }
+        },
+        "cost": 0.001318506
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 40490,
+          "input": 1486,
+          "output": 62,
+          "reasoning": 30,
+          "cache": {
+            "write": 0,
+            "read": 38912
+          }
+        },
+        "cost": 0.000394836
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 40956,
+          "input": 206,
+          "output": 337,
+          "reasoning": 93,
+          "cache": {
+            "write": 0,
+            "read": 40320
+          }
+        },
+        "cost": 0.00040986
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 41735,
+          "input": 1190,
+          "output": 54,
+          "reasoning": 43,
+          "cache": {
+            "write": 0,
+            "read": 40448
+          }
+        },
+        "cost": 0.000358044
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 42956,
+          "input": 922,
+          "output": 107,
+          "reasoning": 327,
+          "cache": {
+            "write": 0,
+            "read": 41600
+          }
+        },
+        "cost": 0.0005235
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 8,
+      "read": 7,
+      "edit": 3
+    },
+    "changed_files": {
+      "app/db.py": [
+        3,
+        0
+      ],
+      "app/main.py": [
+        15,
+        0
+      ],
+      "schema.sql": [
+        1,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "D10-consent-withdrawal",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.23s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": null
+  },
+  "evidence": {
+    "checks": [
+      {
+        "command": "subject",
+        "args": [
+          "--field",
+          "email"
+        ],
+        "expect": [
+          "withdrawn_at"
+        ],
+        "expect_pass": true,
+        "passed": true,
+        "missing": [],
+        "output": "# Subject evidence — field `email`\n\nStatic package: code-derived locations and flows; access log entries are pointed to their tables, not queried live. Not legal advice.\n\n## 1. Where the datum lives\n\n| Field | Entity | Location | Persisted | Controls |\n| --- | --- | --- | :-: | --- |\n| `email` | customers | schema.sql:6 | yes | `CORE-CHECK-002`, `CORE-CHECK-005`, `CORE-CHECK-006`, `CORE-CHECK-007`, `CORE-CHECK-010`, `CORE-CHECK-011`, `CORE-CHECK-013`, `ECOM-CHECK-001`, `ECOM-CHECK-005`, `v2.admin_exposure`, `v2.billing_retention`, `v2.customer_hard_delete`, `v2.log_pii` |\n\n## 2. Flows (sinks in files that reference the subject fields)\n\n- `print` — app/retention.py:41 (print)\n\n## 4. Consent and rights records\n\n- `blocked` — schema.sql:10\n- `marketing_opt_in` — schema.sql:11\n- `withdrawn_at` — schema.sql:12\n- `purpose` — schema.sql:74\n- `granted_at` — schema.sql:76\n- `withdrawn_at` — schema.sql:77\n- `purpose` — schema.sql:114\n\n## 5. Processing state\n\n## 6. Third-party recipients\n\n- `www.w3.org`\n\n| Entity | Retention | Consent | Recipients |\n| --- | --- | --- | --- |\n| customers | declarada | registrado | — |\n\n"
+      }
+    ],
+    "passed": true
+  }
+}

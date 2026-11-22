@@ -1,0 +1,101 @@
+﻿diff --git a/experiments/supermercado/app/db.py b/experiments/supermercado/app/db.py
+index 0fe9e75..66d13bf 100644
+--- a/experiments/supermercado/app/db.py
++++ b/experiments/supermercado/app/db.py
+@@ -168,6 +168,15 @@ def init_db(db_path: Path | str) -> None:
+             conn.execute("ALTER TABLE products ADD COLUMN old_price_clp INTEGER")
+         if "description" not in columns:
+             conn.execute("ALTER TABLE products ADD COLUMN description TEXT NOT NULL DEFAULT ''")
++        customer_columns = {row["name"] for row in conn.execute("PRAGMA table_info(customers)")}
++        for column, definition in (
++            ("birth_date", "TEXT"),
++            ("consent_granted_at", "TEXT"),
++            ("consent_policy_version", "TEXT"),
++            ("withdrawn_at", "TEXT"),
++        ):
++            if column not in customer_columns:
++                conn.execute(f"ALTER TABLE customers ADD COLUMN {column} {definition}")
+         seed_products(conn)
+ 
+ 
+diff --git a/experiments/supermercado/app/main.py b/experiments/supermercado/app/main.py
+index a8a9fd6..f6d7188 100644
+--- a/experiments/supermercado/app/main.py
++++ b/experiments/supermercado/app/main.py
+@@ -43,7 +43,7 @@ RIGHT_TYPES = ("access", "rectification", "erasure", "opposition", "portability"
+ PICKUP_STORES = ("Sucursal Centro", "Sucursal Providencia", "Sucursal ├æu├▒oa")
+ SECRET_DEFAULT = "dev-only-secret-change-me"
+ PER_PAGE = 24
+-ASSET_VERSION = "5"
++ASSET_VERSION = "8"
+ PHOTOS_PATH = BASE_DIR / "static" / "photos" / "photos.json"
+ PRODUCT_PHOTOS_PATH = BASE_DIR / "static" / "photos" / "product_photos.json"
+ 
+@@ -409,7 +409,9 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) ->
+         phone: str = Form(""),
+         full_name: str = Form(""),
+         password: str = Form(""),
++        birth_date: str = Form(""),
+         marketing_opt_in: str | None = Form(None),
++        marketing_consent: str | None = Form(None),
+     ):
+         normalized = normalize_rut(rut)
+         errors = []
+@@ -426,10 +428,14 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) ->
+         try:
+             with conn() as connection:
+                 cursor = connection.execute(
+-                    "INSERT INTO customers (rut, email, phone, full_name, password_hash, created_at, updated_at) "
+-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
++                    "INSERT INTO customers (rut, email, phone, full_name, birth_date, password_hash, "
++                    "created_at, updated_at, marketing_opt_in, consent_granted_at, consent_policy_version) "
++                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     (normalized, _email_norm(email), phone.strip() or None, full_name.strip() or None,
+-                     hash_password(password), timestamp, timestamp),
++                     birth_date.strip() or None, hash_password(password), timestamp, timestamp,
++                     1 if (marketing_opt_in or marketing_consent) else 0,
++                     timestamp if (marketing_opt_in or marketing_consent) else None,
++                     "1.0" if (marketing_opt_in or marketing_consent) else None),
+                 )
+                 customer_id = cursor.lastrowid
+                 if marketing_opt_in:
+@@ -726,6 +732,21 @@ def create_app(db_path: Path | str | None = None, secret: str | None = None) ->
+                                (db.now_iso(), customer["id"]))
+         return RedirectResponse("/consent/marketing", status_code=303)
+ 
++    @app.post("/account/consent/withdraw")
++    def account_consent_withdraw(request: Request):
++        customer = require_customer(request)
++        timestamp = db.now_iso()
++        with conn() as connection:
++            connection.execute(
++                "UPDATE consents SET withdrawn_at = ? WHERE customer_id = ? AND withdrawn_at IS NULL",
++                (timestamp, customer["id"]),
++            )
++            connection.execute(
++                "UPDATE customers SET withdrawn_at = ?, marketing_opt_in = 0, updated_at = ? WHERE id = ?",
++                (timestamp, timestamp, customer["id"]),
++            )
++        return JSONResponse({"withdrawn_at": timestamp})
++
+     @app.get("/rights", response_class=HTMLResponse)
+     def rights_page(request: Request):
+         customer = require_customer(request)
+diff --git a/experiments/supermercado/schema.sql b/experiments/supermercado/schema.sql
+index 3ce1c7f..3d7d671 100644
+--- a/experiments/supermercado/schema.sql
++++ b/experiments/supermercado/schema.sql
+@@ -6,9 +6,13 @@ CREATE TABLE IF NOT EXISTS customers (
+     email TEXT NOT NULL UNIQUE,
+     phone TEXT,
+     full_name TEXT,
++    birth_date TEXT,
+     password_hash TEXT NOT NULL,
+     blocked INTEGER NOT NULL DEFAULT 0,
+     marketing_opt_in INTEGER NOT NULL DEFAULT 0,
++    consent_granted_at TEXT,
++    consent_policy_version TEXT,
++    withdrawn_at TEXT,
+     retention_days INTEGER NOT NULL DEFAULT 730,
+     created_at TEXT NOT NULL,
+     updated_at TEXT NOT NULL

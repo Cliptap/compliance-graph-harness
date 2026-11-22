@@ -1,0 +1,217 @@
+{
+  "task": "T35-session-token-logs",
+  "arm": "harness_compliance",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T35-session-token-logs-harness_compliance",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 40.48,
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 3,
+      "read": 6
+    },
+    "files_read": [
+      "TASK.md",
+      "compliance_check.py",
+      ".agents/skills/compliance-dev/SKILL.md",
+      "app/security.py",
+      ".harness/packs/cl-ley-21719.json",
+      "app/main.py"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 144861,
+      "input_tokens": 29698,
+      "output_tokens": 1047,
+      "reasoning_tokens": 1860,
+      "cache_read_tokens": 112256,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.006536,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 40.48,
+      "latency_ms": 40480,
+      "rounds": 6,
+      "tool_calls": 10,
+      "turns": 6,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 144861,
+        "input_tokens": 29698,
+        "output_tokens": 1047,
+        "reasoning_tokens": 1860,
+        "cache_read_tokens": 112256,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.006536
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 0,
+      "lines_added": 0,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "compliance_check.py",
+        ".agents/skills/compliance-dev/SKILL.md",
+        "app/security.py",
+        ".harness/packs/cl-ley-21719.json",
+        "app/main.py"
+      ],
+      "files_read_count": 6,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.16666666666666666
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 9346,
+          "input": 96,
+          "output": 83,
+          "reasoning": 79,
+          "cache": {
+            "write": 0,
+            "read": 9088
+          }
+        },
+        "cost": 0.000138864
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 12630,
+          "input": 3241,
+          "output": 276,
+          "reasoning": 25,
+          "cache": {
+            "write": 0,
+            "read": 9088
+          }
+        },
+        "cost": 0.000694014
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 15964,
+          "input": 3520,
+          "output": 136,
+          "reasoning": 20,
+          "cache": {
+            "write": 0,
+            "read": 12288
+          }
+        },
+        "cost": 0.000658464
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 32259,
+          "input": 16269,
+          "output": 58,
+          "reasoning": 188,
+          "cache": {
+            "write": 0,
+            "read": 15744
+          }
+        },
+        "cost": 0.002635182
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 34180,
+          "input": 2077,
+          "output": 91,
+          "reasoning": 12,
+          "cache": {
+            "write": 0,
+            "read": 32000
+          }
+        },
+        "cost": 0.00046935
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 40482,
+          "input": 4495,
+          "output": 403,
+          "reasoning": 1536,
+          "cache": {
+            "write": 0,
+            "read": 34048
+          }
+        },
+        "cost": 0.001939794
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 3,
+      "read": 6
+    },
+    "changed_files": {}
+  },
+  "hidden_and_oracle": {
+    "task": "T35-session-token-logs",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.26s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.log-sensitive"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  }
+}

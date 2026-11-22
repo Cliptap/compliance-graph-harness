@@ -1,0 +1,356 @@
+{
+  "task": "T03-order-tracking",
+  "arm": "harness",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T03-order-tracking-harness",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 73.67,
+    "tool_calls_by_name": {
+      "bash": 16,
+      "read": 10,
+      "edit": 4,
+      "write": 1
+    },
+    "files_read": [
+      "TASK.md",
+      "README.md",
+      "schema.sql",
+      "tests/conftest.py",
+      "app/main.py",
+      "app/db.py",
+      "app/templates/order.html",
+      "app/templates/orders.html",
+      "tests/test_app.py"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 507317,
+      "input_tokens": 55094,
+      "output_tokens": 3602,
+      "reasoning_tokens": 1645,
+      "cache_read_tokens": 446976,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.012753,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 73.67,
+      "latency_ms": 73670,
+      "rounds": 14,
+      "tool_calls": 31,
+      "turns": 14,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 507317,
+        "input_tokens": 55094,
+        "output_tokens": 3602,
+        "reasoning_tokens": 1645,
+        "cache_read_tokens": 446976,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.012753
+    },
+    "quality": {
+      "tests": {
+        "passed": 28,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 3,
+      "lines_added": 77,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "README.md",
+        "schema.sql",
+        "tests/conftest.py",
+        "app/main.py",
+        "app/db.py",
+        "app/templates/order.html",
+        "app/templates/orders.html",
+        "tests/test_app.py"
+      ],
+      "files_read_count": 9,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.3333333333333333
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 8651,
+          "input": 8542,
+          "output": 102,
+          "reasoning": 7,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "cost": 0.0013467
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 11688,
+          "input": 3098,
+          "output": 248,
+          "reasoning": 22,
+          "cache": {
+            "write": 0,
+            "read": 8320
+          }
+        },
+        "cost": 0.00065166
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 14973,
+          "input": 3535,
+          "output": 157,
+          "reasoning": 17,
+          "cache": {
+            "write": 0,
+            "read": 11264
+          }
+        },
+        "cost": 0.000668442
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 17022,
+          "input": 2158,
+          "output": 255,
+          "reasoning": 17,
+          "cache": {
+            "write": 0,
+            "read": 14592
+          }
+        },
+        "cost": 0.000530676
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 28335,
+          "input": 11614,
+          "output": 196,
+          "reasoning": 13,
+          "cache": {
+            "write": 0,
+            "read": 16512
+          }
+        },
+        "cost": 0.001917036
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 34245,
+          "input": 5704,
+          "output": 204,
+          "reasoning": 433,
+          "cache": {
+            "write": 0,
+            "read": 27904
+          }
+        },
+        "cost": 0.001321512
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 39562,
+          "input": 5338,
+          "output": 163,
+          "reasoning": 653,
+          "cache": {
+            "write": 0,
+            "read": 33408
+          }
+        },
+        "cost": 0.001390524
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 44396,
+          "input": 5600,
+          "output": 184,
+          "reasoning": 84,
+          "cache": {
+            "write": 0,
+            "read": 38528
+          }
+        },
+        "cost": 0.001116384
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 48126,
+          "input": 3878,
+          "output": 273,
+          "reasoning": 71,
+          "cache": {
+            "write": 0,
+            "read": 43904
+          }
+        },
+        "cost": 0.000919812
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 51258,
+          "input": 2486,
+          "output": 865,
+          "reasoning": 291,
+          "cache": {
+            "write": 0,
+            "read": 47616
+          }
+        },
+        "cost": 0.001209348
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 52097,
+          "input": 1375,
+          "output": 784,
+          "reasoning": 18,
+          "cache": {
+            "write": 0,
+            "read": 49920
+          }
+        },
+        "cost": 0.00083721
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 52193,
+          "input": 1050,
+          "output": 68,
+          "reasoning": 3,
+          "cache": {
+            "write": 0,
+            "read": 51072
+          }
+        },
+        "cost": 0.000353316
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 52296,
+          "input": 262,
+          "output": 50,
+          "reasoning": 16,
+          "cache": {
+            "write": 0,
+            "read": 51968
+          }
+        },
+        "cost": 0.000234804
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 52475,
+          "input": 454,
+          "output": 53,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 51968
+          }
+        },
+        "cost": 0.000255804
+      }
+    ],
+    "tool_calls_by_name": {
+      "bash": 16,
+      "read": 10,
+      "edit": 4,
+      "write": 1
+    },
+    "changed_files": {
+      "app/main.py": [
+        22,
+        0
+      ],
+      "app/templates/tracking.html": [
+        16,
+        0
+      ],
+      "tests/test_app.py": [
+        39,
+        1
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "T03-order-tracking",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.37s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [],
+    "expected_control": "CORE-CHECK-003"
+  }
+}
