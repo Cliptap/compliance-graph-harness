@@ -1,109 +1,154 @@
 # Product photo credits
 
-Photos from Wikimedia Commons, used under the license shown for each file.
+Las imágenes de producto de este directorio se usaron para un **test interno no comercial**.
+Parte del set original provino de Wikimedia Commons; las imágenes reemplazadas se obtuvieron
+mediante búsqueda web y se recortaron a 640×400 para el contenedor de tarjeta.
 
-| Product | File | Title | Author | License | Source |
-|---|---|---|---|---|---|
-| Bebida Cola Zero 1.5 L | products/bebida-cola-zero-1-5-l.jpg | Bec Cola @ Mâche @ Montreal (30308793542).jpg | Guilhem Vellut from Annecy, France | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Bec_Cola_@_M%C3%A2che_@_Montreal_(30308793542).jpg) |
-| Palta Hass Chilena | products/palta-hass-chilena.jpg | Avocado-in-bowl.jpg | Kjokkenutstyr | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Avocado-in-bowl.jpg) |
-| Pan Ciabatta Granel | products/pan-ciabatta-granel.jpg | Baguette and Ciabatta (4202803060).jpg | Arnold Gatilao from Oakland, CA, USA | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baguette_and_Ciabatta_(4202803060).jpg) |
-| Arroz Grado 1 1 kg | products/arroz-grado-1-1-kg.jpg | Bowl of white rice 01.jpg | Douglas Perkins | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Bowl_of_white_rice_01.jpg) |
-| Aceite Vegetal 1 L | products/aceite-vegetal-1-l.jpg | 2022-05-30 21 06 43 A bottle of Wesson vegetable oil in the Mountainville section of Ewing Township, Mercer County, New Jersey.jpg | Famartin | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:2022-05-30_21_06_43_A_bottle_of_Wesson_vegetable_oil_in_the_Mountainville_section_of_Ewing_Township,_Mercer_County,_New_Jersey.jpg) |
-| Fideos Spaghetti 500 g | products/fideos-spaghetti-500-g.jpg | (Pasta) by David Adam Kess (pic.2).jpg | David Adam Kess | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:(Pasta)_by_David_Adam_Kess_(pic.2).jpg) |
-| Azúcar 1 kg | products/azucar-1-kg.jpg | Italcaffè Sugar caddy.jpg | ItzANormalFioko | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Italcaff%C3%A8_Sugar_caddy.jpg) |
-| Café Molido 250 g | products/cafe-molido-250-g.jpg | Coarsely grounded coffee beans in white bowl.png | Alorin | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Coarsely_grounded_coffee_beans_in_white_bowl.png) |
-| Yogur Natural 1 L | products/yogur-natural-1-l.jpg | Iraqi Sheep Yogurt-Mosul.jpg | Abdulsalam Al Dabbagh | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Iraqi_Sheep_Yogurt-Mosul.jpg) |
-| Mantequilla 250 g | products/mantequilla-250-g.jpg | 2022-06-03 Butter and margarine for sale in New Zealand supermarket.jpg | Maksym Kozlenko | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:2022-06-03_Butter_and_margarine_for_sale_in_New_Zealand_supermarket.jpg) |
-| Pan Marraqueta 1 kg | products/pan-marraqueta-1-kg.jpg | Bread-rolls.jpg | Kerstin Riemer | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Bread-rolls.jpg) |
-| Hallulla 1 kg | products/hallulla-1-kg.jpg | Flatbread on counter.jpg | Shisma | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Flatbread_on_counter.jpg) |
-| Bebida Naranja 1.5 L | products/bebida-naranja-1-5-l.jpg | Arctic Ocean Orange Soda in Beijing (20200424105449).jpg | N509FZ | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Arctic_Ocean_Orange_Soda_in_Beijing_(20200424105449).jpg) |
-| Agua Mineral 1.5 L | products/agua-mineral-1-5-l.jpg | Bottled Drinks Donation to LVMPD 3.jpg | Noah Wulf | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Bottled_Drinks_Donation_to_LVMPD_3.jpg) |
-| Cerveza Lager 6 un | products/cerveza-lager-6-un.jpg | Angkor beer bottle.jpg | Dan arndt | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Angkor_beer_bottle.jpg) |
-| Detergente 3 L | products/detergente-3-l.jpg | Detergent - Persil Megaperls 01.jpg | Kritzolina | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Detergent_-_Persil_Megaperls_01.jpg) |
-| Papel Higiénico 12 un | products/papel-higienico-12-un.jpg | Drop - Toilet paper shôsetsu - 4135750176.jpg | Daniel Rubio | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Drop_-_Toilet_paper_sh%C3%B4setsu_-_4135750176.jpg) |
-| Lavaloza 750 ml | products/lavaloza-750-ml.jpg | Afwasmiddel.jpg | M.Minderhoud | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) | [Commons](https://commons.wikimedia.org/wiki/File:Afwasmiddel.jpg) |
-| Limpiador Multiuso 1 L | products/limpiador-multiuso-1-l.jpg | Person using a spray bottle and cleaning cloth while wearing yellow gloves in a bright indoor space.jpg | Shixart1985 | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Person_using_a_spray_bottle_and_cleaning_cloth_while_wearing_yellow_gloves_in_a_bright_indoor_space.jpg) |
-| Shampoo 750 ml | products/shampoo-750-ml.jpg | A basic of shampoo.jpg | Knites | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:A_basic_of_shampoo.jpg) |
-| Pasta Dental 90 g | products/pasta-dental-90-g.jpg | Charcoal Toothpaste.jpg | NotTheDefault | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Charcoal_Toothpaste.jpg) |
-| Desodorante 150 ml | products/desodorante-150-ml.jpg | 20-06-18-Deodorants RRK6884.jpg | Ralf Roletschek | [CC BY-SA 1.0 fi](https://creativecommons.org/licenses/by-sa/1.0/fi/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:20-06-18-Deodorants_RRK6884.jpg) |
-| Carne Molida 1 kg | products/carne-molida-1-kg.jpg | 2018-04-22 Minced beef meat.jpg | Maksym Kozlenko | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:2018-04-22_Minced_beef_meat.jpg) |
-| Pechuga de Pollo 1 kg | products/pechuga-de-pollo-1-kg.jpg | 020230311 baked chicken breast.jpg | Silar | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:020230311_baked_chicken_breast.jpg) |
-| Salchichas 500 g | products/salchichas-500-g.jpg | 02021 0719 Vilnius sausages, Silesia.jpg | Silar | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:02021_0719_Vilnius_sausages,_Silesia.jpg) |
-| Jamón 200 g | products/jamon-200-g.jpg | HAM russian.jpg | Pannet | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:HAM_russian.jpg) |
-| Papa Malla 2 kg | products/papa-malla-2-kg.jpg | Potato tubers in pail.jpg | Ruslan V. Albitsky aka pauk | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Potato_tubers_in_pail.jpg) |
-| Papas fritas congeladas | products/papas-fritas-congeladas.jpg | Frozen French Fries (09-04-2022).jpg | PaulGorduiz106 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Frozen_French_Fries_(09-04-2022).jpg) |
-| Helado de vainilla | products/helado-de-vainilla.jpg | Apple cake with vanilla ice cream 1.jpg | W.carter | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Apple_cake_with_vanilla_ice_cream_1.jpg) |
-| Pizza congelada | products/pizza-congelada.jpg | 2019-05-12 17 59 52 A Celeste Deluxe Pizza for one after heating in a microwave in the Franklin Farm section of Oak Hill, Fairfax County, Virginia.jpg | Famartin | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:2019-05-12_17_59_52_A_Celeste_Deluxe_Pizza_for_one_after_heating_in_a_microwave_in_the_Franklin_Farm_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg) |
-| Hamburguesas de vacuno | products/hamburguesas-de-vacuno.jpg | Beef Burger, Inglewood Hotel, Western Australia, 2025 (01).jpg | Bahnfrend | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Beef_Burger,_Inglewood_Hotel,_Western_Australia,_2025_(01).jpg) |
-| Pollo congelado | products/pollo-congelado.jpg | Chicken breasts and wing quarters.jpg | Harald the Bard | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Chicken_breasts_and_wing_quarters.jpg) |
-| Empanadas de pino | products/empanadas-de-pino.jpg | Beef Empanada - Malo Argentinian Empanadas, Brighton 2023-11-25.jpg | Andy Li | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Beef_Empanada_-_Malo_Argentinian_Empanadas,_Brighton_2023-11-25.jpg) |
-| Verduras para saltear | products/verduras-para-saltear.jpg | Jamaican stir fry veg.jpg | Xaymacan | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Jamaican_stir_fry_veg.jpg) |
-| Postre de chocolate | products/postre-de-chocolate.jpg | Chocolate, Chocolate, Chocolate - Bern's, Tampa Florida.jpg | Joe Brockmeier | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Chocolate,_Chocolate,_Chocolate_-_Bern%27s,_Tampa_Florida.jpg) |
-| Frutos secos | products/frutos-secos.jpg | 20130126 Mixed nuts (cropped).jpg | TonyTheTiger | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:20130126_Mixed_nuts_(cropped).jpg) |
-| Chocolate | products/chocolate.jpg | Green and Black's dark chocolate bar 2.jpg | Mx. Granger | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Green_and_Black%27s_dark_chocolate_bar_2.jpg) |
-| Cabritas | products/cabritas.jpg | LesserEvil Popcorn 2006.jpg | stu_spivack | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:LesserEvil_Popcorn_2006.jpg) |
-| Barra de cereal | products/barra-de-cereal.jpg | CNC milled granola bar? (39195161512).jpg | zombieite | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:CNC_milled_granola_bar%3F_(39195161512).jpg) |
-| Maní salado | products/mani-salado.jpg | Boiled Salted Peanuts on sale in Hughenden, Queensland, Australia.jpg | Ridiculopathy | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Boiled_Salted_Peanuts_on_sale_in_Hughenden,_Queensland,_Australia.jpg) |
-| Galletas de avena | products/galletas-de-avena.jpg | 4 oatmeal cookie shots and cookies stacked on plate (28414254223).jpg | Personal Creations | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:4_oatmeal_cookie_shots_and_cookies_stacked_on_plate_(28414254223).jpg) |
-| Papilla de frutas | products/papilla-de-frutas.jpg | Storebought baby food - fruit and vegetable puree in glass and pouch.jpg | MAKY.OREL | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Storebought_baby_food_-_fruit_and_vegetable_puree_in_glass_and_pouch.jpg) |
-| Toallitas húmedas | products/toallitas-humedas.jpg | Baby wipes.jpg | Headlock0225 | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baby_wipes.jpg) |
-| Cereal infantil | products/cereal-infantil.jpg | Baby Cereal (50841931291).jpg | ajay_suresh | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baby_Cereal_(50841931291).jpg) |
-| Shampoo infantil | products/shampoo-infantil.jpg | A bottle of Aveeno Baby Wash & Shampoo 01.jpg | Tbatb | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:A_bottle_of_Aveeno_Baby_Wash_%26_Shampoo_01.jpg) |
-| Crema para bebé | products/crema-para-bebe.jpg | Baby Lotions, Soaps, and Diaper Creams at Kroger.JPG | ParentingPatch | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baby_Lotions,_Soaps,_and_Diaper_Creams_at_Kroger.JPG) |
-| Alimento perro adulto | products/alimento-perro-adulto.jpg | A Beagle sitting next to dog food.jpg | Slyronit | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:A_Beagle_sitting_next_to_dog_food.jpg) |
-| Alimento gato adulto | products/alimento-gato-adulto.jpg | 2024-02-04 Callie and Holiday eat wet cat food.png | Original:  Kitten Academy | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:2024-02-04_Callie_and_Holiday_eat_wet_cat_food.png) |
-| Arena sanitaria | products/arena-sanitaria.jpg | Blue cat-shaped litter scoop or sifter - back view 01.jpg | ELTORO.VET | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Blue_cat-shaped_litter_scoop_or_sifter_-_back_view_01.jpg) |
-| Snacks perro | products/snacks-perro.jpg | Dog Food (1).jpg | Alisha Vargas | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Dog_Food_(1).jpg) |
-| Juguete mordedor | products/juguete-mordedor.jpg | Boston terrier with toy.jpg | Sendai Blog | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Boston_terrier_with_toy.jpg) |
-| Arena aglomerante | products/arena-aglomerante.jpg | Selection Clumping Cat Litter Jug (33270513293).jpg | Laurel L. Russwurm from Canada | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Selection_Clumping_Cat_Litter_Jug_(33270513293).jpg) |
-| Premios gato | products/premios-gato.jpg | 2024-02-04 Callie and Holiday eat wet cat food.png | Original:  Kitten Academy | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:2024-02-04_Callie_and_Holiday_eat_wet_cat_food.png) |
-| Bolsas de basura | products/bolsas-de-basura.jpg | A typical black bin bag from the UK 20060811.jpg | Yuyudevil | [Public domain]() | [Commons](https://commons.wikimedia.org/wiki/File:A_typical_black_bin_bag_from_the_UK_20060811.jpg) |
-| Papel aluminio | products/papel-aluminio.jpg | Aluminum foil.jpg | MrBeastRapper | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Aluminum_foil.jpg) |
-| Paño multiuso | products/pano-multiuso.jpg | Cloth, microfiber, folding step 01.JPG | Bjornwireen | [Public domain]() | [Commons](https://commons.wikimedia.org/wiki/File:Cloth,_microfiber,_folding_step_01.JPG) |
-| Ambientador | products/ambientador.jpg | Air Wick automatic air freshener-5060.jpg | Raimond Spekking | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Air_Wick_automatic_air_freshener-5060.jpg) |
-| Protector solar | products/protector-solar.jpg | Daylogic Sheer Touch SPF 30 Sunscreen - Sarah Stierch.jpg | Missvain | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Daylogic_Sheer_Touch_SPF_30_Sunscreen_-_Sarah_Stierch.jpg) |
-| Labial | products/labial.jpg | Lipstick- My top 5! - 18072840654.jpg | Vanilla and lace | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Lipstick-_My_top_5!_-_18072840654.jpg) |
-| Esmalte | products/esmalte.jpg | Base coat of nail polish.jpg | Espejop2319 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Base_coat_of_nail_polish.jpg) |
-| Loción corporal | products/locion-corporal.jpg | Banff Centre lotion and shampoo.jpg | Roland Tanglao from Vancouver, Canada | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Banff_Centre_lotion_and_shampoo.jpg) |
-| Mermelada | products/mermelada.jpg | Jam jar, Kazakhstan.jpg | Nurken | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Jam_jar,_Kazakhstan.jpg) |
-| Manjar | products/manjar.jpg | DulceDeLeche.jpg | audinou from Paris, France | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:DulceDeLeche.jpg) |
-| Cereal de maíz | products/cereal-de-maiz.jpg | Corn flakes.jpg | Gaurav Dhwaj Khadka | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Corn_flakes.jpg) |
-| Té | products/te.jpg | Chai (Tea).jpg | Gannu03 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Chai_(Tea).jpg) |
-| Café instantáneo | products/cafe-instantaneo.jpg | Close-up of a granule of Gold Blend instant coffee.jpg | AJC1 from UK | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Close-up_of_a_granule_of_Gold_Blend_instant_coffee.jpg) |
-| Azúcar rubia | products/azucar-rubia.jpg | Brown sugar.jpg | EstherDje | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Brown_sugar.jpg) |
-| Miel | products/miel.jpg | Björn's Colorado Honey Breckenridge Introduction and Honey Products.jpg | Aspensmonster | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Bj%C3%B6rn%27s_Colorado_Honey_Breckenridge_Introduction_and_Honey_Products.jpg) |
-| Lasagna | products/lasagna.jpg | 11-29-2024 Eggplant lasagna 1 (6 of 7).jpg | Wheeler Cowperthwaite | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:11-29-2024_Eggplant_lasagna_1_(6_of_7).jpg) |
-| Empanada de queso | products/empanada-de-queso.jpg | CheeseShrimpEmpanadas.JPG | AlejandroLinaresGarcia | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:CheeseShrimpEmpanadas.JPG) |
-| Ensalada César | products/ensalada-cesar.jpg | A Caesar salad.jpg | Altitonantis | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:A_Caesar_salad.jpg) |
-| Pizza margarita | products/pizza-margarita.jpg | Eq it-na pizza-margherita sep2005 sml.jpg | Valerio Capello at English Wikipedia | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) | [Commons](https://commons.wikimedia.org/wiki/File:Eq_it-na_pizza-margherita_sep2005_sml.jpg) |
-| Pastel de choclo | products/pastel-de-choclo.jpg | Pastel de Choclo (Chilean Traditional Corn Pie).jpg | Foofine | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Pastel_de_Choclo_(Chilean_Traditional_Corn_Pie).jpg) |
-| Sopa | products/sopa.jpg | Asparagus soup (spargelsuppe).jpg | Petar Milošević | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Asparagus_soup_(spargelsuppe).jpg) |
-| Arroz preparado | products/arroz-preparado.jpg | A cooler of cooked rice and meat.jpg | Akum20 | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:A_cooler_of_cooked_rice_and_meat.jpg) |
-| Pollo asado | products/pollo-asado.jpg | 020241107 Roasted Chicken.jpg | Silar | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:020241107_Roasted_Chicken.jpg) |
-| Tarta de verduras | products/tarta-de-verduras.jpg | Vegetable Tart (4366625703).jpg | Vegan Feast Catering | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Vegetable_Tart_(4366625703).jpg) |
-| Crema antipañalitis | products/crema-antipanalitis.jpg | Baby Lotions, Soaps, and Diaper Creams at Kroger.JPG | ParentingPatch | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baby_Lotions,_Soaps,_and_Diaper_Creams_at_Kroger.JPG) |
-| Leche fórmula | products/leche-formula.jpg | "neo-mull-soy" Baby Formula Product Can - DPLA - daaaceca128c17bcf9ac33de83617b83 (page 1).jpg | Syntex Laboratories | [Public domain]() | [Commons](https://commons.wikimedia.org/wiki/File:%22neo-mull-soy%22_Baby_Formula_Product_Can_-_DPLA_-_daaaceca128c17bcf9ac33de83617b83_(page_1).jpg) |
-| Cepillo dental bebé | products/cepillo-dental-bebe.jpg | Menzis toothbrush for babies, Oude Pekela (2019) 01.jpg | Donald Trung Quoc Don (Chữ Hán: 徵國單) - Wikimedia Commons - © CC BY-SA 4.0 International.(Want to use this image?)Original publication 📤: --Donald Trung 『徵國單』 (No Fake News 💬) (WikiProject Numismatics 💴) (Articles 📚) 19:24, 11 October 2019 (UTC) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Menzis_toothbrush_for_babies,_Oude_Pekela_(2019)_01.jpg) |
-| Babero | products/babero.jpg | Baby with bib.jpg | Nabeel Hyatt from Cambridge, United States | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baby_with_bib.jpg) |
-| Chupete | products/chupete.jpg | "Pacifier" Frank Björklund.jpg | Frank Björklund | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:%22Pacifier%22_Frank_Bj%C3%B6rklund.jpg) |
-| Vino tinto | products/vino-tinto.jpg | Cirò rosso wine and bottle 1.jpg | Bonvol | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Cir%C3%B2_rosso_wine_and_bottle_1.jpg) |
-| Cerveza artesanal | products/cerveza-artesanal.jpg | Beer Flight.jpg | Wanderstheworld | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Beer_Flight.jpg) |
-| Pisco | products/pisco.jpg | Alambique de pisco.jpg | Futuropopular | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Alambique_de_pisco.jpg) |
-| Ron | products/ron.jpg | Bottle of Captain Morgan Rum 01.jpg | Pinakpani | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Bottle_of_Captain_Morgan_Rum_01.jpg) |
-| Vodka | products/vodka.jpg | Crystal Head Vodka.jpg | Visitor7 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Crystal_Head_Vodka.jpg) |
-| Gin | products/gin.jpg | Assorted gin bottles on a store shelf.jpg | Jon Worth | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Assorted_gin_bottles_on_a_store_shelf.jpg) |
-| Whisky | products/whisky.jpg | Black & White (whisky) bottle 01.jpg | Pinakpani | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Black_%26_White_(whisky)_bottle_01.jpg) |
-| Atún en agua | products/atun-en-agua.jpg | Canned and packaged tuna on supermarket shelves.jpg | Daniel Case | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) | [Commons](https://commons.wikimedia.org/wiki/File:Canned_and_packaged_tuna_on_supermarket_shelves.jpg) |
-| Aceitunas | products/aceitunas.jpg | 02021 0735 Moroccan Olives, Silesia.jpg | Silar | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:02021_0735_Moroccan_Olives,_Silesia.jpg) |
-| Palmitos | products/palmitos.jpg | 13344-palm heart-Rio Caura.jpg | Vojtěch Zavadil | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:13344-palm_heart-Rio_Caura.jpg) |
-| Mermelada de frutilla | products/mermelada-de-frutilla.jpg | Az-Strawberry jam, making by e-citizen (moonsun1981).JPG | Moonsun1981 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Az-Strawberry_jam,_making_by_e-citizen_(moonsun1981).JPG) |
-| Salsa de tomate | products/salsa-de-tomate.jpg | Australian tomato sauce (cropped).jpg | Finbar.concaig | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Australian_tomato_sauce_(cropped).jpg) |
-| Frijoles | products/frijoles.jpg | Baked beans and canned fish at night.jpg | JIP | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Baked_beans_and_canned_fish_at_night.jpg) |
-| Lentejas | products/lentejas.jpg | 3 types of lentil.jpg | User:Justinc | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:3_types_of_lentil.jpg) |
-| Ketchup | products/ketchup.jpg | Banana Ketchup.jpg | Khayri R.R. Woulfe | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Banana_Ketchup.jpg) |
-| Salsa de soya | products/salsa-de-soya.jpg | Bowl of soy sauce, the sequel.jpg | Bodhi Peace | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Bowl_of_soy_sauce,_the_sequel.jpg) |
-| Salsa BBQ | products/salsa-bbq.jpg | Apricot BBQ sauce (43129550532).jpg | Joey Doll | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Apricot_BBQ_sauce_(43129550532).jpg) |
-| Salsa picante | products/salsa-picante.jpg | Bacchanal-sauce-Caribbean-hot-sauce-pepper.jpg | Islandwoman79 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Bacchanal-sauce-Caribbean-hot-sauce-pepper.jpg) |
-| Vinagre | products/vinagre.jpg | SpicedVinegar special.jpg | Markoolio97 | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:SpicedVinegar_special.jpg) |
-| Aliño completo | products/alino-completo.jpg | Fish seasoning.jpg | Amuzujoe | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Fish_seasoning.jpg) |
-| Chimichurri | products/chimichurri.jpg | Chimichurri2.jpg | Gveret Tered | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) | [Commons](https://commons.wikimedia.org/wiki/File:Chimichurri2.jpg) |
+| Product | File | Fuente |
+|---|---|---|
+| Aceite Vegetal 1 L | products/aceite-vegetal-1-l.jpg | Famartin |
+| Aceitunas | products/aceitunas.jpg | Silar |
+| Agua Mineral 1.5 L | products/agua-mineral-1-5-l.jpg | Noah Wulf |
+| Agua micelar | products/agua-micelar.jpg | Búsqueda web — uso de prueba |
+| Algodón | products/algodon.jpg | Búsqueda web — uso de prueba |
+| Alimento gato adulto | products/alimento-gato-adulto.jpg | Búsqueda web — uso de prueba |
+| Alimento perro adulto | products/alimento-perro-adulto.jpg | Slyronit |
+| Aliño completo | products/alino-completo.jpg | Búsqueda web — uso de prueba |
+| Ambientador | products/ambientador.jpg | Raimond Spekking |
+| Arena aglomerante | products/arena-aglomerante.jpg | Búsqueda web — uso de prueba |
+| Arena sanitaria | products/arena-sanitaria.jpg | Búsqueda web — uso de prueba |
+| Arroz Grado 1 1 kg | products/arroz-grado-1-1-kg.jpg | Búsqueda web — uso de prueba |
+| Arroz preparado | products/arroz-preparado.jpg | Akum20 |
+| Arvejas congeladas | products/arvejas-congeladas.jpg | Búsqueda web — uso de prueba |
+| Atún en agua | products/atun-en-agua.jpg | Daniel Case |
+| Avena | products/avena.jpg | Búsqueda web — uso de prueba |
+| Azúcar 1 kg | products/azucar-1-kg.jpg | Búsqueda web — uso de prueba |
+| Azúcar rubia | products/azucar-rubia.jpg | EstherDje |
+| Babero | products/babero.jpg | Nabeel Hyatt from Cambridge, United States |
+| Barra de cereal | products/barra-de-cereal.jpg | zombieite |
+| Bebida Cola Zero 1.5 L | products/bebida-cola-zero-1-5-l.jpg | Búsqueda web — uso de prueba |
+| Bebida Naranja 1.5 L | products/bebida-naranja-1-5-l.jpg | N509FZ |
+| Bolsas de basura | products/bolsas-de-basura.jpg | Yuyudevil |
+| Cabritas | products/cabritas.jpg | stu_spivack |
+| Café Molido 250 g | products/cafe-molido-250-g.jpg | Alorin |
+| Café instantáneo | products/cafe-instantaneo.jpg | Búsqueda web — uso de prueba |
+| Carne Molida 1 kg | products/carne-molida-1-kg.jpg | Maksym Kozlenko |
+| Cepillo dental bebé | products/cepillo-dental-bebe.jpg | Donald Trung Quoc Don (Chữ Hán: 徵國單) - Wikimedia Commons - © CC BY-SA 4.0 International.(Want to use this image?)Original publication 📤: --Donald Trung 『徵國單』 (No Fake News 💬) (WikiProject Numismatics 💴) (Articles 📚) 19:24, 11 October 2019 (UTC) |
+| Cepillo mascota | products/cepillo-mascota.jpg | Búsqueda web — uso de prueba |
+| Cereal de maíz | products/cereal-de-maiz.jpg | Gaurav Dhwaj Khadka |
+| Cereal infantil | products/cereal-infantil.jpg | ajay_suresh |
+| Cerveza Lager 6 un | products/cerveza-lager-6-un.jpg | Dan arndt |
+| Cerveza artesanal | products/cerveza-artesanal.jpg | Wanderstheworld |
+| Chimichurri | products/chimichurri.jpg | Gveret Tered |
+| Choclo en grano | products/choclo-en-grano.jpg | Búsqueda web — uso de prueba |
+| Chocolate | products/chocolate.jpg | Mx. Granger |
+| Chocolate en polvo | products/chocolate-en-polvo.jpg | Búsqueda web — uso de prueba |
+| Chupete | products/chupete.jpg | Frank Björklund |
+| Colonia bebé | products/colonia-bebe.jpg | Búsqueda web — uso de prueba |
+| Crema antipañalitis | products/crema-antipanalitis.jpg | Búsqueda web — uso de prueba |
+| Crema facial | products/crema-facial.jpg | Búsqueda web — uso de prueba |
+| Crema para bebé | products/crema-para-bebe.jpg | Búsqueda web — uso de prueba |
+| Cucharas de bebé | products/cucharas-de-bebe.jpg | Búsqueda web — uso de prueba |
+| Desodorante 150 ml | products/desodorante-150-ml.jpg | Ralf Roletschek |
+| Detergente 3 L | products/detergente-3-l.jpg | Búsqueda web — uso de prueba |
+| Empanada de queso | products/empanada-de-queso.jpg | AlejandroLinaresGarcia |
+| Empanadas de pino | products/empanadas-de-pino.jpg | Andy Li |
+| Ensalada César | products/ensalada-cesar.jpg | Altitonantis |
+| Escoba | products/escoba.jpg | Búsqueda web — uso de prueba |
+| Esmalte | products/esmalte.jpg | Búsqueda web — uso de prueba |
+| Espumante | products/espumante.jpg | Búsqueda web — uso de prueba |
+| Fideos Spaghetti 500 g | products/fideos-spaghetti-500-g.jpg | Búsqueda web — uso de prueba |
+| Film plástico | products/film-plastico.jpg | Búsqueda web — uso de prueba |
+| Frijoles | products/frijoles.jpg | JIP |
+| Frutos secos | products/frutos-secos.jpg | TonyTheTiger |
+| Fósforos | products/fosforos.jpg | Búsqueda web — uso de prueba |
+| Galletas de agua | products/galletas-de-agua.jpg | Búsqueda web — uso de prueba |
+| Galletas de avena | products/galletas-de-avena.jpg | Personal Creations |
+| Gin | products/gin.jpg | Jon Worth |
+| Guantes de limpieza | products/guantes-de-limpieza.jpg | Búsqueda web — uso de prueba |
+| Hallulla 1 kg | products/hallulla-1-kg.jpg | Shisma |
+| Hamburguesas de vacuno | products/hamburguesas-de-vacuno.jpg | Búsqueda web — uso de prueba |
+| Helado de vainilla | products/helado-de-vainilla.jpg | Búsqueda web — uso de prueba |
+| Huevos Color 12 un | products/huevos-color-12-un.jpg | Búsqueda web — uso de prueba |
+| Jabón facial | products/jabon-facial.jpg | Búsqueda web — uso de prueba |
+| Jabón líquido bebé | products/jabon-liquido-bebe.jpg | Búsqueda web — uso de prueba |
+| Jamón 200 g | products/jamon-200-g.jpg | Pannet |
+| Jugo infantil | products/jugo-infantil.jpg | Búsqueda web — uso de prueba |
+| Juguete mordedor | products/juguete-mordedor.jpg | Sendai Blog |
+| Ketchup | products/ketchup.jpg | Khayri R.R. Woulfe |
+| Labial | products/labial.jpg | Vanilla and lace |
+| Lasagna | products/lasagna.jpg | Wheeler Cowperthwaite |
+| Lavaloza 750 ml | products/lavaloza-750-ml.jpg | M.Minderhoud |
+| Leche Entera 1 L | products/leche-entera-1-l.jpg | Búsqueda web — uso de prueba |
+| Leche de crecimiento | products/leche-de-crecimiento.jpg | Búsqueda web — uso de prueba |
+| Leche fórmula | products/leche-formula.jpg | Syntex Laboratories |
+| Lentejas | products/lentejas.jpg | User:Justinc |
+| Limpiador Multiuso 1 L | products/limpiador-multiuso-1-l.jpg | Shixart1985 |
+| Limón Malla 1 kg | products/limon-malla-1-kg.jpg | Búsqueda web — uso de prueba |
+| Loción corporal | products/locion-corporal.jpg | Roland Tanglao from Vancouver, Canada |
+| Manjar | products/manjar.jpg | audinou from Paris, France |
+| Mantequilla 250 g | products/mantequilla-250-g.jpg | Maksym Kozlenko |
+| Maní salado | products/mani-salado.jpg | Búsqueda web — uso de prueba |
+| Mayonesa | products/mayonesa.jpg | Búsqueda web — uso de prueba |
+| Mermelada | products/mermelada.jpg | Nurken |
+| Mermelada de frutilla | products/mermelada-de-frutilla.jpg | Moonsun1981 |
+| Miel | products/miel.jpg | Aspensmonster |
+| Mostaza | products/mostaza.jpg | Búsqueda web — uso de prueba |
+| Máscara de pestañas | products/mascara-de-pestanas.jpg | Búsqueda web — uso de prueba |
+| Nachos | products/nachos.jpg | Búsqueda web — uso de prueba |
+| Palmitos | products/palmitos.jpg | Búsqueda web — uso de prueba |
+| Palta Hass Chilena | products/palta-hass-chilena.jpg | Kjokkenutstyr |
+| Pan Ciabatta Granel | products/pan-ciabatta-granel.jpg | Arnold Gatilao from Oakland, CA, USA |
+| Pan Marraqueta 1 kg | products/pan-marraqueta-1-kg.jpg | Kerstin Riemer |
+| Pan de molde | products/pan-de-molde.jpg | Búsqueda web — uso de prueba |
+| Papa Malla 2 kg | products/papa-malla-2-kg.jpg | Ruslan V. Albitsky aka pauk |
+| Papas fritas congeladas | products/papas-fritas-congeladas.jpg | PaulGorduiz106 |
+| Papel Higiénico 12 un | products/papel-higienico-12-un.jpg | Daniel Rubio |
+| Papel aluminio | products/papel-aluminio.jpg | MrBeastRapper |
+| Papilla de frutas | products/papilla-de-frutas.jpg | MAKY.OREL |
+| Pasta Dental 90 g | products/pasta-dental-90-g.jpg | NotTheDefault |
+| Pastel de choclo | products/pastel-de-choclo.jpg | Búsqueda web — uso de prueba |
+| Pañales talla M | products/panales-talla-m.jpg | Búsqueda web — uso de prueba |
+| Pañales talla P | products/panales-talla-p.jpg | Búsqueda web — uso de prueba |
+| Paño multiuso | products/pano-multiuso.jpg | Bjornwireen |
+| Pechuga de Pollo 1 kg | products/pechuga-de-pollo-1-kg.jpg | Búsqueda web — uso de prueba |
+| Pisco | products/pisco.jpg | Búsqueda web — uso de prueba |
+| Pizza congelada | products/pizza-congelada.jpg | Famartin |
+| Pizza margarita | products/pizza-margarita.jpg | Valerio Capello at English Wikipedia |
+| Plátano Extra Granel | products/platano-extra-granel.jpg | Búsqueda web — uso de prueba |
+| Pollo asado | products/pollo-asado.jpg | Silar |
+| Pollo congelado | products/pollo-congelado.jpg | Harald the Bard |
+| Postre de chocolate | products/postre-de-chocolate.jpg | Joe Brockmeier |
+| Premios gato | products/premios-gato.jpg | Búsqueda web — uso de prueba |
+| Protector solar | products/protector-solar.jpg | Missvain |
+| Queso Gauda 250 g | products/queso-gauda-250-g.jpg | Búsqueda web — uso de prueba |
+| Ramitas | products/ramitas.jpg | Búsqueda web — uso de prueba |
+| Ron | products/ron.jpg | Pinakpani |
+| Salchichas 500 g | products/salchichas-500-g.jpg | Silar |
+| Salsa BBQ | products/salsa-bbq.jpg | Joey Doll |
+| Salsa de ajo | products/salsa-de-ajo.jpg | Búsqueda web — uso de prueba |
+| Salsa de soya | products/salsa-de-soya.jpg | Bodhi Peace |
+| Salsa de tomate | products/salsa-de-tomate.jpg | Finbar.concaig |
+| Salsa picante | products/salsa-picante.jpg | Islandwoman79 |
+| Serum facial | products/serum-facial.jpg | Búsqueda web — uso de prueba |
+| Servilletas | products/servilletas.jpg | Búsqueda web — uso de prueba |
+| Shampoo 750 ml | products/shampoo-750-ml.jpg | Búsqueda web — uso de prueba |
+| Shampoo infantil | products/shampoo-infantil.jpg | Tbatb |
+| Shampoo mascota | products/shampoo-mascota.jpg | Búsqueda web — uso de prueba |
+| Sidra | products/sidra.jpg | Búsqueda web — uso de prueba |
+| Snacks perro | products/snacks-perro.jpg | Alisha Vargas |
+| Sopa | products/sopa.jpg | Petar Milošević |
+| Sushi | products/sushi.jpg | Búsqueda web — uso de prueba |
+| Tarta de verduras | products/tarta-de-verduras.jpg | Vegan Feast Catering |
+| Toallitas húmedas | products/toallitas-humedas.jpg | Headlock0225 |
+| Toallitas sin perfume | products/toallitas-sin-perfume.jpg | Búsqueda web — uso de prueba |
+| Tomate pelado | products/tomate-pelado.jpg | Búsqueda web — uso de prueba |
+| Té | products/te.jpg | Gannu03 |
+| Velas | products/velas.jpg | Búsqueda web — uso de prueba |
+| Verduras para saltear | products/verduras-para-saltear.jpg | Xaymacan |
+| Vinagre | products/vinagre.jpg | Markoolio97 |
+| Vino blanco | products/vino-blanco.jpg | Búsqueda web — uso de prueba |
+| Vino tinto | products/vino-tinto.jpg | Bonvol |
+| Vodka | products/vodka.jpg | Búsqueda web — uso de prueba |
+| Whisky | products/whisky.jpg | Pinakpani |
+| Yogur Natural 1 L | products/yogur-natural-1-l.jpg | Búsqueda web — uso de prueba |
