@@ -1009,3 +1009,132 @@ def test_masked_pydantic_model_is_not_flagged():
             "    )\n")
     assert "v2.admin_exposure" not in ids(code, "app/admin/presenters.py")
     assert "v2.api_key" not in ids(code, "app/admin/presenters.py")
+
+
+def test_cache_key_written_and_read_with_different_expressions():
+    code = ("from fastapi import APIRouter\n"
+            "from app.cache import cache\n\n"
+            "router = APIRouter()\n\n\n"
+            "def refresh(tenant_id):\n"
+            "    cache.set(f'admin:directory:{tenant_id}', [{'email': u.email}], ttl=300)\n\n\n"
+            "@router.get('/admin/tenants/{tenant_id}/directory')\n"
+            "def directory(tenant_id: int):\n"
+            "    key = 'admin:directory:' + str(tenant_id)\n"
+            "    rows = cache.get(key)\n"
+            "    return {'users': rows}\n")
+    assert "v2.admin_exposure" in ids(code, "app/api/admin_directory.py")
+
+
+def test_model_inherits_sensitive_field_from_base():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter()\n\n\n"
+            "class BaseUserCard(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n\n\n"
+            "class AdminUserCard(BaseUserCard):\n"
+            "    status: str = 'active'\n\n\n"
+            "@router.get('/admin/users', response_model=list[AdminUserCard])\n"
+            "def admin_users():\n"
+            "    users = User.objects.all()\n"
+            "    return [AdminUserCard(id=u.id, email=u.email) for u in users]\n")
+    assert "v2.admin_exposure" in ids(code, "app/api/admin_users.py")
+
+
+def test_envelope_model_annotated_with_credential_model():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter()\n\n\n"
+            "class BaseAccountRecord(BaseModel):\n"
+            "    id: int\n"
+            "    password_hash: str\n\n\n"
+            "class AccountRecord(BaseAccountRecord):\n"
+            "    last_login: str | None = None\n\n\n"
+            "class ProfileEnvelope(BaseModel):\n"
+            "    account: AccountRecord\n\n\n"
+            "@router.get('/account/{user_id}', response_model=ProfileEnvelope)\n"
+            "def get_account(user_id: int):\n"
+            "    user = User.objects.get(pk=user_id)\n"
+            "    record = AccountRecord(id=user.id, password_hash=user.password_hash)\n"
+            "    return ProfileEnvelope(account=record)\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_masked_serialized_dict_subscript_is_clean():
+    code = ("import logging\n"
+            "from dataclasses import dataclass\n\n"
+            "logger = logging.getLogger(__name__)\n\n\n"
+            "@dataclass\n"
+            "class ContactRecord:\n"
+            "    id: int\n"
+            "    email: str\n\n"
+            "    def to_dict(self) -> dict:\n"
+            "        local, _, domain = self.email.partition('@')\n"
+            "        return {'id': self.id, 'email': f'{local[:1]}***@{domain}'}\n\n\n"
+            "def log_contact(contact: ContactRecord) -> None:\n"
+            "    safe = contact.to_dict()\n"
+            "    logger.info('contact %s', safe['email'])\n")
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_purge_helper_with_keyword_cutoff_is_flagged():
+    code = ("GRACE_DAYS = 400\n\n\n"
+            "def nightly_cleanup(tenant_id):\n"
+            "    with session_scope() as session:\n"
+            "        removed = delete_orders_older_than(session, tenant_id, days=GRACE_DAYS)\n"
+            "        session.commit()\n"
+            "    return removed\n")
+    assert "v2.billing_retention" in ids(code, "app/tasks/billing_cleanup.py")
+
+
+def test_cached_retention_window_gates_the_delete():
+    clean = ("from datetime import datetime, timedelta\n"
+             "from sqlalchemy import delete\n\n"
+             "TAX_RETENTION_DAYS = 2190\n\n\n"
+             "def refresh_window(tenant_id):\n"
+             "    cache.set(f'tax:window:{tenant_id}', {'days': TAX_RETENTION_DAYS}, ttl=600)\n\n\n"
+             "def purge(tenant_id):\n"
+             "    window = cache.get('tax:window:' + str(tenant_id))\n"
+             "    cutoff = datetime.utcnow() - timedelta(days=window['days'])\n"
+             "    session.execute(delete(Invoice).where(Invoice.issued_at < cutoff))\n")
+    assert "v2.billing_retention" not in ids(clean)
+    short = clean.replace("TAX_RETENTION_DAYS = 2190", "TAX_RETENTION_DAYS = 365")
+    assert "v2.billing_retention" in ids(short)
+
+
+def test_hard_delete_helper_with_table_name_and_no_guard_is_flagged():
+    code = ("from celery import shared_task\n\n\n"
+            "@shared_task\n"
+            "def erase_customer(customer_id: int) -> dict:\n"
+            "    with session_scope() as session:\n"
+            "        hard_delete_customer(session, customer_id)\n"
+            "        session.commit()\n"
+            "    return {'customer_id': customer_id, 'erased': True}\n")
+    assert "v2.customer_hard_delete" in ids(code, "app/tasks/erase_customer.py")
+
+
+def test_instance_delete_through_mixin_resolves_the_model():
+    code = ("from app.db import session_scope, BaseCustomer\n\n\n"
+            "class PurgeMixin:\n"
+            "    def hard_delete(self, session) -> None:\n"
+            "        session.delete(self)\n\n\n"
+            "class ArchivedCustomer(BaseCustomer, PurgeMixin):\n"
+            "    archived_at = None\n\n\n"
+            "def purge_archived(customer_id: int) -> str:\n"
+            "    with session_scope() as session:\n"
+            "        record = session.get(ArchivedCustomer, customer_id)\n"
+            "        record.hard_delete(session)\n"
+            "    return 'deleted'\n")
+    assert "v2.customer_hard_delete" in ids(code)
+
+
+def test_tablename_inheritance_maps_subclass_to_policy_table():
+    code = ("from sqlalchemy import delete\n\n\n"
+            "class Invoice(BaseInvoice):\n"
+            "    __tablename__ = 'invoices'\n\n\n"
+            "class CreditNote(Invoice):\n"
+            "    __tablename__ = 'credit_notes'\n\n\n"
+            "def purge_credit_notes(cutoff):\n"
+            "    session.execute(delete(CreditNote).where(CreditNote.issued_at < cutoff))\n"
+            "    session.commit()\n")
+    assert "v2.billing_retention" in ids(code)

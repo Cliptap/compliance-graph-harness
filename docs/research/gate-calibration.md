@@ -836,6 +836,65 @@ Regression state: sealed round-15 set **42/42**, curated 22/22, regression corpu
 (186 + 8, including `cred_public_columns`), full suite **515 passed**. The 35/42 remains the
 pre-fix measurement; a round 16 is required for the post-fix number.
 
+## Blind round 16 (sealed, post-taint)
+
+A sixteenth fresh author wrote 42 modules around indirect storage keys, cross-module producers and
+model inheritance. The file was sealed before the run (`cases_blind_round16.json.sha256`,
+`a0b17984ed45d9d5c4f28aa62478aa6792aad2358c4208ff2d329961ca7d35a8`) and run once.
+
+Result: **28/42**. Aggregate: precision **0.733** [0.480, 0.891], recall **0.524** [0.324, 0.717],
+accuracy 0.667 [0.516, 0.790].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 0 | 1 | 3 | 2 | 0.00 | 0.00 |
+| `v2.api_key` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.billing_retention` | 1 | 1 | 2 | 2 | 0.50 | 0.33 |
+| `v2.credential_response` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.customer_hard_delete` | 1 | 1 | 2 | 2 | 0.50 | 0.33 |
+| `v2.log_pii` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+The round targeted the limits left by round 15 and found them: a key written with one expression and
+read with another, a subclass that inherits the sensitive field, and a wrapper model that annotates
+another model.
+
+| Case | Cause |
+|---|---|
+| `r16-admin-01` | `cache.set(f'admin:directory:{id}', ...)` vs `cache.get('admin:directory:' + str(id))` |
+| `r16-admin-02` | `AdminUserCard(BaseUserCard)` inherits `email`; the subclass was not a model |
+| `r16-admin-03` | `build_admin_export` is imported; the name does not state the payload |
+| `r16-cred-02` | `ProfileEnvelope.account: AccountRecord`; the annotated wrapper was not scanned |
+| `r16-del-02` | `record = session.get(ArchivedCustomer, id)` then `record.hard_delete(session)` |
+| `r16-del-03` | `hard_delete_customer(...)` with no cutoff and no low retention constant |
+| `r16-bill-02` | `CreditNote(Invoice)` declares `__tablename__ = 'credit_notes'` |
+| `r16-bill-03` | the cutoff arrives as a keyword: `delete_orders_older_than(..., days=GRACE_DAYS)` |
+| `r16-reset-02` | `ResetResult(NotifyMixin, ResetEnvelope)` inherits `token` |
+| `r16-key-02` | `PartnerIntegrationView(IntegrationView)` inherits `api_secret`; list responses under the credential family |
+| `r16-log-05` (FP) | `safe = contact.to_dict()` masks; `safe['email']` still matched by field name |
+| `r16-admin-05` (FP) | a `model_dump` override masks with `'***' + value[-4:]`; the concatenation was not a mask |
+| `r16-del-04` (FP) | eligibility is a boolean cached from `age >= RETENTION_DAYS` |
+| `r16-bill-04` (FP) | the cutoff comes from a cached window: `timedelta(days=window['days'])` |
+
+## Fixes after blind round 16
+
+| Case | Fix |
+|---|---|
+| `r16-admin-01` | cache and session keys reduce to a literal namespace (`f'k:{id}'`, `'k:' + str(id)` and `'k:{}'.format(id)` all become `k:{}`); local key variables resolve |
+| `r16-admin-02`, `r16-cred-02`, `r16-reset-02`, `r16-key-02` | model classes inherit fields through bases, a field annotated with another model carries its categories, and a `model_dump` that pops a field removes it |
+| `r16-key-02` | list/set/generator returns are response payloads in the credential family too |
+| `r16-bill-03` | keyword arguments feed the cutoff scan |
+| `r16-log-05` | a subscript on a masked serializer result (`safe = contact.to_dict()`) is not matched by field name |
+| `r16-admin-05` | a string concatenation containing a `***` literal is a mask |
+| `r16-del-02` | `session.get(Model, id)` resolves the table, CamelCase model names resolve to table tokens, and an instance delete resolves the receiver before its arguments |
+| `r16-del-03` | a hard-delete/purge call that names the table and has no cutoff is flagged unless a retention-aware check guards the function |
+| `r16-del-04`, `r16-bill-04` | a guard driven by a cached eligibility flag or a cached retention window counts; `timedelta(days=window['days'])` resolves the stored constant |
+| `r16-bill-02` | `__tablename__` is inherited by subclasses declared in the file |
+
+Regression state: sealed round-16 set **41/42** (`r16-admin-03` remains), curated 22/22, regression
+corpus **207/207** (194 + 13), full suite **524 passed**. The 28/42 remains the pre-fix measurement;
+a round 17 is required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -935,6 +994,14 @@ pre-fix measurement; a round 16 is required for the post-fix number.
 - The same round exposed a precision bug from round 2: a SQLAlchemy session attribute named
   `session` was read as a credential, and `self.session.execute(...)` tainted the row it returned.
   A call receiver is infrastructure, not a value; the name heuristic now skips it.
+- Round 16 moved to indirect storage and declared shapes. The key is reduced to its literal
+  namespace, so `f'k:{id}'` and `'k:' + str(id)` link; a model class inherits the fields of its
+  bases and of a field's annotation; a `model_dump` that pops a field removes it. The retention
+  family resolves a cached window and treats an early return driven by a retention-aware check as a
+  gate.
+- The round also produced four false positives, all in the "value vs label" family: a masked
+  serializer result read by field name, a `***` concatenation, a boolean eligibility flag and a
+  cached window. Precision is still the first casualty when the model grows.
 
 ## Limitations
 
@@ -974,9 +1041,13 @@ pre-fix measurement; a round 16 is required for the post-fix number.
   were fixed and promoted.
 - Round 15 is burned. Its 35/42 is the measurement **before** the fixes; the seven failing cases
   were fixed and promoted, together with the pre-existing round-2 false positive.
-- The cache and session model is textual: a store and a read link only when both spell the key the
-  same way (`f'export:{customer_id}'`). A key built by a different expression, or stored in one
-  module and read in another, is still a false negative candidate.
+- Round 16 is burned. Its 28/42 is the measurement **before** the fixes; thirteen of the fourteen
+  failing cases were fixed and promoted. `r16-admin-03` remains: the imported producer
+  (`build_admin_export`) does not state its payload, so a name-based cross-module model cannot
+  decide it.
+- The cache and session model is textual: a store and a read link only when both reduce to the same
+  literal namespace. A key assembled by unrelated expressions, or stored in one module and read in
+  another, is still a false negative candidate.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -985,17 +1056,18 @@ pre-fix measurement; a round 16 is required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 16 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 17 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe cache keys built by different expressions, cross-module payloads and model inheritance.
+2. Probe cross-module payloads whose names do not state the return, and model fields dropped by a
+   serializer that is not `model_dump`.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json` through `cases_blind_round15.json` with their `.sha256` seals.
+  `cases_blind_round1.json` through `cases_blind_round16.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`
-  through `blind_round15_metrics.json`.
+  through `blind_round16_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.

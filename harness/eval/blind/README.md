@@ -97,3 +97,9 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   values stored with `cache.set` and returned by another endpoint. All seven were fixed and promoted
   (42/42 regression), together with the round-2 false positive `cred_public_columns`. Round 16 is
   required for a post-fix number.
+- Round 16: sealed, run once, 28/42, indirect storage keys, cross-module producers and model
+  inheritance. Keys written and read with different expressions, inherited model fields, cached
+  retention windows and instance deletes through a mixin were the gaps; four false positives came
+  from masked values read by label. Thirteen of the fourteen failures were fixed and promoted
+  (41/42 regression); `r16-admin-03` remains because the imported producer does not state its
+  payload. Round 17 is required for a post-fix number.
