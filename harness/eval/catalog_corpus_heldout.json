@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes. Round-17 regression cases: field exclusion, ORJSONResponse, Location headers and prefixed SQL tables. Round-18 regression cases: template contexts, column-tuple streams and named audit loggers.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes. Round-17 regression cases: field exclusion, ORJSONResponse, Location headers and prefixed SQL tables. Round-18 regression cases: template contexts, column-tuple streams and named audit loggers. Round-19 regression cases: model properties, response_model exclusion and signed or templated payloads.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1583,6 +1583,90 @@
       "expected": "violation",
       "path": "app/integrations/export_csv.py",
       "code": "from collections.abc import Iterator\n\nfrom django.http import StreamingHttpResponse\n\nfrom app.integrations.models import ApiCredential\n\nEXPORT_COLUMNS = ('id', 'provider', 'api_key', 'api_secret')\nPROVIDER_FILTER = None\n\n\ndef _credential_rows(provider=None) -> Iterator[str]:\n    yield ','.join(EXPORT_COLUMNS) + '\\n'\n    queryset = ApiCredential.objects.all()\n    if provider:\n        queryset = queryset.filter(provider=provider)\n    for credential in queryset.iterator():\n        yield ','.join(str(getattr(credential, column)) for column in EXPORT_COLUMNS) + '\\n'\n\n\ndef export_credentials(request) -> StreamingHttpResponse:\n    response = StreamingHttpResponse(_credential_rows(PROVIDER_FILTER), content_type='text/csv')\n    response['Content-Disposition'] = 'attachment; filename=\"credentials.csv\"'\n    return response\n"
+    },
+    {
+      "id": "r19-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/customers/views.py",
+      "code": "import logging\nfrom django.db import models\n\nlogger = logging.getLogger(__name__)\n\n\nclass Customer(models.Model):\n    first_name = models.CharField(max_length=80)\n    last_name = models.CharField(max_length=80)\n    email = models.EmailField()\n    phone = models.CharField(max_length=32)\n    created_at = models.DateTimeField(auto_now_add=True)\n\n    @property\n    def contact_line(self):\n        return f'{self.first_name} {self.last_name} <{self.email}>'\n\n\nclass CustomerAuditMixin:\n    def record_seen(self, customer):\n        logger.info('customer seen: %s', customer.contact_line)\n\n\nclass CustomerSyncView(CustomerAuditMixin):\n    def post(self, request, customer_id):\n        customer = Customer.objects.get(pk=customer_id)\n        self.record_seen(customer)\n        return {'status': 'ok'}\n"
+    },
+    {
+      "id": "r19-log-05",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/notifications/receipt.py",
+      "code": "import logging\n\nlogger = logging.getLogger('notifications')\nSUPPORT_SIGNATURE = 'Equipo de soporte'\n\nRECEIPT_BODY = (\n    'Hola {name}, enviamos tu comprobante a {email}. '\n    'Si no reconoces esta compra escribe a soporte. '\n    '{signature}'\n)\n\n\ndef build_receipt(customer, order_id):\n    body = RECEIPT_BODY.format_map({\n        'name': customer.first_name,\n        'email': customer.email,\n        'signature': SUPPORT_SIGNATURE,\n    })\n    logger.info('rendered receipt for order %s: %s', order_id, body)\n    return body\n\n\nclass ReceiptService:\n    def __init__(self, customer):\n        self.customer = customer\n\n    def render(self, order_id):\n        return build_receipt(self.customer, order_id)\n"
+    },
+    {
+      "id": "r19-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/growth/events.py",
+      "code": "import hashlib\nimport logging\nfrom dataclasses import dataclass\n\nlogger = logging.getLogger('growth.metrics')\n\n\n@dataclass\nclass SignupEvent:\n    customer_id: int\n    email: str\n    plan: str\n    email_fingerprint: str = ''\n\n    def __post_init__(self):\n        digest = hashlib.sha256(self.email.strip().lower().encode()).hexdigest()\n        self.email_fingerprint = digest[:16]\n\n\ndef track_signup(customer_id, email, plan):\n    event = SignupEvent(customer_id=customer_id, email=email, plan=plan)\n    logger.info('signup plan=%s fingerprint=%s', event.plan, event.email_fingerprint)\n    return event\n"
+    },
+    {
+      "id": "r19-adm-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/list_api.py",
+      "code": "from fastapi import APIRouter, Query\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/admin-api')\nPAGE_SIZE = 25\n\n\nclass AdminCustomerRow(BaseModel):\n    id: int\n    email: str\n    phone: str\n    plan: str\n\n\n@router.get('/customers', response_model=list[AdminCustomerRow],\n            response_model_exclude={'email', 'phone'})\ndef list_customers(page: int = Query(1, ge=1)):\n    rows = fetch_customers(page=page, size=PAGE_SIZE)\n    return [\n        {\n            'id': row.id,\n            'email': row.email,\n            'phone': row.phone,\n            'plan': row.plan,\n        }\n        for row in rows\n    ]\n\n\ndef fetch_customers(page, size):\n    return []\n"
+    },
+    {
+      "id": "r19-cred-02",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/accounts/read_api.py",
+      "code": "from fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/accounts')\n\n\nclass AccountOut(BaseModel):\n    id: int\n    username: str\n    password_hash: str\n    email: str\n\n\n@router.get('/{account_id}', response_model=AccountOut,\n            response_model_exclude={'password_hash'})\ndef read_account(account_id: int):\n    account = load_account(account_id)\n    return {\n        'id': account.id,\n        'username': account.username,\n        'password_hash': account.password_hash,\n        'email': account.email,\n    }\n\n\ndef load_account(account_id):\n    return get_account(account_id)\n"
+    },
+    {
+      "id": "r19-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/settings/integration_api.py",
+      "code": "import jwt\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/settings')\nSIGNING_KEY = 'settings-session'\nALGORITHM = 'HS256'\n\n\nclass IntegrationOut(BaseModel):\n    account_id: int\n    api_key_configured: bool\n    api_key_last4: str | None = None\n    note: str | None = None\n\n\n@router.get('/{account_id}/integration', response_model=IntegrationOut,\n            response_model_exclude_none=True)\ndef read_integration(account_id: int):\n    account = load_account(account_id)\n    token = jwt.encode(\n        {'sub': str(account_id), 'scope': 'settings:read'},\n        SIGNING_KEY,\n        algorithm=ALGORITHM,\n    )\n    return {\n        'account_id': account_id,\n        'api_key_configured': bool(account.api_key),\n        'api_key_last4': account.api_key[-4:] if account.api_key else None,\n        'note': None,\n        'session_token': token,\n    }\n\n\ndef load_account(account_id):\n    return get_account(account_id)\n"
+    },
+    {
+      "id": "r19-cred-05",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/internal/config_report.py",
+      "code": "from string import Template\n\nfrom flask import Flask, current_app, jsonify\n\napp = Flask(__name__)\nDEBUG_DUMP = True\n\nCONFIG_REPORT = Template(\n    'service=$service '\n    'environment=$environment '\n    'signing_key=$signing_key '\n    'database_url=$database_url'\n)\n\n\n@app.get('/internal/config-report')\ndef config_report():\n    if not DEBUG_DUMP:\n        return jsonify({'status': 'disabled'})\n    body = CONFIG_REPORT.substitute(\n        service='billing-api',\n        environment='staging',\n        signing_key=current_app.config['SIGNING_KEY'],\n        database_url=current_app.config['DATABASE_URL'],\n    )\n    return body, 200, {'Content-Type': 'text/plain'}\n"
+    },
+    {
+      "id": "r19-res-04",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/auth/reset_api.py",
+      "code": "from fastapi import APIRouter, BackgroundTasks\nfrom pydantic import BaseModel\n\nfrom app.mailer import send_password_reset_email\n\nrouter = APIRouter(prefix='/auth')\nGENERIC_DETAIL = 'if the account exists, an email was sent'\n\n\nclass ResetRequest(BaseModel):\n    email: str\n\n\nclass ResetResult(BaseModel):\n    detail: str\n    token: str\n    uid: int\n\n\n@router.post('/password-reset', response_model=ResetResult,\n             response_model_exclude={'token', 'uid'})\ndef request_reset(payload: ResetRequest, tasks: BackgroundTasks):\n    user = find_user_by_email(payload.email)\n    if user is None:\n        return {'detail': GENERIC_DETAIL, 'token': '', 'uid': 0}\n    token = issue_reset_token(user)\n    tasks.add_task(send_password_reset_email, user.email, token)\n    return {'detail': GENERIC_DETAIL, 'token': token, 'uid': user.pk}\n\n\ndef find_user_by_email(email):\n    return lookup_user(email)\n"
+    },
+    {
+      "id": "r19-key-02",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/settings/settings_api.py",
+      "code": "from fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/settings')\n\n\nclass SecretAwareMixin:\n    def key_flags(self, account):\n        return {\n            'api_key_configured': bool(account.api_key),\n            'api_key_expires_at': account.api_key_expires_at,\n        }\n\n\nclass IntegrationOut(BaseModel):\n    account_id: int\n    api_key_configured: bool\n    api_key_expires_at: str | None = None\n    api_key: str | None = None\n\n\nclass SettingsView(SecretAwareMixin):\n    @router.get('/{account_id}', response_model=IntegrationOut,\n                response_model_exclude_none=True)\n    def read(self, account_id: int):\n        account = load_account(account_id)\n        flags = self.key_flags(account)\n        return {\n            'account_id': account_id,\n            'api_key_configured': flags['api_key_configured'],\n            'api_key_expires_at': flags['api_key_expires_at'],\n            'api_key': None,\n        }\n"
+    },
+    {
+      "id": "r19-key-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/admin/client_rows.py",
+      "code": "from fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/admin-api')\n\n\nclass ClientRow(BaseModel):\n    client_id: int\n    name: str\n    api_key: str\n    api_key_suffix: str\n\n\n@router.get('/clients/{client_id}', response_model=ClientRow,\n            response_model_exclude={'api_key'})\ndef read_client(client_id: int):\n    client = load_client(client_id)\n    return {\n        'client_id': client.id,\n        'name': client.name,\n        'api_key': client.api_key,\n        'api_key_suffix': f'...{client.api_key[-4:]}',\n    }\n\n\ndef load_client(client_id):\n    return get_client(client_id)\n"
+    },
+    {
+      "id": "r19-key-05",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/internal/onboarding.py",
+      "code": "from string import Template\n\nfrom fastapi import APIRouter\nfrom fastapi.responses import PlainTextResponse\n\nrouter = APIRouter(prefix='/internal')\nSHOW_SECRETS = True\n\nONBOARDING = Template(\n    'client=$client '\n    'environment=$environment '\n    'api_key=$api_key '\n    'webhook_secret=$webhook_secret'\n)\n\n\n@router.get('/onboarding/{client_id}', response_class=PlainTextResponse)\ndef onboarding_sheet(client_id: int):\n    if not SHOW_SECRETS:\n        return 'disabled'\n    client = load_client(client_id)\n    body = ONBOARDING.substitute(\n        client=client.name,\n        environment=client.environment,\n        api_key=client.api_key,\n        webhook_secret=client.webhook_secret,\n    )\n    return body\n\n\ndef load_client(client_id):\n    return get_client(client_id)\n"
+    },
+    {
+      "id": "r19-key-06",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/settings/key_summary.py",
+      "code": "import hashlib\nfrom dataclasses import dataclass, field\n\nfrom fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/settings')\nFINGERPRINT_LENGTH = 12\n\n\n@dataclass\nclass KeySummary:\n    client_id: int\n    api_key: str\n    fingerprint: str = field(default='')\n\n    def __post_init__(self):\n        digest = hashlib.sha256(self.api_key.encode()).hexdigest()\n        self.fingerprint = digest[:FINGERPRINT_LENGTH]\n\n\nclass KeySummaryOut(BaseModel):\n    client_id: int\n    fingerprint: str\n    api_key_configured: bool\n\n\n@router.get('/{client_id}/key-summary', response_model=KeySummaryOut)\ndef key_summary(client_id: int):\n    client = load_client(client_id)\n    summary = KeySummary(client_id=client_id, api_key=client.api_key)\n    return {\n        'client_id': summary.client_id,\n        'fingerprint': summary.fingerprint,\n        'api_key_configured': bool(summary.api_key),\n    }\n\n\ndef load_client(client_id):\n    return get_client(client_id)\n"
     }
   ]
 }

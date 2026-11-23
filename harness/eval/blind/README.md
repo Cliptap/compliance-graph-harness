@@ -111,3 +111,8 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   failures were template contexts, column-tuple streams, a returned dict variable, a streamed token
   and a named audit logger. All eleven were fixed and promoted (42/42 regression). Round 19 is
   required for a post-fix number.
+- Round 19: sealed, run once, 30/42, model properties, response_model exclusion and signed or
+  templated payloads. The failures were property getters, `format_map`/`Template.substitute` bodies
+  and the declared response-model contract; eight false positives came from fields the model drops.
+  All twelve were fixed and promoted (42/42 regression). Round 20 is required for a post-fix
+  number.

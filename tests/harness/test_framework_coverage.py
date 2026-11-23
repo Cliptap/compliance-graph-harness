@@ -1385,3 +1385,107 @@ def test_metadata_key_with_password_prefix_is_clean():
             "        },\n"
             "    )\n")
     assert "v2.credential_response" not in ids(code)
+
+
+def test_property_returning_contact_is_logged():
+    code = ("import logging\n\n"
+            "logger = logging.getLogger(__name__)\n\n\n"
+            "class Customer:\n"
+            "    def __init__(self, email):\n"
+            "        self.email = email\n\n"
+            "    @property\n"
+            "    def contact_line(self):\n"
+            "        return f'contact <{self.email}>'\n\n\n"
+            "def record_seen(customer):\n"
+            "    logger.info('customer seen: %s', customer.contact_line)\n")
+    assert "v2.log_pii" in ids(code)
+
+
+def test_format_map_body_is_logged():
+    code = ("import logging\n\n"
+            "logger = logging.getLogger('notifications')\n"
+            "RECEIPT_BODY = 'Hola {name}, enviamos tu comprobante a {email}.'\n\n\n"
+            "def build_receipt(customer):\n"
+            "    body = RECEIPT_BODY.format_map({'name': customer.first_name, 'email': customer.email})\n"
+            "    logger.info('rendered receipt: %s', body)\n"
+            "    return body\n")
+    assert "v2.log_pii" in ids(code)
+
+
+def test_template_substitute_with_signing_key_is_a_credential():
+    code = ("from string import Template\n\n"
+            "from fastapi import APIRouter\n\n"
+            "router = APIRouter()\n"
+            "CONFIG_REPORT = Template('service=$service signing_key=$signing_key')\n\n\n"
+            "@router.get('/internal/config-report')\n"
+            "def config_report():\n"
+            "    body = CONFIG_REPORT.substitute(service='billing', signing_key=current_app.config['SIGNING_KEY'])\n"
+            "    return body\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_response_model_exclude_removes_the_sensitive_field():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter(prefix='/admin-api')\n\n\n"
+            "class AdminCustomerRow(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n"
+            "    plan: str\n\n\n"
+            "@router.get('/customers', response_model=list[AdminCustomerRow],\n"
+            "            response_model_exclude={'email'})\n"
+            "def list_customers():\n"
+            "    return [{'id': 1, 'email': 'ana@example.com', 'plan': 'pro'}]\n")
+    assert "v2.admin_exposure" not in ids(code)
+
+
+def test_response_model_with_nested_credential_model_is_flagged():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter()\n\n\n"
+            "class BaseAccountRecord(BaseModel):\n"
+            "    id: int\n"
+            "    password_hash: str\n\n\n"
+            "class AccountRecord(BaseAccountRecord):\n"
+            "    last_login: str | None = None\n\n\n"
+            "class ProfileEnvelope(BaseModel):\n"
+            "    account: AccountRecord\n\n\n"
+            "@router.get('/account/{user_id}', response_model=ProfileEnvelope)\n"
+            "def get_account(user_id: int):\n"
+            "    record = AccountRecord(id=user_id, password_hash='pbkdf2')\n"
+            "    return ProfileEnvelope(account=record)\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_payload_key_outside_the_response_model_is_dropped():
+    code = ("import jwt\n\n"
+            "from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter(prefix='/settings')\n\n\n"
+            "class IntegrationOut(BaseModel):\n"
+            "    account_id: int\n"
+            "    api_key_configured: bool\n"
+            "    api_key_last4: str | None = None\n\n\n"
+            "@router.get('/{account_id}', response_model=IntegrationOut,\n"
+            "            response_model_exclude_none=True)\n"
+            "def read_integration(account_id: int):\n"
+            "    token = jwt.encode({'sub': str(account_id), 'scope': 'read'}, 'k', algorithm='HS256')\n"
+            "    return {'account_id': account_id, 'api_key_configured': True, 'session_token': token}\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_fingerprint_metadata_field_is_not_pii():
+    code = ("import hashlib\n"
+            "import logging\n"
+            "from dataclasses import dataclass\n\n"
+            "logger = logging.getLogger('growth')\n\n\n"
+            "@dataclass\n"
+            "class SignupEvent:\n"
+            "    email: str\n"
+            "    email_fingerprint: str = ''\n\n"
+            "    def __post_init__(self):\n"
+            "        self.email_fingerprint = hashlib.sha256(self.email.encode()).hexdigest()[:16]\n\n\n"
+            "def track(email):\n"
+            "    event = SignupEvent(email=email)\n"
+            "    logger.info('signup fingerprint=%s', event.email_fingerprint)\n")
+    assert "v2.log_pii" not in ids(code)
