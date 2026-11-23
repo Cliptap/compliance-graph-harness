@@ -39,6 +39,8 @@ semántico.
 - Nombres de productores importados (`format_rut_and_email`) aportan sus categorías; los
   enmascaradores y emisores quedan excluidos.
 - Efectos por parámetro hacia response y redirect dentro del helper, detectados en el call site.
+- Estado de instancia: mutaciones de `self.<attr>` por clase, leídas en el sink; `PlainTextResponse`
+  y afines como sinks; defaults keyword-only; argumentos enmascarados no propagan.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.

@@ -33,6 +33,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 5 (sealed) | 42 | **32/42** | 7 false negatives, 3 false positives |
 | Blind round 6 (sealed, post-taint) | 42 | **37/42** | 4 false negatives, 1 false positive |
 | Blind round 7 (sealed, post-taint) | 42 | **34/42** | 7 false positives, 1 false negative |
+| Blind round 8 (sealed, post-taint) | 42 | **34/42** | 5 false negatives, 3 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -459,6 +460,52 @@ Regression state: sealed round-7 set **42/42**, curated 22/22, regression corpus
 (119 + 8), full suite **463 passed**. The 34/42 remains the pre-fix measurement; a round 8 is
 required for the post-fix number.
 
+## Blind round 8 (sealed, post-taint)
+
+An eighth fresh author wrote 42 modules that put the sink behind a function boundary: local helpers
+build the response or redirect from a parameter, values cross calls by keyword, and classes carry
+state across methods. The file was sealed before the run (`cases_blind_round8.json.sha256`,
+`952b3b60c2e3fe055130da65b0c2314943647d063ad96eaed685b180a11843af`) and run once.
+
+Result: **34/42**. Aggregate: precision **0.842** [0.624, 0.945], recall **0.762** [0.549, 0.894],
+accuracy 0.810 [0.667, 0.900].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.api_key` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.billing_retention` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.credential_response` | 1 | 1 | 2 | 2 | 0.50 | 0.33 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+The helper-boundary emphasis worked: `log_pii`, `customer_hard_delete` and the keyword flows held.
+The failures concentrated in class state and in masked arguments that still propagated.
+
+| Case | Cause |
+|---|---|
+| `r8-admin-02`, `r8-cred-02`, `r8-reset-02`, `r8-apikey-02` (FN) | methods mutate `self._payload[...]` and `render` returns `JSONResponse(self._payload)`; instance state was not tracked |
+| `r8-cred-03` (FN) | `PlainTextResponse` was not a response pattern; the imported name `read_private_key_pem` also failed the token check |
+| `r8-log-06` (FP) | the label `session=%s` matched the credential synonym `session` |
+| `r8-cred-04` (FP) | `api_key[-4:] if api_key else None` (an `IfExp`) was not recognised as a truncation |
+| `r8-bill-04` (FP) | a keyword-only default (`*, days=ORDER_RETENTION_DAYS`) was not read |
+
+## Fixes after blind round 8
+
+| Case | Fix |
+|---|---|
+| class state | `self.<attr>` mutations are collected per class (`self._payload['email'] = ...`) and read back at the sink; the model is an order-insensitive union |
+| `r8-cred-03` | `PlainTextResponse`, `HTMLResponse`, `HttpResponse` and `StreamingResponse` are response patterns; import-name matching also checks whole synonyms (`private_key`) |
+| `r8-log-06` | `session` and `cookie` join the prose synonyms and need a literal value |
+| `r8-cred-04` | an `IfExp` is masked when both branches are, and `None` counts as masked |
+| `r8-bill-04` | keyword-only defaults feed the constant map |
+| masked arguments | a masked argument (`Compare`, `bool`, truncation) never propagates through a parameter position, and arguments outside propagating positions are not walked |
+
+Regression state: sealed round-8 set **42/42**, curated 22/22, regression corpus **135/135**
+(127 + 8), full suite **469 passed**. The 34/42 remains the pre-fix measurement; a round 9 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -509,6 +556,13 @@ required for the post-fix number.
 - The cross-module fix is name-based, not dataflow: an imported producer whose name states its
   payload (`format_rut_and_email`) is trusted, while maskers and senders are excluded. A function
   that hides its payload behind a neutral name is still a false negative.
+- Round 8 moved the frontier to object state: helpers that build the response internally and
+  keyword flows pass, but class methods that accumulate a payload in `self._payload` require an
+  instance-attribute model. The union model closes the measured cases; it is not flow-sensitive
+  (an attribute assigned in a branch is treated as always tainted).
+- The precision theme repeats: a format label (`session=%s`), a truncation expression and a masked
+  boolean argument are labels or derived values, not exposures. Positional propagation must skip
+  masked arguments.
 
 ## Limitations
 
@@ -530,6 +584,10 @@ required for the post-fix number.
   five failing cases were fixed and promoted, so the sealed set now passes 42/42 as regression.
 - Round 7 is burned. Its 34/42 is the measurement **before** the fixes; the eight failing cases
   were fixed and promoted.
+- Round 8 is burned. Its 34/42 is the measurement **before** the fixes; the eight failing cases
+  were fixed and promoted.
+- The class-state model is file-local and order-insensitive: it unions `self.<attr>` assignments
+  across methods and does not model branches, so it can over-approximate a conditional payload.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -538,10 +596,10 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 8 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 9 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Extend the calibration beyond the 7 v2 controls and the legacy policies.
-3. Decide whether neutrally named cross-module returns justify an import-aware pass.
+2. Probe the class-state model with conditional payloads and inheritance.
+3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 

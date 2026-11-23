@@ -423,3 +423,66 @@ def test_masked_parameter_in_helper_response_is_clean():
             "def view(customer, mask_email):\n"
             "    return render(customer=customer, masked_email=mask_email(customer.email))\n")
     assert "v2.admin_exposure" not in ids(code, "app/api/admin_render.py")
+
+
+def test_instance_payload_mutation_is_flagged():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "class View:\n"
+            "    def __init__(self, customer):\n"
+            "        self.customer = customer\n"
+            "        self._payload = {'id': customer.id}\n\n"
+            "    def with_contact(self):\n"
+            "        self._payload['email'] = self.customer.email\n"
+            "        return self\n\n"
+            "    def render(self):\n"
+            "        return JSONResponse(self._payload)\n\n"
+            "def admin_detail(customer):\n"
+            "    return View(customer).with_contact().render()\n")
+    assert "v2.admin_exposure" in ids(code, "app/admin/detail.py")
+
+
+def test_imported_private_key_reader_is_flagged():
+    code = ("from fastapi.responses import PlainTextResponse\n"
+            "from app.vault import read_private_key_pem\n\n"
+            "def signing_key():\n"
+            "    pem = read_private_key_pem(key_id=load_active_key_id())\n"
+            "    return PlainTextResponse(pem)\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_masked_boolean_argument_is_clean():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "def status(has_password):\n"
+            "    return JSONResponse({'has_password': has_password})\n\n"
+            "def view(record):\n"
+            "    return status(has_password=record.password_hash is not None)\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_truncated_value_assignment_is_clean():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "def response(api_key):\n"
+            "    suffix = api_key[-4:]\n"
+            "    return JSONResponse({'api_key_suffix': suffix})\n\n"
+            "def view(integration):\n"
+            "    return response(api_key=integration.api_key)\n")
+    assert "v2.api_key" not in ids(code)
+
+
+def test_keyword_only_retention_default_is_clean():
+    code = ("from datetime import datetime, timedelta\n\n"
+            "RETENTION_DAYS = 2190\n\n"
+            "def purge(*, session, days: int = RETENTION_DAYS):\n"
+            "    cutoff = datetime.utcnow() - timedelta(days=days)\n"
+            "    return session.query(Order).filter(Order.created_at < cutoff).delete()\n")
+    assert "v2.billing_retention" not in ids(code)
+
+
+def test_session_id_log_label_is_clean():
+    code = ("import logging\nlogger = logging.getLogger(__name__)\n\n"
+            "class Telemetry:\n"
+            "    def __init__(self, session_id):\n"
+            "        self.session_id = session_id\n\n"
+            "    def emit(self):\n"
+            "        logger.info('session=%s', self.session_id)\n")
+    assert "v2.log_pii" not in ids(code)
