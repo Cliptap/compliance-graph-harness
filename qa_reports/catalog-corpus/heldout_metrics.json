@@ -1,14 +1,14 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 145,
-  "passed": 145,
+  "cases": 150,
+  "passed": 150,
   "controls": {
     "v2.admin_exposure": {
       "tp": 14,
       "fp": 0,
       "fn": 0,
-      "tn": 10,
+      "tn": 11,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -39,7 +39,7 @@
       ]
     },
     "v2.billing_retention": {
-      "tp": 11,
+      "tp": 14,
       "fp": 0,
       "fn": 0,
       "tn": 9,
@@ -47,11 +47,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.741,
+        0.785,
         1.0
       ],
       "recall_ci": [
-        0.741,
+        0.785,
         1.0
       ]
     },
@@ -90,7 +90,7 @@
       ]
     },
     "v2.log_pii": {
-      "tp": 9,
+      "tp": 10,
       "fp": 0,
       "fn": 0,
       "tn": 12,
@@ -98,11 +98,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.701,
+        0.722,
         1.0
       ],
       "recall_ci": [
-        0.701,
+        0.722,
         1.0
       ]
     },
@@ -1380,6 +1380,46 @@
       "control": "v2.api_key",
       "expected": "clean",
       "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r10-log-02",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r10-admin-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r10-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r10-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r9-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
       "other_findings": [],
       "passed": true
     }

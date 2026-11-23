@@ -35,6 +35,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 7 (sealed, post-taint) | 42 | **34/42** | 7 false positives, 1 false negative |
 | Blind round 8 (sealed, post-taint) | 42 | **34/42** | 5 false negatives, 3 false positives |
 | Blind round 9 (sealed, post-taint) | 42 | **31/42** | 4 false negatives, 7 false positives |
+| Blind round 10 (sealed, post-taint) | 42 | **38/42** | 3 false negatives, 1 false positive |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -557,6 +558,47 @@ Regression state: sealed round-9 set **41/42** (only `r9-bill-03` remains), cura
 corpus **145/145** (135 + 10), full suite **475 passed**. The 31/42 remains the pre-fix measurement;
 a round 10 is required for the post-fix number.
 
+## Blind round 10 (sealed, post-taint)
+
+A tenth fresh author wrote 42 async, decorator-driven and nested-structure modules. The file was
+sealed before the run (`cases_blind_round10.json.sha256`,
+`dbea6ca615366141b463ba687b0d0c4856fcc9f12651f6a0faeab453e6f0dd8e`) and run once.
+
+Result: **38/42**. Aggregate: precision **0.947** [0.754, 0.991], recall **0.857** [0.654, 0.950],
+accuracy 0.905 [0.779, 0.962]. The best precision of any round so far.
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.api_key` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.billing_retention` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.credential_response` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.reset_token` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+
+Async, decorators and nested payloads held. The failures were projection and retention semantics.
+
+| Case | Cause |
+|---|---|
+| `r10-log-02` (FN) | the decorator wrapper logs `body.get('address')`; a `.get('field')` projection was not a value |
+| `r10-admin-04` (FP) | the list comprehension `{'rut_last4': r['rut'][-4:]}` tainted the list because the tracker's dict masking did not cover the comprehension |
+| `r10-bill-01` (FN) | `repo.delete_older_than(365)` deletes in memory; no statement, no table in the call |
+| `r10-bill-03` (FN) | the mixin's `retention_days = 730` (below policy) was treated as a retention gate |
+
+## Fixes after blind round 10
+
+| Case | Fix |
+|---|---|
+| `r10-log-02` | `.get('address')` and indexed projections count as field access |
+| `r10-admin-04` | the tracker applies the same masked-value blocking as the sink walk, so truncated projections inside comprehensions stay clean |
+| `r10-bill-01` | a `delete_*`/`purge_*` call with a cutoff below the policy is flagged when the call, function or path names the table |
+| `r10-bill-03` | a retention field gates a delete only when its resolved value is at least the policy |
+
+Regression state: sealed rounds 9 and 10 **42/42**, curated 22/22, regression corpus **150/150**
+(145 + 5), full suite **481 passed**. The 38/42 remains the pre-fix measurement; a round 11 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -620,6 +662,13 @@ a round 10 is required for the post-fix number.
   false negative is a delete that only exists in an imported repository.
 - Dead-branch precision is the new lesson: a flag that is `False` at module or class level makes the
   other branch unreachable, and walking it produces false positives that look like real leaks.
+- Round 10 pushed precision to 0.947 with async code, decorators and nested structures. The three
+  false negatives were semantic: a `.get('field')` projection, an in-memory delete method and a
+  retention field below the policy. A retention field is only a gate when its value meets the
+  policy; a field named `retention_days = 730` is not a license to delete at 730 days.
+- The delete-method rule is deliberately narrow: it requires a deleting verb, a cutoff below the
+  policy and a table token in the call, function or path. It is the first rule that infers a hard
+  delete without the statement in the file, and it stays name- and value-based, not semantic.
 
 ## Limitations
 
@@ -646,8 +695,9 @@ a round 10 is required for the post-fix number.
 - The class-state model is file-local and order-insensitive: it unions `self.<attr>` assignments
   across methods and does not model branches, so it can over-approximate a conditional payload.
 - Round 9 is burned. Its 31/42 is the measurement **before** the fixes; ten of the eleven failing
-  cases were fixed and promoted. `r9-bill-03` remains: the delete only exists inside an imported
-  repository, so the file alone does not prove a hard delete.
+  cases were fixed and promoted. `r9-bill-03` was fixed later by the round-10 delete-method rule.
+- Round 10 is burned. Its 38/42 is the measurement **before** the fixes; the four failing cases
+  were fixed and promoted.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -656,9 +706,9 @@ a round 10 is required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 10 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 11 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Decide whether repository interfaces (calls like `delete_older_than`) deserve an opt-in model.
+2. Probe the delete-method rule with soft-delete repositories and renames.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts

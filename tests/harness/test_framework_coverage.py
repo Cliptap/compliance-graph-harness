@@ -565,3 +565,60 @@ def test_keyword_label_is_not_a_value():
             "def view(integration):\n"
             "    return integration_response(slug=integration.slug, api_key=integration.api_key)\n")
     assert "v2.api_key" not in ids(code)
+
+
+def test_dict_get_projection_in_log_is_flagged():
+    code = ("import logging\nlogger = logging.getLogger(__name__)\n\n"
+            "def upsert(body):\n"
+            "    logger.info('contact address=%s', body.get('address'))\n")
+    assert "v2.log_pii" in ids(code)
+
+
+def test_truncated_projection_in_list_is_clean():
+    code = ("def rows(records):\n"
+            "    return [{'id': r['id'], 'rut_last4': r['rut'][-4:]} for r in records]\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/masked.py")
+
+
+def test_delete_method_with_short_cutoff_is_flagged():
+    code = ("CUTOFF_DAYS = 365\n\n"
+            "class OrderRepo:\n"
+            "    def delete_older_than(self, days):\n"
+            "        return days\n\n"
+            "def purge():\n"
+            "    return OrderRepo().delete_older_than(CUTOFF_DAYS)\n")
+    assert "v2.billing_retention" in ids(code)
+
+
+def test_delete_method_with_policy_cutoff_is_clean():
+    code = ("RETENTION_DAYS = 2190\n\n"
+            "class InvoiceRepo:\n"
+            "    def delete_beyond_retention(self, days):\n"
+            "        return days\n\n"
+            "def purge():\n"
+            "    return InvoiceRepo().delete_beyond_retention(RETENTION_DAYS)\n")
+    assert "v2.billing_retention" not in ids(code)
+
+
+def test_low_retention_field_in_sql_is_flagged():
+    code = ("class BillingMixin:\n"
+            "    retention_days = 730\n\n"
+            "    def statement(self):\n"
+            "        return f\"DELETE FROM invoices WHERE issued_at < now() - make_interval(days => {self.retention_days})\"\n\n"
+            "class Job(BillingMixin):\n"
+            "    def run(self, cursor):\n"
+            "        cursor.execute(self.statement())\n")
+    assert "v2.billing_retention" in ids(code)
+
+
+def test_dto_keyword_cutoff_delete_is_flagged():
+    code = ("class Plan:\n"
+            "    def __init__(self, cutoff_days):\n"
+            "        self.cutoff_days = cutoff_days\n\n"
+            "class Repo:\n"
+            "    def delete_old_orders(self, days):\n"
+            "        return days\n\n"
+            "def purge(repo):\n"
+            "    plan = Plan(cutoff_days=365)\n"
+            "    return repo.delete_old_orders(plan.cutoff_days)\n")
+    assert "v2.billing_retention" in ids(code)

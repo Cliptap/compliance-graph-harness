@@ -71,3 +71,8 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   collisions, `delete(model)` parameters, `create_*` imports and a serializer call returned from
   the endpoint. Ten of the eleven were fixed and promoted (41/42 regression); the remaining FN is a
   delete inside an imported repository. Round 10 is required for a post-fix number.
+- Round 10: sealed, run once, 38/42, async code, decorators and nested structures. The failures
+  were a `.get('field')` projection, a truncated projection inside a comprehension, an in-memory
+  `delete_older_than(365)` and a `retention_days = 730` mixin treated as a gate. All four were fixed
+  and promoted; rounds 9 and 10 now pass 42/42 as regression. Round 11 is required for a post-fix
+  number.
