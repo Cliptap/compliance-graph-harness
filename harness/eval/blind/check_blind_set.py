@@ -50,6 +50,7 @@ KNOWN_CORPORA = [
     ROOT / "harness" / "eval" / "blind" / "cases_blind_round18.json",
     ROOT / "harness" / "eval" / "blind" / "cases_blind_round19.json",
     ROOT / "harness" / "eval" / "blind" / "cases_blind_round20.json",
+    ROOT / "harness" / "eval" / "blind" / "cases_blind_round21.json",
 ]
 
 
