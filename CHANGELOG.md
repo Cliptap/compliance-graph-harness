@@ -62,6 +62,10 @@ semántico.
 - Modelos pydantic/dataclass como fuente por sus campos declarados; `model_dump`/`asdict` como
   accesores, no sanitizadores; propagación por `cache.set`/`cache.get` y `request.session`;
   receivers de sesiones de base de datos fuera de la heurística de credenciales.
+- Claves de cache normalizadas a su namespace literal; herencia de campos en modelos y en
+  anotaciones; campos removidos por `model_dump`; ventanas de retención cacheadas; `__tablename__`
+  heredado; deletes de instancia resueltos por el receiver; guardas de retención por retorno
+  temprano.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.
@@ -69,7 +73,7 @@ semántico.
 ### Experimentos
 
 - Bloque D (10 trampas) y comparación `baseline` vs `rules_skills_gate`.
-- Calibración ciega del gate: rondas 1 a 15 (última medición pre-fix: ronda 15, 35/42); ver
+- Calibración ciega del gate: rondas 1 a 16 (última medición pre-fix: ronda 16, 28/42); ver
   `docs/research/gate-calibration.md`.
 
 ## [0.1.0] - 2026-11-22

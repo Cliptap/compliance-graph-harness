@@ -137,6 +137,11 @@ def _value_is_masked(catalog: Catalog, value: ast.AST) -> bool:
         return _is_masking_name(token)
     if isinstance(value, ast.Compare):
         return True
+    if isinstance(value, ast.BinOp) and isinstance(value.op, ast.Add):
+        return any(isinstance(side, ast.Constant) and isinstance(side.value, str)
+                   and "*" in side.value
+                   for side in (value.left, value.right)) \
+            or _value_is_masked(catalog, value.left) and _value_is_masked(catalog, value.right)
     if isinstance(value, ast.UnaryOp) and isinstance(value.op, ast.Not):
         return True
     return False
@@ -212,6 +217,8 @@ def _finding(control: Control, path: str, line: int, message: str, evidence: str
 
 
 VALUE_ACCESSORS = {"value", "raw", "values", "items", "model_dump", "model_dump_json", "dict"}
+DUMP_METHODS = {"to_dict", "model_dump", "dict", "as_dict", "serialize", "to_json",
+                "public", "summary", "safe_fields"}
 INFRASTRUCTURE_METHODS = {"execute", "executemany", "commit", "rollback", "close", "begin",
                           "flush", "scalars", "scalar", "fetchone", "fetchall", "add",
                           "merge", "refresh", "connect", "cursor"}
@@ -458,27 +465,104 @@ def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[
     return mapping
 
 
-def _stored_value_key(node: ast.Call) -> str | None:
+FORMAT_PLACEHOLDER_RE = re.compile(r"\{[^{}]*\}")
+
+
+def _canonical_key(node: ast.AST) -> str | None:
+    """Reduce a cache/session key to its literal namespace.
+
+    ``f'export:{id}'``, ``'export:' + str(id)`` and ``'export:{}'.format(id)``
+    all reduce to ``export:{}``. A key that cannot be reduced returns ``None``
+    and the caller falls back to the exact source text.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return FORMAT_PLACEHOLDER_RE.sub("{}", node.value)
+    if isinstance(node, ast.JoinedStr):
+        parts: list[str] = []
+        for value in node.values:
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                parts.append(value.value)
+            else:
+                parts.append("{}")
+        return "".join(parts)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _canonical_key(node.left)
+        right = _canonical_key(node.right)
+        if left is None and right is None:
+            return None
+        return (left if left is not None else "{}") + (right if right is not None else "{}")
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
+            and node.func.attr == "format":
+        return _canonical_key(node.func.value)
+    return None
+
+
+def _key_aliases(node: ast.AST) -> dict[str, str]:
+    """Local names that hold a key expression, so ``cache.get(key)`` matches."""
+    aliases: dict[str, str] = {}
+    for child in ast.walk(node):
+        if not isinstance(child, (ast.Assign, ast.AnnAssign)) or child.value is None:
+            continue
+        canonical = _canonical_key(child.value)
+        if canonical is None:
+            continue
+        targets = child.targets if isinstance(child, ast.Assign) else [child.target]
+        for target in targets:
+            if isinstance(target, ast.Name):
+                aliases[target.id] = canonical
+    return aliases
+
+
+def _key_text(node: ast.AST, aliases: dict[str, str] | None = None) -> str:
+    if isinstance(node, ast.Name) and aliases and node.id in aliases:
+        return aliases[node.id]
+    canonical = _canonical_key(node)
+    return canonical if canonical is not None else ast.unparse(node)
+
+
+def _stored_value_key(node: ast.Call,
+                      aliases: dict[str, str] | None = None) -> str | None:
     """Key text for a ``cache.get(...)`` or ``session.get(...)`` read."""
     func = node.func
     if not isinstance(func, ast.Attribute) or func.attr != "get" or not node.args:
         return None
     receiver = ast.unparse(func.value)
     if receiver.endswith("cache"):
-        return ast.unparse(node.args[0])
-    if receiver.endswith("session") and isinstance(node.args[0], ast.Constant):
-        return "session:" + ast.unparse(node.args[0])
+        return _key_text(node.args[0], aliases)
+    if receiver.endswith("session"):
+        return "session:" + _key_text(node.args[0], aliases)
     return None
 
 
-def _cache_store(node: ast.Call) -> tuple[str, ast.AST] | None:
-    """``cache.set(key, value)``: the key text and the stored value."""
+def _cache_store(node: ast.Call) -> tuple[ast.AST, ast.AST] | None:
+    """``cache.set(key, value)``: the key node and the stored value."""
     func = node.func
     if not isinstance(func, ast.Attribute) or func.attr not in {"set", "add", "setdefault"}:
         return None
     if not ast.unparse(func.value).endswith("cache") or len(node.args) < 2:
         return None
-    return ast.unparse(node.args[0]), node.args[1]
+    return node.args[0], node.args[1]
+
+
+def _serialized_names(node: ast.AST, summaries: dict[str, set[str]] | None) -> set[str]:
+    """Names that hold a masked serialized view: ``safe = contact.to_dict()``.
+
+    The field-name heuristic must not fire on ``safe['email']`` when the
+    serializer already masked the value. An unmasked serializer has a
+    non-empty summary, so the name is tainted through ``env`` instead.
+    """
+    names: set[str] = set()
+    for child in ast.walk(node):
+        if not isinstance(child, (ast.Assign, ast.AnnAssign)) or child.value is None:
+            continue
+        if not isinstance(child.value, ast.Call):
+            continue
+        leaf = _call_name(child.value).rsplit(".", 1)[-1]
+        if leaf not in DUMP_METHODS or (summaries or {}).get(leaf):
+            continue
+        targets = child.targets if isinstance(child, ast.Assign) else [child.target]
+        names.update(target.id for target in targets if isinstance(target, ast.Name))
+    return names
 
 
 def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
@@ -487,7 +571,8 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                      param_returns: dict[str, set[int | str]] | None = None,
                      field_lists: dict[str, set[str]] | None = None,
                      attr_categories: dict[str, set[str]] | None = None,
-                     cache_env: dict[str, set[str]] | None = None) -> set[str]:
+                     cache_env: dict[str, set[str]] | None = None,
+                     clean_containers: set[str] | None = None) -> set[str]:
     """Categories that reach a sink, following local variables and helper summaries."""
     found: set[str] = set()
     comprehension_skip = _skip_nodes(node)
@@ -550,11 +635,15 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                 for index, arg in enumerate(child.args):
                     if index in positions and not _value_is_masked(catalog, arg):
                         found |= _sink_categories(catalog, arg, allowed, env, summaries,
-                                                  param_returns, field_lists, cache_env=cache_env)
+                                                  param_returns, field_lists,
+                                                  cache_env=cache_env,
+                                                  clean_containers=clean_containers)
                 for keyword in child.keywords:
                     if keyword.arg in positions and not _value_is_masked(catalog, keyword.value):
                         found |= _sink_categories(catalog, keyword.value, allowed, env, summaries,
-                                                  param_returns, field_lists, cache_env=cache_env)
+                                                  param_returns, field_lists,
+                                                  cache_env=cache_env,
+                                                  clean_containers=clean_containers)
         elif isinstance(child, ast.Dict):
             for key, value in zip(child.keys, child.values):
                 if _value_is_masked(catalog, value):
@@ -576,6 +665,10 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                     found |= field_lists[token] & allowed
         elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
             if id(child) in callees or id(child) in infrastructure:
+                continue
+            if isinstance(child, ast.Subscript) and isinstance(child.value, ast.Name) \
+                    and clean_containers and child.value.id in clean_containers \
+                    and not (env and child.value.id in env):
                 continue
             if isinstance(child, ast.Attribute) and attr_categories \
                     and isinstance(child.value, ast.Name) and child.value.id in {"self", "cls"}:
@@ -781,8 +874,12 @@ class _TaintTracker(ast.NodeVisitor):
         self.self_constants = self_constants or {}
         self.env: dict[str, set[str]] = dict(initial_env or {})
         self.cache_env = cache_env or {}
+        self.key_aliases: dict[str, str] = {}
+        self.serialized: set[str] = set()
 
     def scan(self, node: ast.AST) -> dict[str, set[str]]:
+        self.key_aliases = _key_aliases(node)
+        self.serialized = _serialized_names(node, self.summaries)
         self.visit(node)
         return self.env
 
@@ -948,7 +1045,7 @@ class _TaintTracker(ast.NodeVisitor):
             elif isinstance(child, ast.Call):
                 leaf = _call_name(child).rsplit(".", 1)[-1]
                 found |= self.summaries.get(leaf, set())
-                stored = _stored_value_key(child)
+                stored = _stored_value_key(child, self.key_aliases)
                 if stored and self.cache_env:
                     found |= self.cache_env.get(stored, set())
                 if leaf == "get" and child.args and isinstance(child.args[0], ast.Constant) \
@@ -976,6 +1073,10 @@ class _TaintTracker(ast.NodeVisitor):
                         and isinstance(child.value, ast.Name) \
                         and child.value.id in {"self", "cls"}:
                     found |= self.attr_categories.get(child.attr, set())
+                if isinstance(child, ast.Subscript) and isinstance(child.value, ast.Name) \
+                        and child.value.id in self.serialized \
+                        and child.value.id not in self.env:
+                    continue
                 token = _identifier(child)
                 if token:
                     category = _field_category(self.catalog, token)
@@ -986,27 +1087,87 @@ class _TaintTracker(ast.NodeVisitor):
 
 def _model_class_fields(tree: ast.AST, catalog: Catalog,
                         categories: set[str]) -> dict[str, set[str]]:
-    """Pydantic/dataclass classes that declare a sensitive field.
+    """Pydantic/dataclass classes that declare or inherit a sensitive field.
 
     ``profile = CustomerProfile(email=..., rut=...)`` is a source: the class
     declaration states which categories the instance carries, so a later
-    ``model_dump()`` or response model exposes them.
+    ``model_dump()`` or response model exposes them. A subclass inherits the
+    fields of its parents, and a field annotated with another model carries
+    that model's categories.
     """
-    result: dict[str, set[str]] = {}
-    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+    classes = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+    models: set[str] = set()
+    for name, cls in classes.items():
         bases = " ".join(ast.unparse(base) for base in cls.bases)
         decorators = " ".join(ast.unparse(item) for item in cls.decorator_list)
-        if "BaseModel" not in bases and "dataclass" not in decorators:
-            continue
+        if "BaseModel" in bases or "dataclass" in decorators:
+            models.add(name)
+    for _ in range(len(classes) + 1):
+        changed = False
+        for name, cls in classes.items():
+            if name in models:
+                continue
+            if any(_identifier(base) in models for base in cls.bases):
+                models.add(name)
+                changed = True
+        if not changed:
+            break
+    result: dict[str, set[str]] = {}
+    dropped = {name: _dropped_categories(classes[name], catalog) for name in models}
+    for name in models:
+        cls = classes[name]
         found: set[str] = set()
         for stmt in cls.body:
             if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
                 category = _field_category(catalog, stmt.target.id)
                 if category in categories:
                     found.add(category)
-        if found:
-            result[cls.name] = found
-    return result
+        result[name] = found
+    for _ in range(len(classes) + 1):
+        changed = False
+        for name in models:
+            cls = classes[name]
+            found = set(result.get(name, set()))
+            for base in cls.bases:
+                token = _identifier(base)
+                if token in classes:
+                    found |= result.get(token, set())
+                    dropped[name] |= dropped.get(token, set())
+            for stmt in cls.body:
+                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                    annotation = stmt.annotation
+                    token = annotation.id if isinstance(annotation, ast.Name) else None
+                    if token:
+                        found |= result.get(token, set())
+            found -= dropped[name]
+            if found - result.get(name, set()):
+                result[name] = found
+                changed = True
+        if not changed:
+            break
+    return {name: values for name, values in result.items() if values}
+
+
+def _dropped_categories(cls: ast.ClassDef, catalog: Catalog) -> set[str]:
+    """``model_dump`` that pops a sensitive field removes it from the serialized view."""
+    dropped: set[str] = set()
+    for method in cls.body:
+        if not isinstance(method, ast.FunctionDef) or method.name not in DUMP_METHODS:
+            continue
+        for node in ast.walk(method):
+            key: ast.AST | None = None
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
+                    and node.func.attr == "pop" and node.args:
+                key = node.args[0]
+            elif isinstance(node, ast.Delete) and len(node.targets) == 1:
+                target = node.targets[0]
+                if isinstance(target, ast.Subscript):
+                    key = target.slice
+            if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                category = _field_category(catalog, key.value)
+                if category:
+                    dropped.add(category)
+    return dropped
 
 
 def _function_summaries(tree: ast.AST, catalog: Catalog,
@@ -1077,6 +1238,7 @@ def _cache_categories(tree: ast.AST, catalog: Catalog, categories: set[str],
         changed = False
         for func in functions:
             class_name = enclosing.get(id(func), "")
+            aliases = _key_aliases(func)
             tracker = _TaintTracker(catalog, categories, summaries,
                                     module_constants=module_constants,
                                     self_constants=class_constants.get(class_name, {}),
@@ -1087,7 +1249,7 @@ def _cache_categories(tree: ast.AST, catalog: Catalog, categories: set[str],
                 if isinstance(node, ast.Call):
                     entry = _cache_store(node)
                     if entry is not None:
-                        stored.append(entry)
+                        stored.append((_key_text(entry[0], aliases), entry[1]))
                 elif isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
                     targets = node.targets if isinstance(node, ast.Assign) else [node.target]
                     for target in targets:
@@ -1095,7 +1257,8 @@ def _cache_categories(tree: ast.AST, catalog: Catalog, categories: set[str],
                                 and isinstance(target.slice, ast.Constant) \
                                 and isinstance(target.slice.value, str) \
                                 and "session" in ast.unparse(target.value):
-                            stored.append(("session:" + ast.unparse(target.slice), node.value))
+                            stored.append(("session:" + _key_text(target.slice, aliases),
+                                           node.value))
                 for key, value in stored:
                     found = tracker._categories(value) & categories
                     if found - result.get(key, set()):
@@ -1279,6 +1442,7 @@ class SinkExposureFamily(PolicyFamily):
                                 self._class_constants.get(class_name, {}),
                                 initial_env=self._global_env,
                                 cache_env=cache_env).scan(func)
+            clean = _serialized_names(func, summaries)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call):
                     continue
@@ -1288,7 +1452,8 @@ class SinkExposureFamily(PolicyFamily):
                     if self.catalog.is_sanitizer(text):
                         continue
                     matched = self._categories(node, categories, env, summaries,
-                                               param_returns, field_lists, attrs, cache_env)
+                                               param_returns, field_lists, attrs, cache_env,
+                                               clean)
                     if matched:
                         out.append(_finding(control, path, node.lineno,
                                             f"Log call exposes {sorted(matched)} without masking.", text))
@@ -1300,11 +1465,13 @@ class SinkExposureFamily(PolicyFamily):
                 for index, arg in enumerate(node.args):
                     if index in positions and not _value_is_masked(self.catalog, arg):
                         matched |= self._categories(arg, categories, env, summaries,
-                                                    param_returns, field_lists, attrs, cache_env)
+                                                    param_returns, field_lists, attrs, cache_env,
+                                                    clean)
                 for keyword in node.keywords:
                     if keyword.arg in positions and not _value_is_masked(self.catalog, keyword.value):
                         matched |= self._categories(keyword.value, categories, env, summaries,
-                                                    param_returns, field_lists, attrs, cache_env)
+                                                    param_returns, field_lists, attrs, cache_env,
+                                                    clean)
                 if matched:
                     out.append(_finding(
                         control, path, node.lineno,
@@ -1330,6 +1497,7 @@ class SinkExposureFamily(PolicyFamily):
                                 self._class_constants.get(class_name, {}),
                                 initial_env=self._global_env,
                                 cache_env=cache_env).scan(func)
+            clean = _serialized_names(func, summaries)
             dumps = _dump_names(func)
             for node in ast.walk(func):
                 payload = None
@@ -1361,7 +1529,7 @@ class SinkExposureFamily(PolicyFamily):
                     continue
                 matched = self._categories(payload, categories, env, summaries,
                                            param_returns, field_lists,
-                                           attr_map.get(class_name, {}), cache_env)
+                                           attr_map.get(class_name, {}), cache_env, clean)
                 if matched:
                     out.append(_finding(control, path, payload.lineno,
                                         f"Response exposes {sorted(matched)} without masking.", text))
@@ -1532,9 +1700,11 @@ class SinkExposureFamily(PolicyFamily):
                     param_returns: dict[str, set[int | str]] | None = None,
                     field_lists: dict[str, set[str]] | None = None,
                     attr_categories: dict[str, set[str]] | None = None,
-                    cache_env: dict[str, set[str]] | None = None) -> set[str]:
+                    cache_env: dict[str, set[str]] | None = None,
+                    clean_containers: set[str] | None = None) -> set[str]:
         return _sink_categories(self.catalog, node, allowed, env, summaries,
-                                param_returns, field_lists, attr_categories, cache_env)
+                                param_returns, field_lists, attr_categories, cache_env,
+                                clean_containers)
 
     @staticmethod
     def _decorators(func: ast.AST) -> str:
@@ -1580,6 +1750,9 @@ class RetentionDeletionFamily(PolicyFamily):
                          if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
                          for decorator in item.decorator_list}
         out: list[Finding] = []
+        helpers = _retention_aware_helpers(functions, constants, retention_days)
+        cache_guards = _cache_guard_fields(tree, constants, retention_days)
+        class_tables = _class_table_map(tree)
         for func in _leaf_functions(tree):
             cutoff = _max_cutoff(func, constants)
             if cutoff is not None and cutoff >= retention_days:
@@ -1589,12 +1762,14 @@ class RetentionDeletionFamily(PolicyFamily):
                 continue
             if cutoff is None and _helper_retention_aware(func, functions, constants, retention_days):
                 continue
+            if cutoff is None and _guarded_by_retention(func, helpers, cache_guards):
+                continue
             out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), ""),
                                         _name_tables(func, function_tables), function_tables,
-                                        model_params, decorator_ids))
+                                        model_params, decorator_ids, class_tables))
             out.extend(_short_cutoff_delete_calls(control, path, func, tables, constants,
                                                   retention_days,
-                                                  _name_tables(func, function_tables)))
+                                                  _name_tables(func, function_tables), helpers))
         for stmt in tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
@@ -1605,17 +1780,18 @@ class RetentionDeletionFamily(PolicyFamily):
                 continue
             out.extend(self._deletes_in(control, path, stmt, tables, "",
                                         _name_tables(stmt, function_tables), function_tables,
-                                        None, decorator_ids))
+                                        None, decorator_ids, class_tables))
         return out
 
     @staticmethod
     def _deletes_in(control, path, node, tables, class_name="", name_tables=None,
-                    function_tables=None, model_params=None, decorator_ids=frozenset()):
+                    function_tables=None, model_params=None, decorator_ids=frozenset(),
+                    class_tables=None):
         out: list[Finding] = []
         for child in ast.walk(node):
-            matched = _delete_tables(child, class_name) & tables
+            matched = _delete_tables(child, class_name, class_tables) & tables
             if not matched and model_params:
-                for candidate in _delete_tables(child, class_name):
+                for candidate in _delete_tables(child, class_name, class_tables):
                     matched |= model_params.get(candidate, set()) & tables
             if not matched:
                 matched = _resolved_delete_tables(child, name_tables or {},
@@ -1730,6 +1906,36 @@ def _int_constants(tree: ast.AST) -> dict[str, int]:
     for name, values in method_returns.items():
         if name not in constants:
             constants[name] = min(values)
+    aliases = _key_aliases(tree)
+    stored: dict[str, dict[str, int]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        entry = _cache_store(node)
+        if entry is None or not isinstance(entry[1], ast.Dict):
+            continue
+        fields: dict[str, int] = {}
+        for key, value in zip(entry[1].keys, entry[1].values):
+            if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                resolved = _int_value(value, constants)
+                if resolved is not None:
+                    fields[key.value] = resolved
+        if fields:
+            stored[_key_text(entry[0], aliases)] = fields
+    if stored:
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+                continue
+            if not isinstance(node.value, ast.Call):
+                continue
+            key = _stored_value_key(node.value, aliases)
+            if key is None or key not in stored:
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    for field, value in stored[key].items():
+                        constants[f"{target.id}.{field}"] = value
     return constants
 
 
@@ -1740,6 +1946,9 @@ def _int_value(node: ast.AST, constants: dict[str, int]) -> int | None:
         return constants.get(node.id)
     if isinstance(node, ast.Attribute):
         return constants.get(node.attr)
+    if isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name) \
+            and isinstance(node.slice, ast.Constant) and isinstance(node.slice.value, str):
+        return constants.get(f"{node.value.id}.{node.slice.value}")
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and not node.args:
         return constants.get(node.func.attr)
     return None
@@ -1777,9 +1986,10 @@ def _retention_field_gate(node: ast.AST, field: str, constants: dict[str, int],
 
 
 def _short_cutoff_delete_calls(control, path, func, tables, constants, retention_days,
-                               name_tables=None):
+                               name_tables=None, helpers=None):
     """``repo.delete_older_than(365)`` deletes a table without a visible statement."""
     out: list[Finding] = []
+    helpers = helpers or set()
     low_retention = any(
         value < retention_days for name, value in constants.items()
         if isinstance(value, int) and name.lower().endswith("days")
@@ -1788,14 +1998,19 @@ def _short_cutoff_delete_calls(control, path, func, tables, constants, retention
         if not isinstance(child, ast.Call):
             continue
         leaf = _call_name(child).rsplit(".", 1)[-1].lower()
-        if leaf == "delete" or not (leaf.startswith(("delete", "purge"))
+        if leaf == "delete" or not (leaf.startswith(("delete", "purge", "hard_delete"))
                                     or _is_delete_call(leaf)):
             continue
         values = [value for value in (_int_value(arg, constants) for arg in child.args)
                   if value is not None]
+        values += [value for keyword in child.keywords
+                   if (value := _int_value(keyword.value, constants)) is not None]
         if values and max(values) >= retention_days:
             continue
-        if not values and not low_retention:
+        names_table = any(table.rstrip("s") in leaf for table in tables)
+        if not values and not low_retention and not names_table:
+            continue
+        if leaf in helpers:
             continue
         text = ast.unparse(child).lower() + " " + func.name.lower() + " " + path.lower()
         receiver = child.func.value if isinstance(child.func, ast.Attribute) else None
@@ -1814,6 +2029,125 @@ def _mentions_retention_field(node: ast.AST, field: str) -> bool:
     if not field:
         return False
     return field in ast.unparse(node).lower()
+
+
+def _retention_aware_helpers(functions: dict[str, ast.AST], constants: dict[str, int],
+                             retention_days: int) -> set[str]:
+    """Helpers that resolve an adequate retention window, directly or through another helper."""
+    helpers = {name for name, helper in functions.items()
+               if (_max_cutoff(helper, constants) or 0) >= retention_days
+               or _compares_retention(helper, constants, retention_days)}
+    for _ in range(len(functions) + 1):
+        changed = False
+        for name, helper in functions.items():
+            if name in helpers:
+                continue
+            if any(isinstance(node, ast.Call)
+                   and _call_name(node).rsplit(".", 1)[-1] in helpers
+                   for node in ast.walk(helper)):
+                helpers.add(name)
+                changed = True
+        if not changed:
+            break
+    return helpers
+
+
+def _compares_retention(func: ast.AST, constants: dict[str, int],
+                        retention_days: int) -> bool:
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Compare):
+            continue
+        text = ast.unparse(node).lower()
+        if not any(term in text for term in ("day", "age", "retention", "expired")):
+            continue
+        for comparator in (node.left, *node.comparators):
+            value = _int_value(comparator, constants)
+            if value is not None and value >= retention_days:
+                return True
+    return False
+
+
+def _guarded_by_retention(func: ast.AST, helpers: set[str],
+                          cache_guards: dict[str, set[str]]) -> bool:
+    """An early return driven by a retention-aware check gates the delete.
+
+    ``if not record.is_past_retention(): return`` and
+    ``if not state['eligible']: return`` both gate; a helper result that is
+    only logged does not.
+    """
+    aliases = _key_aliases(func)
+    cache_names: dict[str, str] = {}
+    for node in ast.walk(func):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+            continue
+        if not isinstance(node.value, ast.Call):
+            continue
+        key = _stored_value_key(node.value, aliases)
+        if not key:
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for target in targets:
+            if isinstance(target, ast.Name):
+                cache_names[target.id] = key
+    for node in ast.walk(func):
+        if not isinstance(node, ast.If):
+            continue
+        test = ast.unparse(node.test)
+        leaves = {_call_name(child).rsplit(".", 1)[-1] for child in ast.walk(node.test)
+                  if isinstance(child, ast.Call)}
+        if leaves & helpers:
+            return True
+        for name, key in cache_names.items():
+            for field in cache_guards.get(key, set()):
+                if f"{name}[{field!r}]" in test or f'{name}["{field}"]' in test:
+                    return True
+    return False
+
+
+def _cache_guard_fields(tree: ast.AST, constants: dict[str, int],
+                        retention_days: int) -> dict[str, set[str]]:
+    """Cache fields whose stored value is an age comparison against the retention policy."""
+    aliases = _key_aliases(tree)
+    compares: dict[str, ast.Compare] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+            continue
+        if not isinstance(node.value, ast.Compare):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for target in targets:
+            if isinstance(target, ast.Name):
+                compares[target.id] = node.value
+    guards: dict[str, set[str]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        entry = _cache_store(node)
+        if entry is None or not isinstance(entry[1], ast.Dict):
+            continue
+        fields: set[str] = set()
+        for key, value in zip(entry[1].keys, entry[1].values):
+            if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                continue
+            compare = value if isinstance(value, ast.Compare) else (
+                compares.get(value.id) if isinstance(value, ast.Name) else None)
+            if compare is None:
+                continue
+            if any((resolved := _int_value(candidate, constants)) is not None
+                   and resolved >= retention_days
+                   for candidate in (compare.left, *compare.comparators)):
+                fields.add(key.value)
+        if fields:
+            guards[_key_text(entry[0], aliases)] = fields
+    return guards
+
+
+def _calls_retention_aware_helper(func: ast.AST, helpers: set[str]) -> bool:
+    if not helpers:
+        return False
+    return any(isinstance(node, ast.Call)
+               and _call_name(node).rsplit(".", 1)[-1] in helpers
+               for node in ast.walk(func))
 
 
 def _helper_retention_aware(func: ast.AST, functions: dict[str, ast.AST],
@@ -1926,6 +2260,45 @@ def _table_candidates(name: str) -> set[str]:
     return {base, base + "s", base.rstrip("s")}
 
 
+def _model_table_candidates(name: str) -> set[str]:
+    return _table_candidates(name) | _class_table_tokens(name)
+
+
+def _model_tables(token: str, class_tables: dict[str, set[str]] | None) -> set[str]:
+    found = _model_table_candidates(token)
+    found |= (class_tables or {}).get(token.lower(), set())
+    return found
+
+
+def _class_table_map(tree: ast.AST) -> dict[str, set[str]]:
+    """``__tablename__`` per class, inherited by subclasses declared in the file."""
+    classes = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+    direct: dict[str, set[str]] = {}
+    for name, cls in classes.items():
+        for stmt in cls.body:
+            if not isinstance(stmt, ast.Assign) or not isinstance(stmt.value, ast.Constant) \
+                    or not isinstance(stmt.value.value, str):
+                continue
+            if any(isinstance(target, ast.Name) and target.id == "__tablename__"
+                   for target in stmt.targets):
+                direct[name] = {stmt.value.value.lower()}
+    result = dict(direct)
+    for _ in range(len(classes) + 1):
+        changed = False
+        for name, cls in classes.items():
+            found = set(result.get(name, set()))
+            for base in cls.bases:
+                token = _identifier(base)
+                if token in classes:
+                    found |= result.get(token, set())
+            if found - result.get(name, set()):
+                result[name] = found
+                changed = True
+        if not changed:
+            break
+    return {name.lower(): tables for name, tables in result.items() if tables}
+
+
 def _direct_query_tables(node: ast.AST) -> set[str]:
     """Tables read or deleted by one statement: ``query(X)``, ``select(X)``, ``X.objects``."""
     tables: set[str] = set()
@@ -1937,16 +2310,19 @@ def _direct_query_tables(node: ast.AST) -> set[str]:
             and isinstance(node.args[0], (ast.Name, ast.Attribute)):
         token = _identifier(node.args[0])
         if token:
-            tables |= _table_candidates(token)
+            tables |= _model_table_candidates(token)
     if leaf in {"select", "delete"} and node.args \
             and isinstance(node.args[0], (ast.Name, ast.Attribute)):
         token = _identifier(node.args[0])
         if token:
-            tables |= _table_candidates(token)
+            tables |= _model_table_candidates(token)
+    if leaf == "get" and node.args and isinstance(node.args[0], ast.Name) \
+            and node.args[0].id[:1].isupper():
+        tables |= _model_table_candidates(node.args[0].id)
     if ".objects" in name:
         match = DJANGO_OBJECTS_RE.search(ast.unparse(node))
         if match:
-            tables |= _table_candidates(match.group(1))
+            tables |= _model_table_candidates(match.group(1))
     return tables
 
 
@@ -2032,10 +2408,12 @@ def _resolved_delete_tables(node: ast.AST, name_tables: dict[str, set[str]],
         return set()
     if not _is_hard_delete_call(_call_name(node)):
         return set()
+    if isinstance(node.func, ast.Attribute):
+        tables = _tables_of_expr(node.func.value, function_tables, name_tables)
+        if tables:
+            return tables
     if node.args and isinstance(node.args[0], ast.Name):
         return name_tables.get(node.args[0].id, set())
-    if isinstance(node.func, ast.Attribute):
-        return _tables_of_expr(node.func.value, function_tables, name_tables)
     return set()
 
 
@@ -2066,7 +2444,8 @@ def _is_hard_delete_call(name: str) -> bool:
     return leaf in {"delete", "adelete", "abulk_delete", "hard_delete"}
 
 
-def _delete_tables(node: ast.AST, class_name: str = "") -> set[str]:
+def _delete_tables(node: ast.AST, class_name: str = "",
+                   class_tables: dict[str, set[str]] | None = None) -> set[str]:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         match = DELETE_RE.search(node.value.lower())
         return {match.group(1)} if match else set()
@@ -2079,12 +2458,12 @@ def _delete_tables(node: ast.AST, class_name: str = "") -> set[str]:
             arg = node.args[0]
             if isinstance(arg, (ast.Name, ast.Attribute)):
                 token = _identifier(arg)
-                return _table_candidates(token) if token else set()
+                return _model_tables(token, class_tables) if token else set()
         model = _query_model(node.func)
         if model:
-            return _table_candidates(model)
+            return _model_tables(model, class_tables)
         model = _django_model(node, class_name)
-        return _table_candidates(model) if model else set()
+        return _model_tables(model, class_tables) if model else set()
     return set()
 
 
@@ -2334,7 +2713,8 @@ class CredentialExposureFamily(PolicyFamily):
     def _is_sink(node: ast.AST, sinks: set[str]) -> bool:
         if "response" in sinks and isinstance(node, ast.Return):
             value = node.value
-            return (isinstance(value, (ast.Dict, ast.List, ast.Tuple))
+            return (isinstance(value, (ast.Dict, ast.List, ast.Tuple, ast.ListComp,
+                                       ast.SetComp, ast.GeneratorExp))
                     or (isinstance(value, ast.Call) and _call_name(value) in RESPONSE_PATTERNS))
         if isinstance(node, ast.Call):
             name = _call_name(node)
