@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes. Round-17 regression cases: field exclusion, ORJSONResponse, Location headers and prefixed SQL tables.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1450,6 +1450,62 @@
       "expected": "violation",
       "path": "app/api/admin_integrations.py",
       "code": "from fastapi import APIRouter, Depends\nfrom pydantic import BaseModel\nfrom app.auth import require_admin\nfrom app.db import session_scope, Integration\n\nrouter = APIRouter()\n\n\nclass BaseIntegrationView(BaseModel):\n    id: int\n    name: str\n    api_secret: str\n\n\nclass RotationMixin:\n    def needs_rotation(self) -> bool:\n        return len(self.api_secret) < 32\n\n\nclass IntegrationView(RotationMixin, BaseIntegrationView):\n    base_url: str\n\n\nclass PartnerIntegrationView(IntegrationView):\n    partner_id: int\n\n\n@router.get('/admin/integrations', response_model=list[PartnerIntegrationView])\ndef list_integrations(_=Depends(require_admin)):\n    with session_scope() as session:\n        rows = session.query(Integration).all()\n        return [\n            PartnerIntegrationView(\n                id=row.id, name=row.name, api_secret=row.api_secret,\n                base_url=row.base_url, partner_id=row.partner_id,\n            )\n            for row in rows\n        ]\n"
+    },
+    {
+      "id": "r17-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/orders/audit.py",
+      "code": "import logging\nfrom pydantic import BaseModel\n\nlogger = logging.getLogger(__name__)\n\n\nclass OrderEvent(BaseModel):\n    order_id: str\n    request_id: str\n    email: str\n    phone: str\n    total: int\n\n\nclass OrderAudit:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def record(self, order):\n        event = OrderEvent(\n            order_id=order.order_id,\n            request_id=order.request_id,\n            email=order.email,\n            phone=order.phone,\n            total=order.total,\n        )\n        payload = event.model_dump(exclude={'email', 'phone'})\n        logger.info('order audit %s', payload)\n        return payload\n"
+    },
+    {
+      "id": "r17-adm-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/export_views.py",
+      "code": "import csv\nimport io\nfrom django.http import HttpResponse\nfrom django.contrib.admin.views.decorators import staff_member_required\n\n\n@staff_member_required\ndef export_customers(request):\n    buffer = io.StringIO()\n    writer = csv.writer(buffer)\n    writer.writerow(['id', 'email', 'phone', 'rut'])\n    queryset = Customer.objects.filter(is_active=True)\n    for customer in queryset.iterator():\n        writer.writerow([customer.id, customer.email, customer.phone, customer.rut])\n    body = buffer.getvalue()\n    response = HttpResponse(body, content_type='text/csv')\n    response['Content-Disposition'] = 'attachment; filename=customers.csv'\n    return response\n"
+    },
+    {
+      "id": "r17-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/accounts/user_out.py",
+      "code": "from fastapi import APIRouter\nfrom pydantic import BaseModel, Field\n\nrouter = APIRouter(prefix='/accounts')\n\n\nclass UserOut(BaseModel):\n    id: int\n    username: str\n    email: str = Field(exclude=True)\n    password_hash: str\n    api_secret: str\n\n\n@router.get('/users/{user_id}')\ndef get_user(user_id: int):\n    row = load_user(user_id)\n    model = UserOut(\n        id=row.id,\n        username=row.username,\n        email=row.email,\n        password_hash=row.password_hash,\n        api_secret=row.api_secret,\n    )\n    return model.model_dump(exclude={'email'})\n"
+    },
+    {
+      "id": "r17-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/accounts/user_presenter.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import ORJSONResponse\nfrom fastapi.encoders import jsonable_encoder\n\nrouter = APIRouter(prefix='/accounts')\n\n\nclass CredentialStrippingMixin:\n    hidden_fields = ('password_hash', 'api_secret', 'private_key')\n\n    def strip(self, payload):\n        return {k: v for k, v in payload.items() if k not in self.hidden_fields}\n\n\nclass UserPresenter(CredentialStrippingMixin):\n    def present(self, row):\n        raw = {\n            'id': row.id,\n            'username': row.username,\n            'password_hash': row.password_hash,\n            'api_secret': row.api_secret,\n            'has_password': bool(row.password_hash),\n        }\n        return self.strip(raw)\n\n\n@router.get('/users/{user_id}')\ndef get_user(user_id: int):\n    row = load_user(user_id)\n    body = UserPresenter().present(row)\n    return ORJSONResponse(jsonable_encoder(body))\n"
+    },
+    {
+      "id": "r17-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/invoice_purge_sql.py",
+      "code": "import logging\nfrom django.http import HttpResponse\nfrom django.contrib.admin.views.decorators import staff_member_required\nfrom django.db import connection\n\nlogger = logging.getLogger(__name__)\n\n\n@staff_member_required\ndef purge_old_invoices(request):\n    if request.method != 'POST':\n        return HttpResponse('method not allowed', status=405)\n    sql = 'DELETE FROM billing_invoice WHERE paid = %s AND issued_at < now() - interval %s'\n    with connection.cursor() as cursor:\n        cursor.execute(sql, [True, '180 days'])\n        removed = cursor.rowcount\n    logger.info('invoice purge removed %s rows', removed)\n    return HttpResponse('removed {} invoices'.format(removed), content_type='text/plain')\n"
+    },
+    {
+      "id": "r17-rst-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/auth/reset_redirect.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import RedirectResponse\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/auth')\n\n\nclass ResetStart(BaseModel):\n    email: str\n\n\n@router.get('/password-reset/start')\ndef start_reset(email: str):\n    account = find_account(email)\n    if account is None:\n        return RedirectResponse(url='/login?reset=sent', status_code=303)\n    token = issue_reset_token(account)\n    target = '/reset/confirm?token=' + token\n    response = RedirectResponse(url='/login?reset=pending', status_code=303)\n    response.headers['Location'] = target\n    return response\n"
+    },
+    {
+      "id": "r17-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/keys/key_rotate.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import ORJSONResponse\nfrom pydantic import BaseModel\n\nrouter = APIRouter(prefix='/keys')\n\n\nclass RotateRequest(BaseModel):\n    owner_id: int\n    label: str\n\n\n@router.post('/rotate')\ndef rotate_key(payload: RotateRequest):\n    new_key = generate_api_key(payload.owner_id)\n    record = save_key(payload.owner_id, payload.label, new_key)\n    return ORJSONResponse(\n        {\n            'id': record.id,\n            'api_key': new_key,\n            'rotated_at': record.rotated_at.isoformat(),\n        }\n    )\n"
+    },
+    {
+      "id": "r17-key-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/keys/key_safe.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.views import APIView\nfrom rest_framework.response import Response\nfrom rest_framework.permissions import IsAuthenticated\n\n\nclass ApiKeySerializer(serializers.ModelSerializer):\n    key_suffix = serializers.SerializerMethodField()\n    secret = serializers.CharField(write_only=True, required=False)\n\n    class Meta:\n        model = ApiKey\n        fields = ('id', 'label', 'key_suffix', 'secret', 'is_active')\n        extra_kwargs = {'secret': {'write_only': True}}\n\n    def get_key_suffix(self, obj):\n        return obj.key[-4:]\n\n\nclass ApiKeyDetailView(APIView):\n    permission_classes = [IsAuthenticated]\n\n    def get(self, request, key_id):\n        api_key = ApiKey.objects.get(pk=key_id, owner=request.user)\n        return Response(ApiKeySerializer(api_key).data)\n"
     }
   ]
 }
