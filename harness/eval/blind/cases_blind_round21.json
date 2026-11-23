@@ -1,0 +1,594 @@
+{
+  "version": 1,
+  "description": "Blind held-out round 21",
+  "cases": [
+    {
+      "id": "r21a-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/api/receipts.py",
+      "code": "import logging\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Customer\nfrom app.services.receipts import build_receipt_pdf\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter(prefix=\"/receipts\", tags=[\"receipts\"])\n\n\n@router.post(\"/{customer_id}/send\")\ndef send_receipt(customer_id: int, session: Session = Depends(get_session)):\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        raise HTTPException(status_code=404, detail=\"Customer not found\")\n\n    pdf = build_receipt_pdf(customer)\n    logger.info(\"Building receipt for %s\", customer.email)\n\n    delivered = deliver_receipt(customer.email, pdf)\n    logger.info(\"Receipt delivered=%s for customer_id=%s\", delivered, customer.id)\n\n    return {\"status\": \"queued\", \"customer_id\": customer.id}\n\n\ndef deliver_receipt(email: str, pdf: bytes) -> bool:\n    ...\n"
+    },
+    {
+      "id": "r21a-log-02",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/views/lookup.py",
+      "code": "import logging\n\nfrom django.http import JsonResponse\nfrom django.views.decorators.http import require_GET\n\nfrom app.models import CustomerProfile\nfrom app.services.rut import normalize_rut\n\nlogger = logging.getLogger(\"app.customers\")\n\n\n@require_GET\ndef lookup_by_rut(request):\n    raw = request.GET.get(\"rut\", \"\")\n    rut = normalize_rut(raw)\n    if not rut:\n        return JsonResponse({\"error\": \"invalid rut\"}, status=400)\n\n    profile = CustomerProfile.objects.filter(rut=rut).first()\n    if profile is None:\n        logger.warning(\"No profile found for rut=%s\", rut)\n        return JsonResponse({\"found\": False})\n\n    logger.info(\"Profile %s matched rut=%s\", profile.pk, rut)\n    return JsonResponse({\"found\": True, \"profile_id\": profile.pk})\n"
+    },
+    {
+      "id": "r21a-log-03",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/tasks/delivery.py",
+      "code": "import logging\n\nfrom celery import shared_task\n\nfrom app.models import Order\nfrom app.services.sms import send_sms\n\nlogger = logging.getLogger(__name__)\n\n\n@shared_task(bind=True, max_retries=3)\ndef notify_delivery_window(self, order_id: int) -> str:\n    try:\n        order = Order.objects.select_related(\"customer\").get(pk=order_id)\n    except Order.DoesNotExist:\n        logger.error(\"Order %s not found for delivery notice\", order_id)\n        return \"missing\"\n\n    customer = order.customer\n    message = f\"Your order {order.reference} arrives tomorrow between 9 and 13.\"\n\n    logger.info(\n        \"Delivery notice for %s at %s, phone %s\",\n        customer.full_name,\n        customer.address,\n        customer.phone,\n    )\n    send_sms(customer.phone, message)\n    return \"sent\"\n"
+    },
+    {
+      "id": "r21a-log-04",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/blueprints/signup.py",
+      "code": "import logging\n\nfrom flask import Blueprint, jsonify, request\n\nfrom app.models import Customer\nfrom app.utils.pii import mask_email\n\nlogger = logging.getLogger(__name__)\nbp = Blueprint(\"signup\", __name__, url_prefix=\"/signup\")\n\n\n@bp.post(\"/confirm\")\ndef confirm_signup():\n    payload = request.get_json(silent=True) or {}\n    email = (payload.get(\"email\") or \"\").strip().lower()\n\n    customer = Customer.query.filter_by(email=email).first()\n    if customer is None:\n        logger.info(\"Signup confirmation requested for unknown email %s\", mask_email(email))\n        return jsonify({\"status\": \"pending\"}), 202\n\n    customer.confirmed = True\n    customer.save()\n\n    logger.info(\n        \"Signup confirmed for customer_id=%s email=%s\",\n        customer.id,\n        mask_email(customer.email),\n    )\n    return jsonify({\"status\": \"confirmed\", \"customer_id\": customer.id})\n"
+    },
+    {
+      "id": "r21a-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/api/checkout.py",
+      "code": "import logging\nimport uuid\n\nfrom fastapi import APIRouter, Request, Response\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter()\n\n\n@router.post(\"/checkout\")\nasync def checkout(request: Request, response: Response):\n    request_id = request.headers.get(\"x-request-id\") or str(uuid.uuid4())\n    payload = await request.json()\n    order_id = payload.get(\"order_id\")\n\n    logger.info(\"checkout.start request_id=%s order_id=%s\", request_id, order_id)\n\n    try:\n        total = await price_order(order_id)\n    except ValueError as exc:\n        logger.warning(\"checkout.failed request_id=%s reason=%s\", request_id, exc)\n        response.status_code = 400\n        return {\"error\": \"invalid order\", \"request_id\": request_id}\n\n    logger.info(\n        \"checkout.done request_id=%s order_id=%s total=%s\",\n        request_id,\n        order_id,\n        total,\n    )\n    return {\"order_id\": order_id, \"total\": total, \"request_id\": request_id}\n\n\nasync def price_order(order_id: str) -> int:\n    ...\n"
+    },
+    {
+      "id": "r21a-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/onboarding.py",
+      "code": "import hashlib\nimport logging\n\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Account\nfrom app.services.mailer import send_welcome\n\nlogger = logging.getLogger(__name__)\n\n\ndef fingerprint(value: str) -> str:\n    digest = hashlib.sha256(value.strip().lower().encode(\"utf-8\")).hexdigest()\n    return digest[:12]\n\n\ndef send_welcome_email(session: Session, account_id: int) -> bool:\n    account = session.get(Account, account_id)\n    if account is None:\n        logger.warning(\"welcome.skipped account_id=%s reason=missing\", account_id)\n        return False\n\n    marker = fingerprint(account.email)\n    logger.info(\"welcome.start account_id=%s email_fp=%s\", account.id, marker)\n\n    ok = send_welcome(account.email, account.display_name)\n    logger.info(\"welcome.done account_id=%s email_fp=%s ok=%s\", account.id, marker, ok)\n    return ok\n"
+    },
+    {
+      "id": "r21a-admin-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/api/admin_customers.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.generics import ListAPIView\nfrom rest_framework.permissions import IsAdminUser\n\nfrom app.models import Customer\n\n\nclass AdminCustomerSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Customer\n        fields = [\"id\", \"full_name\", \"email\", \"phone\", \"rut\", \"created_at\"]\n\n\nclass AdminCustomerListView(ListAPIView):\n    serializer_class = AdminCustomerSerializer\n    permission_classes = [IsAdminUser]\n    queryset = Customer.objects.all().order_by(\"-created_at\")\n\n    def get_queryset(self):\n        qs = super().get_queryset()\n        status = self.request.query_params.get(\"status\")\n        if status:\n            qs = qs.filter(status=status)\n        return qs\n"
+    },
+    {
+      "id": "r21a-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/blueprints/admin_customers.py",
+      "code": "from flask import Blueprint, jsonify\nfrom flask_login import login_required\n\nfrom app.auth import admin_required\nfrom app.models import Customer\n\nadmin_bp = Blueprint(\"admin_customers\", __name__, url_prefix=\"/admin/customers\")\n\n\n@admin_bp.get(\"/<int:customer_id>\")\n@login_required\n@admin_required\ndef customer_detail(customer_id):\n    customer = Customer.query.get_or_404(customer_id)\n    return jsonify(\n        {\n            \"id\": customer.id,\n            \"full_name\": customer.full_name,\n            \"email\": customer.email,\n            \"phone\": customer.phone,\n            \"address\": customer.address,\n            \"rut\": customer.rut,\n            \"created_at\": customer.created_at.isoformat(),\n        }\n    )\n"
+    },
+    {
+      "id": "r21a-admin-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/views/admin_search.py",
+      "code": "from django.contrib.admin.views.decorators import staff_member_required\nfrom django.http import JsonResponse\nfrom django.views.decorators.http import require_GET\n\nfrom app.models import Customer\n\n\n@staff_member_required\n@require_GET\ndef customer_search(request):\n    term = request.GET.get(\"q\", \"\").strip()\n    if len(term) < 3:\n        return JsonResponse({\"results\": []})\n\n    rows = Customer.objects.filter(email__icontains=term)[:25]\n    results = [\n        {\n            \"id\": row.pk,\n            \"name\": row.full_name,\n            \"email\": row.email,\n            \"phone\": row.phone,\n        }\n        for row in rows\n    ]\n    return JsonResponse({\"results\": results, \"count\": len(results)})\n"
+    },
+    {
+      "id": "r21a-admin-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/admin_customer_detail.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.permissions import IsAdminUser\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.models import Customer\n\n\ndef mask_email(value: str) -> str:\n    if not value or \"@\" not in value:\n        return \"***\"\n    local, domain = value.split(\"@\", 1)\n    return f\"{local[:1]}***@{domain}\"\n\n\nclass AdminCustomerSerializer(serializers.ModelSerializer):\n    email = serializers.SerializerMethodField()\n    phone = serializers.SerializerMethodField()\n\n    class Meta:\n        model = Customer\n        fields = [\"id\", \"full_name\", \"email\", \"phone\", \"created_at\"]\n\n    def get_email(self, obj):\n        return mask_email(obj.email)\n\n    def get_phone(self, obj):\n        digits = \"\".join(ch for ch in (obj.phone or \"\") if ch.isdigit())\n        return f\"***{digits[-4:]}\" if digits else \"***\"\n\n\nclass AdminCustomerDetailView(APIView):\n    permission_classes = [IsAdminUser]\n\n    def get(self, request, pk):\n        customer = Customer.objects.get(pk=pk)\n        return Response(AdminCustomerSerializer(customer).data)\n"
+    },
+    {
+      "id": "r21a-admin-05",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/admin_summary.py",
+      "code": "from fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Customer\nfrom app.security import require_admin\n\nrouter = APIRouter(prefix=\"/admin/customers\", tags=[\"admin\"])\n\n\n@router.get(\"/{customer_id}/summary\")\ndef customer_summary(\n    customer_id: int,\n    session: Session = Depends(get_session),\n    _admin=Depends(require_admin),\n):\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        raise HTTPException(status_code=404, detail=\"Customer not found\")\n\n    return {\n        \"id\": customer.id,\n        \"status\": customer.status,\n        \"plan\": customer.plan,\n        \"orders_count\": customer.orders_count,\n        \"created_at\": customer.created_at.isoformat(),\n        \"last_seen_at\": customer.last_seen_at.isoformat() if customer.last_seen_at else None,\n    }\n"
+    },
+    {
+      "id": "r21a-admin-06",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/blueprints/account.py",
+      "code": "from flask import Blueprint, g, jsonify, request\nfrom flask_login import login_required\n\nfrom app.models import db\n\naccount_bp = Blueprint(\"account\", __name__, url_prefix=\"/account\")\n\n\n@account_bp.get(\"/profile\")\n@login_required\ndef my_profile():\n    user = g.current_user\n    return jsonify(\n        {\n            \"id\": user.id,\n            \"email\": user.email,\n            \"phone\": user.phone,\n            \"rut\": user.rut,\n            \"address\": user.address,\n            \"newsletter\": user.newsletter,\n        }\n    )\n\n\n@account_bp.patch(\"/profile\")\n@login_required\ndef update_profile():\n    payload = request.get_json(silent=True) or {}\n    user = g.current_user\n    if \"newsletter\" in payload:\n        user.newsletter = bool(payload[\"newsletter\"])\n        db.session.commit()\n    return jsonify({\"updated\": True})\n"
+    },
+    {
+      "id": "r21a-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/user_detail.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.generics import RetrieveAPIView\nfrom rest_framework.permissions import IsAdminUser\n\nfrom app.models import User\n\n\nclass UserDetailSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = User\n        fields = [\n            \"id\",\n            \"username\",\n            \"email\",\n            \"is_active\",\n            \"password_hash\",\n            \"last_login\",\n        ]\n        read_only_fields = [\"id\", \"last_login\"]\n\n\nclass UserDetailView(RetrieveAPIView):\n    permission_classes = [IsAdminUser]\n    serializer_class = UserDetailSerializer\n    queryset = User.objects.all()\n\n    def get_serializer_context(self):\n        return {\"request\": self.request}\n"
+    },
+    {
+      "id": "r21a-cred-02",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/blueprints/users.py",
+      "code": "import secrets\n\nfrom flask import Blueprint, jsonify, request\n\nfrom app.models import User, db\n\nusers_bp = Blueprint(\"users\", __name__, url_prefix=\"/api/users\")\n\n\n@users_bp.post(\"/\")\ndef create_user():\n    payload = request.get_json(silent=True) or {}\n    email = (payload.get(\"email\") or \"\").strip().lower()\n    if not email:\n        return jsonify({\"error\": \"email required\"}), 400\n\n    temp_password = secrets.token_urlsafe(12)\n    user = User(email=email, must_change_password=True)\n    user.set_password(temp_password)\n    db.session.add(user)\n    db.session.commit()\n\n    return (\n        jsonify(\n            {\n                \"id\": user.id,\n                \"email\": user.email,\n                \"temporary_password\": temp_password,\n            }\n        ),\n        201,\n    )\n"
+    },
+    {
+      "id": "r21a-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/graphql/members.py",
+      "code": "import graphene\nfrom graphene_django import DjangoObjectType\n\nfrom app.models import Member\n\n\nclass MemberType(DjangoObjectType):\n    class Meta:\n        model = Member\n        fields = (\n            \"id\",\n            \"email\",\n            \"display_name\",\n            \"password_hash\",\n            \"is_staff\",\n        )\n\n    password_hash = graphene.String()\n\n    def resolve_password_hash(self, info):\n        return self.password_hash\n\n\nclass Query(graphene.ObjectType):\n    member = graphene.Field(MemberType, id=graphene.Int(required=True))\n    members = graphene.List(MemberType)\n\n    def resolve_member(self, info, id):\n        if not info.context.user.is_staff:\n            raise Exception(\"forbidden\")\n        return Member.objects.get(pk=id)\n\n    def resolve_members(self, info):\n        if not info.context.user.is_staff:\n            raise Exception(\"forbidden\")\n        return Member.objects.all()\n\n\nschema = graphene.Schema(query=Query)\n"
+    },
+    {
+      "id": "r21a-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/admin_user.py",
+      "code": "from fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import User\nfrom app.security import require_admin\n\nrouter = APIRouter(prefix=\"/admin/users\", tags=[\"admin\"])\n\n\n@router.get(\"/{user_id}\")\ndef get_user(\n    user_id: int,\n    session: Session = Depends(get_session),\n    _admin=Depends(require_admin),\n):\n    user = session.get(User, user_id)\n    if user is None:\n        raise HTTPException(status_code=404, detail=\"User not found\")\n\n    return {\n        \"id\": user.id,\n        \"username\": user.username,\n        \"email\": user.email,\n        \"is_active\": user.is_active,\n        \"is_staff\": user.is_staff,\n        \"created_at\": user.created_at.isoformat(),\n    }\n"
+    },
+    {
+      "id": "r21a-cred-05",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/account_security.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.generics import RetrieveAPIView\nfrom rest_framework.permissions import IsAuthenticated\n\nfrom app.models import Account\n\n\nclass AccountSecuritySerializer(serializers.ModelSerializer):\n    password_set = serializers.SerializerMethodField()\n    two_factor_enabled = serializers.BooleanField(source=\"mfa_enabled\")\n\n    class Meta:\n        model = Account\n        fields = [\n            \"id\",\n            \"username\",\n            \"password_set\",\n            \"two_factor_enabled\",\n            \"password_updated_at\",\n        ]\n\n    def get_password_set(self, obj) -> bool:\n        return bool(obj.password_hash)\n\n\nclass AccountSecurityView(RetrieveAPIView):\n    permission_classes = [IsAuthenticated]\n    serializer_class = AccountSecuritySerializer\n\n    def get_object(self):\n        return self.request.user.account\n"
+    },
+    {
+      "id": "r21a-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/views/api_clients.py",
+      "code": "from django.contrib.auth.decorators import login_required\nfrom django.http import JsonResponse\nfrom django.views.decorators.http import require_GET\n\nfrom app.models import ApiClient\n\n\n@login_required\n@require_GET\ndef client_detail(request, client_id):\n    try:\n        client = ApiClient.objects.get(pk=client_id, owner=request.user)\n    except ApiClient.DoesNotExist:\n        return JsonResponse({\"error\": \"not found\"}, status=404)\n\n    return JsonResponse(\n        {\n            \"id\": client.pk,\n            \"name\": client.name,\n            \"scopes\": client.scopes,\n            \"created_at\": client.created_at.isoformat(),\n            \"last_used_at\": client.last_used_at.isoformat() if client.last_used_at else None,\n            \"revoked\": client.revoked,\n        }\n    )\n"
+    },
+    {
+      "id": "r21a-cdel-01",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/management/commands/cleanup_onboarding.py",
+      "code": "import logging\n\nfrom django.core.management.base import BaseCommand\nfrom django.utils import timezone\n\nfrom app.models import Customer\n\nlogger = logging.getLogger(__name__)\n\n\nclass Command(BaseCommand):\n    help = \"Remove customers that never completed onboarding\"\n\n    def add_arguments(self, parser):\n        parser.add_argument(\"--days\", type=int, default=30)\n        parser.add_argument(\"--dry-run\", action=\"store_true\")\n\n    def handle(self, *args, **options):\n        cutoff = timezone.now() - timezone.timedelta(days=options[\"days\"])\n        pending = Customer.objects.filter(\n            onboarding_completed=False,\n            created_at__lt=cutoff,\n        )\n        total = pending.count()\n        logger.info(\"onboarding cleanup candidates=%s cutoff=%s\", total, cutoff.isoformat())\n\n        if options[\"dry_run\"]:\n            self.stdout.write(f\"would delete {total} customers\")\n            return\n\n        pending.delete()\n        self.stdout.write(f\"deleted {total} customers\")\n"
+    },
+    {
+      "id": "r21a-cdel-02",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/api/admin_customer_delete.py",
+      "code": "from fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Customer\nfrom app.security import require_admin\n\nrouter = APIRouter(prefix=\"/admin/customers\", tags=[\"admin\"])\n\n\n@router.delete(\"/{customer_id}\")\ndef delete_customer(\n    customer_id: int,\n    session: Session = Depends(get_session),\n    _admin=Depends(require_admin),\n):\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        raise HTTPException(status_code=404, detail=\"Customer not found\")\n\n    session.execute(delete(Customer).where(Customer.id == customer_id))\n    session.commit()\n    return {\"deleted\": True, \"customer_id\": customer_id}\n"
+    },
+    {
+      "id": "r21a-cdel-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/blueprints/customer_admin.py",
+      "code": "from flask import Blueprint, jsonify\nfrom sqlalchemy import text\n\nfrom app.auth import admin_required\nfrom app.db import engine\n\ncustomers_bp = Blueprint(\"customer_admin\", __name__, url_prefix=\"/admin/customers\")\n\n\n@customers_bp.delete(\"/<int:customer_id>\")\n@admin_required\ndef purge_customer(customer_id):\n    with engine.begin() as conn:\n        exists = conn.execute(\n            text(\"SELECT id FROM customers WHERE id = :cid\"),\n            {\"cid\": customer_id},\n        ).first()\n        if exists is None:\n            return jsonify({\"error\": \"not found\"}), 404\n\n        conn.execute(\n            text(\"DELETE FROM customers WHERE id = :cid\"),\n            {\"cid\": customer_id},\n        )\n\n    return jsonify({\"purged\": customer_id})\n"
+    },
+    {
+      "id": "r21a-cdel-04",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/api/customer_deactivate.py",
+      "code": "from datetime import datetime, timezone\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Customer\nfrom app.security import require_admin\n\nrouter = APIRouter(prefix=\"/admin/customers\", tags=[\"admin\"])\n\n\n@router.delete(\"/{customer_id}\")\ndef deactivate_customer(\n    customer_id: int,\n    session: Session = Depends(get_session),\n    _admin=Depends(require_admin),\n):\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        raise HTTPException(status_code=404, detail=\"Customer not found\")\n    if customer.deleted_at is not None:\n        raise HTTPException(status_code=409, detail=\"Customer already deactivated\")\n\n    customer.deleted_at = datetime.now(timezone.utc)\n    customer.is_active = False\n    session.commit()\n    return {\"deactivated\": True, \"customer_id\": customer.id}\n"
+    },
+    {
+      "id": "r21a-cdel-05",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/tasks/anonymise_customer.py",
+      "code": "import uuid\n\nfrom celery import shared_task\nfrom django.utils import timezone\n\nfrom app.models import Customer\n\nANON_PLACEHOLDER = \"deleted-user\"\n\n\n@shared_task\ndef anonymise_customer(customer_id: int) -> str:\n    try:\n        customer = Customer.objects.get(pk=customer_id)\n    except Customer.DoesNotExist:\n        return \"missing\"\n\n    customer.email = f\"{ANON_PLACEHOLDER}-{uuid.uuid4().hex[:8]}@invalid.local\"\n    customer.full_name = ANON_PLACEHOLDER\n    customer.phone = None\n    customer.address = None\n    customer.rut = None\n    customer.anonymised_at = timezone.now()\n    customer.save(\n        update_fields=[\n            \"email\",\n            \"full_name\",\n            \"phone\",\n            \"address\",\n            \"rut\",\n            \"anonymised_at\",\n        ]\n    )\n    return \"anonymised\"\n"
+    },
+    {
+      "id": "r21a-cdel-06",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/services/customer_retention.py",
+      "code": "from datetime import datetime, timedelta, timezone\nfrom typing import Optional\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\nCUSTOMER_RETENTION_DAYS = 730\n\n\ndef purge_expired_customers(session: Session, reference: Optional[datetime] = None) -> int:\n    now = reference or datetime.now(timezone.utc)\n    cutoff = now - timedelta(days=CUSTOMER_RETENTION_DAYS)\n\n    expired_ids = [\n        row[0]\n        for row in session.query(Customer.id).filter(Customer.deleted_at < cutoff).all()\n    ]\n    if not expired_ids:\n        return 0\n\n    session.execute(delete(Customer).where(Customer.id.in_(expired_ids)))\n    session.commit()\n    return len(expired_ids)\n\n\ndef run_nightly(session_factory) -> int:\n    with session_factory() as session:\n        return purge_expired_customers(session)\n"
+    },
+    {
+      "id": "r21a-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/management/commands/cleanup_invoices.py",
+      "code": "import logging\nfrom datetime import timedelta\n\nfrom django.core.management.base import BaseCommand\nfrom django.utils import timezone\n\nfrom app.models import Invoice\n\nlogger = logging.getLogger(__name__)\n\n\nclass Command(BaseCommand):\n    help = \"Remove old draft invoices to keep the table small\"\n\n    def add_arguments(self, parser):\n        parser.add_argument(\"--days\", type=int, default=365)\n\n    def handle(self, *args, **options):\n        cutoff = timezone.now() - timedelta(days=options[\"days\"])\n        stale = Invoice.objects.filter(status=\"draft\", created_at__lt=cutoff)\n        count = stale.count()\n        logger.info(\"invoice cleanup count=%s cutoff=%s\", count, cutoff.isoformat())\n        stale.delete()\n        self.stdout.write(f\"deleted {count} draft invoices\")\n"
+    },
+    {
+      "id": "r21a-bill-02",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/services/order_prune.py",
+      "code": "import logging\nfrom datetime import datetime, timedelta, timezone\nfrom typing import Optional\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Order\n\nARCHIVE_AFTER_DAYS = 730\n\nlogger = logging.getLogger(__name__)\n\n\ndef prune_old_orders(session: Session, reference: Optional[datetime] = None) -> int:\n    now = reference or datetime.now(timezone.utc)\n    cutoff = now - timedelta(days=ARCHIVE_AFTER_DAYS)\n\n    result = session.execute(delete(Order).where(Order.created_at < cutoff))\n    session.commit()\n    removed = result.rowcount or 0\n    logger.info(\"order prune removed=%s cutoff=%s\", removed, cutoff.isoformat())\n    return removed\n"
+    },
+    {
+      "id": "r21a-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/tasks/invoice_cleanup.py",
+      "code": "import logging\n\nfrom celery import shared_task\nfrom sqlalchemy import text\n\nfrom app.db import engine\n\nlogger = logging.getLogger(__name__)\n\n\n@shared_task\ndef cleanup_invoices() -> int:\n    statement = text(\n        \"DELETE FROM invoices WHERE issued_at < NOW() - INTERVAL '180 days'\"\n    )\n    with engine.begin() as conn:\n        result = conn.execute(statement)\n    deleted = result.rowcount or 0\n    logger.info(\"invoice cleanup removed=%s\", deleted)\n    return deleted\n"
+    },
+    {
+      "id": "r21a-bill-04",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/services/invoice_retention.py",
+      "code": "import logging\nfrom datetime import datetime, timedelta, timezone\nfrom typing import Optional\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Invoice\n\nINVOICE_RETENTION_DAYS = 2190\n\nlogger = logging.getLogger(__name__)\n\n\ndef purge_invoices(session: Session, reference: Optional[datetime] = None) -> int:\n    now = reference or datetime.now(timezone.utc)\n    cutoff = now - timedelta(days=INVOICE_RETENTION_DAYS)\n\n    result = session.execute(delete(Invoice).where(Invoice.issued_at < cutoff))\n    session.commit()\n    removed = result.rowcount or 0\n    logger.info(\"invoice purge removed=%s cutoff=%s\", removed, cutoff.isoformat())\n    return removed\n"
+    },
+    {
+      "id": "r21a-bill-05",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/management/commands/purge_orders.py",
+      "code": "from datetime import timedelta\n\nfrom django.core.management.base import BaseCommand\nfrom django.utils import timezone\n\nfrom app.models import Order\n\nORDER_RETENTION_DAYS = 2555\n\n\nclass Command(BaseCommand):\n    help = \"Purge orders past the legal retention window\"\n\n    def add_arguments(self, parser):\n        parser.add_argument(\"--dry-run\", action=\"store_true\")\n\n    def handle(self, *args, **options):\n        cutoff = timezone.now() - timedelta(days=ORDER_RETENTION_DAYS)\n        expired = Order.objects.filter(created_at__lt=cutoff)\n        total = expired.count()\n\n        if options[\"dry_run\"]:\n            self.stdout.write(f\"would purge {total} orders\")\n            return\n\n        expired.delete()\n        self.stdout.write(f\"purged {total} orders older than {ORDER_RETENTION_DAYS} days\")\n"
+    },
+    {
+      "id": "r21a-bill-06",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/tasks/archive_invoices.py",
+      "code": "import logging\n\nfrom celery import shared_task\nfrom django.utils import timezone\n\nfrom app.models import Invoice\nfrom app.storage import upload_archive\n\nlogger = logging.getLogger(__name__)\n\n\n@shared_task\ndef archive_invoices(batch_size: int = 500) -> int:\n    pending = Invoice.objects.filter(archived_at__isnull=True).order_by(\"issued_at\")[:batch_size]\n    moved = 0\n\n    for invoice in pending:\n        payload = invoice.to_export_dict()\n        key = f\"invoices/{invoice.issued_at:%Y/%m}/{invoice.pk}.json\"\n        upload_archive(key, payload)\n        invoice.archived_at = timezone.now()\n        invoice.save(update_fields=[\"archived_at\"])\n        moved += 1\n\n    logger.info(\"invoice archive moved=%s\", moved)\n    return moved\n"
+    },
+    {
+      "id": "r21a-reset-01",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/blueprints/password_reset.py",
+      "code": "import secrets\n\nfrom flask import Blueprint, jsonify, request\n\nfrom app.models import User, db\nfrom app.services.mailer import send_email\n\nreset_bp = Blueprint(\"reset\", __name__, url_prefix=\"/auth\")\n\n\n@reset_bp.post(\"/forgot-password\")\ndef forgot_password():\n    payload = request.get_json(silent=True) or {}\n    email = (payload.get(\"email\") or \"\").strip().lower()\n    user = User.query.filter_by(email=email).first()\n\n    if user is None:\n        return jsonify({\"detail\": \"if the account exists, an email was sent\"}), 200\n\n    token = secrets.token_urlsafe(32)\n    user.reset_token = token\n    db.session.commit()\n\n    send_email(user.email, \"Reset your password\", f\"Use this token: {token}\")\n    return jsonify({\"detail\": \"reset requested\", \"reset_token\": token}), 200\n"
+    },
+    {
+      "id": "r21a-reset-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/views/reset_request.py",
+      "code": "import logging\nimport secrets\n\nfrom django.shortcuts import redirect\nfrom django.views.decorators.http import require_POST\n\nfrom app.models import PasswordReset\nfrom app.utils import send_reset_sms\n\nlogger = logging.getLogger(__name__)\n\n\n@require_POST\ndef request_reset(request):\n    email = (request.POST.get(\"email\") or \"\").strip().lower()\n    if not email:\n        return redirect(\"/reset/request?error=missing_email\")\n\n    token = secrets.token_urlsafe(24)\n    PasswordReset.objects.create(email=email, token=token)\n    send_reset_sms(email, token)\n    logger.info(\"reset requested for %s\", email)\n\n    return redirect(f\"/reset/confirm?token={token}\")\n"
+    },
+    {
+      "id": "r21a-reset-03",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/api/password_reset.py",
+      "code": "import logging\n\nfrom rest_framework import status\nfrom rest_framework.permissions import AllowAny\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.models import User\nfrom app.services.mailer import send_password_reset\nfrom app.services.tokens import issue_reset_token\n\nlogger = logging.getLogger(__name__)\n\n\nclass PasswordResetRequestView(APIView):\n    permission_classes = [AllowAny]\n\n    def post(self, request):\n        email = (request.data.get(\"email\") or \"\").strip().lower()\n        user = User.objects.filter(email=email, is_active=True).first()\n\n        if user is not None:\n            token = issue_reset_token(user)\n            logger.info(\"password reset token issued for user=%s token=%s\", user.pk, token)\n            send_password_reset(user.email, token)\n\n        return Response(\n            {\"detail\": \"if the account exists, an email was sent\"},\n            status=status.HTTP_202_ACCEPTED,\n        )\n"
+    },
+    {
+      "id": "r21a-reset-04",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/api/forgot_password.py",
+      "code": "import hashlib\nimport secrets\n\nfrom fastapi import APIRouter, Depends\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import User\nfrom app.services.mailer import send_email\n\nrouter = APIRouter(prefix=\"/auth\", tags=[\"auth\"])\nGENERIC_DETAIL = \"If the account exists, an email was sent.\"\n\n\ndef hash_token(token: str) -> str:\n    return hashlib.sha256(token.encode(\"utf-8\")).hexdigest()\n\n\n@router.post(\"/forgot-password\")\ndef forgot_password(payload: dict, session: Session = Depends(get_session)):\n    email = (payload.get(\"email\") or \"\").strip().lower()\n    user = session.query(User).filter(User.email == email).first()\n\n    if user is not None:\n        token = secrets.token_urlsafe(32)\n        user.reset_token_hash = hash_token(token)\n        session.commit()\n        send_email(user.email, \"Reset your password\", f\"Use this token: {token}\")\n\n    return {\"detail\": GENERIC_DETAIL}\n"
+    },
+    {
+      "id": "r21a-reset-05",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/views/reset_sms.py",
+      "code": "from django.http import JsonResponse\nfrom django.views.decorators.http import require_POST\n\nfrom app.models import Account\nfrom app.services.sms import send_sms\nfrom app.services.tokens import issue_reset_token\n\n\n@require_POST\ndef request_reset_sms(request):\n    phone = (request.POST.get(\"phone\") or \"\").strip()\n    account = Account.objects.filter(phone=phone, is_active=True).first()\n\n    if account is not None:\n        token = issue_reset_token(account)\n        send_sms(account.phone, f\"Your reset code is {token}\")\n\n    return JsonResponse(\n        {\"detail\": \"if the account exists, a code was sent\"},\n        status=202,\n    )\n"
+    },
+    {
+      "id": "r21a-reset-06",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/tasks/reset_email.py",
+      "code": "from celery import shared_task\n\nfrom app.models import User\nfrom app.services.mailer import send_email\nfrom app.services.tokens import issue_reset_token\n\n\n@shared_task\ndef send_reset_email(user_id: int) -> str:\n    try:\n        user = User.objects.get(pk=user_id, is_active=True)\n    except User.DoesNotExist:\n        return \"missing\"\n\n    token = issue_reset_token(user)\n    send_email(\n        user.email,\n        \"Reset your password\",\n        f\"Open https://app.example.com/reset?token={token} to choose a new password.\",\n    )\n    return \"sent\"\n\n\ndef handle_request(email: str) -> dict:\n    user = User.objects.filter(email=email, is_active=True).first()\n    if user is not None:\n        send_reset_email.delay(user.pk)\n    return {\"detail\": \"if the account exists, an email was sent\"}\n"
+    },
+    {
+      "id": "r21a-key-01",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/api_keys.py",
+      "code": "import secrets\n\nfrom rest_framework import status\nfrom rest_framework.permissions import IsAuthenticated\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.models import ApiKey\n\n\ndef hash_key(raw: str) -> str:\n    ...\n\n\nclass ApiKeyCreateView(APIView):\n    permission_classes = [IsAuthenticated]\n\n    def post(self, request):\n        label = (request.data.get(\"label\") or \"default\").strip()\n        raw_key = f\"sk_live_{secrets.token_urlsafe(24)}\"\n\n        record = ApiKey.objects.create(\n            owner=request.user,\n            label=label,\n            prefix=raw_key[:12],\n            key_hash=hash_key(raw_key),\n        )\n\n        return Response(\n            {\n                \"id\": record.pk,\n                \"label\": record.label,\n                \"api_key\": raw_key,\n            },\n            status=status.HTTP_201_CREATED,\n        )\n"
+    },
+    {
+      "id": "r21a-key-02",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/blueprints/integrations.py",
+      "code": "from flask import Blueprint, g, jsonify\nfrom flask_login import login_required\n\nfrom app.models import Integration\n\nintegrations_bp = Blueprint(\"integrations\", __name__, url_prefix=\"/api/integrations\")\n\n\n@integrations_bp.get(\"/stripe\")\n@login_required\ndef stripe_settings():\n    integration = Integration.query.filter_by(\n        owner_id=g.current_user.id, name=\"stripe\"\n    ).first()\n    if integration is None:\n        return jsonify({\"error\": \"not configured\"}), 404\n\n    return jsonify(\n        {\n            \"id\": integration.id,\n            \"name\": integration.name,\n            \"mode\": integration.mode,\n            \"api_key\": integration.api_key,\n            \"webhook_secret\": integration.webhook_secret,\n            \"updated_at\": integration.updated_at.isoformat(),\n        }\n    )\n"
+    },
+    {
+      "id": "r21a-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/partner_webhook.py",
+      "code": "import logging\n\nfrom fastapi import APIRouter, Header, HTTPException\n\nfrom app.services.partner import verify_signature\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter(prefix=\"/webhooks\", tags=[\"webhooks\"])\n\n\n@router.post(\"/partner\")\nasync def partner_webhook(\n    payload: dict,\n    x_api_key: str = Header(default=\"\"),\n    x_signature: str = Header(default=\"\"),\n):\n    if not verify_signature(payload, x_signature, x_api_key):\n        logger.warning(\"webhook rejected api_key=%s signature=%s\", x_api_key, x_signature)\n        raise HTTPException(status_code=401, detail=\"invalid signature\")\n\n    logger.info(\"webhook accepted for partner key=%s\", x_api_key)\n    return {\"received\": True}\n"
+    },
+    {
+      "id": "r21a-key-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/integration_status.py",
+      "code": "from fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Integration\nfrom app.security import current_user\n\nrouter = APIRouter(prefix=\"/api/integrations\", tags=[\"integrations\"])\n\n\n@router.get(\"/{integration_id}/status\")\ndef integration_status(\n    integration_id: int,\n    session: Session = Depends(get_session),\n    user=Depends(current_user),\n):\n    integration = session.get(Integration, integration_id)\n    if integration is None or integration.owner_id != user.id:\n        raise HTTPException(status_code=404, detail=\"Integration not found\")\n\n    return {\n        \"id\": integration.id,\n        \"name\": integration.name,\n        \"api_key_configured\": bool(integration.api_key),\n        \"webhook_configured\": bool(integration.webhook_secret),\n        \"mode\": integration.mode,\n    }\n"
+    },
+    {
+      "id": "r21a-key-05",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/api_key_list.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.generics import ListAPIView\nfrom rest_framework.permissions import IsAuthenticated\n\nfrom app.models import ApiKey\n\n\ndef mask_key(prefix: str, last4: str) -> str:\n    return f\"{prefix}...{last4}\"\n\n\nclass ApiKeySerializer(serializers.ModelSerializer):\n    masked_key = serializers.SerializerMethodField()\n\n    class Meta:\n        model = ApiKey\n        fields = [\"id\", \"label\", \"masked_key\", \"created_at\", \"last_used_at\", \"revoked\"]\n\n    def get_masked_key(self, obj) -> str:\n        return mask_key(obj.prefix, obj.last4)\n\n\nclass ApiKeyListView(ListAPIView):\n    permission_classes = [IsAuthenticated]\n    serializer_class = ApiKeySerializer\n\n    def get_queryset(self):\n        return ApiKey.objects.filter(owner=self.request.user, revoked=False)\n"
+    },
+    {
+      "id": "r21a-key-06",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/views/service_tokens.py",
+      "code": "from django.contrib.auth.decorators import login_required\nfrom django.http import JsonResponse\nfrom django.views.decorators.http import require_GET\n\nfrom app.models import ServiceToken\n\n\n@login_required\n@require_GET\ndef token_list(request):\n    tokens = ServiceToken.objects.filter(owner=request.user).order_by(\"-created_at\")\n    payload = [\n        {\n            \"id\": token.pk,\n            \"name\": token.name,\n            \"scopes\": token.scopes,\n            \"created_at\": token.created_at.isoformat(),\n            \"expires_at\": token.expires_at.isoformat() if token.expires_at else None,\n            \"revoked\": token.revoked,\n        }\n        for token in tokens\n    ]\n    return JsonResponse({\"tokens\": payload, \"count\": len(payload)})\n"
+    },
+    {
+      "id": "r21b-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/api/customers.py",
+      "code": "import logging\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Customer\nfrom app.schemas import CustomerOut\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter(prefix='/customers', tags=['customers'])\n\n\n@router.get('/{customer_id}', response_model=CustomerOut)\ndef get_customer(customer_id: int, session: Session = Depends(get_session)):\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        raise HTTPException(status_code=404, detail='Customer not found')\n    logger.info('Fetched profile rut=%s name=%s', customer.rut, customer.first_name)\n    return customer\n\n\n@router.post('/{customer_id}/suspend', status_code=200)\ndef suspend_customer(customer_id: int, session: Session = Depends(get_session)):\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        raise HTTPException(status_code=404, detail='Customer not found')\n    if customer.status == 'suspended':\n        raise HTTPException(status_code=409, detail='Customer already suspended')\n    customer.status = 'suspended'\n    session.add(customer)\n    session.commit()\n    logger.info('Suspended customer id=%s', customer_id)\n    return {'status': 'suspended', 'customer_id': customer_id}\n"
+    },
+    {
+      "id": "r21b-log-02",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/views/checkout.py",
+      "code": "import logging\n\nfrom django.contrib.auth.mixins import LoginRequiredMixin\nfrom django.http import JsonResponse\nfrom django.views import View\n\nfrom app.models import Order\nfrom app.services.pricing import quote_order\n\nlogger = logging.getLogger(__name__)\n\n\nclass CheckoutView(LoginRequiredMixin, View):\n    def post(self, request, order_id):\n        try:\n            order = Order.objects.get(pk=order_id, user=request.user)\n        except Order.DoesNotExist:\n            return JsonResponse({'error': 'order not found'}, status=404)\n\n        if order.status != 'draft':\n            return JsonResponse({'error': 'order already submitted'}, status=409)\n\n        quote = quote_order(order)\n        logger.info(\n            'Checkout started order_id=%s customer_email=%s total=%s',\n            order.id,\n            request.user.email,\n            quote.total,\n        )\n\n        order.status = 'pending_payment'\n        order.total = quote.total\n        order.save(update_fields=['status', 'total'])\n        return JsonResponse({'order_id': order.id, 'total': str(quote.total)})\n"
+    },
+    {
+      "id": "r21b-log-03",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/tasks/delivery.py",
+      "code": "import logging\n\nfrom celery import shared_task\n\nfrom app.models import Customer\nfrom app.services.sms import send_sms\n\nlogger = logging.getLogger(__name__)\n\n\n@shared_task(bind=True, max_retries=3, default_retry_delay=60)\ndef notify_customer_about_delivery(self, customer_id: int, tracking_code: str):\n    try:\n        customer = Customer.objects.get(pk=customer_id)\n    except Customer.DoesNotExist:\n        logger.warning('Customer %s no longer exists', customer_id)\n        return {'status': 'skipped'}\n\n    if not customer.phone:\n        logger.warning('Customer %s has no phone on file', customer_id)\n        return {'status': 'skipped'}\n\n    message = f'Your order is on the way. Tracking: {tracking_code}'\n    logger.info('Sending delivery SMS phone=%s tracking=%s', customer.phone, tracking_code)\n\n    try:\n        send_sms(customer.phone, message)\n    except Exception as exc:\n        logger.exception('SMS delivery failed for customer %s', customer_id)\n        raise self.retry(exc=exc)\n\n    return {'status': 'sent', 'customer_id': customer_id}\n"
+    },
+    {
+      "id": "r21b-log-04",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/onboarding.py",
+      "code": "import logging\n\nfrom app.clients.mailer import send_template_email\nfrom app.models import Customer\nfrom app.utils.pii import mask_email\n\nlogger = logging.getLogger(__name__)\n\n\ndef send_welcome_email(customer: Customer) -> bool:\n    if not customer.email:\n        logger.info('Skipping welcome email for customer %s: no address', customer.id)\n        return False\n\n    context = {\n        'first_name': customer.first_name,\n        'portal_url': 'https://portal.example.com/login',\n    }\n    logger.info(\n        'Sending welcome email customer=%s email=%s',\n        customer.id,\n        mask_email(customer.email),\n    )\n\n    try:\n        send_template_email(to=customer.email, template='welcome', context=context)\n    except Exception:\n        logger.exception('Welcome email failed for customer %s', customer.id)\n        return False\n\n    logger.info('Welcome email delivered customer=%s', customer.id)\n    return True\n\n\ndef welcome_is_pending(customer: Customer) -> bool:\n    return bool(customer.email) and not customer.welcome_sent_at\n"
+    },
+    {
+      "id": "r21b-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/api/orders.py",
+      "code": "import logging\nimport uuid\n\nfrom fastapi import APIRouter, Depends, Header, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Order\nfrom app.schemas import OrderOut\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter(prefix='/orders', tags=['orders'])\n\n\n@router.post('/{order_id}/cancel', response_model=OrderOut)\ndef cancel_order(\n    order_id: int,\n    session: Session = Depends(get_session),\n    x_request_id: str | None = Header(default=None),\n):\n    request_id = x_request_id or str(uuid.uuid4())\n    order = session.get(Order, order_id)\n    if order is None:\n        raise HTTPException(status_code=404, detail='Order not found')\n    if order.status in {'shipped', 'delivered'}:\n        raise HTTPException(status_code=409, detail='Order can no longer be cancelled')\n\n    logger.info('Cancel requested order_id=%s request_id=%s', order.id, request_id)\n\n    order.status = 'cancelled'\n    session.add(order)\n    session.commit()\n    session.refresh(order)\n\n    logger.info('Order cancelled order_id=%s request_id=%s', order.id, request_id)\n    return order\n"
+    },
+    {
+      "id": "r21b-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/services/audit.py",
+      "code": "import hashlib\nimport hmac\nimport logging\n\nfrom django.conf import settings\n\nlogger = logging.getLogger(__name__)\n\n\ndef fingerprint(value: str) -> str:\n    key = settings.AUDIT_FINGERPRINT_KEY.encode('utf-8')\n    digest = hmac.new(key, value.encode('utf-8'), hashlib.sha256).hexdigest()\n    return digest[:16]\n\n\ndef record_identity_check(customer, actor_id: int, outcome: str) -> None:\n    logger.info(\n        'Identity check customer=%s rut_fingerprint=%s actor=%s outcome=%s',\n        customer.id,\n        fingerprint(customer.rut),\n        actor_id,\n        outcome,\n    )\n\n\ndef record_address_change(customer, actor_id: int) -> None:\n    if customer.address:\n        logger.info(\n            'Address updated customer=%s address_fingerprint=%s actor=%s',\n            customer.id,\n            fingerprint(customer.address),\n            actor_id,\n        )\n    else:\n        logger.info('Address cleared customer=%s actor=%s', customer.id, actor_id)\n"
+    },
+    {
+      "id": "r21b-admin-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/api/admin_customers.py",
+      "code": "from rest_framework import serializers, viewsets\nfrom rest_framework.permissions import IsAdminUser\n\nfrom app.models import Customer\n\n\nclass AdminCustomerSerializer(serializers.ModelSerializer):\n    full_name = serializers.SerializerMethodField()\n\n    class Meta:\n        model = Customer\n        fields = [\n            'id',\n            'full_name',\n            'email',\n            'phone',\n            'rut',\n            'status',\n            'created_at',\n        ]\n\n    def get_full_name(self, obj):\n        return f'{obj.first_name} {obj.last_name}'.strip()\n\n\nclass AdminCustomerViewSet(viewsets.ReadOnlyModelViewSet):\n    queryset = Customer.objects.all().order_by('-created_at')\n    serializer_class = AdminCustomerSerializer\n    permission_classes = [IsAdminUser]\n    filterset_fields = ['status']\n    search_fields = ['email', 'rut', 'last_name']\n"
+    },
+    {
+      "id": "r21b-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin_views/customers.py",
+      "code": "from django.contrib.admin.views.decorators import staff_member_required\nfrom django.http import JsonResponse\nfrom django.shortcuts import get_object_or_404\nfrom django.views.decorators.http import require_GET\n\nfrom app.models import Customer\n\n\n@require_GET\n@staff_member_required\ndef customer_detail(request, customer_id):\n    customer = get_object_or_404(Customer, pk=customer_id)\n    return JsonResponse(\n        {\n            'id': customer.id,\n            'full_name': f'{customer.first_name} {customer.last_name}'.strip(),\n            'email': customer.email,\n            'phone': customer.phone,\n            'shipping_address': customer.shipping_address,\n            'status': customer.status,\n            'created_at': customer.created_at.isoformat(),\n        }\n    )\n\n\n@require_GET\n@staff_member_required\ndef customer_search(request):\n    term = request.GET.get('q', '').strip()\n    if len(term) < 3:\n        return JsonResponse({'results': []})\n    matches = Customer.objects.filter(last_name__icontains=term)[:20]\n    return JsonResponse(\n        {'results': [{'id': c.id, 'last_name': c.last_name, 'phone': c.phone} for c in matches]}\n    )\n"
+    },
+    {
+      "id": "r21b-admin-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/routes.py",
+      "code": "from flask import Blueprint, jsonify\nfrom flask_login import login_required, current_user\n\nfrom app.extensions import db\nfrom app.models import Customer\nfrom app.security import admin_required\n\nadmin_bp = Blueprint('admin_customers', __name__, url_prefix='/admin/customers')\n\n\n@admin_bp.get('/<int:customer_id>')\n@login_required\n@admin_required\ndef customer_detail(customer_id):\n    customer = db.session.get(Customer, customer_id)\n    if customer is None:\n        return jsonify({'error': 'not found'}), 404\n    return jsonify(\n        {\n            'id': customer.id,\n            'name': customer.full_name,\n            'rut': customer.rut,\n            'email': customer.email,\n            'orders_count': customer.orders.count(),\n            'status': customer.status,\n        }\n    )\n\n\n@admin_bp.get('/export')\n@login_required\n@admin_required\ndef export_customers():\n    rows = [\n        {'id': c.id, 'name': c.full_name, 'rut': c.rut}\n        for c in db.session.query(Customer).order_by(Customer.id).limit(500)\n    ]\n    return jsonify({'rows': rows, 'actor': current_user.id})\n"
+    },
+    {
+      "id": "r21b-admin-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/admin_customers.py",
+      "code": "from rest_framework import serializers, viewsets\nfrom rest_framework.permissions import IsAdminUser\n\nfrom app.models import Customer\nfrom app.utils.pii import mask_email, mask_phone\n\n\nclass AdminCustomerSerializer(serializers.ModelSerializer):\n    email = serializers.SerializerMethodField()\n    phone = serializers.SerializerMethodField()\n\n    class Meta:\n        model = Customer\n        fields = ['id', 'full_name', 'email', 'phone', 'status', 'created_at']\n\n    def get_email(self, obj):\n        return mask_email(obj.email) if obj.email else None\n\n    def get_phone(self, obj):\n        return mask_phone(obj.phone) if obj.phone else None\n\n\nclass AdminCustomerViewSet(viewsets.ReadOnlyModelViewSet):\n    queryset = Customer.objects.all().order_by('-created_at')\n    serializer_class = AdminCustomerSerializer\n    permission_classes = [IsAdminUser]\n    filterset_fields = ['status']\n\n    def get_queryset(self):\n        queryset = super().get_queryset()\n        term = self.request.query_params.get('q')\n        if term:\n            queryset = queryset.filter(last_name__icontains=term)\n        return queryset\n"
+    },
+    {
+      "id": "r21b-admin-05",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin_views/overview.py",
+      "code": "from django.contrib.admin.views.decorators import staff_member_required\nfrom django.db.models import Count\nfrom django.http import JsonResponse\nfrom django.views.decorators.http import require_GET\n\nfrom app.models import Customer\n\n\n@require_GET\n@staff_member_required\ndef customer_overview(request):\n    rows = Customer.objects.values('status').annotate(total=Count('id')).order_by('status')\n    return JsonResponse({'by_status': list(rows)})\n\n\n@require_GET\n@staff_member_required\ndef customer_activity(request, customer_id):\n    row = (\n        Customer.objects.filter(pk=customer_id)\n        .values('id', 'status', 'created_at', 'last_order_at')\n        .first()\n    )\n    if row is None:\n        return JsonResponse({'error': 'not found'}, status=404)\n    return JsonResponse(\n        {\n            'id': row['id'],\n            'status': row['status'],\n            'created_at': row['created_at'].isoformat(),\n            'last_order_at': row['last_order_at'].isoformat() if row['last_order_at'] else None,\n        }\n    )\n"
+    },
+    {
+      "id": "r21b-admin-06",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/api/profile.py",
+      "code": "from fastapi import APIRouter, Depends, HTTPException\n\nfrom app.auth import get_current_customer\nfrom app.models import Customer\nfrom app.schemas import ProfileOut\n\nrouter = APIRouter(prefix='/me', tags=['profile'])\n\n\n@router.get('/profile', response_model=ProfileOut)\ndef read_own_profile(customer: Customer = Depends(get_current_customer)):\n    return customer\n\n\n@router.patch('/profile', response_model=ProfileOut)\ndef update_own_profile(payload: dict, customer: Customer = Depends(get_current_customer)):\n    allowed = {'first_name', 'last_name', 'phone', 'email'}\n    unknown = set(payload) - allowed\n    if unknown:\n        raise HTTPException(status_code=422, detail=f'Unsupported fields: {sorted(unknown)}')\n\n    for field, value in payload.items():\n        setattr(customer, field, value)\n\n    customer.save()\n    return customer\n\n\n@router.get('/orders-summary')\ndef own_orders_summary(customer: Customer = Depends(get_current_customer)):\n    orders = customer.orders.all()\n    return {'total': len(orders), 'open': sum(1 for o in orders if o.status == 'open')}\n"
+    },
+    {
+      "id": "r21b-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/users.py",
+      "code": "from fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import User\n\nrouter = APIRouter(prefix='/users', tags=['users'])\n\n\n@router.get('/{user_id}')\ndef get_user(user_id: int, session: Session = Depends(get_session)):\n    user = session.get(User, user_id)\n    if user is None:\n        raise HTTPException(status_code=404, detail='User not found')\n    return {\n        'id': user.id,\n        'username': user.username,\n        'email': user.email,\n        'password_hash': user.password_hash,\n        'is_active': user.is_active,\n    }\n\n\n@router.post('/{user_id}/reset-password')\ndef reset_password(user_id: int, session: Session = Depends(get_session)):\n    user = session.get(User, user_id)\n    if user is None:\n        raise HTTPException(status_code=404, detail='User not found')\n    temporary = 'ChangeMe123!'\n    user.set_password(temporary)\n    session.add(user)\n    session.commit()\n    return {'id': user.id, 'temporary_password': temporary}\n"
+    },
+    {
+      "id": "r21b-cred-02",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/webhooks.py",
+      "code": "from rest_framework import serializers, viewsets\nfrom rest_framework.permissions import IsAuthenticated\n\nfrom app.models import WebhookEndpoint\n\n\nclass WebhookEndpointSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = WebhookEndpoint\n        fields = [\n            'id',\n            'url',\n            'secret_key',\n            'is_active',\n            'created_at',\n        ]\n\n\nclass WebhookEndpointViewSet(viewsets.ModelViewSet):\n    serializer_class = WebhookEndpointSerializer\n    permission_classes = [IsAuthenticated]\n\n    def get_queryset(self):\n        return WebhookEndpoint.objects.filter(owner=self.request.user)\n\n    def perform_create(self, serializer):\n        serializer.save(owner=self.request.user)\n\n    def perform_destroy(self, instance):\n        instance.is_active = False\n        instance.save(update_fields=['is_active'])\n"
+    },
+    {
+      "id": "r21b-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/api/users_admin.py",
+      "code": "from flask import Blueprint, jsonify, request\n\nfrom app.extensions import db\nfrom app.models import User\nfrom app.security import admin_required\n\nusers_bp = Blueprint('users', __name__, url_prefix='/api/users')\n\n\n@users_bp.post('/')\n@admin_required\ndef create_user():\n    payload = request.get_json(silent=True) or {}\n    email = (payload.get('email') or '').strip().lower()\n    if not email or '@' not in email:\n        return jsonify({'error': 'valid email required'}), 422\n\n    if User.query.filter_by(email=email).first():\n        return jsonify({'error': 'email already registered'}), 409\n\n    initial_password = payload.get('password') or 'Welcome2024!'\n    user = User(email=email, full_name=payload.get('full_name', ''))\n    user.set_password(initial_password)\n    db.session.add(user)\n    db.session.commit()\n\n    return (\n        jsonify(\n            {\n                'id': user.id,\n                'email': user.email,\n                'password': initial_password,\n                'must_change_password': True,\n            }\n        ),\n        201,\n    )\n"
+    },
+    {
+      "id": "r21b-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/profile_serializers.py",
+      "code": "from rest_framework import serializers\n\nfrom app.models import User\n\n\nclass UserProfileSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = User\n        fields = [\n            'id',\n            'username',\n            'email',\n            'first_name',\n            'last_name',\n            'date_joined',\n            'is_active',\n        ]\n        read_only_fields = ['id', 'date_joined', 'is_active']\n\n\nclass UserProfileUpdateSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = User\n        fields = ['first_name', 'last_name', 'email']\n\n    def validate_email(self, value):\n        value = value.strip().lower()\n        if User.objects.exclude(pk=self.instance.pk).filter(email=value).exists():\n            raise serializers.ValidationError('email already in use')\n        return value\n\n    def update(self, instance, validated_data):\n        for field, value in validated_data.items():\n            setattr(instance, field, value)\n        instance.save(update_fields=list(validated_data))\n        return instance\n"
+    },
+    {
+      "id": "r21b-cred-05",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/accounts.py",
+      "code": "from fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Account\nfrom app.schemas import AccountSecurityOut\n\nrouter = APIRouter(prefix='/accounts', tags=['accounts'])\n\n\n@router.get('/{account_id}/security', response_model=AccountSecurityOut)\ndef account_security(account_id: int, session: Session = Depends(get_session)):\n    account = session.get(Account, account_id)\n    if account is None:\n        raise HTTPException(status_code=404, detail='Account not found')\n    return {\n        'id': account.id,\n        'has_password': bool(account.password_hash),\n        'mfa_enabled': account.mfa_enabled,\n        'last_password_change': account.last_password_change,\n        'failed_login_count': account.failed_login_count,\n    }\n\n\n@router.post('/{account_id}/security/mfa')\ndef toggle_mfa(account_id: int, enabled: bool, session: Session = Depends(get_session)):\n    account = session.get(Account, account_id)\n    if account is None:\n        raise HTTPException(status_code=404, detail='Account not found')\n    account.mfa_enabled = enabled\n    session.add(account)\n    session.commit()\n    return {'id': account.id, 'mfa_enabled': account.mfa_enabled}\n"
+    },
+    {
+      "id": "r21b-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/views/clients.py",
+      "code": "from django.contrib.auth.decorators import login_required\nfrom django.http import JsonResponse\nfrom django.views.decorators.http import require_GET\n\nfrom app.models import ApiClient\n\n\n@require_GET\n@login_required\ndef client_details(request, client_id):\n    try:\n        client = ApiClient.objects.get(pk=client_id, owner=request.user)\n    except ApiClient.DoesNotExist:\n        return JsonResponse({'error': 'not found'}, status=404)\n    return JsonResponse(\n        {\n            'id': client.id,\n            'name': client.name,\n            'scopes': client.scopes,\n            'created_at': client.created_at.isoformat(),\n            'last_used_at': client.last_used_at.isoformat() if client.last_used_at else None,\n            'request_count_30d': client.request_count_30d,\n        }\n    )\n\n\n@require_GET\n@login_required\ndef client_list(request):\n    clients = ApiClient.objects.filter(owner=request.user, revoked=False)\n    return JsonResponse(\n        {\n            'clients': [\n                {'id': c.id, 'name': c.name, 'created_at': c.created_at.isoformat()}\n                for c in clients\n            ]\n        }\n    )\n"
+    },
+    {
+      "id": "r21b-del-01",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/management/commands/prune_customers.py",
+      "code": "from datetime import timedelta\n\nfrom django.core.management.base import BaseCommand\nfrom django.utils import timezone\n\nfrom app.models import Customer\n\n\nclass Command(BaseCommand):\n    help = 'Remove customers that never completed onboarding'\n\n    def add_arguments(self, parser):\n        parser.add_argument('--dry-run', action='store_true')\n\n    def handle(self, *args, **options):\n        cutoff = timezone.now() - timedelta(days=90)\n        stale = Customer.objects.filter(\n            onboarding_completed=False,\n            created_at__lt=cutoff,\n        )\n        count = stale.count()\n        if options['dry_run']:\n            self.stdout.write(f'Would delete {count} customers')\n            return\n        deleted, _ = stale.delete()\n        self.stdout.write(f'Deleted {deleted} customer rows')\n"
+    },
+    {
+      "id": "r21b-del-02",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/tasks/customer_purge.py",
+      "code": "import logging\n\nfrom celery import shared_task\nfrom django.db import connection\n\nlogger = logging.getLogger(__name__)\n\n\n@shared_task\ndef purge_inactive_customers():\n    sql = \"\"\"\n        DELETE FROM customers\n        WHERE last_login_at IS NULL\n          AND created_at < NOW() - INTERVAL '30 days'\n    \"\"\"\n    with connection.cursor() as cursor:\n        cursor.execute(sql)\n        removed = cursor.rowcount\n    logger.info('Purged %s inactive customer rows', removed)\n    return {'removed': removed}\n\n\n@shared_task\ndef purge_duplicate_customers():\n    sql = \"\"\"\n        DELETE FROM customers c\n        USING customers d\n        WHERE c.email = d.email\n          AND c.id > d.id\n          AND c.created_at > NOW() - INTERVAL '60 days'\n    \"\"\"\n    with connection.cursor() as cursor:\n        cursor.execute(sql)\n        removed = cursor.rowcount\n    logger.info('Removed %s duplicate customer rows', removed)\n    return {'removed': removed}\n"
+    },
+    {
+      "id": "r21b-del-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/services/customer_cleanup.py",
+      "code": "from datetime import datetime, timedelta\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\n\ndef remove_abandoned_customers(session: Session, days: int = 45) -> int:\n    cutoff = datetime.utcnow() - timedelta(days=days)\n    statement = delete(Customer).where(\n        Customer.status == 'abandoned',\n        Customer.updated_at < cutoff,\n    )\n    result = session.execute(statement)\n    session.commit()\n    return result.rowcount\n\n\ndef remove_customer(session: Session, customer_id: int) -> bool:\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        return False\n    session.delete(customer)\n    session.commit()\n    return True\n"
+    },
+    {
+      "id": "r21b-del-04",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/api/account_closure.py",
+      "code": "from datetime import datetime\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Customer\n\nrouter = APIRouter(prefix='/customers', tags=['customers'])\n\n\n@router.delete('/{customer_id}', status_code=204)\ndef request_account_closure(customer_id: int, session: Session = Depends(get_session)):\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        raise HTTPException(status_code=404, detail='Customer not found')\n    if customer.deleted_at is not None:\n        raise HTTPException(status_code=409, detail='Account already closed')\n\n    customer.deleted_at = datetime.utcnow()\n    customer.status = 'closed'\n    customer.email = f'closed+{customer.id}@example.invalid'\n    session.add(customer)\n    session.commit()\n    return None\n"
+    },
+    {
+      "id": "r21b-del-05",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/tasks/retention.py",
+      "code": "from datetime import timedelta\n\nfrom celery import shared_task\nfrom django.utils import timezone\n\nfrom app.models import Customer\n\nRETENTION_DAYS = 730\n\n\n@shared_task\ndef purge_customers_past_retention():\n    cutoff = timezone.now() - timedelta(days=RETENTION_DAYS)\n    eligible = Customer.objects.filter(\n        status='closed',\n        deleted_at__isnull=False,\n        deleted_at__lt=cutoff,\n    )\n    total = eligible.count()\n    eligible.delete()\n    return {'purged': total}\n\n\n@shared_task\ndef report_retention_backlog():\n    cutoff = timezone.now() - timedelta(days=RETENTION_DAYS)\n    pending = Customer.objects.filter(status='closed', deleted_at__lt=cutoff).count()\n    return {'pending_purge': pending, 'retention_days': RETENTION_DAYS}\n"
+    },
+    {
+      "id": "r21b-del-06",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "path": "app/services/anonymisation.py",
+      "code": "from sqlalchemy import update\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\nANONYMISED_EMAIL = 'removed@example.invalid'\n\n\ndef anonymise_customer(session: Session, customer_id: int) -> bool:\n    customer = session.get(Customer, customer_id)\n    if customer is None:\n        return False\n\n    session.execute(\n        update(Customer)\n        .where(Customer.id == customer_id)\n        .values(\n            first_name='Removed',\n            last_name='Customer',\n            email=ANONYMISED_EMAIL,\n            phone=None,\n            rut=None,\n            shipping_address=None,\n            status='anonymised',\n        )\n    )\n    session.commit()\n    return True\n\n\ndef anonymise_closed_accounts(session: Session, limit: int = 200) -> int:\n    rows = session.query(Customer.id).filter(Customer.status == 'closed').limit(limit).all()\n    count = 0\n    for (customer_id,) in rows:\n        if anonymise_customer(session, customer_id):\n            count += 1\n    return count\n"
+    },
+    {
+      "id": "r21b-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/management/commands/prune_orders.py",
+      "code": "import logging\nfrom datetime import timedelta\n\nfrom django.core.management.base import BaseCommand\nfrom django.utils import timezone\n\nfrom app.models import Order\n\nlogger = logging.getLogger(__name__)\n\n\nclass Command(BaseCommand):\n    help = 'Archive old orders and free storage'\n\n    def handle(self, *args, **options):\n        cutoff = timezone.now() - timedelta(days=365)\n        queryset = Order.objects.filter(created_at__lt=cutoff, status='completed')\n        count = queryset.count()\n        logger.info('Deleting %s completed orders older than 365 days', count)\n        queryset.delete()\n        self.stdout.write(f'Removed {count} orders')\n"
+    },
+    {
+      "id": "r21b-bill-02",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/tasks/invoice_purge.py",
+      "code": "from celery import shared_task\nfrom django.db import connection\n\n\n@shared_task\ndef purge_old_invoices():\n    with connection.cursor() as cursor:\n        cursor.execute(\n            \"\"\"\n            DELETE FROM invoices\n            WHERE issued_at < NOW() - INTERVAL '180 days'\n              AND status = 'paid'\n            \"\"\"\n        )\n        removed = cursor.rowcount\n    return {'removed': removed}\n\n\n@shared_task\ndef purge_draft_invoices():\n    with connection.cursor() as cursor:\n        cursor.execute(\n            \"\"\"\n            DELETE FROM invoices\n            WHERE status = 'draft'\n              AND created_at < NOW() - INTERVAL '30 days'\n            \"\"\"\n        )\n        removed = cursor.rowcount\n    return {'removed': removed}\n"
+    },
+    {
+      "id": "r21b-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/services/billing_cleanup.py",
+      "code": "from datetime import datetime, timedelta\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Invoice\n\nARCHIVE_AFTER_DAYS = 730\n\n\ndef purge_archived_invoices(session: Session) -> int:\n    cutoff = datetime.utcnow() - timedelta(days=ARCHIVE_AFTER_DAYS)\n    statement = delete(Invoice).where(\n        Invoice.status == 'archived',\n        Invoice.issued_at < cutoff,\n    )\n    result = session.execute(statement)\n    session.commit()\n    return result.rowcount\n\n\ndef purge_cancelled_orders(session: Session, order_model) -> int:\n    cutoff = datetime.utcnow() - timedelta(days=90)\n    statement = delete(order_model).where(\n        order_model.status == 'cancelled',\n        order_model.created_at < cutoff,\n    )\n    result = session.execute(statement)\n    session.commit()\n    return result.rowcount\n"
+    },
+    {
+      "id": "r21b-bill-04",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/tasks/invoice_retention.py",
+      "code": "import logging\nfrom datetime import timedelta\n\nfrom celery import shared_task\nfrom django.utils import timezone\n\nfrom app.models import Invoice\n\nlogger = logging.getLogger(__name__)\n\nINVOICE_RETENTION_DAYS = 2190\n\n\ndef _retention_cutoff():\n    return timezone.now() - timedelta(days=INVOICE_RETENTION_DAYS)\n\n\n@shared_task\ndef purge_expired_invoices():\n    queryset = Invoice.objects.filter(issued_at__lt=_retention_cutoff())\n    count = queryset.count()\n    if count == 0:\n        logger.info('No invoices past the retention window')\n        return {'removed': 0}\n    queryset.delete()\n    logger.info('Removed %s invoices older than %s days', count, INVOICE_RETENTION_DAYS)\n    return {'removed': count}\n\n\n@shared_task\ndef report_expired_invoices():\n    pending = Invoice.objects.filter(issued_at__lt=_retention_cutoff()).count()\n    return {'pending_purge': pending, 'retention_days': INVOICE_RETENTION_DAYS}\n"
+    },
+    {
+      "id": "r21b-bill-05",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/services/order_retention.py",
+      "code": "from datetime import datetime, timedelta\n\nfrom flask import current_app\nfrom sqlalchemy import delete\n\nfrom app.extensions import db\nfrom app.models import Order\n\nRETENTION_DAYS = 2555\n\n\ndef purge_closed_orders() -> int:\n    cutoff = datetime.utcnow() - timedelta(days=RETENTION_DAYS)\n    statement = delete(Order).where(Order.status == 'closed').where(Order.created_at < cutoff)\n    result = db.session.execute(statement)\n    db.session.commit()\n    removed = result.rowcount\n    current_app.logger.info('Purged %s orders past retention', removed)\n    return removed\n\n\ndef retention_report() -> dict:\n    cutoff = datetime.utcnow() - timedelta(days=RETENTION_DAYS)\n    eligible = db.session.query(Order).filter(Order.created_at < cutoff).count()\n    return {'retention_days': RETENTION_DAYS, 'eligible_for_purge': eligible}\n"
+    },
+    {
+      "id": "r21b-bill-06",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/services/invoice_export.py",
+      "code": "from datetime import datetime, timedelta\n\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Invoice\nfrom app.storage import upload_export\n\n\ndef export_aged_invoices(session: Session, days: int = 2190) -> str:\n    cutoff = datetime.utcnow() - timedelta(days=days)\n    rows = (\n        session.query(Invoice)\n        .filter(Invoice.issued_at < cutoff)\n        .order_by(Invoice.issued_at)\n        .all()\n    )\n\n    lines = ['invoice_id,issued_at,total,currency']\n    for invoice in rows:\n        lines.append(\n            f'{invoice.id},{invoice.issued_at.isoformat()},{invoice.total},{invoice.currency}'\n        )\n\n    payload = '\\n'.join(lines).encode('utf-8')\n    key = f'exports/invoices-{datetime.utcnow():%Y%m%d}.csv'\n    upload_export(key, payload)\n    return key\n"
+    },
+    {
+      "id": "r21b-reset-01",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/api/password_reset.py",
+      "code": "import secrets\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import PasswordResetToken, User\n\nrouter = APIRouter(prefix='/auth', tags=['auth'])\n\n\n@router.post('/forgot-password')\ndef forgot_password(payload: dict, session: Session = Depends(get_session)):\n    email = (payload.get('email') or '').strip().lower()\n    user = session.query(User).filter(User.email == email).first()\n    if user is None:\n        raise HTTPException(status_code=404, detail='No account with that email')\n\n    token = secrets.token_urlsafe(32)\n    record = PasswordResetToken(user_id=user.id, token=token)\n    session.add(record)\n    session.commit()\n\n    return {\n        'message': 'Use the token below to reset your password',\n        'reset_token': token,\n        'expires_in': 3600,\n    }\n"
+    },
+    {
+      "id": "r21b-reset-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/views/password_reset.py",
+      "code": "import secrets\n\nfrom django.http import HttpResponseRedirect\nfrom django.shortcuts import get_object_or_404\nfrom django.views.decorators.http import require_POST\n\nfrom app.models import PasswordResetToken, User\n\n\n@require_POST\ndef request_password_reset(request):\n    email = request.POST.get('email', '').strip().lower()\n    user = User.objects.filter(email=email, is_active=True).first()\n    if user is None:\n        return HttpResponseRedirect('/reset/sent/')\n\n    token = secrets.token_urlsafe(32)\n    PasswordResetToken.objects.create(user=user, token=token)\n\n    return HttpResponseRedirect(f'/reset/confirm/?token={token}')\n\n\n@require_POST\ndef confirm_password_reset(request):\n    token = request.POST.get('token', '')\n    record = get_object_or_404(PasswordResetToken, token=token, used=False)\n    user = record.user\n    user.set_password(request.POST.get('password', ''))\n    user.save(update_fields=['password'])\n    record.used = True\n    record.save(update_fields=['used'])\n    return HttpResponseRedirect('/login/?reset=ok')\n"
+    },
+    {
+      "id": "r21b-reset-03",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/tasks/password_reset.py",
+      "code": "import logging\nimport secrets\n\nfrom celery import shared_task\n\nfrom app.models import PasswordResetToken, User\nfrom app.services.sms import send_sms\n\nlogger = logging.getLogger(__name__)\n\n\n@shared_task\ndef send_password_reset_sms(user_id: int):\n    user = User.objects.filter(pk=user_id, is_active=True).first()\n    if user is None:\n        logger.warning('Password reset requested for unknown user %s', user_id)\n        return {'status': 'skipped'}\n\n    token = secrets.token_urlsafe(24)\n    PasswordResetToken.objects.create(user=user, token=token)\n    logger.info('Generated reset token=%s for user_id=%s', token, user.id)\n\n    send_sms(user.phone, f'Your reset code is {token}')\n    return {'status': 'sent', 'user_id': user.id}\n"
+    },
+    {
+      "id": "r21b-reset-04",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/api/password_reset.py",
+      "code": "import secrets\n\nfrom fastapi import APIRouter, BackgroundTasks, Depends\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import PasswordResetToken, User\nfrom app.services.mail import send_password_reset_email\n\nrouter = APIRouter(prefix='/auth', tags=['auth'])\n\nGENERIC_MESSAGE = 'If the account exists, we sent an email with reset instructions.'\n\n\n@router.post('/forgot-password')\ndef forgot_password(\n    payload: dict,\n    background: BackgroundTasks,\n    session: Session = Depends(get_session),\n):\n    email = (payload.get('email') or '').strip().lower()\n    user = session.query(User).filter(User.email == email, User.is_active.is_(True)).first()\n    if user is not None:\n        token = secrets.token_urlsafe(32)\n        session.add(PasswordResetToken(user_id=user.id, token=token))\n        session.commit()\n        background.add_task(send_password_reset_email, user.email, token)\n\n    return {'message': GENERIC_MESSAGE}\n"
+    },
+    {
+      "id": "r21b-reset-05",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/views/reset_code.py",
+      "code": "import secrets\n\nfrom django.contrib.auth.models import User\nfrom django.http import JsonResponse\nfrom django.views.decorators.csrf import csrf_exempt\nfrom django.views.decorators.http import require_POST\n\nfrom app.models import PasswordResetToken\nfrom app.services.sms import send_sms\n\n\n@csrf_exempt\n@require_POST\ndef request_reset_code(request):\n    email = request.POST.get('email', '').strip().lower()\n    user = User.objects.filter(email=email, is_active=True).first()\n\n    if user is not None and user.profile.phone:\n        code = f'{secrets.randbelow(1000000):06d}'\n        PasswordResetToken.objects.create(user=user, token=code, channel='sms')\n        send_sms(user.profile.phone, f'Your reset code is {code}')\n\n    return JsonResponse(\n        {'message': 'If the account exists, a code was sent to the registered phone.'}\n    )\n"
+    },
+    {
+      "id": "r21b-reset-06",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/api/reset_link.py",
+      "code": "import secrets\n\nfrom flask import Blueprint, jsonify, request\n\nfrom app.extensions import db\nfrom app.models import PasswordResetToken, User\nfrom app.services.mailer import send_reset_link_email\n\nauth_bp = Blueprint('auth', __name__, url_prefix='/auth')\n\n\n@auth_bp.post('/reset')\ndef request_reset():\n    payload = request.get_json(silent=True) or {}\n    email = (payload.get('email') or '').strip().lower()\n    user = User.query.filter_by(email=email, is_active=True).first()\n\n    if user is None:\n        return jsonify({'message': 'Request received.'}), 202\n\n    token = secrets.token_urlsafe(32)\n    record = PasswordResetToken(user_id=user.id, token=token)\n    db.session.add(record)\n    db.session.commit()\n\n    send_reset_link_email(user.email, token)\n\n    return jsonify({'message': 'Request received.', 'expires_at': record.expires_at.isoformat()}), 202\n"
+    },
+    {
+      "id": "r21b-key-01",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/api_keys.py",
+      "code": "import secrets\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.auth import get_current_user\nfrom app.db import get_session\nfrom app.models import ApiKey, User\n\nrouter = APIRouter(prefix='/api-keys', tags=['api-keys'])\n\n\n@router.post('', status_code=201)\ndef create_api_key(\n    payload: dict,\n    session: Session = Depends(get_session),\n    user: User = Depends(get_current_user),\n):\n    label = (payload.get('label') or '').strip()\n    if not label:\n        raise HTTPException(status_code=422, detail='Label is required')\n\n    raw_key = 'sk_live_' + secrets.token_urlsafe(32)\n    record = ApiKey(user_id=user.id, label=label, key=raw_key)\n    session.add(record)\n    session.commit()\n    session.refresh(record)\n\n    return {\n        'id': record.id,\n        'label': record.label,\n        'api_key': raw_key,\n        'created_at': record.created_at,\n    }\n"
+    },
+    {
+      "id": "r21b-key-02",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/tenants.py",
+      "code": "import logging\nimport secrets\n\nfrom flask import Blueprint, jsonify\n\nfrom app.extensions import db\nfrom app.models import Tenant\n\nlogger = logging.getLogger(__name__)\n\ntenants_bp = Blueprint('tenants', __name__, url_prefix='/api/tenants')\n\n\n@tenants_bp.post('/<int:tenant_id>/rotate-secret')\ndef rotate_secret(tenant_id):\n    tenant = db.session.get(Tenant, tenant_id)\n    if tenant is None:\n        return jsonify({'error': 'not found'}), 404\n\n    new_secret = secrets.token_hex(32)\n    tenant.signing_secret = new_secret\n    db.session.commit()\n\n    logger.info('Rotated signing secret tenant=%s new_secret=%s', tenant.id, new_secret)\n\n    return jsonify({'tenant_id': tenant.id, 'rotated': True})\n"
+    },
+    {
+      "id": "r21b-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/integrations.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.permissions import IsAuthenticated\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.models import IntegrationSettings\n\n\nclass IntegrationSettingsSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = IntegrationSettings\n        fields = [\n            'provider',\n            'webhook_url',\n            'api_key',\n            'api_secret',\n            'enabled',\n        ]\n\n\nclass IntegrationSettingsView(APIView):\n    permission_classes = [IsAuthenticated]\n\n    def get(self, request, provider):\n        settings_obj = IntegrationSettings.objects.filter(\n            owner=request.user, provider=provider\n        ).first()\n        if settings_obj is None:\n            return Response({'detail': 'not configured'}, status=404)\n        return Response(IntegrationSettingsSerializer(settings_obj).data)\n"
+    },
+    {
+      "id": "r21b-key-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/integration_status.py",
+      "code": "from fastapi import APIRouter, Depends\nfrom sqlalchemy.orm import Session\n\nfrom app.auth import get_current_user\nfrom app.db import get_session\nfrom app.models import IntegrationSettings\n\nrouter = APIRouter(prefix='/integrations', tags=['integrations'])\n\n\n@router.get('/{provider}')\ndef integration_status(\n    provider: str,\n    session: Session = Depends(get_session),\n    user=Depends(get_current_user),\n):\n    settings_obj = (\n        session.query(IntegrationSettings)\n        .filter(\n            IntegrationSettings.owner_id == user.id,\n            IntegrationSettings.provider == provider,\n        )\n        .first()\n    )\n    if settings_obj is None:\n        return {'provider': provider, 'configured': False}\n\n    return {\n        'provider': settings_obj.provider,\n        'configured': True,\n        'api_key_configured': bool(settings_obj.api_key),\n        'webhook_url': settings_obj.webhook_url,\n        'enabled': settings_obj.enabled,\n        'updated_at': settings_obj.updated_at,\n    }\n"
+    },
+    {
+      "id": "r21b-key-05",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/api/api_key_list.py",
+      "code": "from rest_framework import serializers, viewsets\nfrom rest_framework.permissions import IsAuthenticated\n\nfrom app.models import ApiKey\n\n\nclass ApiKeySerializer(serializers.ModelSerializer):\n    key_suffix = serializers.SerializerMethodField()\n\n    class Meta:\n        model = ApiKey\n        fields = ['id', 'label', 'key_suffix', 'created_at', 'last_used_at', 'revoked']\n\n    def get_key_suffix(self, obj):\n        if not obj.key:\n            return None\n        return f'****{obj.key[-4:]}'\n\n\nclass ApiKeyViewSet(viewsets.ReadOnlyModelViewSet):\n    serializer_class = ApiKeySerializer\n    permission_classes = [IsAuthenticated]\n\n    def get_queryset(self):\n        return ApiKey.objects.filter(user=self.request.user, revoked=False).order_by(\n            '-created_at'\n        )\n"
+    },
+    {
+      "id": "r21b-key-06",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/views/api_key_rotation.py",
+      "code": "import secrets\n\nfrom django.contrib.auth.decorators import login_required\nfrom django.http import JsonResponse\nfrom django.utils import timezone\nfrom django.views.decorators.http import require_POST\n\nfrom app.models import ApiKey\n\n\n@require_POST\n@login_required\ndef rotate_api_key(request, key_id):\n    try:\n        api_key = ApiKey.objects.get(pk=key_id, user=request.user)\n    except ApiKey.DoesNotExist:\n        return JsonResponse({'error': 'not found'}, status=404)\n\n    if api_key.revoked:\n        return JsonResponse({'error': 'key already revoked'}, status=409)\n\n    new_value = 'sk_live_' + secrets.token_urlsafe(32)\n    api_key.key = new_value\n    api_key.rotated_at = timezone.now()\n    api_key.save(update_fields=['key', 'rotated_at'])\n\n    return JsonResponse(\n        {\n            'id': api_key.id,\n            'label': api_key.label,\n            'rotated_at': api_key.rotated_at.isoformat(),\n            'message': 'Key rotated. Retrieve the new value from the secure vault.',\n        }\n    )\n"
+    }
+  ]
+}

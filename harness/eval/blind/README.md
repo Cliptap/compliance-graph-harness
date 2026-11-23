@@ -120,3 +120,6 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   of the same distribution passed on the first run. The blind loop stops here at the current scope;
   the next measurement is a larger neutral round (84 cases) or new channels in the regression
   corpus.
+- Round 21: sealed, run once, **82/84**, 84-case neutral sample (two fresh authors, 42 each) to
+  tighten the interval. Two false positives in serializer metadata (`IfExp` with a `'***'` literal,
+  `last_password_change`); both fixed and promoted (84/84 regression).

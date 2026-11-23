@@ -1071,6 +1071,44 @@ response-model contract, exclusion). With the channel fixed, the model held.
 The interval is the honest part: 42/42 still allows a recall as low as 0.845. This is evidence of
 stability at the current scope, not a proof of completeness.
 
+## Blind round 21 (sealed, 84 cases)
+
+To tighten the interval, round 21 doubled the sample: two fresh authors wrote 42 cases each with the
+same neutral brief, combined into one 84-case set (12 per control, 6/6). The file was sealed before
+the run (`cases_blind_round21.json.sha256`,
+`c9035b4a48ecc04ef21e292fe35aedb1c393272486fa36de29a0bb85847e9e7a`) and run once.
+
+Result: **82/84**. Aggregate: precision **0.955** [0.849, 0.987], recall **1.000** [0.916, 1.000],
+accuracy 0.976 [0.917, 0.993]. Two false positives, no false negatives.
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 6 | 1 | 0 | 5 | 0.86 | 1.00 |
+| `v2.api_key` | 6 | 0 | 0 | 6 | 1.00 | 1.00 |
+| `v2.billing_retention` | 6 | 0 | 0 | 6 | 1.00 | 1.00 |
+| `v2.credential_response` | 6 | 1 | 0 | 5 | 0.86 | 1.00 |
+| `v2.customer_hard_delete` | 6 | 0 | 0 | 6 | 1.00 | 1.00 |
+| `v2.log_pii` | 6 | 0 | 0 | 6 | 1.00 | 1.00 |
+| `v2.reset_token` | 6 | 0 | 0 | 6 | 1.00 | 1.00 |
+
+The two false positives are the same shape: a serializer method field whose masked branch was an
+`IfExp` with a literal `'***'`, and a `last_password_change` timestamp read as a credential.
+
+| Case | Cause |
+|---|---|
+| `r21a-admin-04` (FP) | `get_phone` returns `f'***{digits[-4:]}' if digits else '***'`; the literal branch was not a mask |
+| `r21b-cred-05` (FP) | `last_password_change` matched the `password` synonym; `_change` was not metadata |
+
+## Fixes after blind round 21
+
+| Case | Fix |
+|---|---|
+| `r21a-admin-04` | a literal string containing `*` is a mask, so both branches of the `IfExp` mask |
+| `r21b-cred-05` | `_change` joins the metadata suffixes (`last_password_change`, `password_change_required`) |
+
+Regression state: sealed round-21 set **84/84**, curated 22/22, regression corpus **240/240**
+(238 + 2), full suite **550 passed**. The 82/84 remains the pre-fix measurement.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -1260,6 +1298,9 @@ stability at the current scope, not a proof of completeness.
   were fixed and promoted.
 - Round 20 passed 42/42 on the first run. It is the convergence probe: same distribution, no new
   channel. The sealed set stays as a regression check.
+- Round 21 doubled the sample to 84 cases and found two residual false positives, both in serializer
+  metadata. They were fixed and promoted; the post-fix set is 84/84 with an accuracy interval of
+  [0.956, 1.000].
 - The blind protocol fixes the sample at 42 cases (21 violations), so the interval is wide: 21/21
   allows a recall as low as 0.845, and 42/42 an accuracy as low as 0.916. For a finer estimate, run
   a larger neutral round (84 cases) rather than more small ones.
@@ -1279,8 +1320,8 @@ stability at the current scope, not a proof of completeness.
 
 ## Next
 
-1. Stop the blind loop: round 20 passed 42/42 on a neutral sample. The next measurement should be a
-   larger neutral round (84 cases) if a tighter interval is needed.
+1. The 84-case neutral round is done (round 21, 82/84 pre-fix). The accuracy interval is now
+   [0.917, 0.993] pre-fix and [0.956, 1.000] post-fix.
 2. Grow the regression corpus with real code from the target app, starting with imported response
    models and streams assembled across modules.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
@@ -1289,8 +1330,8 @@ stability at the current scope, not a proof of completeness.
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json` through `cases_blind_round20.json` with their `.sha256` seals.
+  `cases_blind_round1.json` through `cases_blind_round21.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`
-  through `blind_round20_metrics.json`.
+  through `blind_round21_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.
