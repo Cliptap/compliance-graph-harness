@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1170,6 +1170,104 @@
       "expected": "violation",
       "path": "app/core/handlers.py",
       "code": "from django.conf import settings\nfrom rest_framework.views import exception_handler\n\n\nclass IntegrationErrorHandler:\n    expose_credentials = True\n    credential_settings = ('PARTNER_API_KEY', 'WEBHOOK_SIGNING_SECRET')\n\n    def __call__(self, exc, context):\n        response = exception_handler(exc, context)\n        if response is None:\n            return None\n        if self.expose_credentials:\n            response.data = {\n                'detail': 'upstream rejected the call',\n                'credentials': {name: getattr(settings, name, None) for name in self.credential_settings},\n            }\n        return response\n\n\nintegration_exception_handler = IntegrationErrorHandler()\n"
+    },
+    {
+      "id": "r13-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/customers/directory.py",
+      "code": "import logging\n\nfrom django.db.models.signals import post_save\nfrom django.dispatch import receiver\nfrom rest_framework.permissions import IsAdminUser\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.customers.models import Customer\n\nlogger = logging.getLogger(__name__)\n\nADMIN_DIRECTORY = {}\n\n\n@receiver(post_save, sender=Customer)\ndef index_customer(sender, instance, created, **kwargs):\n    ADMIN_DIRECTORY[str(instance.pk)] = {\n        'name': instance.full_name,\n        'email': instance.email,\n        'phone': instance.phone,\n    }\n    logger.info('indexed customer pk=%s', instance.pk)\n\n\nclass AdminDirectoryView(APIView):\n    permission_classes = (IsAdminUser,)\n\n    def get(self, request):\n        return Response(\n            {'count': len(ADMIN_DIRECTORY), 'items': list(ADMIN_DIRECTORY.values())}\n        )\n"
+    },
+    {
+      "id": "r13-cred-02",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/accounts/onboarding.py",
+      "code": "from django.db.models.signals import post_save\nfrom django.dispatch import receiver\nfrom rest_framework import serializers, status\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.accounts.models import User\n\nWELCOME_PAYLOADS = {}\n\n\n@receiver(post_save, sender=User)\ndef stash_welcome_payload(sender, instance, created, **kwargs):\n    if not created:\n        return\n    WELCOME_PAYLOADS[str(instance.pk)] = {\n        'username': instance.username,\n        'temporary_password': instance.raw_password,\n    }\n\n\nclass OnboardingSerializer(serializers.Serializer):\n    username = serializers.CharField()\n    temporary_password = serializers.CharField()\n\n\nclass OnboardingDetailView(APIView):\n    def get(self, request, user_id):\n        payload = WELCOME_PAYLOADS.get(str(user_id))\n        if payload is None:\n            return Response(\n                {'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND\n            )\n        return Response(OnboardingSerializer(payload).data)\n"
+    },
+    {
+      "id": "r13-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/accounts/snapshots.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.accounts.models import User\n\n\nclass CredentialSerializer(serializers.Serializer):\n    username = serializers.CharField()\n    secret = serializers.CharField()\n    algorithm = serializers.CharField()\n\n\nclass AccountSnapshotSerializer(serializers.ModelSerializer):\n    credentials = serializers.SerializerMethodField()\n\n    class Meta:\n        model = User\n        fields = ('id', 'username', 'last_login', 'credentials')\n\n    def get_credentials(self, obj):\n        return CredentialSerializer(\n            {\n                'username': obj.username,\n                'secret': obj.password,\n                'algorithm': obj.password_algorithm,\n            }\n        ).data\n\n\nclass AccountSnapshotView(APIView):\n    def get(self, request, user_id):\n        user = User.objects.with_credentials().filter(pk=user_id).first()\n        if user is None:\n            return Response({'detail': 'not found'}, status=404)\n        return Response(AccountSnapshotSerializer(user).data)\n"
+    },
+    {
+      "id": "r13-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/accounts/serializers.py",
+      "code": "from rest_framework import serializers\n\nfrom app.accounts.models import User\n\n\nclass CredentialSafeMixin:\n    excluded_fields = ('password', 'password_hash', 'api_secret')\n\n    def get_fields(self):\n        fields = super().get_fields()\n        for name in self.excluded_fields:\n            fields.pop(name, None)\n        return fields\n\n\nclass StrictCredentialSafeMixin(CredentialSafeMixin):\n    excluded_fields = (\n        'password',\n        'password_hash',\n        'api_secret',\n        'recovery_codes',\n    )\n\n\nclass ProfileSerializer(StrictCredentialSafeMixin, serializers.ModelSerializer):\n    class Meta:\n        model = User\n        fields = (\n            'id',\n            'username',\n            'email',\n            'password',\n            'password_hash',\n            'api_secret',\n            'recovery_codes',\n        )\n"
+    },
+    {
+      "id": "r13-del-01",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/customers/management/commands/purge_customers.py",
+      "code": "import logging\n\nfrom django.core.management.base import BaseCommand\n\nfrom app.customers.models import Customer\n\nlogger = logging.getLogger(__name__)\n\n\nclass Command(BaseCommand):\n    help = 'Purge customers that left long ago'\n\n    def add_arguments(self, parser):\n        parser.add_argument('--days', type=int, default=365)\n        parser.add_argument('--dry-run', action='store_true')\n\n    def handle(self, *args, **options):\n        days = options['days']\n        queryset = Customer.objects.inactive_since(days)\n        count = queryset.count()\n        self.stdout.write('candidates=%s cutoff_days=%s' % (count, days))\n        if options['dry_run']:\n            self.stdout.write('dry run only')\n            return\n        deleted, _model = queryset.hard_delete()\n        logger.info('purged customers=%s window_days=%s', deleted, days)\n        self.stdout.write(self.style.SUCCESS('deleted=%s' % deleted))\n"
+    },
+    {
+      "id": "r13-del-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/core/account_middleware.py",
+      "code": "import logging\n\nlogger = logging.getLogger('app.accounts')\n\nPURGE_ON_CLOSE = True\n\n\nclass AccountClosureMiddleware:\n    def __init__(self, get_response):\n        self.get_response = get_response\n\n    async def __call__(self, request):\n        response = await self.get_response(request)\n        if PURGE_ON_CLOSE and request.path.startswith('/account/close/'):\n            user_id = getattr(request, 'user_id', None)\n            if user_id is not None:\n                await self._purge(user_id)\n        return response\n\n    async def _purge(self, user_id):\n        from app.customers.models import Customer\n\n        queryset = Customer.objects.filter(user_id=user_id)\n        deleted, _detail = await queryset.adelete()\n        logger.info('account %s removed rows=%s', user_id, deleted)\n"
+    },
+    {
+      "id": "r13-bill-02",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/managers.py",
+      "code": "from datetime import timedelta\n\nfrom django.db import models\nfrom django.utils import timezone\n\n\nclass InvoiceQuerySet(models.QuerySet):\n    def older_than(self, days):\n        cutoff = timezone.now() - timedelta(days=days)\n        return self.filter(issued_at__lt=cutoff)\n\n    def purge_batch(self, batch_size=500):\n        total = 0\n        while True:\n            ids = list(self.values_list('pk', flat=True)[:batch_size])\n            if not ids:\n                break\n            deleted, _detail = self.filter(pk__in=ids).delete()\n            total += deleted\n        return total\n\n    def outstanding_total(self):\n        return self.aggregate(total=models.Sum('amount'))['total'] or 0\n\n\nclass InvoiceManager(models.Manager.from_queryset(InvoiceQuerySet)):\n    def purge_expired(self, days=400):\n        return self.older_than(days).purge_batch()\n\n    def due_report(self):\n        return self.older_than(30).outstanding_total()\n"
+    },
+    {
+      "id": "r13-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/middleware.py",
+      "code": "import logging\n\nfrom datetime import timedelta\n\nfrom django.utils import timezone\n\nfrom app.billing.models import Invoice\n\nlogger = logging.getLogger('app.billing')\n\n\nclass BillingCleanupMiddleware:\n    RETENTION_DAYS = 180\n\n    def __init__(self, get_response):\n        self.get_response = get_response\n\n    async def __call__(self, request):\n        response = await self.get_response(request)\n        if request.path.startswith('/billing/'):\n            await self._cleanup_invoices()\n        return response\n\n    async def _cleanup_invoices(self):\n        cutoff = timezone.now() - timedelta(days=self.RETENTION_DAYS)\n        queryset = Invoice.objects.filter(issued_at__lt=cutoff)\n        candidates = await queryset.acount()\n        deleted, _detail = await queryset.adelete()\n        logger.info(\n            'billing cleanup candidates=%s deleted=%s', candidates, deleted\n        )\n"
+    },
+    {
+      "id": "r13-bill-06",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/billing/management/commands/billing_cleanup.py",
+      "code": "from datetime import timedelta\n\nfrom django.core.management.base import BaseCommand\nfrom django.utils import timezone\n\nfrom app.billing.models import Order\n\n\nclass BillingPurgeCommand(BaseCommand):\n    retention_days = 2190\n\n    def collect(self):\n        cutoff = timezone.now() - timedelta(days=self.retention_days)\n        return Order.objects.purge_candidates(cutoff)\n\n    def handle(self, *args, **options):\n        queryset = self.collect()\n        candidates = queryset.count()\n        self.stdout.write(\n            'candidates=%s days=%s' % (candidates, self.retention_days)\n        )\n        purged = Order.objects.purge_queryset(queryset)\n        self.stdout.write(self.style.SUCCESS('purged=%s' % purged))\n\n\nclass Command(BillingPurgeCommand):\n    help = 'Purge stale billing rows'\n    retention_days = 1000\n"
+    },
+    {
+      "id": "r13-reset-03",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/accounts/reset_delivery.py",
+      "code": "from datetime import timedelta\n\nfrom django.utils import timezone\nfrom rest_framework import serializers\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.accounts.models import User\nfrom app.accounts.tokens import build_reset_link\n\n\nclass ResetLinkSerializer(serializers.Serializer):\n    link = serializers.CharField()\n    expires_at = serializers.DateTimeField()\n\n\nclass ResetDeliverySerializer(serializers.Serializer):\n    channel = serializers.CharField()\n    payload = serializers.SerializerMethodField()\n\n    def get_payload(self, obj):\n        link = build_reset_link(obj['uid'], obj['token'])\n        return ResetLinkSerializer(\n            {\n                'link': link,\n                'expires_at': timezone.now() + timedelta(hours=2),\n            }\n        ).data\n\n\nclass ResetRequestView(APIView):\n    def post(self, request):\n        email = request.data.get('email', '')\n        user = User.objects.by_email(email).first()\n        if user is None:\n            return Response({'detail': 'ok'}, status=202)\n        token = user.issue_reset_token()\n        delivery = ResetDeliverySerializer(\n            {'channel': 'inline', 'uid': user.pk, 'token': token}\n        ).data\n        return Response({'detail': 'created', 'delivery': delivery}, status=201)\n"
+    },
+    {
+      "id": "r13-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/serializers.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.generics import RetrieveAPIView\n\nfrom app.integrations.models import ApiClient\n\n\nclass SecretValueSerializer(serializers.Serializer):\n    value = serializers.CharField()\n    rotated_at = serializers.DateTimeField(allow_null=True)\n\n\nclass ApiClientDetailSerializer(serializers.ModelSerializer):\n    credential = serializers.SerializerMethodField()\n\n    class Meta:\n        model = ApiClient\n        fields = ('id', 'label', 'environment', 'credential')\n\n    def get_credential(self, obj):\n        return SecretValueSerializer(\n            {'value': obj.secret, 'rotated_at': obj.rotated_at}\n        ).data\n\n\nclass ApiClientDetailView(RetrieveAPIView):\n    queryset = ApiClient.objects.all()\n    serializer_class = ApiClientDetailSerializer\n"
+    },
+    {
+      "id": "r13-key-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/integrations/management/commands/list_api_clients.py",
+      "code": "import logging\n\nfrom django.core.management.base import BaseCommand\n\nfrom app.integrations.models import ApiClient\n\nlogger = logging.getLogger(__name__)\n\n\nclass Command(BaseCommand):\n    help = 'List API clients and their key status'\n\n    def add_arguments(self, parser):\n        parser.add_argument('--env', default='production')\n\n    def handle(self, *args, **options):\n        clients = ApiClient.objects.active_with_keys(options['env'])\n        self.stdout.write('env=%s clients=%s' % (options['env'], clients.count()))\n        for client in clients:\n            suffix = client.api_key[-4:] if client.api_key else ''\n            self.stdout.write(\n                '%s key_suffix=%s configured=%s'\n                % (client.label, suffix, bool(client.api_key))\n            )\n            logger.info('api client listed pk=%s', client.pk)\n        self.stdout.write(self.style.SUCCESS('listing finished'))\n"
+    },
+    {
+      "id": "r13-key-05",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/integrations/status.py",
+      "code": "from django.db import models\nfrom django.db.models import BooleanField, Case, Value, When\nfrom rest_framework import serializers\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.integrations.models import ApiClient\n\n\nclass ApiClientQuerySet(models.QuerySet):\n    def with_secret_flags(self):\n        return self.annotate(\n            has_secret=Case(\n                When(secret='', then=Value(False)),\n                default=Value(True),\n                output_field=BooleanField(),\n            )\n        )\n\n\nclass ApiClientManager(models.Manager.from_queryset(ApiClientQuerySet)):\n    def configuration_snapshot(self, client_id):\n        client = self.with_secret_flags().filter(pk=client_id).first()\n        if client is None:\n            return None\n        return {\n            'label': client.label,\n            'key_configured': bool(client.has_secret),\n            'key_suffix': client.api_key[-4:] if client.api_key else '',\n        }\n\n\nclass ClientStatusSerializer(serializers.Serializer):\n    key_configured = serializers.BooleanField()\n    key_suffix = serializers.CharField()\n\n\nclass ClientSnapshotSerializer(serializers.Serializer):\n    label = serializers.CharField()\n    status = serializers.SerializerMethodField()\n\n    def get_status(self, obj):\n        return ClientStatusSerializer(\n            {\n                'key_configured': obj['key_configured'],\n                'key_suffix': obj['key_suffix'],\n            }\n        ).data\n\n\nclass ApiClientStatusView(APIView):\n    def get(self, request, client_id):\n        snapshot = ApiClient.objects.configuration_snapshot(client_id)\n        if snapshot is None:\n            return Response({'detail': 'not found'}, status=404)\n        return Response(ClientSnapshotSerializer(snapshot).data)\n"
+    },
+    {
+      "id": "r13-key-06",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/integrations/redaction.py",
+      "code": "from rest_framework import serializers\n\nfrom app.integrations.models import ApiClient\n\n\nclass FlagOnlySerializerMixin:\n    credential_fields = ('secret', 'api_key')\n\n    def to_representation(self, instance):\n        data = super().to_representation(instance)\n        for name in self.credential_fields:\n            data.pop(name, None)\n        return data\n\n\nclass RedactedClientMixin(FlagOnlySerializerMixin):\n    credential_fields = ('secret', 'api_key', 'previous_secret')\n\n    def to_representation(self, instance):\n        data = super().to_representation(instance)\n        data['key_configured'] = bool(getattr(instance, 'api_key', ''))\n        return data\n\n\nclass ApiClientStatusSerializer(RedactedClientMixin, serializers.ModelSerializer):\n    class Meta:\n        model = ApiClient\n        fields = (\n            'id',\n            'label',\n            'api_key',\n            'secret',\n            'previous_secret',\n            'active',\n        )\n"
     }
   ]
 }

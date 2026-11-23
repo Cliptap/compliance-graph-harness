@@ -780,3 +780,81 @@ def test_class_alias_retention_is_clean():
             "        cutoff = timezone.now() - timedelta(days=self.required_days)\n"
             "        return queryset.filter(issued_at__lte=cutoff).delete()\n")
     assert "v2.billing_retention" not in ids(code)
+
+
+def test_meta_less_serializer_secret_is_flagged():
+    code = ("from rest_framework import serializers\n\n"
+            "class SecretValueSerializer(serializers.Serializer):\n"
+            "    value = serializers.CharField()\n"
+            "    secret = serializers.CharField()\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_serializer_method_nested_secret_is_flagged():
+    code = ("from rest_framework import serializers\n\n"
+            "class CredentialSerializer(serializers.Serializer):\n"
+            "    value = serializers.CharField()\n\n"
+            "class SnapshotSerializer(serializers.ModelSerializer):\n"
+            "    credential = serializers.SerializerMethodField()\n\n"
+            "    class Meta:\n"
+            "        model = User\n"
+            "        fields = ('id', 'credential')\n\n"
+            "    def get_credential(self, obj):\n"
+            "        return CredentialSerializer({'value': obj.secret}).data\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_get_fields_exclusion_is_clean():
+    code = ("from rest_framework import serializers\n\n"
+            "class CredentialSafeMixin:\n"
+            "    excluded_fields = ('password', 'password_hash')\n\n"
+            "    def get_fields(self):\n"
+            "        fields = super().get_fields()\n"
+            "        for name in self.excluded_fields:\n"
+            "            fields.pop(name, None)\n"
+            "        return fields\n\n"
+            "class ProfileSerializer(CredentialSafeMixin, serializers.ModelSerializer):\n"
+            "    class Meta:\n"
+            "        model = User\n"
+            "        fields = ('id', 'username', 'password', 'password_hash')\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_global_directory_from_signal_is_flagged():
+    code = ("from django.db.models.signals import post_save\n"
+            "from django.dispatch import receiver\n"
+            "from rest_framework.response import Response\n"
+            "from rest_framework.views import APIView\n\n"
+            "DIRECTORY = {}\n\n"
+            "@receiver(post_save, sender=Customer)\n"
+            "def index_customer(sender, instance, **kwargs):\n"
+            "    DIRECTORY[str(instance.pk)] = {'email': instance.email, 'phone': instance.phone}\n\n"
+            "class AdminDirectoryView(APIView):\n"
+            "    def get(self, request):\n"
+            "        return Response({'items': list(DIRECTORY.values())})\n")
+    assert "v2.admin_exposure" in ids(code, "app/customers/directory.py")
+
+
+def test_async_adelete_is_flagged():
+    code = ("async def purge(user_id):\n"
+            "    from app.customers.models import Customer\n"
+            "    queryset = Customer.objects.filter(user_id=user_id)\n"
+            "    deleted, _detail = await queryset.adelete()\n"
+            "    return deleted\n")
+    assert "v2.customer_hard_delete" in ids(code)
+
+
+def test_custom_hard_delete_method_is_flagged():
+    code = ("from django.core.management.base import BaseCommand\n\n"
+            "class Command(BaseCommand):\n"
+            "    def handle(self, *args, **options):\n"
+            "        Customer.objects.inactive_since(365).hard_delete()\n")
+    assert "v2.customer_hard_delete" in ids(code)
+
+
+def test_password_set_boolean_field_is_clean():
+    code = ("from rest_framework import serializers\n\n"
+            "class SecurityFlagsSerializer(serializers.Serializer):\n"
+            "    password_set = serializers.BooleanField()\n"
+            "    mfa_enabled = serializers.BooleanField()\n")
+    assert "v2.credential_response" not in ids(code)

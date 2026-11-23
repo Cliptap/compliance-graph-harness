@@ -54,6 +54,9 @@ semántico.
 - Serializers anidados y campos declarados con `Meta.fields` heredado; contexto admin por clase
   `Admin*` o path; `response.data` como payload de error; `HttpResponseRedirect` y `urlencode`;
   dominios y alias de constantes de retención.
+- Estado global de módulo sembrado en los scans; cadenas de `SerializerMethodField`; exclusiones por
+  `get_fields`/`to_representation`; `adelete`/`hard_delete`/`purge_*`; managers custom con retención
+  baja; `.values()`/`.items()`; enlaces de reset.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.

@@ -1,10 +1,61 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 167,
-  "passed": 167,
+  "cases": 181,
+  "passed": 181,
   "controls": {
     "v2.admin_exposure": {
+      "tp": 16,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "precision_ci": [
+        0.806,
+        1.0
+      ],
+      "recall_ci": [
+        0.806,
+        1.0
+      ]
+    },
+    "v2.api_key": {
+      "tp": 18,
+      "fp": 0,
+      "fn": 0,
+      "tn": 10,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "precision_ci": [
+        0.824,
+        1.0
+      ],
+      "recall_ci": [
+        0.824,
+        1.0
+      ]
+    },
+    "v2.billing_retention": {
+      "tp": 19,
+      "fp": 0,
+      "fn": 0,
+      "tn": 10,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "precision_ci": [
+        0.832,
+        1.0
+      ],
+      "recall_ci": [
+        0.832,
+        1.0
+      ]
+    },
+    "v2.credential_response": {
       "tp": 15,
       "fp": 0,
       "fn": 0,
@@ -21,59 +72,8 @@
         1.0
       ]
     },
-    "v2.api_key": {
-      "tp": 17,
-      "fp": 0,
-      "fn": 0,
-      "tn": 7,
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
-      "precision_ci": [
-        0.816,
-        1.0
-      ],
-      "recall_ci": [
-        0.816,
-        1.0
-      ]
-    },
-    "v2.billing_retention": {
-      "tp": 16,
-      "fp": 0,
-      "fn": 0,
-      "tn": 10,
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
-      "precision_ci": [
-        0.806,
-        1.0
-      ],
-      "recall_ci": [
-        0.806,
-        1.0
-      ]
-    },
-    "v2.credential_response": {
-      "tp": 13,
-      "fp": 0,
-      "fn": 0,
-      "tn": 13,
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
-      "precision_ci": [
-        0.772,
-        1.0
-      ],
-      "recall_ci": [
-        0.772,
-        1.0
-      ]
-    },
     "v2.customer_hard_delete": {
-      "tp": 12,
+      "tp": 14,
       "fp": 0,
       "fn": 0,
       "tn": 7,
@@ -81,11 +81,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.757,
+        0.785,
         1.0
       ],
       "recall_ci": [
-        0.757,
+        0.785,
         1.0
       ]
     },
@@ -107,7 +107,7 @@
       ]
     },
     "v2.reset_token": {
-      "tp": 14,
+      "tp": 15,
       "fp": 0,
       "fn": 0,
       "tn": 6,
@@ -115,11 +115,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.785,
+        0.796,
         1.0
       ],
       "recall_ci": [
-        0.785,
+        0.796,
         1.0
       ]
     }
@@ -1586,6 +1586,130 @@
         "v2.credential_response",
         "v2.reset_token"
       ],
+      "passed": true
+    },
+    {
+      "id": "r13-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-cred-02",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-del-01",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-del-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-bill-02",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-bill-06",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-reset-03",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.credential_response"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-key-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-key-05",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-key-06",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
       "passed": true
     }
   ]
