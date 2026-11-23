@@ -1138,3 +1138,144 @@ def test_tablename_inheritance_maps_subclass_to_policy_table():
             "    session.execute(delete(CreditNote).where(CreditNote.issued_at < cutoff))\n"
             "    session.commit()\n")
     assert "v2.billing_retention" in ids(code)
+
+
+def test_model_dump_exclude_removes_the_logged_field():
+    code = ("import logging\n"
+            "from pydantic import BaseModel\n\n"
+            "logger = logging.getLogger(__name__)\n\n\n"
+            "class OrderEvent(BaseModel):\n"
+            "    order_id: str\n"
+            "    email: str\n"
+            "    phone: str\n\n\n"
+            "def record(order):\n"
+            "    event = OrderEvent(order_id=order.order_id, email=order.email, phone=order.phone)\n"
+            "    payload = event.model_dump(exclude={'email', 'phone'})\n"
+            "    logger.info('order audit %s', payload)\n")
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_field_exclude_true_is_a_safe_projection():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel, Field\n\n"
+            "router = APIRouter(prefix='/admin')\n\n\n"
+            "class AdminCustomerOut(BaseModel):\n"
+            "    id: int\n"
+            "    email: str = Field(exclude=True)\n"
+            "    phone: str = Field(exclude=True)\n"
+            "    email_masked: str\n\n\n"
+            "@router.get('/customers/{customer_id}')\n"
+            "def get_customer(customer_id: int):\n"
+            "    row = load_customer(customer_id)\n"
+            "    model = AdminCustomerOut(id=row.id, email=row.email, phone=row.phone, email_masked='a***@b')\n"
+            "    return model.model_dump()\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/customer_out.py")
+
+
+def test_model_dump_exclude_partial_still_exposes_credentials():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter(prefix='/accounts')\n\n\n"
+            "class UserOut(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n"
+            "    password_hash: str\n"
+            "    api_secret: str\n\n\n"
+            "@router.get('/users/{user_id}')\n"
+            "def get_user(user_id: int):\n"
+            "    row = load_user(user_id)\n"
+            "    model = UserOut(id=row.id, email=row.email, password_hash=row.password_hash, api_secret=row.api_secret)\n"
+            "    return model.model_dump(exclude={'email'})\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_filtered_dict_comprehension_is_clean():
+    code = ("from fastapi import APIRouter\n\n"
+            "router = APIRouter()\n\n\n"
+            "class CredentialStrippingMixin:\n"
+            "    hidden_fields = ('password_hash', 'api_secret')\n\n"
+            "    def strip(self, payload):\n"
+            "        return {k: v for k, v in payload.items() if k not in self.hidden_fields}\n\n\n"
+            "class UserPresenter(CredentialStrippingMixin):\n"
+            "    def present(self, row):\n"
+            "        raw = {'id': row.id, 'password_hash': row.password_hash, 'api_secret': row.api_secret}\n"
+            "        return self.strip(raw)\n\n\n"
+            "@router.get('/users/{user_id}')\n"
+            "def get_user(user_id: int):\n"
+            "    row = load_user(user_id)\n"
+            "    return UserPresenter().present(row)\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_record_named_like_a_secret_is_not_a_credential():
+    code = ("from rest_framework import serializers\n"
+            "from rest_framework.response import Response\n"
+            "from rest_framework.views import APIView\n\n\n"
+            "class ApiKeySerializer(serializers.ModelSerializer):\n"
+            "    key_suffix = serializers.SerializerMethodField()\n"
+            "    secret = serializers.CharField(write_only=True, required=False)\n\n"
+            "    class Meta:\n"
+            "        model = ApiKey\n"
+            "        fields = ('id', 'label', 'key_suffix', 'secret')\n\n"
+            "    def get_key_suffix(self, obj):\n"
+            "        return obj.key[-4:]\n\n\n"
+            "class ApiKeyDetailView(APIView):\n"
+            "    def get(self, request, key_id):\n"
+            "        api_key = ApiKey.objects.get(pk=key_id)\n"
+            "        return Response(ApiKeySerializer(api_key).data)\n")
+    assert "v2.api_key" not in ids(code)
+
+
+def test_orjson_response_is_a_response_sink():
+    code = ("from fastapi import APIRouter\n"
+            "from fastapi.responses import ORJSONResponse\n\n"
+            "router = APIRouter(prefix='/keys')\n\n\n"
+            "@router.post('/rotate')\n"
+            "def rotate_key(owner_id: int):\n"
+            "    new_key = generate_api_key(owner_id)\n"
+            "    return ORJSONResponse({'id': owner_id, 'api_key': new_key})\n")
+    assert "v2.api_key" in ids(code)
+
+
+def test_location_header_assignment_is_a_redirect_sink():
+    code = ("from fastapi import APIRouter\n"
+            "from fastapi.responses import RedirectResponse\n\n"
+            "router = APIRouter(prefix='/auth')\n\n\n"
+            "@router.get('/password-reset/start')\n"
+            "def start_reset(email: str):\n"
+            "    account = find_account(email)\n"
+            "    token = issue_reset_token(account)\n"
+            "    target = '/reset/confirm?token=' + token\n"
+            "    response = RedirectResponse(url='/login?reset=pending', status_code=303)\n"
+            "    response.headers['Location'] = target\n"
+            "    return response\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_csv_export_with_pii_is_an_admin_response():
+    code = ("import csv\n"
+            "import io\n"
+            "from django.http import HttpResponse\n"
+            "from django.contrib.admin.views.decorators import staff_member_required\n\n\n"
+            "@staff_member_required\n"
+            "def export_customers(request):\n"
+            "    buffer = io.StringIO()\n"
+            "    writer = csv.writer(buffer)\n"
+            "    writer.writerow(['id', 'email', 'phone'])\n"
+            "    for customer in Customer.objects.all():\n"
+            "        writer.writerow([customer.id, customer.email, customer.phone])\n"
+            "    return HttpResponse(buffer.getvalue(), content_type='text/csv')\n")
+    assert "v2.admin_exposure" in ids(code, "app/admin/export_views.py")
+
+
+def test_prefixed_sql_table_name_matches_the_policy_table():
+    code = ("import logging\n"
+            "from django.db import connection\n\n"
+            "logger = logging.getLogger(__name__)\n\n\n"
+            "def purge_old_invoices():\n"
+            "    sql = 'DELETE FROM billing_invoice WHERE paid = %s AND issued_at < now() - interval %s'\n"
+            "    with connection.cursor() as cursor:\n"
+            "        cursor.execute(sql, [True, '180 days'])\n"
+            "        removed = cursor.rowcount\n"
+            "    return removed\n")
+    assert "v2.billing_retention" in ids(code)

@@ -44,7 +44,8 @@ def _constant_matches(text: str, synonyms: list[str]) -> bool:
 LOG_PATTERNS = ("print", "logger.", "logging.", "console.log", "console.error",
                 "sys.stdout", "sys.stderr", "stdout.write", "stderr.write")
 RESPONSE_PATTERNS = ("JSONResponse", "JsonResponse", "Response", "jsonify", "PlainTextResponse",
-                    "HTMLResponse", "HttpResponse", "StreamingResponse")
+                    "HTMLResponse", "HttpResponse", "StreamingResponse", "ORJSONResponse",
+                    "UJSONResponse", "FileResponse")
 REDIRECT_PATTERNS = ("RedirectResponse", "redirect", "HttpResponseRedirect")
 DELETE_RE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)", re.IGNORECASE)
 DJANGO_OBJECTS_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\.objects\b")
@@ -544,12 +545,12 @@ def _cache_store(node: ast.Call) -> tuple[ast.AST, ast.AST] | None:
     return node.args[0], node.args[1]
 
 
-def _serialized_names(node: ast.AST, summaries: dict[str, set[str]] | None) -> set[str]:
-    """Names that hold a masked serialized view: ``safe = contact.to_dict()``.
+def _clean_container_names(node: ast.AST, summaries: dict[str, set[str]] | None) -> set[str]:
+    """Names that hold a masked view or a database record, not a raw field value.
 
-    The field-name heuristic must not fire on ``safe['email']`` when the
-    serializer already masked the value. An unmasked serializer has a
-    non-empty summary, so the name is tainted through ``env`` instead.
+    ``safe = contact.to_dict()`` and ``api_key = ApiKey.objects.get(...)`` are
+    not the field they are named after; an unmasked serializer has a non-empty
+    summary, so the name is tainted through ``env`` instead.
     """
     names: set[str] = set()
     for child in ast.walk(node):
@@ -558,11 +559,87 @@ def _serialized_names(node: ast.AST, summaries: dict[str, set[str]] | None) -> s
         if not isinstance(child.value, ast.Call):
             continue
         leaf = _call_name(child.value).rsplit(".", 1)[-1]
-        if leaf not in DUMP_METHODS or (summaries or {}).get(leaf):
+        if leaf in DUMP_METHODS:
+            if (summaries or {}).get(leaf):
+                continue
+        elif not _is_model_lookup(child.value):
             continue
         targets = child.targets if isinstance(child, ast.Assign) else [child.target]
         names.update(target.id for target in targets if isinstance(target, ast.Name))
     return names
+
+
+def _is_dump_call(node: ast.AST) -> bool:
+    return isinstance(node, ast.Call) and _call_name(node).rsplit(".", 1)[-1] in DUMP_METHODS
+
+
+def _is_model_lookup(node: ast.AST) -> bool:
+    """``ApiKey.objects.get(...)`` returns a record, not the secret string."""
+    if not isinstance(node, ast.Call):
+        return False
+    if ".objects" in _call_name(node):
+        return True
+    leaf = _call_name(node).rsplit(".", 1)[-1]
+    return leaf in {"get", "query", "filter", "first", "all"} and any(
+        isinstance(arg, ast.Name) and arg.id[:1].isupper() for arg in node.args)
+
+
+def _excluded_categories(node: ast.Call, catalog: Catalog) -> set[str]:
+    """``model_dump(exclude={'email', 'phone'})``: categories removed from the payload."""
+    found: set[str] = set()
+    for keyword in node.keywords:
+        if keyword.arg != "exclude":
+            continue
+        for child in ast.walk(keyword.value):
+            if isinstance(child, ast.Constant) and isinstance(child.value, str):
+                category = _field_category(catalog, child.value)
+                if category:
+                    found.add(category)
+    return found
+
+
+def _header_redirect_value(node: ast.AST) -> ast.AST | None:
+    """``response.headers['Location'] = target`` carries the value into the response."""
+    if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+        return None
+    target = node.targets[0]
+    if not isinstance(target, ast.Subscript) or not isinstance(target.slice, ast.Constant):
+        return None
+    if not isinstance(target.slice.value, str) or target.slice.value.lower() not in {"location", "link"}:
+        return None
+    if "headers" not in ast.unparse(target.value):
+        return None
+    return node.value
+
+
+def _filters_known_fields(node: ast.DictComp, field_lists: dict[str, set[str]]) -> bool:
+    """``{k: v for k, v in raw.items() if k not in hidden_fields}`` strips known fields."""
+    for generator in node.generators:
+        for test in generator.ifs:
+            text = ast.unparse(test)
+            if any(re.search(rf"\b{re.escape(name)}\b", text) for name in field_lists):
+                return True
+    return False
+
+
+def _dump_receiver_blocks(node: ast.AST, env: dict[str, set[str]] | None,
+                          catalog: Catalog) -> set[int]:
+    """Receiver names whose dump removes every category they carry."""
+    blocked: set[int] = set()
+    for child in ast.walk(node):
+        if not _is_dump_call(child):
+            continue
+        receiver = child.func.value if isinstance(child.func, ast.Attribute) else None
+        for keyword in child.keywords:
+            if keyword.arg == "exclude":
+                blocked.update(id(nested) for nested in ast.walk(keyword.value))
+        if not isinstance(receiver, ast.Name):
+            continue
+        excluded = _excluded_categories(child, catalog)
+        carried = (env or {}).get(receiver.id, set())
+        if excluded and carried and carried <= excluded:
+            blocked.update(id(nested) for nested in ast.walk(receiver))
+    return blocked
 
 
 def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
@@ -592,7 +669,8 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
             continue
         leaf = _call_name(child).rsplit(".", 1)[-1]
         full = _call_name(child)
-        if (leaf in PASSTHROUGH_CALLS or _is_masking_name(leaf)
+        if ((leaf in PASSTHROUGH_CALLS and leaf not in (summaries or {}))
+                or _is_masking_name(leaf)
                 or leaf.endswith("Serializer")
                 or (child is node and (full in RESPONSE_PATTERNS or full in REDIRECT_PATTERNS
                                        or _is_log_sink(full) or leaf in CSV_SINKS))):
@@ -609,6 +687,11 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
             for nested in ast.walk(keyword.value):
                 blocked_args.add(id(nested))
     blocked: set[int] = set()
+    blocked |= _dump_receiver_blocks(node, env, catalog)
+    if field_lists:
+        for child in ast.walk(node):
+            if isinstance(child, ast.DictComp) and _filters_known_fields(child, field_lists):
+                blocked.update(id(nested) for nested in ast.walk(child))
     for child in ast.walk(node):
         if id(child) in blocked or id(child) in comprehension_skip or id(child) in masked_calls \
                 or id(child) in blocked_args:
@@ -666,10 +749,11 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
         elif isinstance(child, (ast.Name, ast.Attribute, ast.Subscript)):
             if id(child) in callees or id(child) in infrastructure:
                 continue
-            if isinstance(child, ast.Subscript) and isinstance(child.value, ast.Name) \
-                    and clean_containers and child.value.id in clean_containers \
-                    and not (env and child.value.id in env):
-                continue
+            if clean_containers:
+                base = child.value if isinstance(child, ast.Subscript) else child
+                if isinstance(base, ast.Name) and base.id in clean_containers \
+                        and not (env and base.id in env):
+                    continue
             if isinstance(child, ast.Attribute) and attr_categories \
                     and isinstance(child.value, ast.Name) and child.value.id in {"self", "cls"}:
                 found |= attr_categories.get(child.attr, set()) & allowed
@@ -879,7 +963,7 @@ class _TaintTracker(ast.NodeVisitor):
 
     def scan(self, node: ast.AST) -> dict[str, set[str]]:
         self.key_aliases = _key_aliases(node)
-        self.serialized = _serialized_names(node, self.summaries)
+        self.serialized = _clean_container_names(node, self.summaries)
         self.visit(node)
         return self.env
 
@@ -950,6 +1034,8 @@ class _TaintTracker(ast.NodeVisitor):
             if name.startswith(DERIVED_IDENTIFIER_PREFIXES) or name.endswith(METADATA_FIELD_SUFFIXES):
                 continue
             if _field_category(self.catalog, name) == "CREDENTIAL":
+                if _is_model_lookup(value):
+                    continue
                 return {"CREDENTIAL"}
         if names and _has_credential_call(self.catalog, value):
             return {"CREDENTIAL"}
@@ -999,7 +1085,8 @@ class _TaintTracker(ast.NodeVisitor):
             if not isinstance(child, ast.Call):
                 continue
             leaf = _call_name(child).rsplit(".", 1)[-1]
-            if leaf in PASSTHROUGH_CALLS or _is_masking_name(leaf) \
+            if (leaf in PASSTHROUGH_CALLS and leaf not in self.summaries) \
+                    or _is_masking_name(leaf) \
                     or leaf.endswith("Serializer"):
                 continue
             positions = self.param_returns.get(leaf, set())
@@ -1015,6 +1102,7 @@ class _TaintTracker(ast.NodeVisitor):
                     blocked_args.add(id(nested))
         dict_keys: set[int] = set()
         dict_blocked: set[int] = set()
+        blocked = _dump_receiver_blocks(node, self.env, self.catalog)
         skip = _skip_nodes(node)
         projection = _projection_tokens(node)
         callees = {id(child.func) for child in ast.walk(node) if isinstance(child, ast.Call)}
@@ -1022,7 +1110,8 @@ class _TaintTracker(ast.NodeVisitor):
                           if isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute)
                           and child.func.attr in INFRASTRUCTURE_METHODS}
         for child in ast.walk(node):
-            if id(child) in sanitized or id(child) in blocked_args or id(child) in dict_blocked:
+            if id(child) in sanitized or id(child) in blocked_args or id(child) in dict_blocked \
+                    or id(child) in blocked:
                 continue
             if isinstance(child, ast.Dict):
                 for key, value in zip(child.keys, child.values):
@@ -1117,11 +1206,17 @@ def _model_class_fields(tree: ast.AST, catalog: Catalog,
     for name in models:
         cls = classes[name]
         found: set[str] = set()
+        declared: set[str] = set()
         for stmt in cls.body:
             if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
                 category = _field_category(catalog, stmt.target.id)
                 if category in categories:
                     found.add(category)
+                    if _field_is_excluded(stmt.value):
+                        declared.add(category)
+        if found and found <= declared:
+            # Every sensitive field is `Field(exclude=True)`: the model is a safe projection.
+            found = set()
         result[name] = found
     for _ in range(len(classes) + 1):
         changed = False
@@ -1146,6 +1241,18 @@ def _model_class_fields(tree: ast.AST, catalog: Catalog,
         if not changed:
             break
     return {name: values for name, values in result.items() if values}
+
+
+def _field_is_excluded(value: ast.AST | None) -> bool:
+    """``email: str = Field(exclude=True)``."""
+    if not isinstance(value, ast.Call):
+        return False
+    if _call_name(value).rsplit(".", 1)[-1] != "Field":
+        return False
+    return any(keyword.arg == "exclude"
+               and isinstance(keyword.value, ast.Constant)
+               and keyword.value.value is True
+               for keyword in value.keywords)
 
 
 def _dropped_categories(cls: ast.ClassDef, catalog: Catalog) -> set[str]:
@@ -1193,6 +1300,8 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
             summaries[imported] = imported_categories
     for model, model_categories in _model_class_fields(tree, catalog, categories).items():
         summaries[model] = summaries.get(model, set()) | model_categories
+    for name in functions:
+        summaries.setdefault(name, set())
     for _ in range(len(functions) + 1):
         changed = False
         for name, func in functions.items():
@@ -1217,7 +1326,9 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
                 changed = True
         if not changed:
             break
-    return {name: values for name, values in summaries.items() if values}
+    for name in functions:
+        summaries.setdefault(name, set())
+    return summaries
 
 
 def _cache_categories(tree: ast.AST, catalog: Catalog, categories: set[str],
@@ -1442,7 +1553,7 @@ class SinkExposureFamily(PolicyFamily):
                                 self._class_constants.get(class_name, {}),
                                 initial_env=self._global_env,
                                 cache_env=cache_env).scan(func)
-            clean = _serialized_names(func, summaries)
+            clean = _clean_container_names(func, summaries)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call):
                     continue
@@ -1497,7 +1608,7 @@ class SinkExposureFamily(PolicyFamily):
                                 self._class_constants.get(class_name, {}),
                                 initial_env=self._global_env,
                                 cache_env=cache_env).scan(func)
-            clean = _serialized_names(func, summaries)
+            clean = _clean_container_names(func, summaries)
             dumps = _dump_names(func)
             for node in ast.walk(func):
                 payload = None
@@ -1513,6 +1624,7 @@ class SinkExposureFamily(PolicyFamily):
                         payload = value
                     elif isinstance(value, ast.Call) and (
                             _call_name(value) in RESPONSE_PATTERNS or _call_name(value) == "dict"
+                            or _is_dump_call(value)
                             or _call_name(value).rsplit(".", 1)[-1] in summaries
                             or _call_name(value).rsplit(".", 1)[-1] in param_returns):
                         payload = value
@@ -1547,6 +1659,18 @@ class SinkExposureFamily(PolicyFamily):
                                         f"Response inside '{_call_name(node)}' exposes "
                                         f"{sorted(matched)} without masking.",
                                         ast.unparse(node)))
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Call) or _call_name(node) not in CSV_SINKS:
+                    continue
+                text = ast.unparse(node)
+                if self.catalog.is_sanitizer(text):
+                    continue
+                matched = self._categories(node, categories, env, summaries,
+                                           param_returns, field_lists,
+                                           attr_map.get(class_name, {}), cache_env, clean)
+                if matched:
+                    out.append(_finding(control, path, node.lineno,
+                                        f"CSV row exposes {sorted(matched)} without masking.", text))
         for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
             attrs = attr_map.get(cls.name, {})
             if not attrs:
@@ -1665,6 +1789,18 @@ class SinkExposureFamily(PolicyFamily):
                     out.append(_finding(control, path, node.lineno,
                                         f"Redirect inside '{_call_name(node)}' exposes "
                                         f"{sorted(matched)}.", ast.unparse(node)))
+            for node in ast.walk(func):
+                value = _header_redirect_value(node)
+                if value is None:
+                    continue
+                text = ast.unparse(node)
+                if self.catalog.is_sanitizer(text):
+                    continue
+                matched = self._categories(value, categories, env, summaries,
+                                           param_returns, field_lists, attrs, cache_env)
+                if matched:
+                    out.append(_finding(control, path, node.lineno,
+                                        f"Redirect header exposes {sorted(matched)}.", text))
         return out
 
     def _scan_csv(self, control, path, tree, categories, summaries,
@@ -2260,6 +2396,14 @@ def _table_candidates(name: str) -> set[str]:
     return {base, base + "s", base.rstrip("s")}
 
 
+def _table_name_tokens(name: str) -> set[str]:
+    found: set[str] = set()
+    for part in re.split(r"[^a-z0-9]+", name.lower()):
+        if part:
+            found |= _table_candidates(part)
+    return found
+
+
 def _model_table_candidates(name: str) -> set[str]:
     return _table_candidates(name) | _class_table_tokens(name)
 
@@ -2448,7 +2592,7 @@ def _delete_tables(node: ast.AST, class_name: str = "",
                    class_tables: dict[str, set[str]] | None = None) -> set[str]:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         match = DELETE_RE.search(node.value.lower())
-        return {match.group(1)} if match else set()
+        return _table_name_tokens(match.group(1)) if match else set()
     if not isinstance(node, ast.Call):
         return set()
     name = _call_name(node)
@@ -2523,6 +2667,7 @@ class CredentialExposureFamily(PolicyFamily):
             env_by_node: dict[int, dict[str, set[str]]] = {}
             attrs_by_node: dict[int, dict[str, set[str]]] = {}
             endpoint_by_node: dict[int, bool] = {}
+            clean_by_node: dict[int, set[str]] = {}
             for func in _leaf_functions(tree):
                 class_name = enclosing.get(id(func), "")
                 attrs = attr_map.get(class_name, {})
@@ -2532,17 +2677,20 @@ class CredentialExposureFamily(PolicyFamily):
                                     initial_env=self._global_env,
                                     cache_env=cache_env).scan(func)
                 endpoint = _is_endpoint(func)
+                clean = _clean_container_names(func, summaries)
                 for child in ast.walk(func):
                     env_by_node[id(child)] = env
                     attrs_by_node[id(child)] = attrs
                     endpoint_by_node[id(child)] = endpoint
+                    clean_by_node[id(child)] = clean
             for node in ast.walk(tree):
                 is_sink = self._is_sink(node, sinks)
                 endpoint = endpoint_by_node.get(id(node), False)
                 return_call = (endpoint and isinstance(node, ast.Return)
                                and isinstance(node.value, ast.Call)
                                and (_call_name(node.value).rsplit(".", 1)[-1] in summaries
-                                    or _call_name(node.value).rsplit(".", 1)[-1] in param_returns))
+                                    or _call_name(node.value).rsplit(".", 1)[-1] in param_returns
+                                    or _is_dump_call(node.value)))
                 return_name = (endpoint and isinstance(node, ast.Return)
                                and isinstance(node.value, ast.Name)
                                and bool(env_by_node.get(id(node), {}).get(node.value.id)))
@@ -2550,18 +2698,21 @@ class CredentialExposureFamily(PolicyFamily):
                                and isinstance(node.value, ast.Attribute)
                                and node.value.attr == "data")
                 response_value = _response_assignment(node)
+                header_value = _header_redirect_value(node) if "redirect" in sinks else None
                 if not (is_sink or return_call or return_name or return_data
-                        or response_value is not None):
+                        or response_value is not None or header_value is not None):
                     continue
                 target = response_value if response_value is not None else (
-                    node.value if (return_call or return_name or return_data) else node)
+                    header_value if header_value is not None else (
+                        node.value if (return_call or return_name or return_data) else node))
                 text = ast.unparse(target)
                 if self.catalog.is_sanitizer(text):
                     continue
                 tainted = _sink_categories(self.catalog, target, categories,
                                            env_by_node.get(id(node)), summaries,
                                            param_returns, field_lists,
-                                           attrs_by_node.get(id(node)), cache_env)
+                                           attrs_by_node.get(id(node)), cache_env,
+                                           clean_by_node.get(id(node)))
                 if (tainted
                         or self._matches(text, keys, value_pattern)
                         or self._constant_key_match(target, keys)
@@ -2585,12 +2736,14 @@ class CredentialExposureFamily(PolicyFamily):
                         if index in positions and not _value_is_masked(self.catalog, arg):
                             matched |= _sink_categories(self.catalog, arg, categories, env,
                                                         summaries, param_returns, field_lists,
-                                                        attrs, cache_env)
+                                                        attrs, cache_env,
+                                                        clean_by_node.get(id(node)))
                     for keyword in node.keywords:
                         if keyword.arg in positions and not _value_is_masked(self.catalog, keyword.value):
                             matched |= _sink_categories(self.catalog, keyword.value, categories, env,
                                                         summaries, param_returns, field_lists,
-                                                        attrs, cache_env)
+                                                        attrs, cache_env,
+                                                        clean_by_node.get(id(node)))
                     if matched:
                         out.append(_finding(control, path, node.lineno,
                                             "A credential reaches a log inside a helper.",

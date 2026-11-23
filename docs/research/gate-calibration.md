@@ -895,6 +895,58 @@ Regression state: sealed round-16 set **41/42** (`r16-admin-03` remains), curate
 corpus **207/207** (194 + 13), full suite **524 passed**. The 28/42 remains the pre-fix measurement;
 a round 17 is required for the post-fix number.
 
+## Blind round 17 (sealed, post-taint)
+
+A seventeenth fresh author wrote 42 modules around field exclusion and non-JSON response paths. The
+file was sealed before the run (`cases_blind_round17.json.sha256`,
+`247c6deebbe5ce7dd56fb54b1f984aa56199f95b67c83526d8d640adf63898ba`) and run once.
+
+Result: **34/42**. Aggregate: precision **0.842** [0.624, 0.945], recall **0.762** [0.549, 0.894],
+accuracy 0.810 [0.667, 0.900].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.api_key` | 2 | 1 | 1 | 2 | 0.67 | 0.67 |
+| `v2.billing_retention` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.credential_response` | 2 | 1 | 1 | 2 | 0.67 | 0.67 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+Exclusion is where the round found the model thin: the detector did not know that
+`model_dump(exclude=...)` or `Field(exclude=True)` removes a field, and it did not treat a returned
+`model_dump()` as a payload at all.
+
+| Case | Cause |
+|---|---|
+| `r17-log-05` (FP) | `event.model_dump(exclude={'email', 'phone'})` logged; the receiver stayed tainted |
+| `r17-cred-05` (FP) | `exclude={'password_hash', 'api_secret'}`; the excluded literals were read as values |
+| `r17-cred-06` (FP) | a dict comprehension filtered by `hidden_fields` still carried the payload |
+| `r17-key-04` (FP) | `api_key = ApiKey.objects.get(...)`: a record named like the secret |
+| `r17-adm-03` (FN) | a CSV written with `writerow` and returned as `HttpResponse` |
+| `r17-cred-01` (FN) | a returned `model_dump(exclude={'email'})` that still carries credentials |
+| `r17-bill-03` (FN) | `DELETE FROM billing_invoice`: a prefixed table name |
+| `r17-rst-02` (FN) | the token in `response.headers['Location']` |
+| `r17-key-03` (FN) | `ORJSONResponse` was not a response pattern |
+
+## Fixes after blind round 17
+
+| Case | Fix |
+|---|---|
+| `r17-log-05`, `r17-cred-05`, `r17-cred-01` | a dump call subtracts the `exclude` categories from its receiver; a model whose sensitive fields are all `Field(exclude=True)` is a safe projection; a returned `model_dump()`/`to_dict()` is a response payload |
+| `r17-cred-06` | a dict comprehension filtered against a known field list strips those fields |
+| `r17-key-04` | a name assigned from a model lookup (`*.objects.get(...)`, `session.get(Model)`) is not a credential source and is not matched by its own name |
+| `r17-adm-03` | a `writerow` row with PII is a response in an admin response scan |
+| `r17-bill-03` | a SQL table name is split into tokens, so `billing_invoice` matches the `invoices` policy |
+| `r17-rst-02` | an assignment to `response.headers['Location'/'Link']` is a redirect sink |
+| `r17-key-03` | `ORJSONResponse`, `UJSONResponse` and `FileResponse` are response patterns |
+| summaries | local helpers are seeded before the fixpoint, so a passthrough-named helper (`strip`) does not leak its arguments |
+
+Regression state: sealed round-17 set **42/42**, curated 22/22, regression corpus **215/215**
+(207 + 8), full suite **533 passed**. The 34/42 remains the pre-fix measurement; a round 18 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -1002,6 +1054,13 @@ a round 17 is required for the post-fix number.
 - The round also produced four false positives, all in the "value vs label" family: a masked
   serializer result read by field name, a `***` concatenation, a boolean eligibility flag and a
   cached window. Precision is still the first casualty when the model grows.
+- Round 17 moved to declared exclusion. `model_dump(exclude=...)`, `Field(exclude=True)` and a
+  filtered comprehension are the same idea: the payload is a projection, not the object. The round
+  also showed that a returned `model_dump()` was never a payload at all, which is why a partial
+  exclusion could hide a credential.
+- Two name collisions shaped the round: a record named `api_key` is not the secret, and a local
+  method named `strip` is not `str.strip`. The model now distinguishes a model lookup from a
+  credential source, and seeds local helpers before the summary fixpoint.
 
 ## Limitations
 
@@ -1045,6 +1104,11 @@ a round 17 is required for the post-fix number.
   failing cases were fixed and promoted. `r16-admin-03` remains: the imported producer
   (`build_admin_export`) does not state its payload, so a name-based cross-module model cannot
   decide it.
+- Round 17 is burned. Its 34/42 is the measurement **before** the fixes; the nine failing cases were
+  fixed and promoted.
+- The exclusion model is syntactic: it reads `exclude={...}` literals, `Field(exclude=True)` and a
+  comprehension filtered against a literal field list. A dynamic exclusion computed at runtime, or a
+  serializer that removes a field through a helper, is still a false positive candidate.
 - The cache and session model is textual: a store and a read link only when both reduce to the same
   literal namespace. A key assembled by unrelated expressions, or stored in one module and read in
   another, is still a false negative candidate.
@@ -1056,18 +1120,18 @@ a round 17 is required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 17 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 18 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe cross-module payloads whose names do not state the return, and model fields dropped by a
-   serializer that is not `model_dump`.
+2. Probe runtime-computed exclusions, cross-module payloads whose names do not state the return, and
+   response bodies assembled by a template.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json` through `cases_blind_round16.json` with their `.sha256` seals.
+  `cases_blind_round1.json` through `cases_blind_round17.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`
-  through `blind_round16_metrics.json`.
+  through `blind_round17_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.

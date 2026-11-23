@@ -103,3 +103,7 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   from masked values read by label. Thirteen of the fourteen failures were fixed and promoted
   (41/42 regression); `r16-admin-03` remains because the imported producer does not state its
   payload. Round 17 is required for a post-fix number.
+- Round 17: sealed, run once, 34/42, field exclusion and non-JSON response paths. `model_dump` with
+  `exclude`, `Field(exclude=True)`, filtered comprehensions, `ORJSONResponse`, `Location` headers,
+  CSV exports and prefixed SQL tables were the gaps. All nine failures were fixed and promoted
+  (42/42 regression). Round 18 is required for a post-fix number.
