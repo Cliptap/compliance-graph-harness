@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes. Round-17 regression cases: field exclusion, ORJSONResponse, Location headers and prefixed SQL tables.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes. Round-17 regression cases: field exclusion, ORJSONResponse, Location headers and prefixed SQL tables. Round-18 regression cases: template contexts, column-tuple streams and named audit loggers.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1506,6 +1506,83 @@
       "expected": "clean",
       "path": "app/keys/key_safe.py",
       "code": "from rest_framework import serializers\nfrom rest_framework.views import APIView\nfrom rest_framework.response import Response\nfrom rest_framework.permissions import IsAuthenticated\n\n\nclass ApiKeySerializer(serializers.ModelSerializer):\n    key_suffix = serializers.SerializerMethodField()\n    secret = serializers.CharField(write_only=True, required=False)\n\n    class Meta:\n        model = ApiKey\n        fields = ('id', 'label', 'key_suffix', 'secret', 'is_active')\n        extra_kwargs = {'secret': {'write_only': True}}\n\n    def get_key_suffix(self, obj):\n        return obj.key[-4:]\n\n\nclass ApiKeyDetailView(APIView):\n    permission_classes = [IsAuthenticated]\n\n    def get(self, request, key_id):\n        api_key = ApiKey.objects.get(pk=key_id, owner=request.user)\n        return Response(ApiKeySerializer(api_key).data)\n"
+    },
+    {
+      "id": "r18-log-05",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/accounts/flask_views.py",
+      "code": "import logging\n\nfrom flask import Blueprint, render_template\n\nfrom app.accounts.models import Account\n\nbp = Blueprint('accounts', __name__)\naudit = logging.getLogger('accounts.audit')\n\n\ndef _mask_phone(phone: str) -> str:\n    if len(phone) <= 3:\n        return '***'\n    return '***' + phone[-3:]\n\n\n@bp.route('/accounts/<int:account_id>')\ndef account_page(account_id: int):\n    account = Account.objects.get(pk=account_id)\n    audit.warning('account page opened phone=%s account=%s', account.phone, account_id)\n    return render_template(\n        'accounts/page.html',\n        name=account.name,\n        phone=_mask_phone(account.phone),\n    )\n\n\n@bp.route('/accounts/<int:account_id>/activity')\ndef account_activity(account_id: int):\n    account = Account.objects.get(pk=account_id)\n    return render_template('accounts/activity.html', events=account.events[:20])\n"
+    },
+    {
+      "id": "r18-admin-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/customer_views.py",
+      "code": "from django.contrib.admin.views.decorators import staff_member_required\nfrom django.shortcuts import render\n\nfrom app.customers.models import Customer\n\nDETAIL_SECTIONS = ('profile', 'billing', 'activity')\n\n\n@staff_member_required\ndef customer_admin_detail(request, customer_id):\n    customer = Customer.objects.get(pk=customer_id)\n    context = {\n        'customer_id': customer.id,\n        'full_name': customer.full_name,\n        'email': customer.email,\n        'rut': customer.rut,\n        'phone': customer.phone,\n        'address': customer.address,\n        'sections': DETAIL_SECTIONS,\n    }\n    return render(request, 'admin/customers/detail.html', context)\n\n\n@staff_member_required\ndef customer_admin_notes(request, customer_id):\n    customer = Customer.objects.get(pk=customer_id)\n    return render(\n        request,\n        'admin/customers/notes.html',\n        {'customer_id': customer.id, 'notes': customer.notes.all()},\n    )\n"
+    },
+    {
+      "id": "r18-admin-05",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/customer_export.py",
+      "code": "from collections.abc import AsyncIterator\n\nfrom fastapi import APIRouter\nfrom fastapi.responses import StreamingResponse\n\nfrom app.customers.models import Customer\n\nrouter = APIRouter(prefix='/admin/export')\n\nEXPORT_COLUMNS = ('id', 'full_name', 'email', 'phone', 'rut')\n\n\nasync def _customer_rows() -> AsyncIterator[str]:\n    yield ','.join(EXPORT_COLUMNS) + '\\n'\n    async for customer in Customer.objects.all().aiterator():\n        values = [str(getattr(customer, column)) for column in EXPORT_COLUMNS]\n        yield ','.join(values) + '\\n'\n\n\n@router.get('/customers')\nasync def export_customers() -> StreamingResponse:\n    return StreamingResponse(_customer_rows(), media_type='text/csv')\n"
+    },
+    {
+      "id": "r18-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/accounts/admin_create.py",
+      "code": "import secrets\n\nfrom django.contrib.admin.views.decorators import staff_member_required\nfrom django.contrib.auth.hashers import make_password\nfrom django.shortcuts import render\n\nfrom app.accounts.models import User\n\nTEMP_PASSWORD_LENGTH = 20\n\n\n@staff_member_required\ndef create_user(request):\n    if request.method != 'POST':\n        return render(request, 'admin/users/create.html', {'length': TEMP_PASSWORD_LENGTH})\n    temporary_password = secrets.token_urlsafe(TEMP_PASSWORD_LENGTH)\n    user = User.objects.create(\n        username=request.POST['username'],\n        email=request.POST['email'],\n        password=make_password(temporary_password),\n        must_change_password=True,\n    )\n    context = {\n        'username': user.username,\n        'email': user.email,\n        'temporary_password': temporary_password,\n        'must_change_password': user.must_change_password,\n    }\n    return render(request, 'admin/users/created.html', context)\n"
+    },
+    {
+      "id": "r18-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/users/me_api.py",
+      "code": "from fastapi import APIRouter, Request\n\nfrom app.users.models import User\n\nrouter = APIRouter(prefix='/api/users')\n\nHIDDEN_FIELDS = ('created_at', 'updated_at', 'last_login')\n\n\ndef _current_user(request: Request) -> User:\n    return User.objects.get(pk=request.state.user_id)\n\n\n@router.get('/me')\ndef read_me(request: Request) -> dict:\n    user = _current_user(request)\n    payload = user.model_dump(exclude=HIDDEN_FIELDS)\n    payload['password_hash'] = user.password_hash\n    return payload\n\n\n@router.get('/me/settings')\ndef read_settings(request: Request) -> dict:\n    user = _current_user(request)\n    payload = user.model_dump(exclude=HIDDEN_FIELDS)\n    payload['api_secret'] = user.api_secret\n    return payload\n"
+    },
+    {
+      "id": "r18-cred-05",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/users/export_csv.py",
+      "code": "from collections.abc import Iterator\n\nfrom django.http import StreamingHttpResponse\n\nfrom app.users.models import User\n\nEXPORT_COLUMNS = ('id', 'username', 'password_hash', 'api_secret')\n\n\ndef _user_rows() -> Iterator[str]:\n    yield ','.join(EXPORT_COLUMNS) + '\\n'\n    for user in User.objects.all().iterator():\n        values = [str(getattr(user, column)) for column in EXPORT_COLUMNS]\n        yield ','.join(values) + '\\n'\n\n\ndef export_users(request) -> StreamingHttpResponse:\n    response = StreamingHttpResponse(_user_rows(), content_type='text/csv')\n    response['Content-Disposition'] = 'attachment; filename=\"users.csv\"'\n    return response\n"
+    },
+    {
+      "id": "r18-bill-04",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/billing/order_purge_service.py",
+      "code": "from datetime import timedelta\n\nfrom django.utils import timezone\n\nfrom app.billing.models import Order\n\nRETENTION_DAYS = 2190\nHIDDEN_FIELDS = ('internal_notes', 'tax_snapshot', 'customer_email')\n\n\nclass BillingRetentionMixin:\n    retention_days = RETENTION_DAYS\n    hidden_fields = HIDDEN_FIELDS\n\n    def cutoff(self):\n        return timezone.now() - timedelta(days=self.retention_days)\n\n    def export_row(self, order: Order) -> dict:\n        return order.model_dump(exclude=self.hidden_fields)\n\n\nclass OrderPurgeService(BillingRetentionMixin):\n    def purgeable(self):\n        return Order.objects.filter(created_at__lt=self.cutoff(), status='void')\n\n    def run(self) -> int:\n        queryset = self.purgeable()\n        rows = [self.export_row(order) for order in queryset]\n        queryset.delete()\n        return len(rows)\n"
+    },
+    {
+      "id": "r18-reset-01",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/accounts/reset_views.py",
+      "code": "from django.shortcuts import render\n\nfrom app.accounts.services import issue_reset_token\n\nRESET_TTL_MINUTES = 30\n\n\ndef request_reset(request):\n    email = request.POST.get('email', '')\n    token = issue_reset_token(email)\n    reset_link = request.build_absolute_uri(f'/reset/{token}/')\n    return render(\n        request,\n        'accounts/reset_sent.html',\n        {'reset_link': reset_link, 'email': email, 'expires_in_minutes': RESET_TTL_MINUTES},\n    )\n\n\ndef reset_landing(request, token: str):\n    return render(\n        request,\n        'accounts/reset_form.html',\n        {'token': token, 'ttl_minutes': RESET_TTL_MINUTES},\n    )\n"
+    },
+    {
+      "id": "r18-reset-05",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/accounts/reset_stream.py",
+      "code": "import asyncio\nfrom collections.abc import AsyncIterator\n\nfrom fastapi import APIRouter\nfrom fastapi.responses import StreamingResponse\n\nfrom app.accounts.models import PasswordReset\n\nrouter = APIRouter(prefix='/api/password')\n\n\nasync def _reset_events(reset_id: int) -> AsyncIterator[str]:\n    reset = PasswordReset.objects.get(pk=reset_id)\n    yield 'event: ready\\n'\n    yield f'data: {reset.token}\\n\\n'\n    for attempt in range(3):\n        await asyncio.sleep(1)\n        yield f'data: attempt-{attempt}\\n\\n'\n\n\n@router.get('/{reset_id}/stream')\nasync def stream_reset(reset_id: int) -> StreamingResponse:\n    return StreamingResponse(_reset_events(reset_id), media_type='text/event-stream')\n"
+    },
+    {
+      "id": "r18-key-01",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/settings_views.py",
+      "code": "from django.shortcuts import render\n\nfrom app.integrations.models import ApiCredential\n\n\ndef integration_settings(request, credential_id):\n    credential = ApiCredential.objects.get(pk=credential_id)\n    context = {\n        'provider': credential.provider,\n        'api_key': credential.api_key,\n        'api_secret': credential.api_secret,\n        'created_at': credential.created_at,\n        'webhook_url': credential.webhook_url,\n    }\n    return render(request, 'integrations/settings.html', context)\n\n\ndef integration_list(request):\n    credentials = ApiCredential.objects.filter(owner=request.user)\n    rows = [{'provider': item.provider, 'key': item.api_key} for item in credentials]\n    return render(request, 'integrations/list.html', {'rows': rows})\n"
+    },
+    {
+      "id": "r18-key-05",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/export_csv.py",
+      "code": "from collections.abc import Iterator\n\nfrom django.http import StreamingHttpResponse\n\nfrom app.integrations.models import ApiCredential\n\nEXPORT_COLUMNS = ('id', 'provider', 'api_key', 'api_secret')\nPROVIDER_FILTER = None\n\n\ndef _credential_rows(provider=None) -> Iterator[str]:\n    yield ','.join(EXPORT_COLUMNS) + '\\n'\n    queryset = ApiCredential.objects.all()\n    if provider:\n        queryset = queryset.filter(provider=provider)\n    for credential in queryset.iterator():\n        yield ','.join(str(getattr(credential, column)) for column in EXPORT_COLUMNS) + '\\n'\n\n\ndef export_credentials(request) -> StreamingHttpResponse:\n    response = StreamingHttpResponse(_credential_rows(PROVIDER_FILTER), content_type='text/csv')\n    response['Content-Disposition'] = 'attachment; filename=\"credentials.csv\"'\n    return response\n"
     }
   ]
 }

@@ -947,6 +947,54 @@ Regression state: sealed round-17 set **42/42**, curated 22/22, regression corpu
 (207 + 8), full suite **533 passed**. The 34/42 remains the pre-fix measurement; a round 18 is
 required for the post-fix number.
 
+## Blind round 18 (sealed, post-taint)
+
+An eighteenth fresh author wrote 42 modules around template rendering, runtime exclusion sets and
+streaming. The file was sealed before the run (`cases_blind_round18.json.sha256`,
+`889717b6909c8110359fe699cb20abef22b5a630194ee2dc6d0e66bdfd98451a`) and run once.
+
+Result: **31/42**. Aggregate: precision **0.917** [0.646, 0.985], recall **0.524** [0.324, 0.717],
+accuracy 0.738 [0.589, 0.847].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.api_key` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.billing_retention` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.credential_response` | 0 | 0 | 3 | 3 | - | 0.00 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.reset_token` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+
+The round found the response model's blind spot: a template context, a streamed row and a returned
+dict variable were not payloads. The credential control scored zero.
+
+| Case | Cause |
+|---|---|
+| `r18-log-05` (FN) | `audit.warning(...)` is a named logger; only `logger.`/`log.` were sinks |
+| `r18-admin-01`, `r18-cred-01`, `r18-reset-01`, `r18-key-01` (FN) | the PII or credential is in a `render`/`render_template` context |
+| `r18-admin-05`, `r18-cred-05`, `r18-key-05` (FN) | rows built by iterating `EXPORT_COLUMNS` with `getattr` and streamed |
+| `r18-cred-03` (FN) | a returned dict variable that received a credential key |
+| `r18-reset-05` (FN) | the token in a `yield` inside a `StreamingResponse` generator |
+| `r18-bill-04` (FP) | the cutoff comes through `purgeable()` → `self.cutoff()`; the transitive helper was not resolved |
+
+## Fixes after blind round 18
+
+| Case | Fix |
+|---|---|
+| `r18-log-05` | any call ending in a log level (`.info`, `.warning`, `.error`, ...) is a log sink, not only `logger.` |
+| `r18-admin-01`, `r18-cred-01`, `r18-reset-01`, `r18-key-01` | `render`, `render_template`, `render_to_string` and `TemplateResponse` contexts are response payloads |
+| `r18-admin-05`, `r18-cred-05`, `r18-key-05` | a row built by iterating a literal column tuple (`EXPORT_COLUMNS`) inherits its categories |
+| `r18-reset-05` | a `yield` inside a function that feeds a `StreamingResponse` is a response; a dependency generator is not |
+| `r18-cred-03` | a returned variable that carries categories is a response payload in the sink family |
+| `r18-cred-03` (precision) | `decode`/`encode` are value accessors, so `pem.decode()` keeps the credential |
+| precision | dict keys and subscript targets use exact synonyms only (`last_password_change`, `token_source` are not values) |
+| `r18-bill-04` | retention-aware helpers are transitive, so `purgeable()` → `cutoff()` gates the delete |
+
+Regression state: sealed round-18 set **42/42**, curated 22/22, regression corpus **226/226**
+(215 + 11), full suite **541 passed**. The 31/42 remains the pre-fix measurement; a round 19 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -1061,6 +1109,12 @@ required for the post-fix number.
 - Two name collisions shaped the round: a record named `api_key` is not the secret, and a local
   method named `strip` is not `str.strip`. The model now distinguishes a model lookup from a
   credential source, and seeds local helpers before the summary fixpoint.
+- Round 18 moved to rendered and streamed output. A template context, a row built from a column
+  tuple and a `yield` inside a `StreamingResponse` generator are all response payloads; the model
+  now treats them as such, and a FastAPI dependency generator is explicitly not a stream.
+- The credential control scored zero in round 18 because every credential case left through a
+  template or a stream. That is a useful reminder: the control was not wrong about the data, it was
+  blind to the channel.
 
 ## Limitations
 
@@ -1106,9 +1160,14 @@ required for the post-fix number.
   decide it.
 - Round 17 is burned. Its 34/42 is the measurement **before** the fixes; the nine failing cases were
   fixed and promoted.
+- Round 18 is burned. Its 31/42 is the measurement **before** the fixes; all eleven failing cases
+  were fixed and promoted.
 - The exclusion model is syntactic: it reads `exclude={...}` literals, `Field(exclude=True)` and a
   comprehension filtered against a literal field list. A dynamic exclusion computed at runtime, or a
   serializer that removes a field through a helper, is still a false positive candidate.
+- The streaming model is structural: a `yield` counts only when the function feeds a
+  `StreamingResponse`/`StreamingHttpResponse` in the same file, and a column tuple counts only when
+  a row is built from it. A stream assembled in another module is still a false negative candidate.
 - The cache and session model is textual: a store and a read link only when both reduce to the same
   literal namespace. A key assembled by unrelated expressions, or stored in one module and read in
   another, is still a false negative candidate.
@@ -1120,18 +1179,17 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 18 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 19 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe runtime-computed exclusions, cross-module payloads whose names do not state the return, and
-   response bodies assembled by a template.
+2. Probe streams assembled across modules, runtime-computed exclusions and template includes.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json` through `cases_blind_round17.json` with their `.sha256` seals.
+  `cases_blind_round1.json` through `cases_blind_round18.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`
-  through `blind_round17_metrics.json`.
+  through `blind_round18_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.

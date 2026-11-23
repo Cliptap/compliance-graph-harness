@@ -107,3 +107,7 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   `exclude`, `Field(exclude=True)`, filtered comprehensions, `ORJSONResponse`, `Location` headers,
   CSV exports and prefixed SQL tables were the gaps. All nine failures were fixed and promoted
   (42/42 regression). Round 18 is required for a post-fix number.
+- Round 18: sealed, run once, 31/42, template rendering, runtime exclusion sets and streaming. The
+  failures were template contexts, column-tuple streams, a returned dict variable, a streamed token
+  and a named audit logger. All eleven were fixed and promoted (42/42 regression). Round 19 is
+  required for a post-fix number.

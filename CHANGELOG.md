@@ -69,6 +69,10 @@ semántico.
 - Exclusión declarada (`model_dump(exclude=...)`, `Field(exclude=True)`, comprehensions filtradas);
   `ORJSONResponse`/`FileResponse`; headers `Location`/`Link`; exports CSV como respuesta admin;
   nombres de tabla SQL con prefijo; registros de modelo fuera de la heurística de credenciales.
+- Contextos de template (`render`/`render_template`/`TemplateResponse`); columnas exportadas como
+  tuplas; `yield` en generadores de streaming; loggers con nombre propio (`audit.warning`);
+  `decode`/`encode` como accesores; claves de dict por sinónimo exacto; helpers de retención
+  transitivos.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.
@@ -76,7 +80,7 @@ semántico.
 ### Experimentos
 
 - Bloque D (10 trampas) y comparación `baseline` vs `rules_skills_gate`.
-- Calibración ciega del gate: rondas 1 a 17 (última medición pre-fix: ronda 17, 34/42); ver
+- Calibración ciega del gate: rondas 1 a 18 (última medición pre-fix: ronda 18, 31/42); ver
   `docs/research/gate-calibration.md`.
 
 ## [0.1.0] - 2026-11-22
