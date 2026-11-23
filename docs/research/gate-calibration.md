@@ -36,6 +36,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 8 (sealed, post-taint) | 42 | **34/42** | 5 false negatives, 3 false positives |
 | Blind round 9 (sealed, post-taint) | 42 | **31/42** | 4 false negatives, 7 false positives |
 | Blind round 10 (sealed, post-taint) | 42 | **38/42** | 3 false negatives, 1 false positive |
+| Blind round 11 (sealed, post-taint) | 42 | **32/42** | 6 false negatives, 4 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -599,6 +600,56 @@ Regression state: sealed rounds 9 and 10 **42/42**, curated 22/22, regression co
 (145 + 5), full suite **481 passed**. The 38/42 remains the pre-fix measurement; a round 11 is
 required for the post-fix number.
 
+## Blind round 11 (sealed, post-taint)
+
+An eleventh fresh author wrote 42 modules around exception paths, framework serializers and batch
+exports. The file was sealed before the run (`cases_blind_round11.json.sha256`,
+`149024d3b27f11e156e6c0a7fce77beb75f7cac9f009e6175600f6173fe62d95`) and run once.
+
+Result: **32/42**. Aggregate: precision **0.789** [0.567, 0.915], recall **0.714** [0.500, 0.862],
+accuracy 0.762 [0.615, 0.865].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 3 | 2 | 0 | 1 | 0.60 | 1.00 |
+| `v2.api_key` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.billing_retention` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.credential_response` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.customer_hard_delete` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.log_pii` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+DRF serializers were the weak spot: the field name alone was checked, so `source=`, `write_only`
+and the credential controls were not handled.
+
+| Case | Cause |
+|---|---|
+| `r11-log-04`, `r11-admin-04` (FP) | `email_masked` was not treated as a masked field name |
+| `r11-admin-06` (FP) | the derived count `without_email` matched the contact synonym |
+| `r11-cred-04` (FP) | a DRF `write_only=True` password field was still treated as exposed |
+| `r11-custdel-02` (FN) | `self.customer_model.objects...delete()` with a dynamic model |
+| `r11-bill-01`, `r11-bill-03` (FN) | prefixed retention constants (`ORDER_RETENTION_DAYS`, `ADMIN_ORDER_RETENTION_DAYS`) bypassed the field gate |
+| `r11-reset-02` (FN) | a DRF serializer `token` field on a credential control |
+| `r11-apikey-02` (FN) | a DRF serializer `secret` field on a credential control |
+| `r11-apikey-03` (FN) | a Celery task returned a list containing `signing_secret` |
+
+## Fixes after blind round 11
+
+| Case | Fix |
+|---|---|
+| masked fields | `_masked` joins the metadata suffixes; `without_` joins the derived prefixes |
+| `r11-cred-04` | serializer fields declared `write_only=True` are not exposures |
+| serializer sources | a field whose `source` names a sensitive column is flagged |
+| credential serializers | the credential family runs the same serializer scan on response sinks |
+| `r11-custdel-02` | a `.delete()` on a dynamic `*_model.objects` chain resolves through the table token |
+| `r11-bill-01/03` | retention-field matching accepts prefixed constant names and compares their values |
+| `r11-apikey-03` | an endpoint or task returning a tainted name is a response |
+| delete routes | decorator calls such as `@router.delete(...)` are not statements; argument-bearing `.delete(repo)` calls need an explicit table |
+
+Regression state: sealed round-11 set **42/42**, curated 22/22, regression corpus **160/160**
+(150 + 10), full suite **490 passed**. The 32/42 remains the pre-fix measurement; a round 12 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -669,6 +720,12 @@ required for the post-fix number.
 - The delete-method rule is deliberately narrow: it requires a deleting verb, a cutoff below the
   policy and a table token in the call, function or path. It is the first rule that infers a hard
   delete without the statement in the file, and it stays name- and value-based, not semantic.
+- Round 11 moved to framework serializers and error paths. The failures were source aliases,
+  write-only fields, prefixed retention constants and a task returning a list with a secret. The
+  serializer scan now reads `source` and `write_only` and runs for credential controls, not only
+  admin responses.
+- A retention constant is a gate only through its value: `ORDER_RETENTION_DAYS = 365` must not
+  suppress a finding just because the name contains the retention field.
 
 ## Limitations
 
@@ -698,6 +755,8 @@ required for the post-fix number.
   cases were fixed and promoted. `r9-bill-03` was fixed later by the round-10 delete-method rule.
 - Round 10 is burned. Its 38/42 is the measurement **before** the fixes; the four failing cases
   were fixed and promoted.
+- Round 11 is burned. Its 32/42 is the measurement **before** the fixes; the ten failing cases
+  were fixed and promoted.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -706,9 +765,9 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 11 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 12 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe the delete-method rule with soft-delete repositories and renames.
+2. Probe Django admin inlines, DRF nested serializers and error middleware.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts

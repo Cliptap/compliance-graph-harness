@@ -48,6 +48,9 @@ semántico.
 - Proyecciones `.get('campo')`; enmascarado consistente dentro de comprehensions; delete por método
   con cutoff bajo la política; el campo de retención es compuerta solo si su valor alcanza la
   política.
+- Serializers DRF con `source=` y `write_only`; scan de serializers para controles de credenciales;
+  constantes de retención prefijadas; modelos dinámicos en `.delete()`; retorno de nombre
+  contaminado en endpoints y tareas; decoradores de ruta fuera del scan de borrados.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.

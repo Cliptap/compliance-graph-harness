@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1051,6 +1051,76 @@
       "expected": "violation",
       "path": "app/api/order_purge.py",
       "code": "from fastapi import APIRouter, Depends\n\nfrom app.repositories.orders import OrderRepository\n\nrouter = APIRouter(prefix='/internal')\n\n\nclass PurgePlanDTO:\n    def __init__(self, cutoff_days, target):\n        self.cutoff_days = cutoff_days\n        self.target = target\n\n\nclass PurgePlanner:\n    def plan_orders(self):\n        return PurgePlanDTO(cutoff_days=365, target='orders')\n\n\nclass OrderPurgeService:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def execute(self):\n        plan = PurgePlanner().plan_orders()\n        return self.repo.delete_older_than(plan.cutoff_days)\n\n\n@router.post('/orders/purge')\ndef purge_orders(repo=Depends(OrderRepository)):\n    return {'deleted': OrderPurgeService(repo).execute()}\n"
+    },
+    {
+      "id": "r11-log-04",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/api/serializers/customer_sync.py",
+      "code": "import logging\n\nfrom rest_framework import serializers\n\nfrom app.models import Customer\n\nlogger = logging.getLogger(__name__)\n\n\ndef mask_email(value):\n    local, _, domain = value.partition('@')\n    return '%s***@%s' % (local[:2], domain)\n\n\nclass CustomerSyncSerializer(serializers.ModelSerializer):\n    email_masked = serializers.SerializerMethodField()\n    rut_masked = serializers.SerializerMethodField()\n\n    class Meta:\n        model = Customer\n        fields = ('id', 'email_masked', 'rut_masked')\n\n    def get_email_masked(self, obj):\n        return mask_email(obj.email)\n\n    def get_rut_masked(self, obj):\n        return '***%s' % obj.rut[-3:]\n\n\ndef log_customer_sync(customer):\n    try:\n        payload = CustomerSyncSerializer(customer).data\n    except Exception as exc:\n        logger.error('serialization failed for customer_id=%s: %s', customer.id, exc)\n        return None\n    logger.info('synced customer_id=%s email=%s', customer.id, payload['email_masked'])\n    return payload\n"
+    },
+    {
+      "id": "r11-admin-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/masked_customer_admin.py",
+      "code": "from django.contrib import admin\nfrom django.http import JsonResponse\n\nfrom app.models import Customer\n\n\ndef mask_email(value):\n    local, _, domain = value.partition('@')\n    return '%s***@%s' % (local[:1], domain)\n\n\n@admin.register(Customer)\nclass CustomerAdmin(admin.ModelAdmin):\n    list_display = ('id', 'email_masked', 'created_at')\n    actions = ('export_contacts',)\n\n    @admin.display(description='Email')\n    def email_masked(self, obj):\n        return mask_email(obj.email)\n\n    @admin.action(description='Export masked contacts')\n    def export_contacts(self, request, queryset):\n        items = []\n        for customer in queryset.iterator(chunk_size=200):\n            try:\n                items.append({'id': customer.id, 'email': mask_email(customer.email)})\n            except Exception:\n                items.append({'id': customer.id, 'email': None})\n        return JsonResponse({'count': len(items), 'items': items})\n"
+    },
+    {
+      "id": "r11-admin-06",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/contact_coverage_admin.py",
+      "code": "import logging\n\nfrom django.contrib import admin\nfrom django.http import JsonResponse\n\nfrom app.models import Customer\n\nlogger = logging.getLogger(__name__)\n\n\nclass ContactCoverageReport:\n    def __init__(self, queryset):\n        self.queryset = queryset\n        self.with_email = 0\n        self.without_email = 0\n\n    def run(self):\n        for customer in self.queryset.iterator(chunk_size=500):\n            if customer.email:\n                self.with_email += 1\n            else:\n                self.without_email += 1\n        return {'with_email': self.with_email, 'without_email': self.without_email}\n\n\n@admin.register(Customer)\nclass CustomerAdmin(admin.ModelAdmin):\n    list_display = ('id', 'has_email', 'has_phone')\n    actions = ('coverage',)\n\n    @admin.display(boolean=True)\n    def has_email(self, obj):\n        return bool(obj.email)\n\n    @admin.display(boolean=True)\n    def has_phone(self, obj):\n        return bool(obj.phone)\n\n    @admin.action(description='Contact coverage')\n    def coverage(self, request, queryset):\n        try:\n            report = ContactCoverageReport(queryset).run()\n        except Exception as exc:\n            logger.exception(\n                'coverage failed record_ids=%s',\n                list(queryset.values_list('id', flat=True)),\n            )\n            return JsonResponse({'error': str(exc)}, status=500)\n        return JsonResponse(report)\n"
+    },
+    {
+      "id": "r11-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/accounts/detail.py",
+      "code": "import logging\n\nfrom rest_framework import serializers, status\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom app.models import UserAccount\n\nlogger = logging.getLogger(__name__)\n\n\nclass AccountSerializer(serializers.ModelSerializer):\n    password = serializers.CharField(write_only=True, required=False)\n    has_password = serializers.SerializerMethodField()\n\n    class Meta:\n        model = UserAccount\n        fields = ('id', 'email', 'is_active', 'password', 'has_password')\n\n    def get_has_password(self, obj):\n        return bool(obj.password_hash)\n\n\nclass AccountDetailView(APIView):\n    def get(self, request, pk, request_id=None):\n        try:\n            account = UserAccount.objects.get(pk=pk)\n        except UserAccount.DoesNotExist:\n            logger.warning('account not found pk=%s request_id=%s', pk, request_id)\n            return Response({'detail': 'not found'}, status=status.HTTP_404_NOT_FOUND)\n        return Response(AccountSerializer(account).data)\n"
+    },
+    {
+      "id": "r11-custdel-02",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/services/customer_purge.py",
+      "code": "import logging\nfrom datetime import timedelta\n\nfrom django.utils import timezone\n\nfrom app.models import Customer\n\nlogger = logging.getLogger(__name__)\n\nPURGE_AFTER_DAYS = 120\n\n\nclass CustomerPurgeService:\n    def __init__(self, customer_model=Customer, batch_size=500):\n        self.customer_model = customer_model\n        self.batch_size = batch_size\n        self.deleted = 0\n\n    def run(self):\n        cutoff = timezone.now() - timedelta(days=PURGE_AFTER_DAYS)\n        queryset = self.customer_model.objects.filter(created_at__lt=cutoff)\n        while True:\n            ids = list(queryset.values_list('id', flat=True)[: self.batch_size])\n            if not ids:\n                break\n            try:\n                deleted, _ = self.customer_model.objects.filter(id__in=ids).delete()\n                self.deleted += deleted\n            except Exception as exc:\n                logger.error(\n                    'purge batch failed ids=%s sample_email=%s err=%s',\n                    ids,\n                    queryset.first().email,\n                    exc,\n                )\n                raise\n        return self.deleted\n"
+    },
+    {
+      "id": "r11-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/jobs/order_cleanup.py",
+      "code": "import logging\n\nfrom django.db import connection\n\nlogger = logging.getLogger(__name__)\n\nORDER_RETENTION_DAYS = 365\nMAX_ROWS = 5000\n\n\nclass OrderCleanupJob:\n    def __init__(self, batch_size=MAX_ROWS):\n        self.batch_size = batch_size\n        self.total = 0\n\n    def run(self):\n        sql = (\n            'DELETE FROM orders WHERE id IN ('\n            \"SELECT id FROM orders WHERE created_at < NOW() - INTERVAL '%s days' LIMIT %s)\"\n            % (ORDER_RETENTION_DAYS, self.batch_size)\n        )\n        while True:\n            with connection.cursor() as cursor:\n                try:\n                    cursor.execute(sql)\n                except Exception as exc:\n                    logger.error('order cleanup failed sql=%s err=%s', sql, exc)\n                    return {'deleted': self.total, 'error': str(exc)}\n                deleted = cursor.rowcount\n            self.total += deleted\n            if deleted < self.batch_size:\n                break\n        return {'deleted': self.total, 'retention_days': ORDER_RETENTION_DAYS}\n"
+    },
+    {
+      "id": "r11-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/admin/order_admin.py",
+      "code": "import logging\nfrom datetime import timedelta\n\nfrom django.contrib import admin\nfrom django.http import JsonResponse\nfrom django.utils import timezone\n\nfrom app.models import Order\n\nlogger = logging.getLogger(__name__)\n\nADMIN_ORDER_RETENTION_DAYS = 730\n\n\n@admin.register(Order)\nclass OrderAdmin(admin.ModelAdmin):\n    list_display = ('id', 'status', 'total_cents', 'created_at')\n    actions = ('purge_old',)\n\n    @admin.action(description='Purge old orders')\n    def purge_old(self, request, queryset):\n        cutoff = timezone.now() - timedelta(days=ADMIN_ORDER_RETENTION_DAYS)\n        stale = queryset.filter(created_at__lt=cutoff)\n        total = stale.count()\n        try:\n            stale.delete()\n        except Exception as exc:\n            logger.exception(\n                'order purge failed ids=%s', list(stale.values_list('id', flat=True))\n            )\n            return JsonResponse({'error': str(exc), 'attempted': total}, status=500)\n        return JsonResponse({'deleted': total, 'cutoff_days': ADMIN_ORDER_RETENTION_DAYS})\n"
+    },
+    {
+      "id": "r11-reset-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/api/reset_requests/list.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.generics import ListAPIView\nfrom rest_framework.pagination import PageNumberPagination\n\nfrom app.models import PasswordResetRequest\n\n\nclass ResetRequestSerializer(serializers.ModelSerializer):\n    token = serializers.CharField(source='token_hash')\n    reset_url = serializers.SerializerMethodField()\n\n    class Meta:\n        model = PasswordResetRequest\n        fields = ('id', 'user_id', 'token', 'reset_url', 'created_at')\n\n    def get_reset_url(self, obj):\n        return 'https://app.example.com/reset?token=%s' % obj.token_hash\n\n\nclass ResetPagination(PageNumberPagination):\n    page_size = 50\n\n\nclass ResetRequestListView(ListAPIView):\n    queryset = PasswordResetRequest.objects.order_by('-id')\n    serializer_class = ResetRequestSerializer\n    pagination_class = ResetPagination\n    permission_classes = []\n"
+    },
+    {
+      "id": "r11-apikey-02",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/api_clients/serializers.py",
+      "code": "from rest_framework import serializers\nfrom rest_framework.generics import ListAPIView\n\nfrom app.models import ApiClient\n\n\nclass ApiClientSecretSerializer(serializers.ModelSerializer):\n    key = serializers.CharField(source='hashed_key')\n    secret = serializers.CharField(source='signing_secret')\n\n    class Meta:\n        model = ApiClient\n        fields = ('id', 'name', 'key', 'secret', 'is_active')\n\n\nclass ApiClientSecretListView(ListAPIView):\n    queryset = ApiClient.objects.filter(is_active=True).order_by('id')\n    serializer_class = ApiClientSecretSerializer\n    permission_classes = []\n\n    def get_serializer_context(self):\n        context = super().get_serializer_context()\n        context['include_secrets'] = True\n        return context\n"
+    },
+    {
+      "id": "r11-apikey-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/tasks/rotate_partner_keys.py",
+      "code": "import logging\n\nimport requests\nfrom celery import shared_task\n\nfrom app.models import ApiClient\n\nlogger = logging.getLogger(__name__)\n\nWEBHOOK_URL = 'https://hooks.example.com/rotate'\n\n\n@shared_task(bind=True, max_retries=3, default_retry_delay=60)\ndef rotate_partner_keys(self, batch_size=100):\n    results = []\n    for client in ApiClient.objects.filter(is_active=True)[:batch_size]:\n        try:\n            response = requests.post(\n                WEBHOOK_URL,\n                json={'client_id': client.id},\n                headers={'Authorization': 'Bearer %s' % client.signing_secret},\n                timeout=5,\n            )\n            response.raise_for_status()\n            results.append({'client_id': client.id, 'status': 'ok'})\n        except requests.RequestException as exc:\n            results.append(\n                {\n                    'client_id': client.id,\n                    'status': 'failed',\n                    'signing_secret': client.signing_secret,\n                    'error': str(exc),\n                }\n            )\n    return results\n"
     }
   ]
 }

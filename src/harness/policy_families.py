@@ -49,11 +49,11 @@ REDIRECT_PATTERNS = ("RedirectResponse", "redirect")
 DELETE_RE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)", re.IGNORECASE)
 DJANGO_OBJECTS_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\.objects\b")
 DERIVED_FIELD_SUFFIXES = ("_configured", "_suffix", "_last4", "_preview", "_enabled")
-DERIVED_IDENTIFIER_PREFIXES = ("with_", "has_", "is_")
+DERIVED_IDENTIFIER_PREFIXES = ("with_", "without_", "has_", "is_")
 METADATA_FIELD_SUFFIXES = ("_ttl", "_minutes", "_updated_at", "_count", "_enabled", "_configured",
                            "_suffix", "_last4", "_preview", "_verified", "_confirmed", "_fp",
                            "_hash", "_id", "_at", "_algorithm", "_status", "_policy", "_ref",
-                           "_version")
+                           "_version", "_masked")
 TIMEDELTA_RE = re.compile(r"timedelta\s*\(\s*days\s*=\s*(\d+)", re.IGNORECASE)
 INTERVAL_RE = re.compile(r"interval\s+'(\d+)\s+days?'", re.IGNORECASE)
 MAKE_INTERVAL_RE = re.compile(r"make_interval\s*\(\s*days\s*=>\s*(\d+)", re.IGNORECASE)
@@ -298,6 +298,82 @@ def _name_categories(catalog: Catalog, name: str) -> set[str]:
         if any(len(synonym) > 3 and synonym.replace("-", "_") in lowered for synonym in synonyms):
             found.add(category)
     return found
+
+
+def _serializer_field_leak(catalog: Catalog, cls: ast.ClassDef,
+                           categories: set[str]) -> str | None:
+    """A DRF serializer field whose name or ``source`` exposes a sensitive category."""
+    meta = next((item for item in cls.body
+                 if isinstance(item, ast.ClassDef) and item.name == "Meta"), None)
+    if meta is None:
+        return None
+    fields: list[str] = []
+    for stmt in meta.body:
+        if not isinstance(stmt, ast.Assign):
+            continue
+        if not any(isinstance(target, ast.Name) and target.id == "fields"
+                   for target in stmt.targets):
+            continue
+        if isinstance(stmt.value, (ast.List, ast.Tuple)):
+            fields = [element.value for element in stmt.value.elts
+                      if isinstance(element, ast.Constant) and isinstance(element.value, str)]
+    if not fields:
+        return None
+    write_only: set[str] = set()
+    sources: dict[str, str] = {}
+    masked: set[str] = set()
+    for stmt in cls.body:
+        if isinstance(stmt, ast.Assign):
+            for target in stmt.targets:
+                if not isinstance(target, ast.Name):
+                    continue
+                if isinstance(stmt.value, ast.Call):
+                    keywords = {keyword.arg: keyword.value for keyword in stmt.value.keywords}
+                    if isinstance(keywords.get("write_only"), ast.Constant) \
+                            and keywords["write_only"].value is True:
+                        write_only.add(target.id)
+                    source = keywords.get("source")
+                    if isinstance(source, ast.Constant) and isinstance(source.value, str):
+                        sources[target.id] = source.value
+        elif isinstance(stmt, ast.FunctionDef) and stmt.name.startswith("get_"):
+            field = stmt.name[4:]
+            for node in ast.walk(stmt):
+                if isinstance(node, ast.Return) and node.value is not None \
+                        and _value_is_masked(catalog, node.value):
+                    masked.add(field)
+    for field in fields:
+        if field in write_only or field in masked:
+            continue
+        if field.lower().endswith(DERIVED_FIELD_SUFFIXES):
+            continue
+        category = _field_category(catalog, field)
+        if category not in categories and field in sources:
+            category = _field_category(catalog, sources[field])
+        if category in categories:
+            return field
+    return None
+
+
+def _serializer_scan(catalog: Catalog, tree: ast.AST, categories: set[str],
+                     admin_only: bool, path: str) -> list[tuple[ast.ClassDef, str]]:
+    found: list[tuple[ast.ClassDef, str]] = []
+    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+        if admin_only and "admin" not in cls.name.lower() and "admin" not in path.lower():
+            continue
+        field = _serializer_field_leak(catalog, cls, categories)
+        if field:
+            found.append((cls, field))
+    return found
+
+
+ENDPOINT_MARKERS = ("router.", "app.", "shared_task", "api_view", "action(", ".get(",
+                    ".post(", ".put(", ".delete(", ".patch(")
+
+
+def _is_endpoint(func: ast.AST) -> bool:
+    text = " ".join(ast.unparse(decorator)
+                    for decorator in getattr(func, "decorator_list", [])).lower()
+    return any(marker in text for marker in ENDPOINT_MARKERS)
 
 
 def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[str, set[str]]:
@@ -1100,35 +1176,10 @@ class SinkExposureFamily(PolicyFamily):
     def _scan_serializers(self, control, path, tree, categories) -> list[Finding]:
         out: list[Finding] = []
         admin_only = control.detection.context.get("route") == "admin"
-        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
-            meta = next((item for item in cls.body
-                         if isinstance(item, ast.ClassDef) and item.name == "Meta"), None)
-            if meta is None:
-                continue
-            fields: list[str] = []
-            for stmt in meta.body:
-                if not isinstance(stmt, ast.Assign):
-                    continue
-                if not any(isinstance(target, ast.Name) and target.id == "fields"
-                           for target in stmt.targets):
-                    continue
-                if isinstance(stmt.value, (ast.List, ast.Tuple)):
-                    fields = [element.value for element in stmt.value.elts
-                              if isinstance(element, ast.Constant) and isinstance(element.value, str)]
-            if not fields:
-                continue
-            if admin_only and "admin" not in cls.name.lower() and "admin" not in path.lower():
-                continue
-            masked = self._masked_serializer_fields(cls)
-            for field in fields:
-                if field in masked or field.lower().endswith(DERIVED_FIELD_SUFFIXES):
-                    continue
-                category = self._field_category(field)
-                if category in categories:
-                    out.append(_finding(control, path, cls.lineno,
-                                        f"Serializer '{cls.name}' exposes '{field}' without masking.",
-                                        field))
-                    break
+        for cls, field in _serializer_scan(self.catalog, tree, categories, admin_only, path):
+            out.append(_finding(control, path, cls.lineno,
+                                f"Serializer '{cls.name}' exposes '{field}' without masking.",
+                                field))
         return out
 
     def _scan_admin_classes(self, control, path, tree, categories) -> list[Finding]:
@@ -1284,6 +1335,10 @@ class RetentionDeletionFamily(PolicyFamily):
                      if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
         function_tables = _function_query_tables(tree)
         model_params = _model_param_tables(tree)
+        decorator_ids = {id(decorator)
+                         for item in ast.walk(tree)
+                         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+                         for decorator in item.decorator_list}
         out: list[Finding] = []
         for func in _leaf_functions(tree):
             cutoff = _max_cutoff(func, constants)
@@ -1296,7 +1351,7 @@ class RetentionDeletionFamily(PolicyFamily):
                 continue
             out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), ""),
                                         _name_tables(func, function_tables), function_tables,
-                                        model_params))
+                                        model_params, decorator_ids))
             if cutoff is None:
                 out.extend(_short_cutoff_delete_calls(control, path, func, tables, constants,
                                                       retention_days))
@@ -1309,12 +1364,13 @@ class RetentionDeletionFamily(PolicyFamily):
             if cutoff is None and _mentions_retention_field(stmt, retention_field):
                 continue
             out.extend(self._deletes_in(control, path, stmt, tables, "",
-                                        _name_tables(stmt, function_tables), function_tables))
+                                        _name_tables(stmt, function_tables), function_tables,
+                                        None, decorator_ids))
         return out
 
     @staticmethod
     def _deletes_in(control, path, node, tables, class_name="", name_tables=None,
-                    function_tables=None, model_params=None):
+                    function_tables=None, model_params=None, decorator_ids=frozenset()):
         out: list[Finding] = []
         for child in ast.walk(node):
             matched = _delete_tables(child, class_name) & tables
@@ -1324,6 +1380,12 @@ class RetentionDeletionFamily(PolicyFamily):
             if not matched:
                 matched = _resolved_delete_tables(child, name_tables or {},
                                                   function_tables or {}) & tables
+            if not matched and isinstance(child, ast.Call) \
+                    and _call_name(child).endswith(".delete") and not child.args \
+                    and id(child) not in decorator_ids:
+                text = ast.unparse(child).lower() + " " + getattr(node, "name", "").lower() \
+                    + " " + path.lower()
+                matched = {table for table in tables if table.rstrip("s") in text}
             if not matched:
                 continue
             table = sorted(matched)[0]
@@ -1448,6 +1510,10 @@ def _retention_field_gate(node: ast.AST, field: str, constants: dict[str, int],
         return False
     values = {name.lower(): value for name, value in constants.items() if isinstance(value, int)}
     value = values.get(field)
+    if value is None:
+        suffix_values = [candidate for name, candidate in values.items()
+                         if name.endswith(field)]
+        value = min(suffix_values) if suffix_values else None
     if value is None:
         return True
     return value >= retention_days
@@ -1782,23 +1848,31 @@ class CredentialExposureFamily(PolicyFamily):
             enclosing = _enclosing_classes(tree)
             env_by_node: dict[int, dict[str, set[str]]] = {}
             attrs_by_node: dict[int, dict[str, set[str]]] = {}
+            endpoint_by_node: dict[int, bool] = {}
             for func in _leaf_functions(tree):
                 class_name = enclosing.get(id(func), "")
                 attrs = attr_map.get(class_name, {})
                 env = _TaintTracker(self.catalog, categories, summaries, param_returns,
                                     attrs, self._module_constants,
                                     self._class_constants.get(class_name, {})).scan(func)
+                endpoint = _is_endpoint(func)
                 for child in ast.walk(func):
                     env_by_node[id(child)] = env
                     attrs_by_node[id(child)] = attrs
+                    endpoint_by_node[id(child)] = endpoint
             for node in ast.walk(tree):
                 is_sink = self._is_sink(node, sinks)
-                return_call = (isinstance(node, ast.Return) and isinstance(node.value, ast.Call)
+                endpoint = endpoint_by_node.get(id(node), False)
+                return_call = (endpoint and isinstance(node, ast.Return)
+                               and isinstance(node.value, ast.Call)
                                and (_call_name(node.value).rsplit(".", 1)[-1] in summaries
                                     or _call_name(node.value).rsplit(".", 1)[-1] in param_returns))
-                if not (is_sink or return_call):
+                return_name = (endpoint and isinstance(node, ast.Return)
+                               and isinstance(node.value, ast.Name)
+                               and bool(env_by_node.get(id(node), {}).get(node.value.id)))
+                if not (is_sink or return_call or return_name):
                     continue
-                target = node.value if return_call else node
+                target = node.value if (return_call or return_name) else node
                 text = ast.unparse(target)
                 if self.catalog.is_sanitizer(text):
                     continue
@@ -1857,6 +1931,11 @@ class CredentialExposureFamily(PolicyFamily):
                     if matched:
                         out.append(_finding(control, path, node.lineno, message,
                                             ast.unparse(node)))
+            if "response" in sinks:
+                for cls, field in _serializer_scan(self.catalog, tree, categories, False, path):
+                    out.append(_finding(control, path, cls.lineno,
+                                        f"Serializer '{cls.name}' exposes '{field}'.",
+                                        field))
         return self._dedupe(out)
 
     @staticmethod

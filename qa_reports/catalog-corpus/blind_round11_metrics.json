@@ -1,0 +1,492 @@
+{
+  "corpus": "harness/eval/blind/cases_blind_round11.json",
+  "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
+  "cases": 42,
+  "passed": 32,
+  "controls": {
+    "v2.admin_exposure": {
+      "tp": 3,
+      "fp": 2,
+      "fn": 0,
+      "tn": 1,
+      "precision": 0.6,
+      "recall": 1.0,
+      "f1": 0.7499999999999999,
+      "precision_ci": [
+        0.231,
+        0.882
+      ],
+      "recall_ci": [
+        0.438,
+        1.0
+      ]
+    },
+    "v2.api_key": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 0.3333333333333333,
+      "f1": 0.5,
+      "precision_ci": [
+        0.207,
+        1.0
+      ],
+      "recall_ci": [
+        0.061,
+        0.792
+      ]
+    },
+    "v2.billing_retention": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 0.3333333333333333,
+      "f1": 0.5,
+      "precision_ci": [
+        0.207,
+        1.0
+      ],
+      "recall_ci": [
+        0.061,
+        0.792
+      ]
+    },
+    "v2.credential_response": {
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "tn": 2,
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.8571428571428571,
+      "precision_ci": [
+        0.301,
+        0.954
+      ],
+      "recall_ci": [
+        0.438,
+        1.0
+      ]
+    },
+    "v2.customer_hard_delete": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1": 0.8,
+      "precision_ci": [
+        0.342,
+        1.0
+      ],
+      "recall_ci": [
+        0.208,
+        0.939
+      ]
+    },
+    "v2.log_pii": {
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "tn": 2,
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.8571428571428571,
+      "precision_ci": [
+        0.301,
+        0.954
+      ],
+      "recall_ci": [
+        0.438,
+        1.0
+      ]
+    },
+    "v2.reset_token": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1": 0.8,
+      "precision_ci": [
+        0.342,
+        1.0
+      ],
+      "recall_ci": [
+        0.208,
+        0.939
+      ]
+    }
+  },
+  "rows": [
+    {
+      "id": "r11-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-log-02",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-log-03",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-log-04",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r11-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-admin-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-admin-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-admin-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r11-admin-05",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-admin-06",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r11-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-cred-02",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r11-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.admin_exposure",
+        "v2.api_key",
+        "v2.log_pii",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r11-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r11-cred-05",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-custdel-01",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.log_pii"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r11-custdel-02",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [
+        "v2.log_pii"
+      ],
+      "passed": false
+    },
+    {
+      "id": "r11-custdel-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.log_pii"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r11-custdel-04",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-custdel-05",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-custdel-06",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [
+        "v2.log_pii"
+      ],
+      "passed": false
+    },
+    {
+      "id": "r11-bill-02",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r11-bill-04",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-bill-05",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-bill-06",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-reset-01",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.credential_response",
+        "v2.log_pii"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r11-reset-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [
+        "v2.credential_response"
+      ],
+      "passed": false
+    },
+    {
+      "id": "r11-reset-03",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-reset-04",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-reset-05",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-reset-06",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-apikey-01",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r11-apikey-02",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [
+        "v2.credential_response"
+      ],
+      "passed": false
+    },
+    {
+      "id": "r11-apikey-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r11-apikey-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-apikey-05",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r11-apikey-06",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    }
+  ]
+}
