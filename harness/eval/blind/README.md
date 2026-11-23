@@ -88,3 +88,7 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   middleware. Global dictionaries, serializer method chains, `adelete`, custom manager deletes and
   exclusion mixins were the gaps. All fourteen failing cases were fixed and promoted (42/42
   regression). Round 14 is required for a post-fix number.
+- Round 14: sealed, run once, 37/42, Django forms, GraphQL/JWT and async dependencies. The failures
+  were a `FormView` rendering instance PII, a custom purge below retention with a known cutoff, a
+  repository alias and GraphQL types under credential controls. All five were fixed and promoted
+  (42/42 regression). Round 15 is required for a post-fix number.

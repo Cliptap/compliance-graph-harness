@@ -1252,6 +1252,20 @@ class SinkExposureFamily(PolicyFamily):
                                         f"Response inside '{_call_name(node)}' exposes "
                                         f"{sorted(matched)} without masking.",
                                         ast.unparse(node)))
+        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+            attrs = attr_map.get(cls.name, {})
+            if not attrs:
+                continue
+            rendered = any(isinstance(node, ast.Call) and (
+                "render_to_response" in _call_name(node) or "TemplateResponse" in _call_name(node))
+                for node in ast.walk(cls))
+            if not rendered:
+                continue
+            exposed = set().union(*attrs.values()) & categories
+            if exposed:
+                out.append(_finding(control, path, cls.lineno,
+                                    f"View '{cls.name}' renders {sorted(exposed)} without masking.",
+                                    cls.name))
         return out
 
     def _field_category(self, field: str) -> str | None:
@@ -1450,9 +1464,9 @@ class RetentionDeletionFamily(PolicyFamily):
             out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), ""),
                                         _name_tables(func, function_tables), function_tables,
                                         model_params, decorator_ids))
-            if cutoff is None:
-                out.extend(_short_cutoff_delete_calls(control, path, func, tables, constants,
-                                                      retention_days))
+            out.extend(_short_cutoff_delete_calls(control, path, func, tables, constants,
+                                                  retention_days,
+                                                  _name_tables(func, function_tables)))
         for stmt in tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
@@ -1634,11 +1648,14 @@ def _retention_field_gate(node: ast.AST, field: str, constants: dict[str, int],
     return value >= retention_days
 
 
-def _short_cutoff_delete_calls(control, path, func, tables, constants, retention_days):
+def _short_cutoff_delete_calls(control, path, func, tables, constants, retention_days,
+                               name_tables=None):
     """``repo.delete_older_than(365)`` deletes a table without a visible statement."""
     out: list[Finding] = []
-    low_retention = any(name.lower().endswith("retention_days") and value < retention_days
-                        for name, value in constants.items() if isinstance(value, int))
+    low_retention = any(
+        value < retention_days for name, value in constants.items()
+        if isinstance(value, int) and name.lower().endswith("days")
+        and any(term in name.lower() for term in ("retention", "purge", "keep")))
     for child in ast.walk(func):
         if not isinstance(child, ast.Call):
             continue
@@ -1653,6 +1670,9 @@ def _short_cutoff_delete_calls(control, path, func, tables, constants, retention
         if not values and not low_retention:
             continue
         text = ast.unparse(child).lower() + " " + func.name.lower() + " " + path.lower()
+        receiver = child.func.value if isinstance(child.func, ast.Attribute) else None
+        if isinstance(receiver, ast.Name) and name_tables:
+            text += " " + " ".join(name_tables.get(receiver.id, set()))
         for table in tables:
             if table.rstrip("s") in text:
                 out.append(_finding(control, path, child.lineno,
@@ -1824,13 +1844,23 @@ def _function_query_tables(tree: ast.AST) -> dict[str, set[str]]:
     return tables
 
 
+def _class_table_tokens(name: str) -> set[str]:
+    found: set[str] = set()
+    for part in re.findall(r"[A-Z][a-z0-9]*|[a-z0-9]+", name):
+        found |= _table_candidates(part)
+    return found
+
+
 def _tables_of_expr(expr: ast.AST, function_tables: dict[str, set[str]],
                     env: dict[str, set[str]]) -> set[str]:
     found: set[str] = set()
     for child in ast.walk(expr):
         found |= _direct_query_tables(child)
         if isinstance(child, ast.Call):
-            found |= function_tables.get(_call_name(child).rsplit(".", 1)[-1], set())
+            leaf = _call_name(child).rsplit(".", 1)[-1]
+            found |= function_tables.get(leaf, set())
+            if leaf.endswith(("Repository", "Manager", "Service", "QuerySet")):
+                found |= _class_table_tokens(leaf)
         if isinstance(child, ast.Name):
             found |= env.get(child.id, set())
     return found
@@ -1872,7 +1902,7 @@ def _resolved_delete_tables(node: ast.AST, name_tables: dict[str, set[str]],
     """Instance deletes and deletes on a helper-built query."""
     if not isinstance(node, ast.Call):
         return set()
-    if not _is_delete_call(_call_name(node)):
+    if not _is_hard_delete_call(_call_name(node)):
         return set()
     if node.args and isinstance(node.args[0], ast.Name):
         return name_tables.get(node.args[0].id, set())
@@ -1916,7 +1946,8 @@ def _delete_tables(node: ast.AST, class_name: str = "") -> set[str]:
         return set()
     name = _call_name(node)
     if _is_delete_call(name):
-        if node.args:
+        leaf = name.rsplit(".", 1)[-1].lower()
+        if leaf in {"delete", "adelete", "bulk_delete", "abulk_delete"} and node.args:
             arg = node.args[0]
             if isinstance(arg, (ast.Name, ast.Attribute)):
                 token = _identifier(arg)
@@ -2078,6 +2109,20 @@ class CredentialExposureFamily(PolicyFamily):
                     out.append(_finding(control, path, cls.lineno,
                                         f"Serializer '{cls.name}' exposes '{field}'.",
                                         field))
+                for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+                    decorators = " ".join(ast.unparse(item)
+                                          for item in cls.decorator_list).lower()
+                    if "strawberry" not in decorators:
+                        continue
+                    for stmt in cls.body:
+                        if not isinstance(stmt, ast.AnnAssign) or not isinstance(stmt.target, ast.Name):
+                            continue
+                        field = stmt.target.id
+                        if _field_category(self.catalog, field) in categories:
+                            out.append(_finding(control, path, stmt.lineno,
+                                                f"GraphQL type '{cls.name}' exposes '{field}'.",
+                                                field))
+                            break
         return self._dedupe(out)
 
     def _logs_token(self, node: ast.AST, sinks: set[str], keys: tuple[str, ...]) -> bool:
