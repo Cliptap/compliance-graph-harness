@@ -486,3 +486,82 @@ def test_session_id_log_label_is_clean():
             "    def emit(self):\n"
             "        logger.info('session=%s', self.session_id)\n")
     assert "v2.log_pii" not in ids(code)
+
+
+def test_false_module_flag_branch_is_not_logged():
+    code = ("import logging\nlogger = logging.getLogger(__name__)\n\n"
+            "LOG_RAW = False\n\n"
+            "def emit(order_id, address):\n"
+            "    fields = {'order_id': order_id}\n"
+            "    if LOG_RAW:\n"
+            "        fields['address'] = address\n"
+            "    else:\n"
+            "        fields['address_present'] = bool(address)\n"
+            "    logger.info('checkout %s', fields)\n")
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_false_class_flag_branch_is_not_rendered():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "class UserView:\n"
+            "    include_credentials = False\n\n"
+            "    def __init__(self, user):\n"
+            "        self.user = user\n\n"
+            "    def render(self):\n"
+            "        data = {'user_id': self.user.id}\n"
+            "        if self.include_credentials:\n"
+            "            data['password_hash'] = self.user.password_hash\n"
+            "        else:\n"
+            "            data['has_password'] = bool(self.user.password_hash)\n"
+            "        return JSONResponse(data)\n\n"
+            "def view(user):\n"
+            "    return UserView(user).render()\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_true_class_flag_branch_is_rendered():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "class DeviceView:\n"
+            "    reveal_secret = True\n\n"
+            "    def __init__(self, device):\n"
+            "        self.device = device\n\n"
+            "    def render(self):\n"
+            "        data = {'device_id': self.device.id}\n"
+            "        if self.reveal_secret:\n"
+            "            data['api_secret'] = self.device.secret\n"
+            "        return JSONResponse(data)\n\n"
+            "def view(device):\n"
+            "    return DeviceView(device).render()\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_key_assignment_taints_the_container():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "def build(account_id, password_hash):\n"
+            "    body = {'id': account_id}\n"
+            "    body['password_hash'] = password_hash\n"
+            "    return JSONResponse(body)\n\n"
+            "def detail(account):\n"
+            "    return build(account.id, account.password_hash)\n")
+    assert "v2.credential_response" in ids(code, "app/admin/account.py")
+
+
+def test_camel_case_constructor_is_not_a_source():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "class SessionService:\n"
+            "    def current(self, token):\n"
+            "        return load_session(token)\n\n"
+            "def read_session(token):\n"
+            "    record = SessionService().current(token)\n"
+            "    return JSONResponse({'username': record.username, 'roles': record.roles})\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_keyword_label_is_not_a_value():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "def integration_response(*, slug, api_key):\n"
+            "    suffix = api_key[-4:]\n"
+            "    return JSONResponse({'slug': slug, 'api_key_suffix': suffix})\n\n"
+            "def view(integration):\n"
+            "    return integration_response(slug=integration.slug, api_key=integration.api_key)\n")
+    assert "v2.api_key" not in ids(code)

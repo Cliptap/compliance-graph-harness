@@ -41,6 +41,10 @@ semántico.
 - Efectos por parámetro hacia response y redirect dentro del helper, detectados en el call site.
 - Estado de instancia: mutaciones de `self.<attr>` por clase, leídas en el sink; `PlainTextResponse`
   y afines como sinks; defaults keyword-only; argumentos enmascarados no propagan.
+- Ramas con flag constante (módulo o clase) resueltas antes de recorrer; asignaciones por clave
+  (`body['api_key'] = ...`) contaminan el contenedor; nombres CamelCase no son fuentes de
+  credencial; métodos homónimos entre base y subclase unen sus resúmenes; retornos de serializers
+  cuentan como payload; modelos pasados a helpers de delete resuelven su tabla.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.

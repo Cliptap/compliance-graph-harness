@@ -66,3 +66,8 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   the failures were class-state payloads, a `PlainTextResponse`, a `session=%s` label, an `IfExp`
   truncation and a keyword-only retention default. The eight cases were fixed and promoted
   (42/42 regression). A round 9 is required for a post-fix number.
+- Round 9: sealed, run once, 31/42, inheritance, constant-flag branches and multi-object flows.
+  Seven false positives came from walking dead branches; four false negatives came from method
+  collisions, `delete(model)` parameters, `create_*` imports and a serializer call returned from
+  the endpoint. Ten of the eleven were fixed and promoted (41/42 regression); the remaining FN is a
+  delete inside an imported repository. Round 10 is required for a post-fix number.
