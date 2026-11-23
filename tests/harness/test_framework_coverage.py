@@ -622,3 +622,92 @@ def test_dto_keyword_cutoff_delete_is_flagged():
             "    plan = Plan(cutoff_days=365)\n"
             "    return repo.delete_old_orders(plan.cutoff_days)\n")
     assert "v2.billing_retention" in ids(code)
+
+
+def test_masked_field_name_in_log_is_clean():
+    code = ("import logging\nlogger = logging.getLogger(__name__)\n\n"
+            "def log_sync(customer, payload):\n"
+            "    logger.info('synced %s email=%s', customer.id, payload['email_masked'])\n")
+    assert "v2.log_pii" not in ids(code)
+
+
+def test_derived_counts_are_not_admin_exposure():
+    code = ("from fastapi.responses import JSONResponse\n\n"
+            "def coverage(customers):\n"
+            "    with_email = sum(1 for c in customers if c.email)\n"
+            "    without_email = len(customers) - with_email\n"
+            "    return JSONResponse({'with_email': with_email, 'without_email': without_email})\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/coverage.py")
+
+
+def test_serializer_write_only_password_is_clean():
+    code = ("from rest_framework import serializers\n\n"
+            "class UserSerializer(serializers.ModelSerializer):\n"
+            "    password = serializers.CharField(write_only=True)\n"
+            "    has_password = serializers.SerializerMethodField()\n\n"
+            "    class Meta:\n"
+            "        model = User\n"
+            "        fields = ('id', 'email', 'password', 'has_password')\n\n"
+            "    def get_has_password(self, obj):\n"
+            "        return bool(obj.password_hash)\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_serializer_source_hash_is_flagged():
+    code = ("from rest_framework import serializers\n\n"
+            "class UserSerializer(serializers.ModelSerializer):\n"
+            "    stored_hash = serializers.CharField(source='password_hash', read_only=True)\n\n"
+            "    class Meta:\n"
+            "        model = User\n"
+            "        fields = ('id', 'stored_hash')\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_serializer_token_field_is_flagged_for_reset():
+    code = ("from rest_framework import serializers\n\n"
+            "class ResetSerializer(serializers.ModelSerializer):\n"
+            "    token = serializers.CharField(source='token_hash')\n\n"
+            "    class Meta:\n"
+            "        model = PasswordResetRequest\n"
+            "        fields = ('id', 'token')\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_prefixed_retention_constant_below_policy_is_flagged():
+    code = ("ORDER_RETENTION_DAYS = 365\n\n"
+            "def run(cursor):\n"
+            "    sql = \"DELETE FROM orders WHERE created_at < NOW() - INTERVAL '%s days'\" % ORDER_RETENTION_DAYS\n"
+            "    cursor.execute(sql)\n")
+    assert "v2.billing_retention" in ids(code)
+
+
+def test_dynamic_model_delete_is_flagged():
+    code = ("class Service:\n"
+            "    def __init__(self, customer_model):\n"
+            "        self.customer_model = customer_model\n\n"
+            "    def purge(self, ids):\n"
+            "        self.customer_model.objects.filter(id__in=ids).delete()\n")
+    assert "v2.customer_hard_delete" in ids(code)
+
+
+def test_endpoint_returning_tainted_name_is_flagged():
+    code = ("from celery import shared_task\n\n"
+            "@shared_task\ndef rotate(batch):\n"
+            "    results = []\n"
+            "    for client in batch:\n"
+            "        results.append({'client_id': client.id, 'signing_secret': client.signing_secret})\n"
+            "    return results\n")
+    assert "v2.api_key" in ids(code)
+
+
+def test_delete_route_decorator_is_not_a_hard_delete():
+    code = ("from fastapi import APIRouter\nrouter = APIRouter()\n\n"
+            "def mark_deleted(session, customer_id):\n"
+            "    customer = session.get(Customer, customer_id)\n"
+            "    customer.deleted_at = now()\n"
+            "    session.commit()\n\n"
+            "@router.delete('/customers/{customer_id}')\n"
+            "def delete_customer(customer_id, session):\n"
+            "    mark_deleted(session, customer_id)\n"
+            "    return {'deleted': customer_id}\n")
+    assert "v2.customer_hard_delete" not in ids(code, "app/api/customers.py")

@@ -76,3 +76,7 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   `delete_older_than(365)` and a `retention_days = 730` mixin treated as a gate. All four were fixed
   and promoted; rounds 9 and 10 now pass 42/42 as regression. Round 11 is required for a post-fix
   number.
+- Round 11: sealed, run once, 32/42, exception paths, framework serializers and batch exports. DRF
+  `source=`/`write_only`, credential serializers, prefixed retention constants and a task returning
+  a list with a secret were the gaps. All ten failing cases were fixed and promoted (42/42
+  regression). Round 12 is required for a post-fix number.
