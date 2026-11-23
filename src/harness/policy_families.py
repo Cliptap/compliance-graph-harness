@@ -55,7 +55,7 @@ DERIVED_IDENTIFIER_PREFIXES = ("with_", "without_", "has_", "is_")
 METADATA_FIELD_SUFFIXES = ("_ttl", "_minutes", "_updated_at", "_count", "_enabled", "_configured",
                            "_suffix", "_last4", "_preview", "_verified", "_confirmed", "_fp",
                            "_hash", "_id", "_at", "_algorithm", "_status", "_policy", "_ref",
-                           "_version", "_masked", "_domain", "_set")
+                           "_version", "_masked", "_domain", "_set", "_fingerprint")
 TIMEDELTA_RE = re.compile(r"timedelta\s*\(\s*days\s*=\s*(\d+)", re.IGNORECASE)
 INTERVAL_RE = re.compile(r"interval\s+'(\d+)\s+days?'", re.IGNORECASE)
 MAKE_INTERVAL_RE = re.compile(r"make_interval\s*\(\s*days\s*=>\s*(\d+)", re.IGNORECASE)
@@ -237,7 +237,7 @@ PASSTHROUGH_CALLS = {"dict", "list", "tuple", "set", "str", "jsonify", "JsonResp
                      "count", "values", "zip", "enumerate", "sorted", "reversed", "next", "iter",
                      "join", "format", "replace", "strip", "lstrip", "rstrip", "lower", "upper",
                      "title", "split", "rsplit", "partition", "encode", "decode",
-                     "dumps", "dump", "loads", "load", "urlencode",
+                     "dumps", "dump", "loads", "load", "urlencode", "format_map", "substitute",
                      "asdict", "model_dump", "model_dump_json"}
 
 
@@ -265,11 +265,15 @@ def _projection_tokens(node: ast.AST) -> dict[int, str]:
     return tokens
 
 
-def _projects_value(catalog: Catalog, token: str | None) -> bool:
+def _projects_value(catalog: Catalog, token: str | None,
+                    allowed: set[str] | None = None) -> bool:
     """A whole-object base only carries its taint into ``.value`` or a field it names."""
     if token is None:
         return True
-    return token in VALUE_ACCESSORS or _field_category(catalog, token) is not None
+    if token in VALUE_ACCESSORS:
+        return True
+    category = _field_category(catalog, token)
+    return category is not None and (allowed is None or category in allowed)
 
 
 def _leaf_functions(tree: ast.AST):
@@ -680,6 +684,69 @@ def _streaming_functions(tree: ast.AST) -> set[str]:
     return names
 
 
+def _model_field_names(cls: ast.ClassDef, classes: dict[str, ast.ClassDef],
+                       seen: set[str] | None = None) -> set[str]:
+    """Declared and inherited annotated field names of a model class."""
+    seen = seen or set()
+    if cls.name in seen:
+        return set()
+    seen.add(cls.name)
+    fields = {stmt.target.id for stmt in cls.body
+              if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)}
+    for base in cls.bases:
+        token = _identifier(base)
+        if token in classes:
+            fields |= _model_field_names(classes[token], classes, seen)
+    return fields
+
+
+def _response_model_categories(func: ast.AST, tree: ast.AST, catalog: Catalog,
+                               categories: set[str]
+                               ) -> tuple[set[str] | None, set[str], set[str] | None]:
+    """Sensitive categories and field names the declared response model can carry.
+
+    FastAPI serializes only the ``response_model`` fields, so a payload key that
+    the model does not declare never leaves the process.
+    """
+    classes = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+    declared: set[str] | None = None
+    fields: set[str] | None = None
+    excluded: set[str] = set()
+    included: set[str] | None = None
+    for decorator in getattr(func, "decorator_list", []):
+        if not isinstance(decorator, ast.Call):
+            continue
+        for keyword in decorator.keywords:
+            if keyword.arg == "response_model":
+                names = [child.id for child in ast.walk(keyword.value)
+                         if isinstance(child, ast.Name)]
+                model = next((name for name in names if name in classes), None)
+                if model is None:
+                    continue
+                fields = _model_field_names(classes[model], classes)
+                declared = _model_class_fields(tree, catalog, categories).get(model, set())
+            elif keyword.arg in {"response_model_exclude", "response_model_include"}:
+                found: set[str] = set()
+                names_found: set[str] = set()
+                for child in ast.walk(keyword.value):
+                    if isinstance(child, ast.Constant) and isinstance(child.value, str):
+                        names_found.add(child.value)
+                        category = _field_category(catalog, child.value)
+                        if category:
+                            found.add(category)
+                if keyword.arg == "response_model_exclude":
+                    excluded |= found
+                    if fields is not None:
+                        fields -= names_found
+                else:
+                    included = found if included is None else included | found
+                    if fields is not None:
+                        fields &= names_found
+    if included is not None:
+        declared = included if declared is None else declared & included
+    return declared, excluded, fields
+
+
 def _column_tuple_rows(func: ast.AST, field_lists: dict[str, set[str]]) -> set[str]:
     """Rows built by iterating a literal column tuple that names sensitive fields.
 
@@ -763,7 +830,7 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
             continue
         if id(child) in projection and not (
                 isinstance(child, ast.Name) and env and child.id in env
-                and _projects_value(catalog, projection[id(child)])):
+                and _projects_value(catalog, projection[id(child)], allowed)):
             continue
         if isinstance(child, ast.Name) and env and child.id in env:
             found |= env[child.id] & allowed
@@ -826,6 +893,8 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
             category = _field_category(catalog, token) if token else None
             if category in allowed:
                 found.add(category)
+            if token and summaries:
+                found |= summaries.get(token, set()) & allowed
         elif isinstance(child, ast.Constant) and isinstance(child.value, str):
             for category in allowed:
                 if _constant_matches(child.value, catalog.synonyms(category)):
@@ -1090,11 +1159,20 @@ class _TaintTracker(ast.NodeVisitor):
         """A variable that holds a credential stays tainted downstream.
 
         ``tokens.create(...)``, ``secrets.get_active(...)`` and ``load_secret(...)``
-        are sources; a derived name (``token_ttl``) is not.
+        are sources; a derived name (``token_ttl``) is not. A container literal or
+        a copy of another variable is not a source by name alone, and a local
+        helper is modelled by its return summary.
         """
         if "CREDENTIAL" not in self.categories:
             return set()
         names = [target.id for target in targets if isinstance(target, ast.Name)]
+        if not names:
+            return set()
+        if isinstance(value, (ast.Dict, ast.List, ast.Set, ast.Tuple, ast.Constant, ast.Name)):
+            return set()
+        if isinstance(value, ast.Call) \
+                and _call_name(value).rsplit(".", 1)[-1] in self.summaries:
+            return set()
         for name in names:
             if name.startswith(DERIVED_IDENTIFIER_PREFIXES) or name.endswith(METADATA_FIELD_SUFFIXES):
                 continue
@@ -1102,7 +1180,7 @@ class _TaintTracker(ast.NodeVisitor):
                 if _is_model_lookup(value):
                     continue
                 return {"CREDENTIAL"}
-        if names and _has_credential_call(self.catalog, value):
+        if _has_credential_call(self.catalog, value):
             return {"CREDENTIAL"}
         return set()
 
@@ -1193,7 +1271,7 @@ class _TaintTracker(ast.NodeVisitor):
             elif isinstance(child, ast.Name) and child.id in self.env and id(child) not in skip:
                 if id(child) in callees or id(child) in infrastructure or (
                         id(child) in projection
-                        and not _projects_value(self.catalog, projection[id(child)])):
+                        and not _projects_value(self.catalog, projection[id(child)], self.categories)):
                     continue
                 found |= self.env[child.id]
             elif isinstance(child, ast.Call):
@@ -1236,6 +1314,7 @@ class _TaintTracker(ast.NodeVisitor):
                     category = _field_category(self.catalog, token)
                     if category:
                         found.add(category)
+                    found |= self.summaries.get(token, set())
         return found & self.categories
 
 
@@ -1707,9 +1786,30 @@ class SinkExposureFamily(PolicyFamily):
                 text = ast.unparse(payload)
                 if self.catalog.is_sanitizer(text):
                     continue
-                matched = self._categories(payload, categories, env, summaries,
-                                           param_returns, field_lists,
-                                           attr_map.get(class_name, {}), cache_env, clean)
+                if isinstance(payload, ast.Name) and env.get(payload.id):
+                    matched = env[payload.id] & categories
+                else:
+                    matched = self._categories(payload, categories, env, summaries,
+                                               param_returns, field_lists,
+                                               attr_map.get(class_name, {}), cache_env, clean)
+                declared, excluded, fields = _response_model_categories(
+                    func, tree, self.catalog, categories)
+                if fields is not None and isinstance(payload, ast.Dict):
+                    filtered: set[str] = set()
+                    for key, value in zip(payload.keys, payload.values):
+                        if not isinstance(key, ast.Constant) or key.value not in fields:
+                            continue
+                        category = _field_category(self.catalog, key.value)
+                        if category in categories and not _value_is_masked(self.catalog, value):
+                            filtered.add(category)
+                        if isinstance(value, ast.Attribute):
+                            value_category = _field_category(self.catalog, value.attr)
+                            if value_category in categories:
+                                filtered.add(value_category)
+                    matched = filtered
+                elif declared is not None:
+                    matched &= declared
+                matched -= excluded
                 if matched:
                     out.append(_finding(control, path, payload.lineno,
                                         f"Response exposes {sorted(matched)} without masking.", text))
@@ -2764,6 +2864,7 @@ class CredentialExposureFamily(PolicyFamily):
             attrs_by_node: dict[int, dict[str, set[str]]] = {}
             endpoint_by_node: dict[int, bool] = {}
             clean_by_node: dict[int, set[str]] = {}
+            func_by_node: dict[int, ast.AST] = {}
             streaming = _streaming_functions(tree)
             for func in _leaf_functions(tree):
                 class_name = enclosing.get(id(func), "")
@@ -2780,6 +2881,7 @@ class CredentialExposureFamily(PolicyFamily):
                     attrs_by_node[id(child)] = attrs
                     endpoint_by_node[id(child)] = endpoint
                     clean_by_node[id(child)] = clean
+                    func_by_node[id(child)] = func
                 if "response" in sinks:
                     for child in ast.walk(func):
                         if isinstance(child, ast.Call):
@@ -2838,13 +2940,37 @@ class CredentialExposureFamily(PolicyFamily):
                                            param_returns, field_lists,
                                            attrs_by_node.get(id(node)), cache_env,
                                            clean_by_node.get(id(node)))
-                if (tainted
-                        or self._matches(text, keys, value_pattern)
-                        or self._constant_key_match(target, keys)
-                        or self._logs_token(node, sinks, keys)
-                        or self._logs_secret_name(node, sinks, keys)
-                        or self._returns_secret_attribute(node, sinks, keys)
-                        or self._logs_secret_header(node, header_bindings, keys)):
+                func = func_by_node.get(id(node))
+                declared = excluded = fields = None
+                if func is not None:
+                    declared, excluded, fields = _response_model_categories(
+                        func, tree, self.catalog, categories)
+                    if fields is not None and isinstance(target, ast.Dict):
+                        filtered: set[str] = set()
+                        for key, value in zip(target.keys, target.values):
+                            if not isinstance(key, ast.Constant) or key.value not in fields:
+                                continue
+                            category = _field_category(self.catalog, key.value)
+                            if category in categories \
+                                    and not _value_is_masked(self.catalog, value):
+                                filtered.add(category)
+                            if isinstance(value, ast.Attribute):
+                                value_category = _field_category(self.catalog, value.attr)
+                                if value_category in categories:
+                                    filtered.add(value_category)
+                        tainted = filtered
+                    elif declared is not None:
+                        tainted &= declared
+                    tainted -= excluded
+                heuristic = (self._matches(text, keys, value_pattern)
+                             or self._constant_key_match(target, keys)
+                             or self._logs_token(node, sinks, keys)
+                             or self._logs_secret_name(node, sinks, keys)
+                             or self._returns_secret_attribute(node, sinks, keys)
+                             or self._logs_secret_header(node, header_bindings, keys))
+                if (declared is not None or excluded) and not tainted:
+                    heuristic = False
+                if tainted or heuristic:
                     out.append(_finding(control, path, getattr(node, "lineno", 1),
                                         "A credential reaches a response, redirect or log.", text))
             if "log" in sinks:
@@ -2982,7 +3108,7 @@ class CredentialExposureFamily(PolicyFamily):
         values = node.value.values if isinstance(node.value, ast.Dict) else []
         return any(
             isinstance(item, ast.Attribute)
-            and any(term in item.attr.lower() for term in ("secret", "api_key"))
+            and _field_category(self.catalog, item.attr) == "CREDENTIAL"
             and not self.catalog.is_sanitizer(ast.unparse(item))
             for item in values
         )

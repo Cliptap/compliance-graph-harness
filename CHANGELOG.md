@@ -73,6 +73,9 @@ semántico.
   tuplas; `yield` en generadores de streaming; loggers con nombre propio (`audit.warning`);
   `decode`/`encode` como accesores; claves de dict por sinónimo exacto; helpers de retención
   transitivos.
+- Properties y getters accedidos como atributo; `format_map`/`Template.substitute`; contrato de
+  `response_model` (campos declarados, herencia y anotaciones) con `response_model_exclude`/`include`;
+  `_fingerprint` como metadata; `signing_key` como credencial.
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.
@@ -80,7 +83,7 @@ semántico.
 ### Experimentos
 
 - Bloque D (10 trampas) y comparación `baseline` vs `rules_skills_gate`.
-- Calibración ciega del gate: rondas 1 a 18 (última medición pre-fix: ronda 18, 31/42); ver
+- Calibración ciega del gate: rondas 1 a 19 (última medición pre-fix: ronda 19, 30/42); ver
   `docs/research/gate-calibration.md`.
 
 ## [0.1.0] - 2026-11-22

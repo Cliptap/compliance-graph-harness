@@ -995,6 +995,54 @@ Regression state: sealed round-18 set **42/42**, curated 22/22, regression corpu
 (215 + 11), full suite **541 passed**. The 31/42 remains the pre-fix measurement; a round 19 is
 required for the post-fix number.
 
+## Blind round 19 (sealed, post-taint)
+
+A nineteenth fresh author wrote 42 modules around model properties, `response_model` exclusion and
+signed or templated payloads. The file was sealed before the run
+(`cases_blind_round19.json.sha256`,
+`9aab8d64f16182513ed6e2e765fdf2ccaad95f56bfa5d6d90b346ed8b0211484`) and run once.
+
+Result: **30/42**. Aggregate: precision **0.680** [0.484, 0.828], recall **0.810** [0.600, 0.923],
+accuracy 0.714 [0.564, 0.828].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.api_key` | 2 | 3 | 1 | 0 | 0.40 | 0.67 |
+| `v2.billing_retention` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.credential_response` | 2 | 2 | 1 | 1 | 0.50 | 0.67 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 1 | 1 | 2 | 2 | 0.50 | 0.33 |
+| `v2.reset_token` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+
+The round was a precision round: recall 0.810, but eight false positives, all from fields that
+never leave the process. `response_model_exclude` and the declared `response_model` were not read.
+
+| Case | Cause |
+|---|---|
+| `r19-log-01` (FN) | a `@property` returning contact data, logged as an attribute |
+| `r19-log-05` (FN) | a `format_map` receipt body logged |
+| `r19-cred-05`, `r19-key-05` (FN) | `Template.substitute` bodies with `signing_key`/`api_key` |
+| `r19-log-06` (FP) | `email_fingerprint` was not metadata; the object's taint leaked |
+| `r19-adm-04`, `r19-cred-02`, `r19-res-04`, `r19-key-04` (FP) | `response_model_exclude` was ignored |
+| `r19-cred-04`, `r19-key-02`, `r19-key-06` (FP) | a payload key outside the declared `response_model` (or a metadata field) |
+
+## Fixes after blind round 19
+
+| Case | Fix |
+|---|---|
+| `r19-log-01` | a property or method name accessed as an attribute carries its return summary |
+| `r19-log-05`, `r19-cred-05`, `r19-key-05` | `format_map` and `substitute` pass their arguments through |
+| `r19-log-06`, `r19-key-06` | `_fingerprint` joins the metadata suffixes; a projected field only carries the base's taint when its category is in the control's set |
+| `r19-adm-04`, `r19-cred-02`, `r19-res-04`, `r19-key-04` | `response_model_exclude`/`include` subtract or intersect the categories |
+| `r19-cred-04`, `r19-key-02` | only keys declared by the `response_model` are exposed; the model resolves inherited and annotated fields |
+| `r19-cred-05`, `r19-key-05` | `signing_key` joins the `CREDENTIAL` synonyms |
+| precision | `_returns_secret_attribute` uses the field category, so `api_key_expires_at` is not a secret |
+
+Regression state: sealed round-19 set **42/42**, curated 22/22, regression corpus **238/238**
+(226 + 12), full suite **548 passed**. The 30/42 remains the pre-fix measurement; a round 20 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -1115,6 +1163,13 @@ required for the post-fix number.
 - The credential control scored zero in round 18 because every credential case left through a
   template or a stream. That is a useful reminder: the control was not wrong about the data, it was
   blind to the channel.
+- Round 19 was a precision round: recall 0.810 but eight false positives, all fields that never
+  leave the process. A `response_model` is a contract: the payload is projected onto its fields and
+  `response_model_exclude` removes the rest. The detector now reads that contract, including
+  inherited and annotated fields.
+- The remaining false positives came from metadata names: `email_fingerprint` and
+  `api_key_expires_at` look sensitive by substring but are derived. The metadata-suffix guard and a
+  category-aware projection keep them out.
 
 ## Limitations
 
@@ -1165,6 +1220,10 @@ required for the post-fix number.
 - The exclusion model is syntactic: it reads `exclude={...}` literals, `Field(exclude=True)` and a
   comprehension filtered against a literal field list. A dynamic exclusion computed at runtime, or a
   serializer that removes a field through a helper, is still a false positive candidate.
+- Round 19 is burned. Its 30/42 is the measurement **before** the fixes; all twelve failing cases
+  were fixed and promoted.
+- The response-model contract is read from the decorator: the model must be declared in the same
+  file. An imported `response_model` is not resolved, so its projection is unknown.
 - The streaming model is structural: a `yield` counts only when the function feeds a
   `StreamingResponse`/`StreamingHttpResponse` in the same file, and a column tuple counts only when
   a row is built from it. A stream assembled in another module is still a false negative candidate.
@@ -1179,17 +1238,17 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 19 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 20 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe streams assembled across modules, runtime-computed exclusions and template includes.
+2. Probe imported response models, streams assembled across modules and nested template includes.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json` through `cases_blind_round18.json` with their `.sha256` seals.
+  `cases_blind_round1.json` through `cases_blind_round19.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`
-  through `blind_round18_metrics.json`.
+  through `blind_round19_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.
