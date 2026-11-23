@@ -1489,3 +1489,31 @@ def test_fingerprint_metadata_field_is_not_pii():
             "    event = SignupEvent(email=email)\n"
             "    logger.info('signup fingerprint=%s', event.email_fingerprint)\n")
     assert "v2.log_pii" not in ids(code)
+
+
+def test_serializer_method_field_with_masked_branch_is_clean():
+    code = ("from rest_framework import serializers\n\n\n"
+            "class CustomerSerializer(serializers.ModelSerializer):\n"
+            "    phone = serializers.SerializerMethodField()\n\n"
+            "    class Meta:\n"
+            "        model = Customer\n"
+            "        fields = ['id', 'full_name', 'phone']\n\n"
+            "    def get_phone(self, obj):\n"
+            "        digits = ''.join(ch for ch in (obj.phone or '') if ch.isdigit())\n"
+            "        return f'***{digits[-4:]}' if digits else '***'\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/serializers.py")
+
+
+def test_password_change_timestamp_is_not_a_credential():
+    code = ("from fastapi import APIRouter\n\n"
+            "router = APIRouter()\n\n\n"
+            "@router.get('/accounts/{account_id}/security')\n"
+            "def account_security(account_id: int):\n"
+            "    account = load_account(account_id)\n"
+            "    return {\n"
+            "        'id': account.id,\n"
+            "        'has_password': bool(account.password_hash),\n"
+            "        'mfa_enabled': account.mfa_enabled,\n"
+            "        'last_password_change': account.last_password_change,\n"
+            "    }\n")
+    assert "v2.credential_response" not in ids(code)

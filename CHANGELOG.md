@@ -76,6 +76,8 @@ semántico.
 - Properties y getters accedidos como atributo; `format_map`/`Template.substitute`; contrato de
   `response_model` (campos declarados, herencia y anotaciones) con `response_model_exclude`/`include`;
   `_fingerprint` como metadata; `signing_key` como credencial.
+- Literales con `*` como máscara (ramas de un `IfExp`); `_change` como metadata
+  (`last_password_change`).
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.
@@ -83,7 +85,7 @@ semántico.
 ### Experimentos
 
 - Bloque D (10 trampas) y comparación `baseline` vs `rules_skills_gate`.
-- Calibración ciega del gate: rondas 1 a 20 (ronda 20 de convergencia: 42/42; última medición pre-fix: ronda 19, 30/42); ver
+- Calibración ciega del gate: rondas 1 a 21 (ronda 20 de convergencia: 42/42; ronda 21 de 84 casos: 82/84 pre-fix); ver
   `docs/research/gate-calibration.md`.
 
 ## [0.1.0] - 2026-11-22

@@ -55,7 +55,7 @@ DERIVED_IDENTIFIER_PREFIXES = ("with_", "without_", "has_", "is_")
 METADATA_FIELD_SUFFIXES = ("_ttl", "_minutes", "_updated_at", "_count", "_enabled", "_configured",
                            "_suffix", "_last4", "_preview", "_verified", "_confirmed", "_fp",
                            "_hash", "_id", "_at", "_algorithm", "_status", "_policy", "_ref",
-                           "_version", "_masked", "_domain", "_set", "_fingerprint")
+                           "_version", "_masked", "_domain", "_set", "_fingerprint", "_change")
 TIMEDELTA_RE = re.compile(r"timedelta\s*\(\s*days\s*=\s*(\d+)", re.IGNORECASE)
 INTERVAL_RE = re.compile(r"interval\s+'(\d+)\s+days?'", re.IGNORECASE)
 MAKE_INTERVAL_RE = re.compile(r"make_interval\s*\(\s*days\s*=>\s*(\d+)", re.IGNORECASE)
@@ -130,8 +130,10 @@ def _value_is_masked(catalog: Catalog, value: ast.AST) -> bool:
         return not (isinstance(value.slice, ast.Constant) and isinstance(value.slice.value, str))
     if isinstance(value, ast.IfExp):
         return _value_is_masked(catalog, value.body) and _value_is_masked(catalog, value.orelse)
+    if isinstance(value, ast.Constant) and isinstance(value.value, str):
+        return value.value == "" or "*" in value.value
     if isinstance(value, ast.Constant) and (
-            value.value is None or value.value == "" or isinstance(value.value, bool)
+            value.value is None or isinstance(value.value, bool)
             or isinstance(value.value, (int, float))):
         return True
     if isinstance(value, (ast.Name, ast.Attribute)):
