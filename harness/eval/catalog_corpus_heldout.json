@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1016,6 +1016,41 @@
       "expected": "clean",
       "path": "app/views/integration_settings.py",
       "code": "from django.http import JsonResponse\n\nfrom app.repositories.integrations import fetch_integration\n\n\nclass IntegrationSettingsView:\n    include_secret = False\n\n    def __init__(self, integration):\n        self.integration = integration\n\n    def render(self):\n        data = {\n            'integration_id': self.integration.id,\n            'api_key_configured': bool(self.integration.api_key),\n        }\n        if self.include_secret:\n            data['api_key'] = self.integration.api_key\n        return data\n\n\ndef integration_settings(request, integration_id):\n    integration = fetch_integration(integration_id)\n    return JsonResponse(IntegrationSettingsView(integration).render())\n"
+    },
+    {
+      "id": "r10-log-02",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "path": "app/contacts/api.py",
+      "code": "import logging\nfrom functools import wraps\nfrom fastapi import APIRouter\n\nlogger = logging.getLogger(__name__)\nrouter = APIRouter()\n\ndef log_incoming(fn):\n    @wraps(fn)\n    def wrapper(body, *args, **kwargs):\n        logger.info('contact upsert address=%s', body.get('address'))\n        return fn(body, *args, **kwargs)\n    return wrapper\n\n@router.post('/contacts')\n@log_incoming\ndef upsert_contact(body: dict):\n    record = {'id': body.get('id', 0), 'address': body.get('address')}\n    logger.debug('stored contact id=%s', record['id'])\n    return {'id': record['id'], 'saved': True}\n"
+    },
+    {
+      "id": "r10-admin-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/users_masked.py",
+      "code": "from fastapi import APIRouter, Depends\nfrom app.privacy import mask_email\n\nrouter = APIRouter()\n\nclass AdminUserRepo:\n    def __init__(self):\n        self.rows = [\n            {'id': 1, 'email': 'ana@example.com', 'rut': '11.111.111-1'},\n            {'id': 2, 'email': 'leo@example.com', 'rut': '22.222.222-2'},\n        ]\n\n    async def list_all(self):\n        return list(self.rows)\n\ndef require_admin():\n    return {'role': 'admin'}\n\n@router.get('/admin/users')\nasync def admin_users(admin=Depends(require_admin)):\n    rows = await AdminUserRepo().list_all()\n    items = [\n        {'id': r['id'], 'email': mask_email(r['email']), 'rut_last4': r['rut'][-4:]}\n        for r in rows\n    ]\n    return {'items': items}\n"
+    },
+    {
+      "id": "r10-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/maintenance/orders_api.py",
+      "code": "from fastapi import APIRouter\n\nrouter = APIRouter()\n\nCUTOFF_DAYS = 365\n\nclass OrderRepo:\n    def __init__(self):\n        self.rows = [\n            {'id': 1, 'created_days_ago': 400},\n            {'id': 2, 'created_days_ago': 30},\n        ]\n\n    async def delete_older_than(self, days):\n        removed = [row['id'] for row in self.rows if row['created_days_ago'] > days]\n        self.rows = [row for row in self.rows if row['created_days_ago'] <= days]\n        return removed\n\n@router.delete('/maintenance/orders')\nasync def purge_orders():\n    removed = await OrderRepo().delete_older_than(CUTOFF_DAYS)\n    return {'removed': removed, 'count': len(removed)}\n"
+    },
+    {
+      "id": "r10-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/jobs/invoice_purge_job.py",
+      "code": "class BillingMixin:\n    retention_days = 730\n\n    def purge_statement(self):\n        return (\n            'DELETE FROM invoices WHERE issued_at < now() - make_interval(days => %s)',\n            (self.retention_days,),\n        )\n\nclass BaseBillingJob(BillingMixin):\n    def execute(self, cursor):\n        statement, params = self.purge_statement()\n        cursor.execute(statement, params)\n        return {'rows': cursor.rowcount}\n\nclass InvoicePurgeJob(BaseBillingJob):\n    def execute(self, cursor):\n        result = super().execute(cursor)\n        result['job'] = 'invoice-purge'\n        return result\n"
+    },
+    {
+      "id": "r9-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "path": "app/api/order_purge.py",
+      "code": "from fastapi import APIRouter, Depends\n\nfrom app.repositories.orders import OrderRepository\n\nrouter = APIRouter(prefix='/internal')\n\n\nclass PurgePlanDTO:\n    def __init__(self, cutoff_days, target):\n        self.cutoff_days = cutoff_days\n        self.target = target\n\n\nclass PurgePlanner:\n    def plan_orders(self):\n        return PurgePlanDTO(cutoff_days=365, target='orders')\n\n\nclass OrderPurgeService:\n    def __init__(self, repo):\n        self.repo = repo\n\n    def execute(self):\n        plan = PurgePlanner().plan_orders()\n        return self.repo.delete_older_than(plan.cutoff_days)\n\n\n@router.post('/orders/purge')\ndef purge_orders(repo=Depends(OrderRepository)):\n    return {'deleted': OrderPurgeService(repo).execute()}\n"
     }
   ]
 }

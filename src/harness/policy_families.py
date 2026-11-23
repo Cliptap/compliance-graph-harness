@@ -376,6 +376,11 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
             leaf = _call_name(child).rsplit(".", 1)[-1]
             if not _is_masking_name(leaf):
                 found |= (summaries or {}).get(leaf, set()) & allowed
+                if leaf == "get" and child.args and isinstance(child.args[0], ast.Constant) \
+                        and isinstance(child.args[0].value, str):
+                    category = _field_category(catalog, child.args[0].value)
+                    if category in allowed:
+                        found.add(category)
                 positions = (param_returns or {}).get(leaf, set())
                 for index, arg in enumerate(child.args):
                     if index in positions and not _value_is_masked(catalog, arg):
@@ -706,14 +711,20 @@ class _TaintTracker(ast.NodeVisitor):
                 for nested in ast.walk(keyword.value):
                     blocked_args.add(id(nested))
         dict_keys: set[int] = set()
+        dict_blocked: set[int] = set()
         skip = _skip_nodes(node)
         projection = _projection_tokens(node)
         callees = {id(child.func) for child in ast.walk(node) if isinstance(child, ast.Call)}
         for child in ast.walk(node):
-            if id(child) in sanitized or id(child) in blocked_args:
+            if id(child) in sanitized or id(child) in blocked_args or id(child) in dict_blocked:
                 continue
             if isinstance(child, ast.Dict):
                 for key, value in zip(child.keys, child.values):
+                    if _value_is_masked(self.catalog, value):
+                        for nested in ast.walk(value):
+                            dict_blocked.add(id(nested))
+                        dict_blocked.add(id(key))
+                        continue
                     if isinstance(key, ast.Constant) and isinstance(key.value, str):
                         dict_keys.add(id(key))
                         category = _field_category(self.catalog, key.value)
@@ -728,6 +739,11 @@ class _TaintTracker(ast.NodeVisitor):
             elif isinstance(child, ast.Call):
                 leaf = _call_name(child).rsplit(".", 1)[-1]
                 found |= self.summaries.get(leaf, set())
+                if leaf == "get" and child.args and isinstance(child.args[0], ast.Constant) \
+                        and isinstance(child.args[0].value, str):
+                    category = _field_category(self.catalog, child.args[0].value)
+                    if category in self.categories:
+                        found.add(category)
                 positions = self.param_returns.get(leaf, set())
                 for index, arg in enumerate(child.args):
                     if index in positions and not _value_is_masked(self.catalog, arg):
@@ -1273,13 +1289,17 @@ class RetentionDeletionFamily(PolicyFamily):
             cutoff = _max_cutoff(func, constants)
             if cutoff is not None and cutoff >= retention_days:
                 continue
-            if cutoff is None and _mentions_retention_field(func, retention_field):
+            if cutoff is None and _retention_field_gate(func, retention_field, constants,
+                                                        retention_days):
                 continue
             if cutoff is None and _helper_retention_aware(func, functions, constants, retention_days):
                 continue
             out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), ""),
                                         _name_tables(func, function_tables), function_tables,
                                         model_params))
+            if cutoff is None:
+                out.extend(_short_cutoff_delete_calls(control, path, func, tables, constants,
+                                                      retention_days))
         for stmt in tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
@@ -1419,6 +1439,41 @@ def _max_cutoff(node: ast.AST, constants: dict[str, int]) -> int | None:
             values.extend(int(value) for value in INTERVAL_RE.findall(child.value))
             values.extend(int(value) for value in MAKE_INTERVAL_RE.findall(child.value))
     return max(values) if values else None
+
+
+def _retention_field_gate(node: ast.AST, field: str, constants: dict[str, int],
+                          retention_days: int) -> bool:
+    """Skip a delete that refers to a retention field only when its value is adequate."""
+    if not field or field not in ast.unparse(node).lower():
+        return False
+    values = {name.lower(): value for name, value in constants.items() if isinstance(value, int)}
+    value = values.get(field)
+    if value is None:
+        return True
+    return value >= retention_days
+
+
+def _short_cutoff_delete_calls(control, path, func, tables, constants, retention_days):
+    """``repo.delete_older_than(365)`` deletes a table without a visible statement."""
+    out: list[Finding] = []
+    for child in ast.walk(func):
+        if not isinstance(child, ast.Call):
+            continue
+        leaf = _call_name(child).rsplit(".", 1)[-1].lower()
+        if leaf == "delete" or not (leaf.startswith("delete") or leaf.startswith("purge")):
+            continue
+        values = [value for value in (_int_value(arg, constants) for arg in child.args)
+                  if value is not None]
+        if not values or max(values) >= retention_days:
+            continue
+        text = ast.unparse(child).lower() + " " + func.name.lower() + " " + path.lower()
+        for table in tables:
+            if table.rstrip("s") in text:
+                out.append(_finding(control, path, child.lineno,
+                                    f"{table} is deleted before its retention period ends.",
+                                    ast.unparse(child)[:200]))
+                break
+    return out
 
 
 def _mentions_retention_field(node: ast.AST, field: str) -> bool:
