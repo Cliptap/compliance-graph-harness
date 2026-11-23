@@ -43,6 +43,7 @@ def _constant_matches(text: str, synonyms: list[str]) -> bool:
 
 LOG_PATTERNS = ("print", "logger.", "logging.", "console.log", "console.error",
                 "sys.stdout", "sys.stderr", "stdout.write", "stderr.write")
+LOG_LEVEL_RE = re.compile(r"\.(debug|info|warning|warn|error|critical|exception|fatal)$")
 RESPONSE_PATTERNS = ("JSONResponse", "JsonResponse", "Response", "jsonify", "PlainTextResponse",
                     "HTMLResponse", "HttpResponse", "StreamingResponse", "ORJSONResponse",
                     "UJSONResponse", "FileResponse")
@@ -76,6 +77,8 @@ def _call_name(node: ast.Call) -> str:
 def _is_log_sink(name: str) -> bool:
     """`log.info` is as common as `logger.info`; a bare substring match would catch `catalog.`."""
     if name.startswith("log."):
+        return True
+    if LOG_LEVEL_RE.search(name):
         return True
     return any(name.startswith(pattern) or pattern in name for pattern in LOG_PATTERNS)
 
@@ -217,7 +220,8 @@ def _finding(control: Control, path: str, line: int, message: str, evidence: str
     )
 
 
-VALUE_ACCESSORS = {"value", "raw", "values", "items", "model_dump", "model_dump_json", "dict"}
+VALUE_ACCESSORS = {"value", "raw", "values", "items", "model_dump", "model_dump_json", "dict",
+                   "decode", "encode"}
 DUMP_METHODS = {"to_dict", "model_dump", "dict", "as_dict", "serialize", "to_json",
                 "public", "summary", "safe_fields"}
 INFRASTRUCTURE_METHODS = {"execute", "executemany", "commit", "rollback", "close", "begin",
@@ -642,6 +646,67 @@ def _dump_receiver_blocks(node: ast.AST, env: dict[str, set[str]] | None,
     return blocked
 
 
+TEMPLATE_CALLS = {"render", "render_template", "render_to_string", "TemplateResponse"}
+
+
+def _template_contexts(node: ast.Call) -> list[ast.AST]:
+    """Context payloads passed to a template render call."""
+    leaf = _call_name(node).rsplit(".", 1)[-1]
+    if leaf not in TEMPLATE_CALLS:
+        return []
+    contexts: list[ast.AST] = [arg for arg in node.args
+                               if isinstance(arg, (ast.Dict, ast.Name))]
+    contexts += [keyword.value for keyword in node.keywords
+                 if keyword.arg not in {"request", "template_name", "template", "using"}]
+    return contexts
+
+
+def _streaming_functions(tree: ast.AST) -> set[str]:
+    """Functions whose yields feed a streaming response."""
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and _call_name(node).rsplit(".", 1)[-1] in {
+                "StreamingResponse", "StreamingHttpResponse"}:
+            for arg in node.args:
+                if isinstance(arg, ast.Call):
+                    names.add(_call_name(arg).rsplit(".", 1)[-1])
+                elif isinstance(arg, ast.Name):
+                    names.add(arg.id)
+    for func in (n for n in ast.walk(tree)
+                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
+        if any(isinstance(n, ast.Call) and _call_name(n).rsplit(".", 1)[-1] in {
+                "StreamingResponse", "StreamingHttpResponse"} for n in ast.walk(func)):
+            names.add(func.name)
+    return names
+
+
+def _column_tuple_rows(func: ast.AST, field_lists: dict[str, set[str]]) -> set[str]:
+    """Rows built by iterating a literal column tuple that names sensitive fields.
+
+    ``EXPORT_COLUMNS = ('id', 'email'); [getattr(row, c) for c in EXPORT_COLUMNS]``
+    exports the email column by construction.
+    """
+    if not field_lists:
+        return set()
+    emitted = any(isinstance(node, (ast.Yield, ast.YieldFrom)) for node in ast.walk(func)) \
+        or any(isinstance(node, ast.Call)
+               and _call_name(node).rsplit(".", 1)[-1] in {"writerow", "join", "writerows"}
+               for node in ast.walk(func))
+    if not emitted:
+        return set()
+    found: set[str] = set()
+    for node in ast.walk(func):
+        iterables: list[ast.AST] = []
+        if isinstance(node, (ast.For, ast.AsyncFor)):
+            iterables.append(node.iter)
+        elif isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+            iterables.extend(generator.iter for generator in node.generators)
+        for iterable in iterables:
+            if isinstance(iterable, ast.Name) and iterable.id in field_lists:
+                found |= field_lists[iterable.id]
+    return found
+
+
 def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                      env: dict[str, set[str]] | None = None,
                      summaries: dict[str, set[str]] | None = None,
@@ -735,7 +800,7 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                     blocked.add(id(key))
                     continue
                 if isinstance(key, ast.Constant) and isinstance(key.value, str):
-                    category = _field_category(catalog, key.value)
+                    category = _exact_category(catalog, key.value)
                     if category in allowed:
                         found.add(category)
         elif isinstance(child, ast.DictComp) and field_lists:
@@ -991,7 +1056,7 @@ class _TaintTracker(ast.NodeVisitor):
         """``body['api_key'] = value`` taints the container from the key itself."""
         if isinstance(target, ast.Subscript) and isinstance(target.slice, ast.Constant) \
                 and isinstance(target.slice.value, str):
-            category = _field_category(self.catalog, target.slice.value)
+            category = _exact_category(self.catalog, target.slice.value)
             if category in self.categories:
                 return {category}
         return set()
@@ -1595,6 +1660,7 @@ class SinkExposureFamily(PolicyFamily):
                         cache_env=None) -> list[Finding]:
         out = []
         admin_only = control.detection.context.get("route") == "admin"
+        streaming = _streaming_functions(tree)
         enclosing = _enclosing_classes(tree)
         for func in _leaf_functions(tree):
             class_name = enclosing.get(id(func), "")
@@ -1629,6 +1695,8 @@ class SinkExposureFamily(PolicyFamily):
                             or _call_name(value).rsplit(".", 1)[-1] in param_returns):
                         payload = value
                     elif isinstance(value, ast.Attribute) and value.attr == "data":
+                        payload = value
+                    elif isinstance(value, ast.Name) and env.get(value.id):
                         payload = value
                 elif isinstance(node, ast.Call) and _call_name(node) in RESPONSE_PATTERNS:
                     payload = node
@@ -1671,6 +1739,35 @@ class SinkExposureFamily(PolicyFamily):
                 if matched:
                     out.append(_finding(control, path, node.lineno,
                                         f"CSV row exposes {sorted(matched)} without masking.", text))
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Call):
+                    continue
+                for context in _template_contexts(node):
+                    matched = self._categories(context, categories, env, summaries,
+                                               param_returns, field_lists,
+                                               attr_map.get(class_name, {}), cache_env, clean)
+                    if matched:
+                        out.append(_finding(control, path, node.lineno,
+                                            f"Template context exposes {sorted(matched)}.",
+                                            ast.unparse(node)[:200]))
+                        break
+            column_categories = _column_tuple_rows(func, field_lists) & categories
+            if column_categories:
+                out.append(_finding(control, path, getattr(func, "lineno", 1),
+                                    f"Exported columns include {sorted(column_categories)}.",
+                                    func.name))
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Yield) or node.value is None:
+                    continue
+                if func.name not in streaming:
+                    continue
+                matched = self._categories(node.value, categories, env, summaries,
+                                           param_returns, field_lists,
+                                           attr_map.get(class_name, {}), cache_env, clean)
+                if matched:
+                    out.append(_finding(control, path, node.lineno,
+                                        f"Streamed value exposes {sorted(matched)} without masking.",
+                                        ast.unparse(node.value)[:200]))
         for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
             attrs = attr_map.get(cls.name, {})
             if not attrs:
@@ -2292,8 +2389,7 @@ def _helper_retention_aware(func: ast.AST, functions: dict[str, ast.AST],
     delete_exprs = _delete_expressions(func)
     if not delete_exprs:
         return False
-    adequate = {name for name, helper in functions.items()
-                if (_max_cutoff(helper, constants) or 0) >= retention_days}
+    adequate = _retention_aware_helpers(functions, constants, retention_days)
     if not adequate:
         return False
     names: set[str] = set()
@@ -2668,6 +2764,7 @@ class CredentialExposureFamily(PolicyFamily):
             attrs_by_node: dict[int, dict[str, set[str]]] = {}
             endpoint_by_node: dict[int, bool] = {}
             clean_by_node: dict[int, set[str]] = {}
+            streaming = _streaming_functions(tree)
             for func in _leaf_functions(tree):
                 class_name = enclosing.get(id(func), "")
                 attrs = attr_map.get(class_name, {})
@@ -2683,6 +2780,34 @@ class CredentialExposureFamily(PolicyFamily):
                     attrs_by_node[id(child)] = attrs
                     endpoint_by_node[id(child)] = endpoint
                     clean_by_node[id(child)] = clean
+                if "response" in sinks:
+                    for child in ast.walk(func):
+                        if isinstance(child, ast.Call):
+                            for context in _template_contexts(child):
+                                matched = _sink_categories(self.catalog, context, categories, env,
+                                                           summaries, param_returns, field_lists,
+                                                           attrs, cache_env, clean)
+                                if matched:
+                                    out.append(_finding(control, path, child.lineno,
+                                                        "Template context exposes "
+                                                        f"{sorted(matched)}.",
+                                                        ast.unparse(child)[:200]))
+                                    break
+                        elif isinstance(child, ast.Yield) and child.value is not None \
+                                and func.name in streaming:
+                            matched = _sink_categories(self.catalog, child.value, categories, env,
+                                                       summaries, param_returns, field_lists,
+                                                       attrs, cache_env, clean)
+                            if matched:
+                                out.append(_finding(control, path, child.lineno,
+                                                    "Streamed value exposes "
+                                                    f"{sorted(matched)} without masking.",
+                                                    ast.unparse(child.value)[:200]))
+                    column_categories = _column_tuple_rows(func, field_lists) & categories
+                    if column_categories:
+                        out.append(_finding(control, path, getattr(func, "lineno", 1),
+                                            f"Exported columns include {sorted(column_categories)}.",
+                                            func.name))
             for node in ast.walk(tree):
                 is_sink = self._is_sink(node, sinks)
                 endpoint = endpoint_by_node.get(id(node), False)

@@ -1279,3 +1279,109 @@ def test_prefixed_sql_table_name_matches_the_policy_table():
             "        removed = cursor.rowcount\n"
             "    return removed\n")
     assert "v2.billing_retention" in ids(code)
+
+
+def test_named_audit_logger_is_a_log_sink():
+    code = ("import logging\n\n"
+            "audit = logging.getLogger('accounts.audit')\n\n\n"
+            "def account_page(account):\n"
+            "    audit.warning('account page opened phone=%s id=%s', account.phone, account.id)\n")
+    assert "v2.log_pii" in ids(code)
+
+
+def test_render_context_with_pii_is_an_admin_response():
+    code = ("from django.shortcuts import render\n\n"
+            "from app.customers.models import Customer\n\n\n"
+            "def customer_admin_detail(request, customer_id):\n"
+            "    customer = Customer.objects.get(pk=customer_id)\n"
+            "    context = {\n"
+            "        'customer_id': customer.id,\n"
+            "        'email': customer.email,\n"
+            "        'phone': customer.phone,\n"
+            "    }\n"
+            "    return render(request, 'admin/customers/detail.html', context)\n")
+    assert "v2.admin_exposure" in ids(code, "app/admin/customer_views.py")
+
+
+def test_render_context_with_masked_values_is_clean():
+    code = ("from django.shortcuts import render\n\n"
+            "from app.privacy.masking import mask_email\n\n\n"
+            "def customer_admin_detail(request, customer):\n"
+            "    context = {\n"
+            "        'customer_id': customer.id,\n"
+            "        'email': mask_email(customer.email),\n"
+            "        'phone': mask_email(customer.phone),\n"
+            "    }\n"
+            "    return render(request, 'admin/customers/detail.html', context)\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/customer_views.py")
+
+
+def test_streamed_column_tuple_exports_credentials():
+    code = ("from collections.abc import AsyncIterator\n\n"
+            "from fastapi import APIRouter\n"
+            "from fastapi.responses import StreamingResponse\n\n"
+            "from app.users.models import User\n\n"
+            "router = APIRouter(prefix='/internal/users')\n"
+            "EXPORT_COLUMNS = ('id', 'username', 'password_hash', 'api_secret')\n\n\n"
+            "async def _user_rows() -> AsyncIterator[str]:\n"
+            "    yield ','.join(EXPORT_COLUMNS) + '\\n'\n"
+            "    async for user in User.objects.all().aiterator():\n"
+            "        values = [str(getattr(user, column)) for column in EXPORT_COLUMNS]\n"
+            "        yield ','.join(values) + '\\n'\n\n\n"
+            "@router.get('/export')\n"
+            "async def export_users() -> StreamingResponse:\n"
+            "    return StreamingResponse(_user_rows(), media_type='text/csv')\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_streamed_reset_token_is_exposed():
+    code = ("from collections.abc import AsyncIterator\n\n"
+            "from fastapi import APIRouter\n"
+            "from fastapi.responses import StreamingResponse\n\n"
+            "from app.accounts.models import PasswordReset\n\n"
+            "router = APIRouter(prefix='/api/password')\n\n\n"
+            "async def _reset_events(reset_id: int) -> AsyncIterator[str]:\n"
+            "    reset = PasswordReset.objects.get(pk=reset_id)\n"
+            "    yield 'event: ready\\n'\n"
+            "    yield f'data: {reset.token}\\n\\n'\n\n\n"
+            "@router.get('/{reset_id}/stream')\n"
+            "async def stream_reset(reset_id: int) -> StreamingResponse:\n"
+            "    return StreamingResponse(_reset_events(reset_id), media_type='text/event-stream')\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_dependency_generator_yield_is_not_a_stream():
+    code = ("from fastapi import Depends\n"
+            "from sqlalchemy.ext.asyncio import AsyncSession\n\n"
+            "from app.db import get_session\n\n\n"
+            "async def admin_session(session: AsyncSession = Depends(get_session)):\n"
+            "    yield session\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_decoded_private_key_in_response_is_a_credential():
+    code = ("from fastapi import APIRouter\n\n"
+            "from app.security.keys import load_private_key\n\n"
+            "router = APIRouter()\n\n\n"
+            "@router.get('/internal/jwt/signing-material')\n"
+            "def signing_material():\n"
+            "    pem = load_private_key('jwt-signing-2026')\n"
+            "    return {'algorithm': 'RS256', 'private_key_pem': pem.decode('utf-8')}\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_metadata_key_with_password_prefix_is_clean():
+    code = ("from django.shortcuts import render\n\n"
+            "from app.accounts.models import User\n\n\n"
+            "def security_page(request, user_id):\n"
+            "    user = User.objects.get(pk=user_id)\n"
+            "    return render(\n"
+            "        request,\n"
+            "        'accounts/security.html',\n"
+            "        {\n"
+            "            'mfa_enabled': user.mfa_enabled,\n"
+            "            'last_password_change': user.password_changed_at,\n"
+            "            'token_source': 'email_link',\n"
+            "        },\n"
+            "    )\n")
+    assert "v2.credential_response" not in ids(code)
