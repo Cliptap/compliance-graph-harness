@@ -711,3 +711,72 @@ def test_delete_route_decorator_is_not_a_hard_delete():
             "    mark_deleted(session, customer_id)\n"
             "    return {'deleted': customer_id}\n")
     assert "v2.customer_hard_delete" not in ids(code, "app/api/customers.py")
+
+
+def test_email_domain_is_not_admin_exposure():
+    code = ("from django.contrib import admin\n\n"
+            "class StaffUserAdmin(admin.ModelAdmin):\n"
+            "    list_display = ('id', 'username', 'email_domain')\n\n"
+            "    def email_domain(self, obj):\n"
+            "        return obj.email.partition('@')[2]\n")
+    assert "v2.admin_exposure" not in ids(code, "app/accounts/admin.py")
+
+
+def test_nested_serializer_in_admin_file_is_flagged():
+    code = ("from rest_framework import serializers\n\n"
+            "class CustomerProfileSerializer(serializers.ModelSerializer):\n"
+            "    class Meta:\n"
+            "        model = Customer\n"
+            "        fields = ('id', 'email', 'phone')\n\n"
+            "class AdminAccountSerializer(serializers.ModelSerializer):\n"
+            "    customer = CustomerProfileSerializer(read_only=True)\n\n"
+            "    class Meta:\n"
+            "        model = Account\n"
+            "        fields = ('id', 'customer')\n")
+    assert "v2.admin_exposure" in ids(code, "app/accounts/serializers.py")
+
+
+def test_serializer_declared_api_key_is_flagged():
+    code = ("from rest_framework import serializers\n\n"
+            "class BaseClientSerializer(serializers.ModelSerializer):\n"
+            "    class Meta:\n"
+            "        model = ApiClient\n"
+            "        fields = ('id', 'name')\n\n"
+            "class ApiClientCredentialsSerializer(BaseClientSerializer):\n"
+            "    api_key = serializers.CharField(read_only=True)\n\n"
+            "    class Meta(BaseClientSerializer.Meta):\n"
+            "        fields = BaseClientSerializer.Meta.fields + ('api_key',)\n")
+    assert "v2.api_key" in ids(code)
+
+
+def test_response_data_secret_fields_are_flagged():
+    code = ("from django.conf import settings\n"
+            "from rest_framework.views import exception_handler\n\n"
+            "class Handler:\n"
+            "    secret_fields = ('SECRET_KEY', 'DATABASE_PASSWORD')\n\n"
+            "    def __call__(self, exc, context):\n"
+            "        response = exception_handler(exc, context)\n"
+            "        response.data = {'debug': {name: getattr(settings, name, None) for name in self.secret_fields}}\n"
+            "        return response\n")
+    assert "v2.credential_response" in ids(code)
+
+
+def test_django_redirect_with_urlencoded_token_is_flagged():
+    code = ("from urllib.parse import urlencode\n"
+            "from django.http import HttpResponseRedirect\n\n"
+            "def go(token, prefix='/reset'):\n"
+            "    params = urlencode({'token': token, 'next': '/'})\n"
+            "    return HttpResponseRedirect(f'{prefix}?{params}')\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_class_alias_retention_is_clean():
+    code = ("from datetime import timedelta\n"
+            "from django.utils import timezone\n\n"
+            "TAX_RETENTION_DAYS = 2190\n\n"
+            "class PurgeView:\n"
+            "    required_days = TAX_RETENTION_DAYS\n\n"
+            "    def post(self, queryset):\n"
+            "        cutoff = timezone.now() - timedelta(days=self.required_days)\n"
+            "        return queryset.filter(issued_at__lte=cutoff).delete()\n")
+    assert "v2.billing_retention" not in ids(code)

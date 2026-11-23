@@ -1,28 +1,28 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 160,
-  "passed": 160,
+  "cases": 167,
+  "passed": 167,
   "controls": {
     "v2.admin_exposure": {
-      "tp": 14,
+      "tp": 15,
       "fp": 0,
       "fn": 0,
-      "tn": 13,
+      "tn": 14,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.785,
+        0.796,
         1.0
       ],
       "recall_ci": [
-        0.785,
+        0.796,
         1.0
       ]
     },
     "v2.api_key": {
-      "tp": 15,
+      "tp": 17,
       "fp": 0,
       "fn": 0,
       "tn": 7,
@@ -30,11 +30,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.796,
+        0.816,
         1.0
       ],
       "recall_ci": [
-        0.796,
+        0.816,
         1.0
       ]
     },
@@ -42,7 +42,7 @@
       "tp": 16,
       "fp": 0,
       "fn": 0,
-      "tn": 9,
+      "tn": 10,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
@@ -56,7 +56,7 @@
       ]
     },
     "v2.credential_response": {
-      "tp": 12,
+      "tp": 13,
       "fp": 0,
       "fn": 0,
       "tn": 13,
@@ -64,11 +64,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.757,
+        0.772,
         1.0
       ],
       "recall_ci": [
-        0.757,
+        0.772,
         1.0
       ]
     },
@@ -107,7 +107,7 @@
       ]
     },
     "v2.reset_token": {
-      "tp": 13,
+      "tp": 14,
       "fp": 0,
       "fn": 0,
       "tn": 6,
@@ -115,11 +115,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.772,
+        0.785,
         1.0
       ],
       "recall_ci": [
-        0.772,
+        0.785,
         1.0
       ]
     }
@@ -1517,6 +1517,73 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r12-adm-02",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r12-adm-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r12-cred-05",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r12-billret-06",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r12-restok-05",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r12-apikey-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r12-apikey-05",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
         "v2.reset_token"
       ],
       "passed": true

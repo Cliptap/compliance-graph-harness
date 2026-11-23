@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1121,6 +1121,55 @@
       "expected": "violation",
       "path": "app/tasks/rotate_partner_keys.py",
       "code": "import logging\n\nimport requests\nfrom celery import shared_task\n\nfrom app.models import ApiClient\n\nlogger = logging.getLogger(__name__)\n\nWEBHOOK_URL = 'https://hooks.example.com/rotate'\n\n\n@shared_task(bind=True, max_retries=3, default_retry_delay=60)\ndef rotate_partner_keys(self, batch_size=100):\n    results = []\n    for client in ApiClient.objects.filter(is_active=True)[:batch_size]:\n        try:\n            response = requests.post(\n                WEBHOOK_URL,\n                json={'client_id': client.id},\n                headers={'Authorization': 'Bearer %s' % client.signing_secret},\n                timeout=5,\n            )\n            response.raise_for_status()\n            results.append({'client_id': client.id, 'status': 'ok'})\n        except requests.RequestException as exc:\n            results.append(\n                {\n                    'client_id': client.id,\n                    'status': 'failed',\n                    'signing_secret': client.signing_secret,\n                    'error': str(exc),\n                }\n            )\n    return results\n"
+    },
+    {
+      "id": "r12-adm-02",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/partners/admin.py",
+      "code": "from django.contrib import admin\nfrom django.contrib.admin.views.decorators import staff_member_required\nfrom django.http import JsonResponse\nfrom django.urls import path\n\nfrom .models import Partner, PartnerContact\n\n\ndef mask_run(value):\n    return '***' + value[-3:]\n\n\ndef mask_email(value):\n    local, _, domain = value.partition('@')\n    return f'{local[:1]}***@{domain}'\n\n\nclass ContactInline(admin.StackedInline):\n    model = PartnerContact\n    extra = 0\n    readonly_fields = ('city',)\n\n\n@admin.register(Partner)\nclass PartnerAdmin(admin.ModelAdmin):\n    list_display = ('id', 'status', 'email_domain')\n    readonly_fields = ('email_masked', 'run_masked')\n    fieldsets = (\n        ('Contact', {'fields': ('email_masked', 'run_masked')}),\n    )\n    inlines = [ContactInline]\n\n    def email_domain(self, obj):\n        return obj.email.partition('@')[2]\n\n    def email_masked(self, obj):\n        return mask_email(obj.email)\n\n    def run_masked(self, obj):\n        return mask_run(obj.run)\n\n    def get_urls(self):\n        return [path('export/', staff_member_required(self.export_contacts))] + super().get_urls()\n\n    def export_contacts(self, request):\n        rows = [\n            {'id': p.pk, 'email': mask_email(p.email), 'run': mask_run(p.run)}\n            for p in Partner.objects.all()[:500]\n        ]\n        return JsonResponse({'partners': rows})\n"
+    },
+    {
+      "id": "r12-adm-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/accounts/serializers.py",
+      "code": "from rest_framework import generics, serializers\nfrom rest_framework.permissions import IsAdminUser\n\nfrom .models import Account, Customer\n\n\nclass CustomerProfileSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Customer\n        fields = ('id', 'full_name', 'email', 'phone', 'run')\n\n\nclass AccountSerializer(serializers.ModelSerializer):\n    customer = CustomerProfileSerializer(read_only=True)\n\n    class Meta:\n        model = Account\n        fields = ('id', 'number', 'balance', 'customer')\n\n\nclass AdminAccountSerializer(AccountSerializer):\n    class Meta(AccountSerializer.Meta):\n        fields = AccountSerializer.Meta.fields\n\n\nclass AdminAccountListView(generics.ListAPIView):\n    permission_classes = (IsAdminUser,)\n    serializer_class = AdminAccountSerializer\n    queryset = Account.objects.select_related('customer').all()\n"
+    },
+    {
+      "id": "r12-cred-05",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "path": "app/core/exceptions.py",
+      "code": "from django.conf import settings\nfrom rest_framework.views import exception_handler\n\n\nclass DebugAwareExceptionHandler:\n    include_debug_payload = True\n    secret_fields = ('SECRET_KEY', 'DATABASE_PASSWORD')\n\n    def __call__(self, exc, context):\n        response = exception_handler(exc, context)\n        if response is None:\n            return None\n        if self.include_debug_payload:\n            response.data = {\n                'detail': str(exc),\n                'debug': {name: getattr(settings, name, None) for name in self.secret_fields},\n            }\n        return response\n\n\napi_exception_handler = DebugAwareExceptionHandler()\n"
+    },
+    {
+      "id": "r12-billret-06",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/billing/views.py",
+      "code": "from datetime import timedelta\n\nfrom django.utils import timezone\nfrom rest_framework import status\nfrom rest_framework.response import Response\nfrom rest_framework.views import APIView\n\nfrom .models import Invoice\n\nTAX_RETENTION_DAYS = 2190\n\n\nclass InvoicePurgeView(APIView):\n    required_days = TAX_RETENTION_DAYS\n\n    def post(self, request):\n        try:\n            cutoff = timezone.now() - timedelta(days=self.required_days)\n            queryset = Invoice.objects.filter(issued_at__lte=cutoff)\n            removed, _ = queryset.delete()\n        except Exception:\n            return Response({'detail': 'purge failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)\n        return Response({'purged': removed})\n"
+    },
+    {
+      "id": "r12-restok-05",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/core/middleware.py",
+      "code": "from urllib.parse import urlencode\n\nfrom django.http import HttpResponseRedirect\n\nfrom app.accounts.models import PasswordResetRequest\nfrom app.accounts.services import issue_reset_token\n\n\nclass ResetRedirectMiddleware:\n    reset_path_prefix = '/account/reset/'\n\n    def __init__(self, get_response):\n        self.get_response = get_response\n\n    def __call__(self, request):\n        try:\n            response = self.get_response(request)\n        except PasswordResetRequest.DoesNotExist:\n            response = HttpResponseRedirect('/account/reset/')\n        if request.path.startswith(self.reset_path_prefix) and request.user.is_authenticated:\n            token = issue_reset_token(request.user)\n            params = urlencode({'token': token, 'next': '/'})\n            return HttpResponseRedirect(f'{self.reset_path_prefix}?{params}')\n        return response\n"
+    },
+    {
+      "id": "r12-apikey-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/serializers.py",
+      "code": "from rest_framework import serializers\n\nfrom .models import ApiClient, WebhookEndpoint\n\n\nclass WebhookEndpointSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = WebhookEndpoint\n        fields = ('id', 'url', 'is_active')\n\n\nclass ApiClientSerializer(serializers.ModelSerializer):\n    endpoints = WebhookEndpointSerializer(source='endpoint_set', many=True, read_only=True)\n\n    class Meta:\n        model = ApiClient\n        fields = ('id', 'name', 'endpoints')\n\n\nclass ApiClientCredentialsSerializer(ApiClientSerializer):\n    api_key = serializers.CharField(read_only=True)\n    api_secret = serializers.CharField(read_only=True)\n\n    class Meta(ApiClientSerializer.Meta):\n        fields = ApiClientSerializer.Meta.fields + ('api_key', 'api_secret')\n"
+    },
+    {
+      "id": "r12-apikey-05",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/core/handlers.py",
+      "code": "from django.conf import settings\nfrom rest_framework.views import exception_handler\n\n\nclass IntegrationErrorHandler:\n    expose_credentials = True\n    credential_settings = ('PARTNER_API_KEY', 'WEBHOOK_SIGNING_SECRET')\n\n    def __call__(self, exc, context):\n        response = exception_handler(exc, context)\n        if response is None:\n            return None\n        if self.expose_credentials:\n            response.data = {\n                'detail': 'upstream rejected the call',\n                'credentials': {name: getattr(settings, name, None) for name in self.credential_settings},\n            }\n        return response\n\n\nintegration_exception_handler = IntegrationErrorHandler()\n"
     }
   ]
 }
