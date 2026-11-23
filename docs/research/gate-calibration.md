@@ -792,6 +792,50 @@ Regression state: sealed round-14 set **42/42**, curated 22/22, regression corpu
 (181 + 5), full suite **508 passed**. The 37/42 remains the pre-fix measurement; a round 15 is
 required for the post-fix number.
 
+## Blind round 15 (sealed, post-taint)
+
+A fifteenth fresh author wrote 42 modules around pydantic/dataclass output models, cache and session
+round-trips and background tasks. The file was sealed before the run
+(`cases_blind_round15.json.sha256`,
+`bdffcacc56e88d5588b025ccbad87e8e759af1a6e8465ddb16f9a320e9f38b8b`) and run once.
+
+Result: **35/42**. Aggregate: precision **1.000** [0.785, 1.000], recall **0.667** [0.454, 0.828],
+accuracy 0.833 [0.694, 0.917]. No false positives.
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.api_key` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.billing_retention` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.credential_response` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.reset_token` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+
+Retention and background deletes held, and the async purge cases stayed precise. The seven false
+negatives share one shape: the sensitive value is declared by a model class or parked in the cache,
+so no single expression carries the field name.
+
+| Case | Cause |
+|---|---|
+| `r15-log-01` | `model_dump()` of a pydantic model that declares `email` and `rut` |
+| `r15-admin-01` | a FastAPI `response_model` with `email`/`phone`; the constructor return was not a payload |
+| `r15-admin-03` | a background task stores PII in `cache.set`; another endpoint returns `cache.get` |
+| `r15-cred-03`, `r15-key-03` | a dataclass `asdict` stored in the cache and read in a second endpoint |
+| `r15-reset-01`, `r15-reset-03` | a pydantic/dataclass reset payload returned directly or via the cache |
+
+## Fixes after blind round 15
+
+| Case | Fix |
+|---|---|
+| `r15-log-01`, `r15-admin-01`, `r15-reset-01` | a pydantic `BaseModel`/`@dataclass` that declares a sensitive field seeds the class constructor summary; `model_dump`, `model_dump_json` and `dict` are value accessors, and `asdict`/`model_dump` are not sanitizers |
+| `r15-admin-03`, `r15-cred-03`, `r15-reset-03`, `r15-key-03` | `cache.set`/`cache.get` and `request.session[...]`/`.get` propagate categories through the same key text inside the file |
+| precision | `self.session = session` and a database session receiver (`self.session.execute(...)`) are not credentials; call receivers of infrastructure methods are not values. This also fixes the pre-existing round-2 false positive `cred_public_columns` |
+
+Regression state: sealed round-15 set **42/42**, curated 22/22, regression corpus **194/194**
+(186 + 8, including `cred_public_columns`), full suite **515 passed**. The 35/42 remains the
+pre-fix measurement; a round 16 is required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -884,6 +928,13 @@ required for the post-fix number.
 - A class name ending in `Repository`/`Manager`/`Service`/`QuerySet` is a useful table hint, but the
   reverse must stay narrow: `purge(x)` and `hard_delete(x)` do not take a model argument; only ORM
   `delete(model)` does.
+- Round 15 moved the frontier to declared output shapes and stored values. A pydantic/dataclass
+  class states which fields an instance carries, so the constructor is a source; `model_dump`,
+  `asdict` and `dict` pass the fields through. A cache or session write followed by a read in another
+  function is linked by the key text, which is name-based like the rest of the model.
+- The same round exposed a precision bug from round 2: a SQLAlchemy session attribute named
+  `session` was read as a credential, and `self.session.execute(...)` tainted the row it returned.
+  A call receiver is infrastructure, not a value; the name heuristic now skips it.
 
 ## Limitations
 
@@ -921,6 +972,11 @@ required for the post-fix number.
   cases were fixed and promoted.
 - Round 14 is burned. Its 37/42 is the measurement **before** the fixes; the five failing cases
   were fixed and promoted.
+- Round 15 is burned. Its 35/42 is the measurement **before** the fixes; the seven failing cases
+  were fixed and promoted, together with the pre-existing round-2 false positive.
+- The cache and session model is textual: a store and a read link only when both spell the key the
+  same way (`f'export:{customer_id}'`). A key built by a different expression, or stored in one
+  module and read in another, is still a false negative candidate.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -929,19 +985,17 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 15 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 16 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe template rendering, GraphQL mutations and repository families.
+2. Probe cache keys built by different expressions, cross-module payloads and model inheritance.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json`, `cases_blind_round2.json`, `cases_blind_round3.json`,
-  `cases_blind_round4.json` and `cases_blind_round5.json` with their `.sha256` seals.
-- `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`,
-  `blind_round2_metrics.json`, `blind_round3_metrics.json`, `blind_round4_metrics.json`,
-  `blind_round5_metrics.json`.
+  `cases_blind_round1.json` through `cases_blind_round15.json` with their `.sha256` seals.
+- `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`
+  through `blind_round15_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.

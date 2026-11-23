@@ -1,11 +1,11 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 186,
-  "passed": 186,
+  "cases": 194,
+  "passed": 194,
   "controls": {
     "v2.admin_exposure": {
-      "tp": 17,
+      "tp": 19,
       "fp": 0,
       "fn": 0,
       "tn": 14,
@@ -13,16 +13,16 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.816,
+        0.832,
         1.0
       ],
       "recall_ci": [
-        0.816,
+        0.832,
         1.0
       ]
     },
     "v2.api_key": {
-      "tp": 19,
+      "tp": 20,
       "fp": 0,
       "fn": 0,
       "tn": 10,
@@ -30,11 +30,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.832,
+        0.839,
         1.0
       ],
       "recall_ci": [
-        0.832,
+        0.839,
         1.0
       ]
     },
@@ -56,19 +56,19 @@
       ]
     },
     "v2.credential_response": {
-      "tp": 15,
+      "tp": 16,
       "fp": 0,
       "fn": 0,
-      "tn": 14,
+      "tn": 15,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.796,
+        0.806,
         1.0
       ],
       "recall_ci": [
-        0.796,
+        0.806,
         1.0
       ]
     },
@@ -90,7 +90,7 @@
       ]
     },
     "v2.log_pii": {
-      "tp": 10,
+      "tp": 11,
       "fp": 0,
       "fn": 0,
       "tn": 13,
@@ -98,16 +98,16 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.722,
+        0.741,
         1.0
       ],
       "recall_ci": [
-        0.722,
+        0.741,
         1.0
       ]
     },
     "v2.reset_token": {
-      "tp": 16,
+      "tp": 18,
       "fp": 0,
       "fn": 0,
       "tn": 6,
@@ -115,11 +115,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.806,
+        0.824,
         1.0
       ],
       "recall_ci": [
-        0.806,
+        0.824,
         1.0
       ]
     }
@@ -1759,6 +1759,82 @@
         "v2.credential_response",
         "v2.reset_token"
       ],
+      "passed": true
+    },
+    {
+      "id": "r15-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r15-admin-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r15-admin-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r15-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r15-reset-01",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.credential_response"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r15-reset-03",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.credential_response"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r15-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "cred_public_columns",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
       "passed": true
     }
   ]
