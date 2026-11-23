@@ -37,6 +37,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 9 (sealed, post-taint) | 42 | **31/42** | 4 false negatives, 7 false positives |
 | Blind round 10 (sealed, post-taint) | 42 | **38/42** | 3 false negatives, 1 false positive |
 | Blind round 11 (sealed, post-taint) | 42 | **32/42** | 6 false negatives, 4 false positives |
+| Blind round 12 (sealed, post-taint) | 42 | **35/42** | 5 false negatives, 2 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -650,6 +651,52 @@ Regression state: sealed round-11 set **42/42**, curated 22/22, regression corpu
 (150 + 10), full suite **490 passed**. The 32/42 remains the pre-fix measurement; a round 12 is
 required for the post-fix number.
 
+## Blind round 12 (sealed, post-taint)
+
+A twelfth fresh author wrote 42 modules around admin inlines, nested serializers and error
+middleware. The file was sealed before the run (`cases_blind_round12.json.sha256`,
+`880048fe2a379a5d6a30138f075bae7d7c420a98d7eabea07dcadd52d21dce26`) and run once.
+
+Result: **35/42**. Aggregate: precision **0.889** [0.672, 0.969], recall **0.762** [0.549, 0.894],
+accuracy 0.833 [0.694, 0.917].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 1 | 1 | 2 | 0.67 | 0.67 |
+| `v2.api_key` | 1 | 0 | 2 | 3 | 1.00 | 0.33 |
+| `v2.billing_retention` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.credential_response` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+Admin inlines and middleware were solid. The failures were serializer inheritance, `response.data`
+error payloads and a Django redirect class.
+
+| Case | Cause |
+|---|---|
+| `r12-adm-02` (FP) | `email_domain` in `list_display` matched the email synonym |
+| `r12-billret-06` (FP) | the class alias `required_days = TAX_RETENTION_DAYS` was not resolved |
+| `r12-adm-03` (FN) | the nested serializer lived in a file without "admin" in path or class name |
+| `r12-cred-05`, `r12-apikey-05` (FN) | `response.data = {...}` with a comprehension over `secret_fields` |
+| `r12-restok-05` (FN) | `HttpResponseRedirect` was not a redirect pattern and `urlencode` blocked its argument |
+| `r12-apikey-03` (FN) | `Meta.fields` inherited through an expression; only declared fields remained |
+
+## Fixes after blind round 12
+
+| Case | Fix |
+|---|---|
+| `r12-adm-02` | `_domain` joins the metadata suffixes |
+| `r12-billret-06` | constant aliases (`required_days = TAX_RETENTION_DAYS`) resolve by fixpoint |
+| `r12-adm-03` | admin serializer context also comes from an `Admin*` class in the file; declared serializer fields are scanned when `Meta.fields` is an expression |
+| `r12-cred-05/05` | `response.data = ...` is a response payload in both families |
+| `r12-restok-05` | `HttpResponseRedirect` is a redirect; `urlencode` passes its arguments through |
+| `r12-apikey-03` | declared credential fields are scanned even when `Meta.fields` is inherited |
+
+Regression state: sealed round-12 set **42/42**, curated 22/22, regression corpus **167/167**
+(160 + 7), full suite **496 passed**. The 35/42 remains the pre-fix measurement; a round 13 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -726,6 +773,9 @@ required for the post-fix number.
   admin responses.
 - A retention constant is a gate only through its value: `ORDER_RETENTION_DAYS = 365` must not
   suppress a finding just because the name contains the retention field.
+- Round 12 confirmed serializer inheritance as the main gap: `Meta.fields` built as an expression,
+  nested serializers in files without "admin" in the path, and declared fields behind an inherited
+  `Meta` all needed explicit handling. Error payloads assigned to `response.data` are responses too.
 
 ## Limitations
 
@@ -757,6 +807,8 @@ required for the post-fix number.
   were fixed and promoted.
 - Round 11 is burned. Its 32/42 is the measurement **before** the fixes; the ten failing cases
   were fixed and promoted.
+- Round 12 is burned. Its 35/42 is the measurement **before** the fixes; the seven failing cases
+  were fixed and promoted.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -765,9 +817,9 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 12 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 13 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe Django admin inlines, DRF nested serializers and error middleware.
+2. Probe admin inlines with form fields, DRF `SerializerMethodField` chains and ASGI middleware.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts

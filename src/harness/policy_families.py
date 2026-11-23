@@ -45,7 +45,7 @@ LOG_PATTERNS = ("print", "logger.", "logging.", "console.log", "console.error",
                 "sys.stdout", "sys.stderr", "stdout.write", "stderr.write")
 RESPONSE_PATTERNS = ("JSONResponse", "JsonResponse", "Response", "jsonify", "PlainTextResponse",
                     "HTMLResponse", "HttpResponse", "StreamingResponse")
-REDIRECT_PATTERNS = ("RedirectResponse", "redirect")
+REDIRECT_PATTERNS = ("RedirectResponse", "redirect", "HttpResponseRedirect")
 DELETE_RE = re.compile(r"\bdelete\s+from\s+[\"'`]?([a-z_][a-z0-9_]*)", re.IGNORECASE)
 DJANGO_OBJECTS_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\.objects\b")
 DERIVED_FIELD_SUFFIXES = ("_configured", "_suffix", "_last4", "_preview", "_enabled")
@@ -53,7 +53,7 @@ DERIVED_IDENTIFIER_PREFIXES = ("with_", "without_", "has_", "is_")
 METADATA_FIELD_SUFFIXES = ("_ttl", "_minutes", "_updated_at", "_count", "_enabled", "_configured",
                            "_suffix", "_last4", "_preview", "_verified", "_confirmed", "_fp",
                            "_hash", "_id", "_at", "_algorithm", "_status", "_policy", "_ref",
-                           "_version", "_masked")
+                           "_version", "_masked", "_domain")
 TIMEDELTA_RE = re.compile(r"timedelta\s*\(\s*days\s*=\s*(\d+)", re.IGNORECASE)
 INTERVAL_RE = re.compile(r"interval\s+'(\d+)\s+days?'", re.IGNORECASE)
 MAKE_INTERVAL_RE = re.compile(r"make_interval\s*\(\s*days\s*=>\s*(\d+)", re.IGNORECASE)
@@ -220,7 +220,7 @@ PASSTHROUGH_CALLS = {"dict", "list", "tuple", "set", "str", "jsonify", "JsonResp
                      "count", "values", "zip", "enumerate", "sorted", "reversed", "next", "iter",
                      "join", "format", "replace", "strip", "lstrip", "rstrip", "lower", "upper",
                      "title", "split", "rsplit", "partition", "encode", "decode",
-                     "dumps", "dump", "loads", "load"}
+                     "dumps", "dump", "loads", "load", "urlencode"}
 
 
 def _skip_nodes(node: ast.AST) -> set[int]:
@@ -317,6 +317,11 @@ def _serializer_field_leak(catalog: Catalog, cls: ast.ClassDef,
         if isinstance(stmt.value, (ast.List, ast.Tuple)):
             fields = [element.value for element in stmt.value.elts
                       if isinstance(element, ast.Constant) and isinstance(element.value, str)]
+    declared = [target.id for stmt in cls.body if isinstance(stmt, ast.Assign)
+                for target in stmt.targets
+                if isinstance(target, ast.Name) and isinstance(stmt.value, ast.Call)]
+    if not fields:
+        fields = declared
     if not fields:
         return None
     write_only: set[str] = set()
@@ -356,9 +361,13 @@ def _serializer_field_leak(catalog: Catalog, cls: ast.ClassDef,
 
 def _serializer_scan(catalog: Catalog, tree: ast.AST, categories: set[str],
                      admin_only: bool, path: str) -> list[tuple[ast.ClassDef, str]]:
+    classes = [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+    admin_context = admin_only and (
+        "admin" in path.lower()
+        or any(cls.name.lower().startswith("admin") for cls in classes))
     found: list[tuple[ast.ClassDef, str]] = []
-    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
-        if admin_only and "admin" not in cls.name.lower() and "admin" not in path.lower():
+    for cls in classes:
+        if admin_only and not admin_context:
             continue
         field = _serializer_field_leak(catalog, cls, categories)
         if field:
@@ -374,6 +383,16 @@ def _is_endpoint(func: ast.AST) -> bool:
     text = " ".join(ast.unparse(decorator)
                     for decorator in getattr(func, "decorator_list", [])).lower()
     return any(marker in text for marker in ENDPOINT_MARKERS)
+
+
+def _response_assignment(node: ast.AST) -> ast.AST | None:
+    """``response.data = {...}`` is an error payload, not a local assignment."""
+    if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+        return None
+    target = node.targets[0]
+    if isinstance(target, ast.Attribute) and target.attr == "data":
+        return node.value
+    return None
 
 
 def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[str, set[str]]:
@@ -1131,6 +1150,8 @@ class SinkExposureFamily(PolicyFamily):
                         payload = value
                 elif isinstance(node, ast.Call) and _call_name(node) in RESPONSE_PATTERNS:
                     payload = node
+                elif isinstance(node, ast.Assign):
+                    payload = _response_assignment(node)
                 if payload is None:
                     continue
                 text = ast.unparse(payload)
@@ -1434,6 +1455,23 @@ def _int_constants(tree: ast.AST) -> dict[str, int]:
                 constants[target.id] = value
             elif isinstance(target, ast.Attribute):
                 constants[target.attr] = value
+    for _ in range(3):
+        changed = False
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+                continue
+            if not isinstance(node.value, ast.Name) or node.value.id not in constants:
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            resolved = constants[node.value.id]
+            for target in targets:
+                key = target.id if isinstance(target, ast.Name) else (
+                    target.attr if isinstance(target, ast.Attribute) else None)
+                if key and constants.get(key) != resolved:
+                    constants[key] = resolved
+                    changed = True
+        if not changed:
+            break
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
@@ -1870,9 +1908,11 @@ class CredentialExposureFamily(PolicyFamily):
                 return_name = (endpoint and isinstance(node, ast.Return)
                                and isinstance(node.value, ast.Name)
                                and bool(env_by_node.get(id(node), {}).get(node.value.id)))
-                if not (is_sink or return_call or return_name):
+                response_value = _response_assignment(node)
+                if not (is_sink or return_call or return_name or response_value is not None):
                     continue
-                target = node.value if (return_call or return_name) else node
+                target = response_value if response_value is not None else (
+                    node.value if (return_call or return_name) else node)
                 text = ast.unparse(target)
                 if self.catalog.is_sanitizer(text):
                     continue

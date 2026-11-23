@@ -80,3 +80,7 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   `source=`/`write_only`, credential serializers, prefixed retention constants and a task returning
   a list with a secret were the gaps. All ten failing cases were fixed and promoted (42/42
   regression). Round 12 is required for a post-fix number.
+- Round 12: sealed, run once, 35/42, admin inlines, nested serializers and error middleware. The
+  failures were `email_domain`, a class constant alias, a nested serializer outside an admin path,
+  `response.data` error payloads, `HttpResponseRedirect` and inherited `Meta.fields`. All seven were
+  fixed and promoted (42/42 regression). Round 13 is required for a post-fix number.
