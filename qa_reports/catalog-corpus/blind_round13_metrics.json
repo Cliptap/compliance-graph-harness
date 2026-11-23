@@ -1,0 +1,493 @@
+{
+  "corpus": "harness/eval/blind/cases_blind_round13.json",
+  "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
+  "cases": 42,
+  "passed": 28,
+  "controls": {
+    "v2.admin_exposure": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1": 0.8,
+      "precision_ci": [
+        0.342,
+        1.0
+      ],
+      "recall_ci": [
+        0.208,
+        0.939
+      ]
+    },
+    "v2.api_key": {
+      "tp": 2,
+      "fp": 3,
+      "fn": 1,
+      "tn": 0,
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "precision_ci": [
+        0.118,
+        0.769
+      ],
+      "recall_ci": [
+        0.208,
+        0.939
+      ]
+    },
+    "v2.billing_retention": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 3,
+      "tn": 2,
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4,
+      "precision_ci": [
+        0.207,
+        1.0
+      ],
+      "recall_ci": [
+        0.046,
+        0.699
+      ]
+    },
+    "v2.credential_response": {
+      "tp": 1,
+      "fp": 1,
+      "fn": 2,
+      "tn": 2,
+      "precision": 0.5,
+      "recall": 0.3333333333333333,
+      "f1": 0.4,
+      "precision_ci": [
+        0.095,
+        0.905
+      ],
+      "recall_ci": [
+        0.061,
+        0.792
+      ]
+    },
+    "v2.customer_hard_delete": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "tn": 2,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666,
+      "precision_ci": [
+        0.342,
+        1.0
+      ],
+      "recall_ci": [
+        0.15,
+        0.85
+      ]
+    },
+    "v2.log_pii": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "precision_ci": [
+        0.438,
+        1.0
+      ],
+      "recall_ci": [
+        0.438,
+        1.0
+      ]
+    },
+    "v2.reset_token": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "tn": 3,
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1": 0.8,
+      "precision_ci": [
+        0.342,
+        1.0
+      ],
+      "recall_ci": [
+        0.208,
+        0.939
+      ]
+    }
+  },
+  "rows": [
+    {
+      "id": "r13-log-01",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-log-02",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-log-03",
+      "control": "v2.log_pii",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-log-04",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-log-06",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-admin-01",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-admin-02",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-admin-03",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-admin-04",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-admin-05",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-admin-06",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-cred-01",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.admin_exposure",
+        "v2.api_key",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-cred-02",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-cred-03",
+      "control": "v2.credential_response",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-cred-04",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-cred-05",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.reset_token"
+      ],
+      "passed": false
+    },
+    {
+      "id": "r13-del-01",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-del-02",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-del-03",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-del-04",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-del-05",
+      "control": "v2.customer_hard_delete",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-del-06",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-bill-01",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-bill-02",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-bill-03",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-bill-04",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-bill-05",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-bill-06",
+      "control": "v2.billing_retention",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-reset-01",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.credential_response"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-reset-02",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.log_pii"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-reset-03",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-reset-04",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-reset-05",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-reset-06",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "r13-key-01",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-key-02",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "r13-key-03",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": false,
+      "other_findings": [],
+      "passed": false
+    },
+    {
+      "id": "r13-key-04",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [
+        "v2.log_pii",
+        "v2.reset_token"
+      ],
+      "passed": false
+    },
+    {
+      "id": "r13-key-05",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": false
+    },
+    {
+      "id": "r13-key-06",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": false
+    }
+  ]
+}

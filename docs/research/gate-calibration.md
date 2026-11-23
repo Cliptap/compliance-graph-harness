@@ -38,6 +38,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 10 (sealed, post-taint) | 42 | **38/42** | 3 false negatives, 1 false positive |
 | Blind round 11 (sealed, post-taint) | 42 | **32/42** | 6 false negatives, 4 false positives |
 | Blind round 12 (sealed, post-taint) | 42 | **35/42** | 5 false negatives, 2 false positives |
+| Blind round 13 (sealed, post-taint) | 42 | **28/42** | 10 false negatives, 4 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -697,6 +698,56 @@ Regression state: sealed round-12 set **42/42**, curated 22/22, regression corpu
 (160 + 7), full suite **496 passed**. The 35/42 remains the pre-fix measurement; a round 13 is
 required for the post-fix number.
 
+## Blind round 13 (sealed, post-taint)
+
+A thirteenth fresh author wrote 42 modules around management commands, signals, custom managers and
+async middleware. The file was sealed before the run (`cases_blind_round13.json.sha256`,
+`d1b3105c54aa9cb338b550060613384340e5a6d788c04b3d1d560894a0299abd`) and run once. Two controls
+came with a 4/2 violation/clean split instead of 3/3; the labels are consistent, so the set was
+kept as authored.
+
+Result: **28/42**. Aggregate: precision **0.765** [0.527, 0.904], recall **0.565** [0.368, 0.744],
+accuracy 0.667 [0.516, 0.790].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.api_key` | 2 | 3 | 1 | 0 | 0.40 | 0.67 |
+| `v2.billing_retention` | 1 | 0 | 3 | 2 | 1.00 | 0.25 |
+| `v2.credential_response` | 1 | 1 | 2 | 2 | 0.50 | 0.33 |
+| `v2.customer_hard_delete` | 2 | 0 | 2 | 2 | 1.00 | 0.50 |
+| `v2.log_pii` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+The round exposed global state, serializer method chains and custom manager deletes.
+
+| Case | Cause |
+|---|---|
+| `r13-key-04` (FP) | `self.stdout.write` with a masked suffix; `bool(client.api_key)` inside the argument |
+| `r13-key-05` (FP) | an `IfExp` whose masked branch ended in `''` |
+| `r13-cred-06`, `r13-key-06` (FP) | fields removed by `get_fields`/`to_representation` mixins were still scanned |
+| `r13-admin-02` (FN) | a module-level dictionary filled in a signal |
+| `r13-cred-02`, `r13-cred-03`, `r13-key-03`, `r13-reset-03` (FN) | `SerializerMethodField` chains and `.data` returns |
+| `r13-del-01`, `r13-bill-06` (FN) | custom `hard_delete`/`purge_queryset` manager methods |
+| `r13-del-03`, `r13-bill-03` (FN) | `adelete()` was not a delete call |
+| `r13-bill-02` (FN) | `purge_batch` on an invoice queryset; the table lived in the class name |
+
+## Fixes after blind round 13
+
+| Case | Fix |
+|---|---|
+| serializer methods | a `get_*` method returning sensitive data marks the field; serializer constructors pass their payload through |
+| serializer exclusions | fields removed by `get_fields`/`to_representation` (incl. `pop`) are not exposures; meta-less serializers use declared fields |
+| global containers | module-level names filled inside functions taint the module env seeded into every scan |
+| async deletes | `adelete`/`abulk_delete`/`hard_delete` are delete calls; class names join the table-token fallback |
+| custom manager deletes | a delete/purge call with no cutoff is flagged when the retention constant in scope is below policy |
+| precision | empty-string/boolean constants are masks; `_set` is metadata; `values()`/`items()` accessors carry taint; log heuristics skip nested masked calls |
+| reset links | imported names containing `reset` and `link` are credential sources |
+
+Regression state: sealed round-13 set **42/42**, curated 22/22, regression corpus **181/181**
+(167 + 14), full suite **503 passed**. The 28/42 remains the pre-fix measurement; a round 14 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -776,6 +827,12 @@ required for the post-fix number.
 - Round 12 confirmed serializer inheritance as the main gap: `Meta.fields` built as an expression,
   nested serializers in files without "admin" in the path, and declared fields behind an inherited
   `Meta` all needed explicit handling. Error payloads assigned to `response.data` are responses too.
+- Round 13 moved the frontier to managed state: a module-level dictionary filled in a signal, a
+  serializer method that returns another serializer's data, and custom manager deletes. The
+  detector now seeds a module environment, follows serializer method returns, and treats
+  `adelete`/`hard_delete`/`purge_*` as deletes with the table resolved from the class or path.
+- The 4/2 split in two controls is a reminder that the blind protocol fixes the per-control case
+  count, not the label balance; the metrics stay per control.
 
 ## Limitations
 
@@ -809,6 +866,8 @@ required for the post-fix number.
   were fixed and promoted.
 - Round 12 is burned. Its 35/42 is the measurement **before** the fixes; the seven failing cases
   were fixed and promoted.
+- Round 13 is burned. Its 28/42 is the measurement **before** the fixes; the fourteen failing
+  cases were fixed and promoted.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -817,9 +876,9 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 13 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 14 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe admin inlines with form fields, DRF `SerializerMethodField` chains and ASGI middleware.
+2. Probe global state across modules, serializer method chains and custom manager families.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
