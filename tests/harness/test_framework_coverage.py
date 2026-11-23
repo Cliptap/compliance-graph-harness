@@ -909,3 +909,103 @@ def test_async_purge_with_repository_alias_is_flagged():
             "    cutoff = timezone.now() - timedelta(days=PURGE_AFTER_DAYS)\n"
             "    await repo.delete_before(cutoff)\n")
     assert "v2.billing_retention" in ids(code)
+
+
+def test_pydantic_model_dump_with_pii_is_logged():
+    code = ("import logging\n"
+            "from pydantic import BaseModel\n\n"
+            "logger = logging.getLogger(__name__)\n\n\n"
+            "class CustomerProfile(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n"
+            "    rut: str\n\n\n"
+            "def record(customer):\n"
+            "    profile = CustomerProfile(id=customer.id, email=customer.email, rut=customer.rut)\n"
+            "    logger.info('profile=%s', profile.model_dump())\n")
+    assert "v2.log_pii" in ids(code)
+
+
+def test_pydantic_admin_response_model_exposes_contact():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter(prefix='/admin')\n\n\n"
+            "class AdminCustomerOut(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n"
+            "    phone: str\n\n\n"
+            "@router.get('/customers/{customer_id}', response_model=AdminCustomerOut)\n"
+            "def admin_customer_detail(customer_id: int):\n"
+            "    customer = Customer.objects.get(pk=customer_id)\n"
+            "    return AdminCustomerOut(id=customer.id, email=customer.email, phone=customer.phone)\n")
+    assert "v2.admin_exposure" in ids(code, "app/admin/customers.py")
+
+
+def test_cached_admin_export_is_exposed():
+    code = ("from fastapi import APIRouter\n"
+            "from django.core.cache import cache\n\n"
+            "router = APIRouter(prefix='/admin')\n\n\n"
+            "def build_export(customer_id):\n"
+            "    customer = Customer.objects.get(pk=customer_id)\n"
+            "    cache.set(f'admin:export:{customer_id}', {'email': customer.email})\n\n\n"
+            "@router.get('/customers/{customer_id}/export')\n"
+            "def download_export(customer_id):\n"
+            "    payload = cache.get(f'admin:export:{customer_id}')\n"
+            "    return {'customer': payload}\n")
+    assert "v2.admin_exposure" in ids(code, "app/admin/export_api.py")
+
+
+def test_dataclass_secret_in_cache_is_exposed():
+    code = ("from dataclasses import dataclass, asdict\n"
+            "from fastapi import APIRouter\n\n"
+            "router = APIRouter(prefix='/services')\n\n\n"
+            "@dataclass\n"
+            "class ServiceCredential:\n"
+            "    service: str\n"
+            "    api_key: str\n\n\n"
+            "def provision(service):\n"
+            "    credential = ServiceCredential(service=service, api_key=issue_api_key(service))\n"
+            "    cache.set(f'service:credential:{service}', asdict(credential))\n\n\n"
+            "@router.get('/{service}/credentials')\n"
+            "def read_credentials(service):\n"
+            "    return {'credential': cache.get(f'service:credential:{service}')}\n")
+    assert "v2.api_key" in ids(code, "app/services/credential_api.py")
+
+
+def test_pydantic_reset_response_exposes_token():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter(prefix='/auth')\n\n\n"
+            "class PasswordResetOut(BaseModel):\n"
+            "    email: str\n"
+            "    reset_token: str\n\n\n"
+            "@router.post('/password-reset', response_model=PasswordResetOut)\n"
+            "def request_password_reset(payload):\n"
+            "    token = issue_reset_token(payload.email)\n"
+            "    return PasswordResetOut(email=payload.email, reset_token=token)\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_database_session_receiver_is_not_a_credential():
+    code = ("class AccountRepository:\n"
+            "    def __init__(self, session):\n"
+            "        self.session = session\n\n"
+            "    def get_public(self, account_id):\n"
+            "        row = self.session.execute('SELECT id, email FROM accounts').one()\n"
+            "        return {'id': row.id, 'email': row.email}\n")
+    assert "v2.credential_response" not in ids(code)
+
+
+def test_masked_pydantic_model_is_not_flagged():
+    code = ("from pydantic import BaseModel\n\n\n"
+            "class AdminCustomerSummary(BaseModel):\n"
+            "    id: int\n"
+            "    email_masked: str\n"
+            "    api_key_configured: bool\n\n\n"
+            "def present(customer):\n"
+            "    return AdminCustomerSummary(\n"
+            "        id=customer.id,\n"
+            "        email_masked=mask_email(customer.email),\n"
+            "        api_key_configured=bool(customer.api_key),\n"
+            "    )\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/presenters.py")
+    assert "v2.api_key" not in ids(code, "app/admin/presenters.py")

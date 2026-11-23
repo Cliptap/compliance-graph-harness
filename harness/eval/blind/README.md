@@ -92,3 +92,8 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   were a `FormView` rendering instance PII, a custom purge below retention with a known cutoff, a
   repository alias and GraphQL types under credential controls. All five were fixed and promoted
   (42/42 regression). Round 15 is required for a post-fix number.
+- Round 15: sealed, run once, 35/42, pydantic/dataclass output models, cache and session round-trips
+  and background tasks. The failures were `model_dump`/`asdict` payloads, a `response_model`, and
+  values stored with `cache.set` and returned by another endpoint. All seven were fixed and promoted
+  (42/42 regression), together with the round-2 false positive `cred_public_columns`. Round 16 is
+  required for a post-fix number.
