@@ -83,7 +83,7 @@ semántico.
 ### Experimentos
 
 - Bloque D (10 trampas) y comparación `baseline` vs `rules_skills_gate`.
-- Calibración ciega del gate: rondas 1 a 19 (última medición pre-fix: ronda 19, 30/42); ver
+- Calibración ciega del gate: rondas 1 a 20 (ronda 20 de convergencia: 42/42; última medición pre-fix: ronda 19, 30/42); ver
   `docs/research/gate-calibration.md`.
 
 ## [0.1.0] - 2026-11-22

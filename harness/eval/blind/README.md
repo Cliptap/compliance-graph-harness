@@ -116,3 +116,7 @@ detector**. This is the measurement the curated and post-fix corpora cannot prov
   and the declared response-model contract; eight false positives came from fields the model drops.
   All twelve were fixed and promoted (42/42 regression). Round 20 is required for a post-fix
   number.
+- Round 20: sealed, run once, **42/42**, convergence probe with no channel emphasis. A neutral sample
+  of the same distribution passed on the first run. The blind loop stops here at the current scope;
+  the next measurement is a larger neutral round (84 cases) or new channels in the regression
+  corpus.

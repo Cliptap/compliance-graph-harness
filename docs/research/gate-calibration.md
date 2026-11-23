@@ -1043,6 +1043,34 @@ Regression state: sealed round-19 set **42/42**, curated 22/22, regression corpu
 (226 + 12), full suite **548 passed**. The 30/42 remains the pre-fix measurement; a round 20 is
 required for the post-fix number.
 
+## Blind round 20 (sealed, post-taint, convergence probe)
+
+A twentieth fresh author wrote 42 modules with **no channel emphasis**: a neutral sample of
+endpoints, serializers, services, tasks, middleware, management commands and GraphQL. The file was
+sealed before the run (`cases_blind_round20.json.sha256`,
+`06ed40c8e17f25c1bea69e86cf2df8206e21355c9dac023f6803e5e666814571`) and run once.
+
+Result: **42/42** on the first run. Aggregate: precision **1.000** [0.845, 1.000], recall
+**1.000** [0.845, 1.000], accuracy 1.000 [0.916, 1.000]. No false positives.
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.api_key` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.billing_retention` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.credential_response` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.customer_hard_delete` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.log_pii` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.reset_token` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+
+This is the convergence signal the previous rounds could not give: a fresh sample of the same
+distribution, with no new channel to discover, passed on the first run. The three preceding rounds
+lost 11, 12 and 12 cases because each one introduced a new channel (templates and streams, the
+response-model contract, exclusion). With the channel fixed, the model held.
+
+The interval is the honest part: 42/42 still allows a recall as low as 0.845. This is evidence of
+stability at the current scope, not a proof of completeness.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -1170,6 +1198,14 @@ required for the post-fix number.
 - The remaining false positives came from metadata names: `email_fingerprint` and
   `api_key_expires_at` look sensitive by substring but are derived. The metadata-suffix guard and a
   category-aware projection keep them out.
+- Round 20 closes the blind loop at the current scope. It was a convergence probe, not a new
+  channel: a neutral sample of the same distribution passed 42/42 on the first run. After nineteen
+  rounds that each found something, a clean first run is the signal that the model has caught up
+  with the channels it was shown.
+- The loop should stop here. The marginal value of another blind round is now in *new channels*
+  (imported response models, streams assembled in another module, dynamic exclusions), not in the
+  same distribution. Those are features with their own scope, and the regression corpus is the
+  better place to grow them.
 
 ## Limitations
 
@@ -1222,6 +1258,11 @@ required for the post-fix number.
   serializer that removes a field through a helper, is still a false positive candidate.
 - Round 19 is burned. Its 30/42 is the measurement **before** the fixes; all twelve failing cases
   were fixed and promoted.
+- Round 20 passed 42/42 on the first run. It is the convergence probe: same distribution, no new
+  channel. The sealed set stays as a regression check.
+- The blind protocol fixes the sample at 42 cases (21 violations), so the interval is wide: 21/21
+  allows a recall as low as 0.845, and 42/42 an accuracy as low as 0.916. For a finer estimate, run
+  a larger neutral round (84 cases) rather than more small ones.
 - The response-model contract is read from the decorator: the model must be declared in the same
   file. An imported `response_model` is not resolved, so its projection is unknown.
 - The streaming model is structural: a `yield` counts only when the function feeds a
@@ -1238,17 +1279,18 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 20 for the post-fix number, with real code from the target app and
-   public repositories, not only snippets.
-2. Probe imported response models, streams assembled across modules and nested template includes.
+1. Stop the blind loop: round 20 passed 42/42 on a neutral sample. The next measurement should be a
+   larger neutral round (84 cases) if a tighter interval is needed.
+2. Grow the regression corpus with real code from the target app, starting with imported response
+   models and streams assembled across modules.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
 
 - `harness/eval/catalog_corpus.json`, `harness/eval/catalog_corpus_heldout.json`.
 - `harness/eval/blind/README.md`, `author_pack.md`, `check_blind_set.py`,
-  `cases_blind_round1.json` through `cases_blind_round19.json` with their `.sha256` seals.
+  `cases_blind_round1.json` through `cases_blind_round20.json` with their `.sha256` seals.
 - `qa_reports/catalog-corpus/metrics.json`, `heldout_metrics.json`, `blind_round1_metrics.json`
-  through `blind_round19_metrics.json`.
+  through `blind_round20_metrics.json`.
 - `src/harness/catalog.py` (`is_sanitizer`), `src/harness/policy_families.py`,
   `tests/harness/test_catalog.py`, `test_catalog_corpus.py`, `test_framework_coverage.py`.
