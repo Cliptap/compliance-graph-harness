@@ -858,3 +858,54 @@ def test_password_set_boolean_field_is_clean():
             "    password_set = serializers.BooleanField()\n"
             "    mfa_enabled = serializers.BooleanField()\n")
     assert "v2.credential_response" not in ids(code)
+
+
+def test_formview_rendered_pii_is_flagged():
+    code = ("from django.views.generic import FormView\n\n"
+            "class AdminSearchView(FormView):\n"
+            "    def form_valid(self, form):\n"
+            "        self.results = [{'email': c.email, 'phone': c.phone} for c in Customer.objects.all()]\n"
+            "        return self.render_to_response(self.get_context_data(form=form))\n")
+    assert "v2.admin_exposure" in ids(code, "app/crm/admin_views.py")
+
+
+def test_graphql_reset_token_type_is_flagged():
+    code = ("import strawberry\n\n"
+            "@strawberry.type\n"
+            "class ResetResult:\n"
+            "    requested: bool\n"
+            "    reset_token: str\n")
+    assert "v2.reset_token" in ids(code)
+
+
+
+
+def test_purge_service_with_policy_retention_is_clean():
+    code = ("from datetime import timedelta\nfrom django.utils import timezone\n\n"
+            "RETENTION_DAYS = 730\n\n"
+            "class Service:\n"
+            "    def cutoff(self):\n"
+            "        return timezone.now() - timedelta(days=RETENTION_DAYS)\n\n"
+            "    def purge(self, customers):\n"
+            "        customers.hard_delete_before(self.cutoff())\n\n"
+            "def run(customers):\n"
+            "    Service().purge(customers)\n")
+    assert "v2.customer_hard_delete" not in ids(code)
+
+
+def test_async_adelete_with_short_cutoff_is_flagged():
+    code = ("from datetime import timedelta\nfrom django.utils import timezone\n\n"
+            "def purge():\n"
+            "    cutoff = timezone.now() - timedelta(days=365)\n"
+            "    Invoice.objects.filter(issued_at__lt=cutoff).adelete()\n")
+    assert "v2.billing_retention" in ids(code)
+
+
+def test_async_purge_with_repository_alias_is_flagged():
+    code = ("from datetime import timedelta\nfrom django.utils import timezone\n\n"
+            "PURGE_AFTER_DAYS = 180\n\n"
+            "async def purge(session):\n"
+            "    repo = OrderRepository(session)\n"
+            "    cutoff = timezone.now() - timedelta(days=PURGE_AFTER_DAYS)\n"
+            "    await repo.delete_before(cutoff)\n")
+    assert "v2.billing_retention" in ids(code)

@@ -39,6 +39,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 11 (sealed, post-taint) | 42 | **32/42** | 6 false negatives, 4 false positives |
 | Blind round 12 (sealed, post-taint) | 42 | **35/42** | 5 false negatives, 2 false positives |
 | Blind round 13 (sealed, post-taint) | 42 | **28/42** | 10 false negatives, 4 false positives |
+| Blind round 14 (sealed, post-taint) | 42 | **37/42** | 5 false negatives, 0 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -748,6 +749,49 @@ Regression state: sealed round-13 set **42/42**, curated 22/22, regression corpu
 (167 + 14), full suite **503 passed**. The 28/42 remains the pre-fix measurement; a round 14 is
 required for the post-fix number.
 
+## Blind round 14 (sealed, post-taint)
+
+A fourteenth fresh author wrote 42 modules around Django forms, GraphQL/JWT and async dependencies.
+The file was sealed before the run (`cases_blind_round14.json.sha256`,
+`b3c60436f1d5735fa93cd824fdf07af19767bc8e6b624db21bb1bd72387b52b9`) and run once.
+
+Result: **37/42**. Aggregate: precision **1.000** [0.816, 1.000], recall **0.773** [0.566, 0.899],
+accuracy 0.881 [0.750, 0.948]. No false positives.
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.api_key` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.billing_retention` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.credential_response` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.customer_hard_delete` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.log_pii` | 3 | 0 | 0 | 3 | 1.00 | 1.00 |
+| `v2.reset_token` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+
+Forms, JWT and async dependencies held. The five false negatives were rendering, aliasing and
+GraphQL under credential controls.
+
+| Case | Cause |
+|---|---|
+| `r14-adm-01` | a `FormView` stores PII in `self.results` and renders it with `render_to_response` |
+| `r14-del-05` | the custom purge call is below retention but a known cutoff suppressed the method rule |
+| `r14-bill-05` | `repo = OrderRepository(...)`; the alias table was not resolved and `PURGE_AFTER_DAYS` was not a retention name |
+| `r14-reset-03`, `r14-key-03` | GraphQL type fields under credential controls; the type scan ran only for sink exposure |
+
+## Fixes after blind round 14
+
+| Case | Fix |
+|---|---|
+| `r14-adm-01` | a class that renders a template and holds PII in instance attributes is a response |
+| `r14-del-05` | the delete-method rule runs even when a local cutoff is known |
+| `r14-bill-05` | `Repository`/`Manager`/`Service`/`QuerySet` class names and receiver aliases resolve to tables; `*_days` constants with retention/purge/keep semantics gate |
+| `r14-reset-03`, `r14-key-03` | the credential family scans GraphQL type fields |
+| precision | `purge(x)`/`hard_delete(x)` no longer treat their first argument as a model; only ORM `delete(x)` does |
+
+Regression state: sealed round-14 set **42/42**, curated 22/22, regression corpus **186/186**
+(181 + 5), full suite **508 passed**. The 37/42 remains the pre-fix measurement; a round 15 is
+required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -833,6 +877,13 @@ required for the post-fix number.
   `adelete`/`hard_delete`/`purge_*` as deletes with the table resolved from the class or path.
 - The 4/2 split in two controls is a reminder that the blind protocol fixes the per-control case
   count, not the label balance; the metrics stay per control.
+- Round 14 reached precision 1.000 with forms, JWT and async dependencies. The five false negatives
+  were rendering (`FormView` + `render_to_response`), repository aliases and GraphQL types under
+  credential controls. The delete-method rule now runs even when a local cutoff exists, because the
+  actual delete may be behind a helper.
+- A class name ending in `Repository`/`Manager`/`Service`/`QuerySet` is a useful table hint, but the
+  reverse must stay narrow: `purge(x)` and `hard_delete(x)` do not take a model argument; only ORM
+  `delete(model)` does.
 
 ## Limitations
 
@@ -868,6 +919,8 @@ required for the post-fix number.
   were fixed and promoted.
 - Round 13 is burned. Its 28/42 is the measurement **before** the fixes; the fourteen failing
   cases were fixed and promoted.
+- Round 14 is burned. Its 37/42 is the measurement **before** the fixes; the five failing cases
+  were fixed and promoted.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -876,9 +929,9 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 14 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 15 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe global state across modules, serializer method chains and custom manager families.
+2. Probe template rendering, GraphQL mutations and repository families.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts
