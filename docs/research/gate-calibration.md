@@ -34,6 +34,7 @@ controls firing on the same code are recorded but do not count.
 | Blind round 6 (sealed, post-taint) | 42 | **37/42** | 4 false negatives, 1 false positive |
 | Blind round 7 (sealed, post-taint) | 42 | **34/42** | 7 false positives, 1 false negative |
 | Blind round 8 (sealed, post-taint) | 42 | **34/42** | 5 false negatives, 3 false positives |
+| Blind round 9 (sealed, post-taint) | 42 | **31/42** | 4 false negatives, 7 false positives |
 
 Author-held-out post-fix per-control counts and 95% Wilson intervals:
 
@@ -506,6 +507,56 @@ Regression state: sealed round-8 set **42/42**, curated 22/22, regression corpus
 (127 + 8), full suite **469 passed**. The 34/42 remains the pre-fix measurement; a round 9 is
 required for the post-fix number.
 
+## Blind round 9 (sealed, post-taint)
+
+A ninth fresh author wrote 42 modules around inheritance, decidable conditional assembly and
+multi-object flows (service → DTO → serializer → presenter). The file was sealed before the run
+(`cases_blind_round9.json.sha256`,
+`8353f8edd5c1b122d2155af8599e74082ba21e66a3a10acba1b1c1e6cb3a2d31`) and run once.
+
+Result: **31/42**. Aggregate: precision **0.708** [0.508, 0.851], recall **0.810** [0.600, 0.923],
+accuracy 0.738 [0.589, 0.847].
+
+| Control | TP | FP | FN | TN | Precision | Recall |
+|---|---:|---:|---:|---:|---|---|
+| `v2.admin_exposure` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.api_key` | 2 | 1 | 1 | 2 | 0.67 | 0.67 |
+| `v2.billing_retention` | 2 | 1 | 1 | 2 | 0.67 | 0.67 |
+| `v2.credential_response` | 3 | 2 | 0 | 1 | 0.60 | 1.00 |
+| `v2.customer_hard_delete` | 2 | 0 | 1 | 3 | 1.00 | 0.67 |
+| `v2.log_pii` | 3 | 1 | 0 | 2 | 0.75 | 1.00 |
+| `v2.reset_token` | 2 | 1 | 1 | 2 | 0.67 | 0.67 |
+
+Object-oriented structure exposed two classes of failure: dead branches behind constants were
+walked anyway, and method-name collisions across a base class and its subclass lost taint.
+
+| Case | Cause |
+|---|---|
+| `r9-log-05`, `r9-admin-05`, `r9-cred-05`, `r9-reset-05`, `r9-key-05` (FP) | the dead branch of a flag (`LOG_RAW = False`, `include_credentials = False`, `if not GENERIC:`) was still walked |
+| `r9-cred-06` (FP) | the CamelCase constructor `SessionService()` matched the credential synonym `session` |
+| `r9-bill-04` (FP) | `retention_days()` overridden in a subclass was not resolved for `timedelta(days=self.retention_days())` |
+| `r9-del-01` (FN) | `delete(model)` where `model` is a helper parameter and the caller passes `Customer` |
+| `r9-reset-01` (FN) | `create_reset_token` was not an import verb; the subclass `issue` lost its summary to the base `issue` |
+| `r9-key-01` (FN) | the endpoint returns `serializer.to_dict()`; a helper-call return was not treated as a response payload |
+| `r9-bill-03` (FN) | the delete lives in an imported repository (`delete_older_than`); no statement in the file |
+
+## Fixes after blind round 9
+
+| Case | Fix |
+|---|---|
+| dead branches | `visit_If` resolves module and class constant flags and walks only the taken branch |
+| `r9-cred-06` | credential sources ignore CamelCase constructor names |
+| `r9-bill-04` | methods that return an int constant feed the constant map (minimum across overrides) |
+| `r9-del-01` | models passed to a helper whose parameter is used in `delete(param)` resolve to the table |
+| `r9-reset-01` | `create` joins the import verbs; summaries are unioned across same-named methods so a subclass cannot erase the base taint |
+| `r9-key-01` | a returned helper or serializer call with a summary is a response payload, in both families |
+| key assignments | `body['api_key'] = value` taints the container from the key, unless the value is masked |
+| precision | a keyword label (`api_key=...`) is not a value; only literal strings count for the key pattern |
+
+Regression state: sealed round-9 set **41/42** (only `r9-bill-03` remains), curated 22/22, regression
+corpus **145/145** (135 + 10), full suite **475 passed**. The 31/42 remains the pre-fix measurement;
+a round 10 is required for the post-fix number.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -563,6 +614,12 @@ required for the post-fix number.
 - The precision theme repeats: a format label (`session=%s`), a truncation expression and a masked
   boolean argument are labels or derived values, not exposures. Positional propagation must skip
   masked arguments.
+- Round 9 added object-oriented structure. The detector now resolves constant flags before walking
+  branches, unions summaries across same-named methods, follows models passed to delete helpers and
+  treats a returned serializer call as a response payload. The measured set is 41/42; the remaining
+  false negative is a delete that only exists in an imported repository.
+- Dead-branch precision is the new lesson: a flag that is `False` at module or class level makes the
+  other branch unreachable, and walking it produces false positives that look like real leaks.
 
 ## Limitations
 
@@ -588,6 +645,9 @@ required for the post-fix number.
   were fixed and promoted.
 - The class-state model is file-local and order-insensitive: it unions `self.<attr>` assignments
   across methods and does not model branches, so it can over-approximate a conditional payload.
+- Round 9 is burned. Its 31/42 is the measurement **before** the fixes; ten of the eleven failing
+  cases were fixed and promoted. `r9-bill-03` remains: the delete only exists inside an imported
+  repository, so the file alone does not prove a hard delete.
 - Parameter effects cover positional and keyword arguments and log, response and redirect sinks.
   Cross-module handling is name-based: imports whose names state their payload are trusted, the rest
   are not followed.
@@ -596,9 +656,9 @@ required for the post-fix number.
 
 ## Next
 
-1. Author a fresh blind round 9 for the post-fix number, with real code from the target app and
+1. Author a fresh blind round 10 for the post-fix number, with real code from the target app and
    public repositories, not only snippets.
-2. Probe the class-state model with conditional payloads and inheritance.
+2. Decide whether repository interfaces (calls like `delete_older_than`) deserve an opt-in model.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.
 
 ## Artifacts

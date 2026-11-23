@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -946,6 +946,76 @@
       "expected": "violation",
       "path": "app/admin/webhooks.py",
       "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nfrom app.models import WebhookEndpoint\n\nrouter = APIRouter()\n\n\nclass WebhookView:\n    def __init__(self, endpoint):\n        self.endpoint = endpoint\n        self._payload = {'id': endpoint.id, 'url': endpoint.url}\n\n    def with_headers(self):\n        self._payload['headers'] = {'X-Api-Key': self.endpoint.api_key}\n        return self\n\n    def with_retries(self):\n        self._payload['retries'] = self.endpoint.retries\n        return self\n\n    def render(self) -> JSONResponse:\n        return JSONResponse(self._payload)\n\n\n@router.get('/admin/webhooks/{endpoint_id}')\ndef webhook_detail(endpoint_id: int):\n    endpoint = WebhookEndpoint.objects.get(pk=endpoint_id)\n    return WebhookView(endpoint).with_headers().with_retries().render()\n"
+    },
+    {
+      "id": "r9-log-05",
+      "control": "v2.log_pii",
+      "expected": "clean",
+      "path": "app/telemetry/checkout.py",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\nLOG_RAW_IDENTIFIERS = False\n\n\nclass CheckoutTelemetry:\n    def __init__(self, order_id, address):\n        self.order_id = order_id\n        self.address = address\n\n    def emit(self):\n        fields = {'order_id': self.order_id}\n        if LOG_RAW_IDENTIFIERS:\n            fields['address'] = self.address\n        else:\n            fields['address_present'] = bool(self.address)\n        logger.info('checkout.telemetry %s', fields)\n        return fields\n\n\ndef track_checkout(order_id, address):\n    return CheckoutTelemetry(order_id, address).emit()\n"
+    },
+    {
+      "id": "r9-admin-05",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/views/admin_orders.py",
+      "code": "from django.http import JsonResponse\n\nREVEAL_CONTACT_IN_ADMIN = False\n\n\nclass AdminOrderReport:\n    def __init__(self, order, customer):\n        self.order = order\n        self.customer = customer\n\n    def payload(self):\n        data = {'order_id': self.order.id, 'total': self.order.total}\n        if REVEAL_CONTACT_IN_ADMIN:\n            data['customer_email'] = self.customer.email\n        else:\n            data['customer_id'] = self.customer.id\n        return data\n\n\ndef admin_order_report(request, order_id):\n    order = load_order(order_id)\n    customer = order.customer\n    return JsonResponse(AdminOrderReport(order, customer).payload())\n"
+    },
+    {
+      "id": "r9-cred-05",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/views/user_detail.py",
+      "code": "from django.http import JsonResponse\n\nfrom app.repositories.users import load_user\n\n\nclass UserView:\n    include_credentials = False\n\n    def __init__(self, user):\n        self.user = user\n\n    def render(self):\n        data = {'user_id': self.user.id, 'username': self.user.username}\n        if self.include_credentials:\n            data['password_hash'] = self.user.password_hash\n        else:\n            data['has_password'] = bool(self.user.password_hash)\n        return data\n\n\ndef user_detail(request, user_id):\n    view = UserView(load_user(user_id))\n    return JsonResponse(view.render())\n"
+    },
+    {
+      "id": "r9-cred-06",
+      "control": "v2.credential_response",
+      "expected": "clean",
+      "path": "app/api/session_view.py",
+      "code": "from fastapi import APIRouter\n\nfrom app.security.sessions import decode_session\n\nrouter = APIRouter()\n\n\nclass SessionDTO:\n    def __init__(self, session_id, username, roles, expires_at):\n        self.session_id = session_id\n        self.username = username\n        self.roles = roles\n        self.expires_at = expires_at\n\n\nclass SessionService:\n    def current(self, token):\n        record = decode_session(token)\n        return SessionDTO(\n            session_id=record.sid,\n            username=record.username,\n            roles=record.roles,\n            expires_at=record.expires_at,\n        )\n\n\nclass SessionPresenter:\n    def render(self, dto):\n        return {\n            'session_id': dto.session_id,\n            'username': dto.username,\n            'roles': list(dto.roles),\n            'expires_at': dto.expires_at.isoformat(),\n        }\n\n\n@router.get('/session')\ndef read_session(token: str):\n    dto = SessionService().current(token)\n    return SessionPresenter().render(dto)\n"
+    },
+    {
+      "id": "r9-del-01",
+      "control": "v2.customer_hard_delete",
+      "expected": "violation",
+      "path": "app/repositories/customers.py",
+      "code": "from sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Customer\n\n\nclass BaseRepository:\n    def __init__(self, session: Session):\n        self.session = session\n\n    def hard_delete(self, model, condition):\n        self.session.execute(delete(model).where(condition))\n        self.session.commit()\n\n\nclass CustomerRepository(BaseRepository):\n    def purge_inactive(self):\n        self.hard_delete(Customer, Customer.is_active.is_(False))\n\n\ndef run_customer_purge(session):\n    CustomerRepository(session).purge_inactive()\n"
+    },
+    {
+      "id": "r9-bill-04",
+      "control": "v2.billing_retention",
+      "expected": "clean",
+      "path": "app/repositories/tax_invoices.py",
+      "code": "from datetime import timedelta\n\nfrom sqlalchemy import delete\nfrom sqlalchemy.orm import Session\n\nfrom app.models import Invoice\nfrom app.utils.time import now\n\n\nclass BaseInvoicePurger:\n    def __init__(self, session: Session):\n        self.session = session\n\n    def retention_days(self):\n        return 2190\n\n    def cutoff(self):\n        return now() - timedelta(days=self.retention_days())\n\n    def run(self):\n        self.session.execute(delete(Invoice).where(Invoice.issued_at < self.cutoff()))\n        self.session.commit()\n\n\nclass TaxInvoicePurger(BaseInvoicePurger):\n    def retention_days(self):\n        return 2555\n\n\ndef purge_invoices(session):\n    TaxInvoicePurger(session).run()\n"
+    },
+    {
+      "id": "r9-reset-01",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/api/password_reset.py",
+      "code": "from fastapi import APIRouter\n\nfrom app.repositories.users import load_user\nfrom app.security.tokens import create_reset_token\n\nrouter = APIRouter(prefix='/auth')\n\n\nclass BaseResetFlow:\n    def __init__(self, user):\n        self.user = user\n\n    def issue(self):\n        return {'message': 'reset link sent'}\n\n    def token(self):\n        return create_reset_token(self.user.id)\n\n\nclass DebugResetFlow(BaseResetFlow):\n    def issue(self):\n        payload = super().issue()\n        payload['reset_token'] = self.token()\n        return payload\n\n\n@router.post('/password-reset/{user_id}')\ndef request_reset(user_id: int):\n    user = load_user(user_id)\n    return DebugResetFlow(user).issue()\n"
+    },
+    {
+      "id": "r9-reset-05",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/views/reset_view.py",
+      "code": "from django.http import JsonResponse\n\nfrom app.services.reset_sender import ResetSender\n\nGENERIC_RESET_RESPONSE = True\n\n\nclass PasswordResetHandler:\n    def __init__(self, sender):\n        self.sender = sender\n\n    def handle(self, email):\n        token = self.sender.issue(email)\n        self.sender.send(email, token)\n        body = {'status': 'accepted'}\n        if not GENERIC_RESET_RESPONSE:\n            body['debug_token'] = token\n        return body\n\n\ndef reset_view(request):\n    handler = PasswordResetHandler(ResetSender())\n    return JsonResponse(handler.handle(request.POST['email']))\n"
+    },
+    {
+      "id": "r9-key-01",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/api/integration_detail.py",
+      "code": "from fastapi import APIRouter\n\nfrom app.repositories.integrations import load_integration\n\nrouter = APIRouter(prefix='/integrations')\n\n\nclass IntegrationSerializer:\n    def __init__(self, integration):\n        self.integration = integration\n\n    def to_dict(self):\n        return {\n            'integration_id': self.integration.id,\n            'provider': self.integration.provider,\n        }\n\n\nclass IntegrationDetailSerializer(IntegrationSerializer):\n    def to_dict(self):\n        data = super().to_dict()\n        data['api_key'] = self.integration.api_key\n        return data\n\n\n@router.get('/{integration_id}')\ndef integration_detail(integration_id: int):\n    integration = load_integration(integration_id)\n    return IntegrationDetailSerializer(integration).to_dict()\n"
+    },
+    {
+      "id": "r9-key-05",
+      "control": "v2.api_key",
+      "expected": "clean",
+      "path": "app/views/integration_settings.py",
+      "code": "from django.http import JsonResponse\n\nfrom app.repositories.integrations import fetch_integration\n\n\nclass IntegrationSettingsView:\n    include_secret = False\n\n    def __init__(self, integration):\n        self.integration = integration\n\n    def render(self):\n        data = {\n            'integration_id': self.integration.id,\n            'api_key_configured': bool(self.integration.api_key),\n        }\n        if self.include_secret:\n            data['api_key'] = self.integration.api_key\n        return data\n\n\ndef integration_settings(request, integration_id):\n    integration = fetch_integration(integration_id)\n    return JsonResponse(IntegrationSettingsView(integration).render())\n"
     }
   ]
 }

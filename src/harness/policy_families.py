@@ -149,7 +149,8 @@ def _has_credential_call(catalog: Catalog, node: ast.AST) -> bool:
     current = node
     while current is not None:
         if isinstance(current, ast.Call):
-            if _field_category(catalog, _call_name(current).rsplit(".", 1)[-1]) == "CREDENTIAL":
+            leaf = _call_name(current).rsplit(".", 1)[-1]
+            if leaf.islower() and _field_category(catalog, leaf) == "CREDENTIAL":
                 return True
             func = current.func
             current = func.value if isinstance(func, ast.Attribute) else None
@@ -158,7 +159,7 @@ def _has_credential_call(catalog: Catalog, node: ast.AST) -> bool:
             current = current.value
             continue
         if isinstance(current, ast.Name):
-            return _field_category(catalog, current.id) == "CREDENTIAL"
+            return current.id.islower() and _field_category(catalog, current.id) == "CREDENTIAL"
         return False
     return False
 
@@ -211,7 +212,7 @@ def _finding(control: Control, path: str, line: int, message: str, evidence: str
 VALUE_ACCESSORS = {"value", "raw"}
 IMPORT_VERBS = {"format", "build", "render", "issue", "generate", "make", "compose", "get",
                 "load", "fetch", "read", "describe", "export", "serialize", "summarize",
-                "decrypt", "parse"}
+                "decrypt", "parse", "create"}
 PASSTHROUGH_CALLS = {"dict", "list", "tuple", "set", "str", "jsonify", "JsonResponse",
                      "JSONResponse", "Response", "RedirectResponse", "execute", "executemany",
                      "fetchone", "fetchall", "fetchmany", "mappings", "scalars", "scalar",
@@ -341,12 +342,13 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
                 masked_calls.add(id(nested))
     blocked_args: set[int] = set()
     for child in ast.walk(node):
-        if child is node or not isinstance(child, ast.Call):
+        if not isinstance(child, ast.Call):
             continue
         leaf = _call_name(child).rsplit(".", 1)[-1]
+        full = _call_name(child)
         if (leaf in PASSTHROUGH_CALLS or _is_masking_name(leaf)
-                or leaf in RESPONSE_PATTERNS or leaf in REDIRECT_PATTERNS or _is_log_sink(leaf)
-                or leaf in CSV_SINKS):
+                or (child is node and (full in RESPONSE_PATTERNS or full in REDIRECT_PATTERNS
+                                       or _is_log_sink(full) or leaf in CSV_SINKS))):
             continue
         positions = (param_returns or {}).get(leaf, set())
         for index, arg in enumerate(child.args):
@@ -437,6 +439,8 @@ def _class_attr_categories(tree: ast.AST, catalog: Catalog, categories: set[str]
                            ) -> dict[str, dict[str, set[str]]]:
     """Instance attributes mutated with sensitive values (``self._payload['email']``)."""
     result: dict[str, dict[str, set[str]]] = {}
+    module_constants = _module_constants(tree)
+    class_constants = _class_constants(tree)
     for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
         attrs: dict[str, set[str]] = {}
         methods = [item for item in cls.body
@@ -444,7 +448,8 @@ def _class_attr_categories(tree: ast.AST, catalog: Catalog, categories: set[str]
         for _ in range(2):
             changed = False
             for method in methods:
-                env = _TaintTracker(catalog, categories, summaries, param_returns, attrs).scan(method)
+                env = _TaintTracker(catalog, categories, summaries, param_returns, attrs,
+                                    module_constants, class_constants.get(cls.name, {})).scan(method)
                 for node in ast.walk(method):
                     if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
                         continue
@@ -491,18 +496,80 @@ def _effect_matched(catalog: Catalog, node: ast.Call, positions: set[int | str],
     return matched
 
 
+def _module_constants(tree: ast.AST) -> dict[str, object]:
+    constants: dict[str, object] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    constants[target.id] = node.value.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
+                and isinstance(node.value, ast.Constant):
+            constants[node.target.id] = node.value.value
+    return constants
+
+
+def _class_constants(tree: ast.AST) -> dict[str, dict[str, object]]:
+    result: dict[str, dict[str, object]] = {}
+    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+        mutated: set[str] = set()
+        for method in cls.body:
+            if not isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for node in ast.walk(method):
+                if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
+                    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                    for target in targets:
+                        attr = _self_attribute(target)
+                        if attr:
+                            mutated.add(attr)
+        values: dict[str, object] = {}
+        for stmt in cls.body:
+            if isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Constant):
+                for target in stmt.targets:
+                    if isinstance(target, ast.Name) and target.id not in mutated:
+                        values[target.id] = stmt.value.value
+            elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) \
+                    and isinstance(stmt.value, ast.Constant) and stmt.target.id not in mutated:
+                values[stmt.target.id] = stmt.value.value
+        if values:
+            result[cls.name] = values
+    return result
+
+
+def _resolve_test(test: ast.AST, module_constants: dict[str, object],
+                  self_constants: dict[str, object]) -> bool | None:
+    if isinstance(test, ast.Constant) and isinstance(test.value, bool):
+        return test.value
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        inner = _resolve_test(test.operand, module_constants, self_constants)
+        return None if inner is None else not inner
+    if isinstance(test, ast.Name):
+        value = module_constants.get(test.id)
+        return value if isinstance(value, bool) else None
+    if isinstance(test, ast.Attribute) and isinstance(test.value, ast.Name) \
+            and test.value.id in {"self", "cls"}:
+        value = self_constants.get(test.attr)
+        return value if isinstance(value, bool) else None
+    return None
+
+
 class _TaintTracker(ast.NodeVisitor):
     """Propagate sensitive categories through simple assignments and SQL reads."""
 
     def __init__(self, catalog: Catalog, categories: set[str],
                  summaries: dict[str, set[str]] | None = None,
                  param_returns: dict[str, set[int | str]] | None = None,
-                 attr_categories: dict[str, set[str]] | None = None):
+                 attr_categories: dict[str, set[str]] | None = None,
+                 module_constants: dict[str, object] | None = None,
+                 self_constants: dict[str, object] | None = None):
         self.catalog = catalog
         self.categories = set(categories)
         self.summaries = summaries or {}
         self.param_returns = param_returns or {}
         self.attr_categories = attr_categories or {}
+        self.module_constants = module_constants or {}
+        self.self_constants = self_constants or {}
         self.env: dict[str, set[str]] = {}
 
     def scan(self, node: ast.AST) -> dict[str, set[str]]:
@@ -511,19 +578,32 @@ class _TaintTracker(ast.NodeVisitor):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         categories = self._categories(node.value) | self._source_categories(node.targets, node.value)
-        if _value_is_masked(self.catalog, node.value):
+        masked = _value_is_masked(self.catalog, node.value)
+        if masked:
             categories = set()
         for target in node.targets:
-            self._taint(target, categories)
+            extra = set() if masked else self._target_key_categories(target)
+            self._taint(target, categories | extra)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         if node.value is not None:
             categories = self._categories(node.value) | self._source_categories([node.target], node.value)
-            if _value_is_masked(self.catalog, node.value):
+            masked = _value_is_masked(self.catalog, node.value)
+            if masked:
                 categories = set()
-            self._taint(node.target, categories)
+            extra = set() if masked else self._target_key_categories(node.target)
+            self._taint(node.target, categories | extra)
         self.generic_visit(node)
+
+    def _target_key_categories(self, target: ast.AST) -> set[str]:
+        """``body['api_key'] = value`` taints the container from the key itself."""
+        if isinstance(target, ast.Subscript) and isinstance(target.slice, ast.Constant) \
+                and isinstance(target.slice.value, str):
+            category = _field_category(self.catalog, target.slice.value)
+            if category in self.categories:
+                return {category}
+        return set()
 
     def visit_Call(self, node: ast.Call) -> None:
         """``rows.append(value)`` carries the value's categories into the container."""
@@ -535,6 +615,19 @@ class _TaintTracker(ast.NodeVisitor):
                 categories |= self._categories(arg)
             if categories:
                 self.env[func.value.id] = self.env.get(func.value.id, set()) | categories
+        self.generic_visit(node)
+
+    def visit_If(self, node: ast.If) -> None:
+        """Only walk the branch taken by a constant test (``if DEBUG:``)."""
+        value = _resolve_test(node.test, self.module_constants, self.self_constants)
+        if value is True:
+            for stmt in node.body:
+                self.visit(stmt)
+            return
+        if value is False:
+            for stmt in node.orelse:
+                self.visit(stmt)
+            return
         self.generic_visit(node)
 
     def _source_categories(self, targets: list[ast.AST], value: ast.AST) -> set[str]:
@@ -675,6 +768,9 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
                  if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
     if not functions:
         return {}
+    module_constants = _module_constants(tree)
+    class_constants = _class_constants(tree)
+    enclosing = _enclosing_classes(tree)
     field_lists = _field_lists(tree, catalog, categories)
     summaries: dict[str, set[str]] = {}
     for imported in _imported_names(tree):
@@ -686,7 +782,10 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
         for name, func in functions.items():
             found: set[str] = set()
             if not _is_masking_name(name):
-                env = _TaintTracker(catalog, categories, summaries).scan(func)
+                env = _TaintTracker(catalog, categories, summaries,
+                                    module_constants=module_constants,
+                                    self_constants=class_constants.get(
+                                        enclosing.get(id(func), ""), {})).scan(func)
                 for node in ast.walk(func):
                     if isinstance(node, ast.Return) and node.value is not None \
                             and not _value_is_masked(catalog, node.value):
@@ -696,8 +795,9 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
                         found |= _sink_categories(catalog, node.value, categories, env, summaries,
                                                   field_lists=field_lists)
             found &= categories
-            if found != summaries.get(name, set()):
-                summaries[name] = found
+            merged = summaries.get(name, set()) | found
+            if merged != summaries.get(name, set()):
+                summaries[name] = merged
                 changed = True
         if not changed:
             break
@@ -721,13 +821,19 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                      if arg.arg not in {"self", "cls"}]
               for name, func in functions.items()}
     field_lists = _field_lists(tree, catalog, categories)
+    module_constants = _module_constants(tree)
+    class_constants = _class_constants(tree)
+    enclosing = _enclosing_classes(tree)
     param_returns: dict[str, set[int | str]] = {name: set() for name in functions}
     for _ in range(len(functions) + 1):
         changed = False
         for name, func in functions.items():
             for index, param in enumerate(params[name]):
                 others = {key: value for key, value in param_returns.items() if key != name}
-                tracker = _TaintTracker(catalog, categories, summaries, others)
+                tracker = _TaintTracker(catalog, categories, summaries, others,
+                                        module_constants=module_constants,
+                                        self_constants=class_constants.get(
+                                            enclosing.get(id(func), ""), {}))
                 tracker.env[param] = set(categories)
                 env = tracker.scan(func)
                 hit = False
@@ -749,7 +855,10 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
     for name, func in functions.items():
         for index, param in enumerate(params[name]):
             others = {key: value for key, value in param_returns.items() if key != name}
-            tracker = _TaintTracker(catalog, categories, summaries, others)
+            tracker = _TaintTracker(catalog, categories, summaries, others,
+                                    module_constants=module_constants,
+                                    self_constants=class_constants.get(
+                                        enclosing.get(id(func), ""), {}))
             tracker.env[param] = set(categories)
             env = tracker.scan(func)
             for node in ast.walk(func):
@@ -764,7 +873,10 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
     for name, func in functions.items():
         for index, param in enumerate(params[name]):
             others = {key: value for key, value in param_returns.items() if key != name}
-            tracker = _TaintTracker(catalog, categories, summaries, others)
+            tracker = _TaintTracker(catalog, categories, summaries, others,
+                                    module_constants=module_constants,
+                                    self_constants=class_constants.get(
+                                        enclosing.get(id(func), ""), {}))
             tracker.env[param] = set(categories)
             env = tracker.scan(func)
             for node in ast.walk(func):
@@ -822,6 +934,8 @@ class SinkExposureFamily(PolicyFamily):
                 continue
             summaries = _function_summaries(tree, self.catalog, categories)
             field_lists = _field_lists(tree, self.catalog, categories)
+            self._module_constants = _module_constants(tree)
+            self._class_constants = _class_constants(tree)
             (param_returns, param_logs,
              param_responses, param_redirects) = _call_effects(tree, self.catalog, categories,
                                                                summaries)
@@ -852,8 +966,11 @@ class SinkExposureFamily(PolicyFamily):
         out = []
         enclosing = _enclosing_classes(tree)
         for func in _leaf_functions(tree):
-            attrs = attr_map.get(enclosing.get(id(func), ""), {})
-            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs).scan(func)
+            class_name = enclosing.get(id(func), "")
+            attrs = attr_map.get(class_name, {})
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs,
+                                self._module_constants,
+                                self._class_constants.get(class_name, {})).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call):
                     continue
@@ -900,7 +1017,8 @@ class SinkExposureFamily(PolicyFamily):
                     and "admin" not in path.lower()):
                 continue
             env = _TaintTracker(self.catalog, categories, summaries, param_returns,
-                                attr_map.get(class_name, {})).scan(func)
+                                attr_map.get(class_name, {}), self._module_constants,
+                                self._class_constants.get(class_name, {})).scan(func)
             dumps = _dump_names(func)
             for node in ast.walk(func):
                 payload = None
@@ -915,7 +1033,9 @@ class SinkExposureFamily(PolicyFamily):
                     if isinstance(value, (ast.Dict, ast.List, ast.Tuple, ast.ListComp, ast.SetComp)):
                         payload = value
                     elif isinstance(value, ast.Call) and (
-                            _call_name(value) in RESPONSE_PATTERNS or _call_name(value) == "dict"):
+                            _call_name(value) in RESPONSE_PATTERNS or _call_name(value) == "dict"
+                            or _call_name(value).rsplit(".", 1)[-1] in summaries
+                            or _call_name(value).rsplit(".", 1)[-1] in param_returns):
                         payload = value
                 elif isinstance(node, ast.Call) and _call_name(node) in RESPONSE_PATTERNS:
                     payload = node
@@ -1044,8 +1164,11 @@ class SinkExposureFamily(PolicyFamily):
         out = []
         enclosing = _enclosing_classes(tree)
         for func in _leaf_functions(tree):
-            attrs = attr_map.get(enclosing.get(id(func), ""), {})
-            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs).scan(func)
+            class_name = enclosing.get(id(func), "")
+            attrs = attr_map.get(class_name, {})
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs,
+                                self._module_constants,
+                                self._class_constants.get(class_name, {})).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in REDIRECT_PATTERNS:
                     continue
@@ -1076,8 +1199,11 @@ class SinkExposureFamily(PolicyFamily):
         out = []
         enclosing = _enclosing_classes(tree)
         for func in _leaf_functions(tree):
-            attrs = attr_map.get(enclosing.get(id(func), ""), {})
-            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs).scan(func)
+            class_name = enclosing.get(id(func), "")
+            attrs = attr_map.get(class_name, {})
+            env = _TaintTracker(self.catalog, categories, summaries, param_returns, attrs,
+                                self._module_constants,
+                                self._class_constants.get(class_name, {})).scan(func)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call) or _call_name(node) not in CSV_SINKS:
                     continue
@@ -1141,6 +1267,7 @@ class RetentionDeletionFamily(PolicyFamily):
         functions = {node.name: node for node in ast.walk(tree)
                      if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
         function_tables = _function_query_tables(tree)
+        model_params = _model_param_tables(tree)
         out: list[Finding] = []
         for func in _leaf_functions(tree):
             cutoff = _max_cutoff(func, constants)
@@ -1151,7 +1278,8 @@ class RetentionDeletionFamily(PolicyFamily):
             if cutoff is None and _helper_retention_aware(func, functions, constants, retention_days):
                 continue
             out.extend(self._deletes_in(control, path, func, tables, enclosing.get(id(func), ""),
-                                        _name_tables(func, function_tables), function_tables))
+                                        _name_tables(func, function_tables), function_tables,
+                                        model_params))
         for stmt in tree.body:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
@@ -1166,10 +1294,13 @@ class RetentionDeletionFamily(PolicyFamily):
 
     @staticmethod
     def _deletes_in(control, path, node, tables, class_name="", name_tables=None,
-                    function_tables=None):
+                    function_tables=None, model_params=None):
         out: list[Finding] = []
         for child in ast.walk(node):
             matched = _delete_tables(child, class_name) & tables
+            if not matched and model_params:
+                for candidate in _delete_tables(child, class_name):
+                    matched |= model_params.get(candidate, set()) & tables
             if not matched:
                 matched = _resolved_delete_tables(child, name_tables or {},
                                                   function_tables or {}) & tables
@@ -1249,6 +1380,17 @@ def _int_constants(tree: ast.AST) -> dict[str, int]:
     for name, values in call_values.items():
         if len(values) == 1 and name not in constants:
             constants[name] = next(iter(values))
+    method_returns: dict[str, set[int]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for child in ast.walk(node):
+            if isinstance(child, ast.Return) and isinstance(child.value, ast.Constant) \
+                    and isinstance(child.value.value, int):
+                method_returns.setdefault(node.name, set()).add(child.value.value)
+    for name, values in method_returns.items():
+        if name not in constants:
+            constants[name] = min(values)
     return constants
 
 
@@ -1259,6 +1401,8 @@ def _int_value(node: ast.AST, constants: dict[str, int]) -> int | None:
         return constants.get(node.id)
     if isinstance(node, ast.Attribute):
         return constants.get(node.attr)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and not node.args:
+        return constants.get(node.func.attr)
     return None
 
 
@@ -1351,6 +1495,41 @@ def _delete_expressions(func: ast.AST) -> list[str]:
                 "delete", "execute", "filter", "where"}:
             exprs.append(ast.unparse(node))
     return exprs
+
+
+def _model_param_tables(tree: ast.AST) -> dict[str, set[str]]:
+    """Models passed to a helper whose own parameter is used in ``delete(param)``."""
+    functions = {node.name: node for node in ast.walk(tree)
+                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    params = {name: [arg.arg for arg in list(func.args.args) + list(func.args.kwonlyargs)
+                     if arg.arg not in {"self", "cls"}]
+              for name, func in functions.items()}
+    used: dict[str, set[str]] = {}
+    for name, func in functions.items():
+        for node in ast.walk(func):
+            if not isinstance(node, ast.Call):
+                continue
+            call = _call_name(node)
+            if not (call == "delete" or call.endswith(".delete") or call == "query"
+                    or call.endswith(".query") or call == "select"):
+                continue
+            for arg in node.args:
+                if isinstance(arg, ast.Name):
+                    used.setdefault(name, set()).add(arg.id)
+    resolved: dict[str, set[str]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        callee = _call_name(node).rsplit(".", 1)[-1]
+        if callee not in functions:
+            continue
+        for index, arg in enumerate(node.args):
+            if index >= len(params[callee]) or params[callee][index] not in used.get(callee, set()):
+                continue
+            token = _identifier(arg)
+            if token:
+                resolved.setdefault(params[callee][index], set()).update(_table_candidates(token))
+    return resolved
 
 
 def _table_candidates(name: str) -> set[str]:
@@ -1538,6 +1717,8 @@ class CredentialExposureFamily(PolicyFamily):
             header_bindings = _secret_header_bindings(tree)
             summaries = _function_summaries(tree, self.catalog, categories)
             field_lists = _field_lists(tree, self.catalog, categories)
+            self._module_constants = _module_constants(tree)
+            self._class_constants = _class_constants(tree)
             (param_returns, param_logs,
              param_responses, param_redirects) = _call_effects(tree, self.catalog, categories,
                                                                summaries)
@@ -1547,24 +1728,32 @@ class CredentialExposureFamily(PolicyFamily):
             env_by_node: dict[int, dict[str, set[str]]] = {}
             attrs_by_node: dict[int, dict[str, set[str]]] = {}
             for func in _leaf_functions(tree):
-                attrs = attr_map.get(enclosing.get(id(func), ""), {})
+                class_name = enclosing.get(id(func), "")
+                attrs = attr_map.get(class_name, {})
                 env = _TaintTracker(self.catalog, categories, summaries, param_returns,
-                                    attrs).scan(func)
+                                    attrs, self._module_constants,
+                                    self._class_constants.get(class_name, {})).scan(func)
                 for child in ast.walk(func):
                     env_by_node[id(child)] = env
                     attrs_by_node[id(child)] = attrs
             for node in ast.walk(tree):
-                if not self._is_sink(node, sinks):
+                is_sink = self._is_sink(node, sinks)
+                return_call = (isinstance(node, ast.Return) and isinstance(node.value, ast.Call)
+                               and (_call_name(node.value).rsplit(".", 1)[-1] in summaries
+                                    or _call_name(node.value).rsplit(".", 1)[-1] in param_returns))
+                if not (is_sink or return_call):
                     continue
-                text = ast.unparse(node)
+                target = node.value if return_call else node
+                text = ast.unparse(target)
                 if self.catalog.is_sanitizer(text):
                     continue
-                tainted = _sink_categories(self.catalog, node, categories,
+                tainted = _sink_categories(self.catalog, target, categories,
                                            env_by_node.get(id(node)), summaries,
                                            param_returns, field_lists,
                                            attrs_by_node.get(id(node)))
                 if (tainted
                         or self._matches(text, keys, value_pattern)
+                        or self._constant_key_match(target, keys)
                         or self._logs_token(node, sinks, keys)
                         or self._logs_secret_name(node, sinks, keys)
                         or self._returns_secret_attribute(node, sinks, keys)
@@ -1698,8 +1887,17 @@ class CredentialExposureFamily(PolicyFamily):
         for key in keys:
             if re.search(rf'["\']{re.escape(key)}["\']\s*:', text, re.IGNORECASE):
                 return True
-            if re.search(rf"\b{re.escape(key)}\b\s*=", text, re.IGNORECASE):
-                return True
         if value_pattern and re.search(value_pattern, text, re.IGNORECASE):
             return True
+        return False
+
+    @staticmethod
+    def _constant_key_match(node: ast.AST, keys: tuple[str, ...]) -> bool:
+        """``f'/sent?token={...}'``: the key label is inside a literal string."""
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Constant) or not isinstance(child.value, str):
+                continue
+            for key in keys:
+                if re.search(rf"\b{re.escape(key)}\b\s*=", child.value, re.IGNORECASE):
+                    return True
         return False
