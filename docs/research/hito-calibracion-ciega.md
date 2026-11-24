@@ -148,3 +148,20 @@ python -m src.harness.doctor
 2. Tier 2: política de retención desde settings, soft delete + purge en servicios distintos,
    `FileResponse` con PII en el filename, GraphQL subscriptions, admin actions.
 3. Extender la calibración a las políticas legacy y a un segundo stack, si el proyecto lo pide.
+
+## 9. Validación posterior (en curso)
+
+La calibración mide el detector; estas tres validaciones intentan medir el harness para desarrollo.
+El plan y el estado viven en [`validation-todo.md`](validation-todo.md).
+
+| Punto | Pregunta | Resultado |
+|---|---|---|
+| 1. Código real | ¿se comporta igual sobre una app multi-archivo? | 3 apps limpias sin findings; 2/2 defectos v2 relevantes detectados; 1 FN cross-module confirmado (V02) |
+| 2. Bloque D | ¿cambia el resultado funcional o solo cuesta más? | fixtures localizados (`experiments/tasks`, `experiments/variants`); el piloto con dos brazos queda para una sesión dedicada |
+| 3. Etiquetas independientes | ¿las etiquetas del autor LLM son reproducibles? | 30/30, Cohen's kappa **1.000** con un evaluador independiente sin acceso al corpus |
+
+**Lectura.** Las etiquetas se reproducen con un segundo pase independiente; la precisión sobre apps
+reales limpias se sostiene; y el único falso negativo que apareció en código real es el límite
+cross-module que ya estaba documentado. Nada de esto reemplaza una adjudicación humana ni un estudio
+de uso: el punto 2 sigue abierto y es el que decide si el harness resuelve un problema de desarrollo
+o solo uno de auditoría.
