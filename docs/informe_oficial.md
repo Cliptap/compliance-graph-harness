@@ -1,7 +1,7 @@
-# INFORME DE AVANCE — HITO 1: CONSOLIDACIÓN DEL ARNÉS Y EVALUACIÓN EXPERIMENTAL
+# INFORME DE AVANCE — HITO 2: CALIBRACIÓN CIEGA, COBERTURA NORMATIVA Y COSTO EN EL CICLO
 
-> **Estado:** consolidación del arnés especializado en la Ley N° 21.719 y evaluación experimental. Las capacidades indicadas como propuestas, planificadas o futuras no forman parte de la implementación validada.  
-**Fecha de corte de esta actualización:** 4 de noviembre de 2026.
+> **Estado:** segundo incremento funcional del arnés especializado en la Ley N° 21.719. Integra la calibración ciega del detector, la ampliación de la cobertura normativa y la medición del costo que la gobernanza impone al ciclo de desarrollo. Las capacidades indicadas como propuestas, planificadas o futuras no forman parte de la implementación validada.  
+**Fecha de corte de esta actualización:** 24 de noviembre de 2026.
 
 ### PORTADA
 
@@ -16,19 +16,19 @@
 - Bastian Oyanedel
 
 **Profesor Guía:** David Araya  
-**Fecha de Entrega del Hito 1:** Semana del 12 de octubre de 2026  
-**Fecha de actualización del informe:** 4 de noviembre de 2026
+**Fecha de Entrega del Hito 2:** 24 de noviembre de 2026  
+**Fecha de actualización del informe:** 24 de noviembre de 2026
 
 
 ### RESUMEN EJECUTIVO
 
 El desarrollo de software asistido por inteligencia artificial ha evolucionado desde herramientas de autocompletado hacia agentes capaces de inspeccionar repositorios y ejecutar cambios sobre un sistema. Ese cambio aumenta la velocidad, pero el agente cumple lo que se le pide y no garantiza lo que no se le pidió: entre ello, los requisitos de protección de datos personales. Este proyecto no construye un *harness* de gobernanza general, sino un **arnés especializado en la Ley N° 21.719**, que traduce deberes seleccionados de la norma en controles técnicos ejecutables.
 
-El arnés se origina en una aplicación de gestión clínica desarrollada con instrucciones y *skills* durante el semestre anterior. Hoy reúne doce *skills* procedimentales, tres *skills* de cumplimiento, reglas permanentes, análisis estructural y de linaje de datos, un catálogo de controles, un motor de políticas, un motor de validación y una compuerta de *pre-commit*; la suite automatizada registra **303 pruebas aprobadas**.
+El artefacto reúne doce *skills* procedimentales, tres de cumplimiento, reglas permanentes, análisis estructural y de linaje, un catálogo de 37 controles, un motor de políticas, una compuerta de *pre-commit* y un gate de evidencia documental. La suite registra **607 pruebas aprobadas**.
 
-La evaluación experimental de esta fase se realizó sobre el banco de comercio electrónico Dumbo (`experiments/supermercado/`). El experimento de dosis comparó cinco configuraciones —desde el agente solo hasta el arnés con compuerta y revisión externa— sobre cuatro tareas y cinco repeticiones, para un total de **100 ejecuciones**. La configuración con compuerta (`rules_skills_gate`) redujo las violaciones confirmadas de ocho a cero frente a la línea base (ocho pares discordantes; McNemar, *p* = 0,0078) y completó las cuatro tareas (20/20), con un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. Las reglas por sí solas no mostraron efecto detectable (*p* = 1,0) y las *skills* no bastaron (*p* = 0,125).
+Este incremento evalúa tres dimensiones. Primero, la **calibración ciega del detector**: 21 rondas selladas con autores sin acceso al repositorio, desde 26/36 en la primera hasta 82/84 en la última, con precisión 0,955 [0,849; 0,987] y exhaustividad 1,000 [0,916; 1,000]. Segundo, el **costo en el ciclo de desarrollo**: en el bloque D, el arnés no mejoró la completitud funcional (30/30 pruebas ocultas en ambos brazos) y elevó el tiempo de ciclo a 2,5 veces y el consumo de tokens a 3,3 veces, con una diferencia estadísticamente significativa (prueba de signos, 10/10, *p* = 0,00195). Tercero, la **cobertura normativa**: 26 de 37 controles tienen detector determinista, 6 se exigen como evidencia documental y 5 quedan como gap declarado con su motivo.
 
-Los resultados están acotados a un modelo, un banco y veinte pares por contraste, y la adjudicación aún es única. El arnés no certifica cumplimiento jurídico ni se presenta como un *harness* general: es una red de seguridad especializada que convierte la Ley N° 21.719 en chequeos deterministas, dejando la decisión final en el desarrollador. Las siguientes etapas consideran consolidar la integración entre catálogo, políticas, validación y evidencia experimental.
+Los resultados están acotados a un modelo, un banco y muestras pequeñas; la verificación de etiquetas usó un evaluador independiente de la misma familia de modelos, no adjudicación humana. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada: su valor medido es de auditoría, no de corrección funcional.
 
 
 # 1. INTRODUCCIÓN
@@ -148,7 +148,7 @@ El proyecto comprende los siguientes componentes:
 
    - Parametrización de los directorios de análisis mediante argumentos como `scan_dirs`, que permite ejecutar los motores sobre distintos repositorios compatibles con el análisis implementado.
 
-   - **Suite propia:** 282 pruebas en `tests/harness/`.
+   - **Suite propia:** 586 pruebas en `tests/harness/`.
 
 2. **Aplicación clínica — caso de estudio transaccional (`src/backend/` y `src/database/`):**
 
@@ -289,7 +289,7 @@ El catálogo se materializa en `.harness/packs/` y utiliza identificadores de co
 
 Los identificadores se presentan como claves del catálogo técnico del proyecto. Su presencia no implica que cada control constituya una transcripción literal de un artículo legal; la correspondencia normativa debe interpretarse como una derivación técnica documentada.
 
-El catálogo completo (`catalog.full.json`) contiene 37 controles: 21 implementados y 16 declarados como gaps (`implemented: false` con `gap_reason`). Los gaps se reportan como cobertura pendiente, no como silencio. El desglose completo de los 37 controles se presenta en el Anexo B.
+El catálogo completo (`catalog.full.json`) contiene 37 controles: 26 implementados y 11 declarados como gaps (`implemented: false` con `gap_reason`). Los gaps se reportan como cobertura pendiente, no como silencio. El desglose completo de los 37 controles se presenta en el Anexo B.
 
 ## 5.4 Interoperabilidad mediante Model Context Protocol (MCP)
 
@@ -334,7 +334,7 @@ El artefacto principal es el arnés de desarrollo asistido por IA especializado 
 
 ## 6.2 Diseño experimental ejecutado
 
-Se ejecutaron dos experimentos complementarios sobre el banco de comercio electrónico (`experiments/supermercado/`). Ambos utilizaron pruebas ocultas y reglas Semgrep independientes como oráculo. El modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de cada comparación.
+Se ejecutaron cuatro bloques experimentales complementarios. Los dos primeros comparan configuraciones del arnés sobre el banco de comercio electrónico (`experiments/supermercado/`) y utilizan pruebas ocultas y reglas Semgrep independientes como oráculo. El tercero mide la calidad del detector con corpus ciegos sellados. El cuarto mide el costo y la preservación funcional sobre el paquete de trampas Tier D. En todos los casos el modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de cada comparación.
 
 ### Etapa 1 — Experimento formal de tres brazos
 
@@ -363,6 +363,26 @@ Para observar el efecto incremental de los componentes de gobernanza, se compara
 - **`rules_skills_gate_enforced`:** configuración anterior con hasta tres rondas externas de corrección.
 
 Se ejecutaron **5 brazos × 4 tareas × 5 repeticiones = 100 ejecuciones**. Las 100 ejecuciones finalizaron.
+
+### Etapa 3 — Calibración ciega del detector
+
+Los dos experimentos anteriores miden el efecto del arnés sobre el agente. Ninguno mide la calidad del detector que la compuerta ejecuta, y esa calidad condiciona cualquier conclusión: una compuerta imprecisa produce falsos positivos que el desarrollador aprende a ignorar, y una compuerta incompleta produce falsos negativos silenciosos. Para medirla se diseñó un protocolo de calibración ciega con las siguientes reglas:
+
+1. **Autor independiente.** Un autor sin acceso al repositorio ni al corpus escribe los casos a partir de un enunciado neutral, con el único requisito de producir módulos verosímiles de una aplicación web que trate datos personales.
+2. **Sellado previo.** El archivo de casos se sella con `sha256` antes de ejecutar el detector, de modo que el conjunto no pueda ajustarse después de conocer el resultado.
+3. **Una sola corrida.** El conjunto se evalúa una vez. El número que se reporta es el de **antes** de cualquier corrección.
+4. **Promoción posterior.** Los fallos se corrigen y los casos pasan al corpus de regresión. Las corridas posteriores sobre ese mismo conjunto son regresión, no evidencia de generalización.
+
+Se ejecutaron **21 rondas selladas** entre 36 y 84 casos cada una, cubriendo los siete controles `v2.*`. La ronda 20 usó un enunciado sin énfasis en ningún canal —endpoints, serializadores, servicios, tareas, middleware, comandos de gestión y GraphQL— como sonda de convergencia. La ronda 21 duplicó la muestra a 84 casos, escritos por dos autores independientes, para estrechar el intervalo de confianza.
+
+### Etapa 4 — Bloque D: costo y preservación funcional
+
+La calibración mide el detector; el bloque D mide el arnés completo en el ciclo de desarrollo. Su pregunta es distinta: ¿el arnés cambia el resultado funcional del trabajo, o solamente lo encarece?
+
+- **Trampas:** diez tareas (D01–D10) sobre el paquete Tier D, cada una con una prueba oculta independiente, una verificación de evidencia y la suite propia del objetivo.
+- **Brazos:** `baseline` (solo la aplicación, sin reglas, *skills* ni compuerta) y `rules_skills_gate` (`AGENTS.md` con el protocolo de ejecución, las doce *skills* procedimentales, las tres de cumplimiento, el paquete normativo, la compuerta y el hook de *pre-commit*).
+- **Ejecución:** 10 trampas × 3 repeticiones × 2 brazos = **60 ejecuciones**, más 6 repeticiones adicionales de D03 tras unificar la fuente de destinatarios en la capa de evidencia.
+- **Instrumento:** mismo modelo, mismo entorno, un *workspace* nuevo por ejecución. Las corridas no se aleatorizaron: el brazo con compuerta se ejecutó el 20 de noviembre y el de línea base el 21.
 
 ### Oráculo y clasificación de resultados
 
@@ -404,7 +424,7 @@ Esto produciría cuatro condiciones: A (sin gobernanza y sin contexto estructura
 
 1. **Reducción de violaciones de privacidad:** observar una disminución de violaciones confirmadas respecto de la línea base, reportando la prueba estadística y el tamaño de la muestra.
 
-2. **Preservación funcional:** mantener aprobada la suite de regresión del repositorio. Al cierre de esta actualización, la suite consolidada registra 303 pruebas aprobadas.
+2. **Preservación funcional:** mantener aprobada la suite de regresión del repositorio. Al cierre de esta actualización, la suite consolidada registra 607 pruebas aprobadas.
 
 3. **Costo de gobernanza:** medir y reportar tokens y tiempo de ciclo, de modo que cualquier mejora de privacidad se interprete junto con el costo de ejecución.
 
@@ -420,7 +440,9 @@ Esto produciría cuatro condiciones: A (sin gobernanza y sin contexto estructura
 
 - **Validez de constructo — oráculo:** las pruebas ocultas y Semgrep no son una representación completa de todas las violaciones posibles. Se han documentado falsos positivos en reglas relacionadas con pseudonimización y retención.
 
-- **Adjudicación:** las tareas, pruebas, detector y oráculo comparten autoría; no existe todavía una segunda adjudicación ciega independiente.
+- **Adjudicación:** las tareas, pruebas, detector y oráculo comparten autoría. En esta etapa se incorporó un evaluador independiente sobre una muestra estratificada de 30 casos, que reprodujo las 30 etiquetas (kappa de Cohen 1,000); sin embargo, se trata de un modelo de la misma familia en un rol distinto, no de adjudicación humana. La limitación persiste.
+
+- **Autoría del corpus ciego:** los autores de las rondas ciegas no acceden al repositorio ni al corpus, pero son instancias del mismo modelo que el detector. La independencia es de información, no de sesgo inductivo. Un corpus derivado de vulnerabilidades reales (CVE) o de otro modelo reduciría esta amenaza.
 
 - **Validez externa:** los resultados principales corresponden a un solo modelo y a un banco de comercio electrónico. La generalización a otros modelos, dominios y repositorios requiere nuevas ejecuciones.
 
@@ -442,27 +464,27 @@ gantt
     section Hitos oficiales (2026)
     Hito 0: Definición y producto As-Is (25%) :done, milestone, h0, 2026-09-28, 0d
     Hito 1: Primer incremento funcional (15%) :done, milestone, h1, 2026-10-12, 0d
-    Hito 2: Segundo incremento y benchmarking (15%) :done, milestone, h2, 2026-11-02, 0d
-    Hito 3: Producto consolidado y evaluaciones (15%) :milestone, h3, 2026-11-23, 0d
-    Hito 4: Defensa final de título (30%) :milestone, h4, 2026-12-01, 0d
+    Hito 2: Segundo incremento y calibración (15%) :done, milestone, h2, 2026-11-24, 0d
+    Hito 3: Entrega final y defensa :milestone, h3, 2026-12-01, 0d
 
     section Fases de desarrollo
     Fase 0: As-Is, desacoplamiento y suite modular :done, p0, 2026-09-01, 2026-09-28
     Fase 1: Catálogo, políticas y validación :done, p1, 2026-09-29, 2026-10-12
     Fase 2: Experimentos formal y de dosis :done, p2, 2026-10-13, 2026-11-02
-    Fase 3: Refinamiento del visualizador y evaluación integral :active, p3, 2026-11-03, 2026-11-23
-    Fase 4: Consolidación del informe final y defensa :p4, 2026-11-24, 2026-12-01
+    Fase 3: Calibración ciega, cobertura normativa y gate de evidencia :done, p3, 2026-11-03, 2026-11-24
+    Fase 4: Consolidación del informe final y defensa :p4, 2026-11-25, 2026-12-01
 ```
 
 | Hito | Semana de referencia | Peso | Entregable y alcance |
 | - | - | :-: | - |
 | **Hito 0** | Semana del 28 de septiembre | 25% | Definición formal del proyecto, estado del arte inicial, alcance, metodología y presentación del producto As-Is. |
 | **Hito 1** | Semana del 12 de octubre | 15% | Primer incremento funcional: catálogo de controles derivados de la Ley N° 21.719, motor de políticas, motor de validación y compuerta de *pre-commit*. |
-| **Hito 2** | Semana del 2 de noviembre | 15% | Experimento formal de tres brazos y experimento de dosis de cinco brazos sobre el banco de comercio electrónico, con análisis estadístico y limitaciones documentadas. |
-| **Hito 3** | Semana del 23 de noviembre | 15% | Producto consolidado, visualizador refinado, evaluación integral de resultados acumulados y verificación de objetivos. |
-| **Hito 4** | Primera semana de diciembre | 30% | Entrega de memoria formal, validación final de objetivos, conclusiones y defensa ante comisión evaluadora. |
+| **Hito 2** | 24 de noviembre | 15% | Segundo incremento: calibración ciega del detector, ampliación de la cobertura normativa, gate de evidencia y medición del costo en el ciclo de desarrollo. |
+| **Hito 3** | Primera semana de diciembre | 15% + 30% | Entrega final: producto consolidado, memoria formal, validación de objetivos, conclusiones y defensa ante comisión evaluadora. |
 
-> **Nota de alcance:** este informe corresponde a la entrega del Hito 1 del curso e incluye los resultados del experimento de dosis asociados al Hito 2 del plan, ejecutados antes del cierre de esta actualización.
+> **Nota de cronograma:** la versión vigente del curso consolida la entrega final en el Hito 3; no se rinde un Hito 4 separado. Los pesos se mantienen según el calendario original (15 % del Hito 3 y 30 % de la instancia final).
+
+> **Nota de alcance:** este informe corresponde a la entrega del Hito 2 del curso e incluye los resultados de calibración ciega, el bloque D y la ampliación de cobertura ejecutados antes del cierre de esta actualización.
 
 
 ## 7.2 Backlog priorizado, responsabilidades y dependencias
@@ -473,7 +495,7 @@ El equipo opera bajo un régimen de responsabilidad compartida. Ambos integrante
 | - | - | :-: | - |
 | **TK-01** | Consolidación y desacoplamiento de la aplicación clínica (`src/backend/`, `src/database/`) | Alta | Completado |
 | **TK-02** | Parametrización y modularización del motor del arnés (`src/harness/`) | Alta | Completado |
-| **TK-03** | Suite modular (282 pruebas del arnés + 21 de la demo) y runner `test.ps1` | Alta | Completado |
+| **TK-03** | Suite modular (586 pruebas del arnés + 21 de la demo) y runner `test.ps1` | Alta | Completado |
 | **TK-04** | Integridad y adaptación documental del pipeline de *skills* (01 a 12) | Alta | Completado |
 | **TK-05** | Catálogo de controles y motor de políticas de privacidad | Alta | Completado |
 | **TK-06** | Motor de validación y compuerta de *pre-commit* | Alta | Completado |
@@ -501,9 +523,9 @@ El equipo opera bajo un régimen de responsabilidad compartida. Ambos integrante
 | - | - | :-: | - |
 | **OE1 — Pipeline de *skills*** | RF-H01: catálogo de doce procedimientos y directivas permanentes. | Hito 0 | `.agents/skills/`, `AGENTS.md` y `tests/harness/test_skills_integrity.py`. |
 | **OE2 — Gestión de contexto** | RF-H03 y RF-H04: extracción AST, persistencia SQLite y recorrido BFS (`k ≤ 2`). | Hito 0 / evolución | `src/harness/graph_engine.py`, `data_lineage.py`, `taint_flow.py`, `graphify-out/` y pruebas asociadas. |
-| **OE3 — Arquitectura desacoplada y roles** | RF-H05: motor parametrizable y especificaciones de roles. | Hito 0 | `src/harness/`, `tests/harness/` (282 pruebas) y runner `test.ps1`. |
+| **OE3 — Arquitectura desacoplada y roles** | RF-H05: motor parametrizable y especificaciones de roles. | Hito 0 | `src/harness/`, `tests/harness/` (586 pruebas) y runner `test.ps1`. |
 | **OE4 — Catálogo y políticas de privacidad** | RF-H06 a RF-H08: catálogo, detección CWE-532/CWE-200, validación y compuerta. | Hito 1 | `.harness/packs/`, `catalog.py`, `policy_engine.py`, `precommit.py` y `validation_engine.py`. |
-| **OE5 — Evaluación experimental** | RNF-01 a RNF-03: protocolo comparativo, métricas y runner empírico. | Hito 2 | `experiments/tasks/`, `qa_reports/formal-dose/`, `docs/research/` y suite de 303 pruebas. |
+| **OE5 — Evaluación experimental** | RNF-01 a RNF-03: protocolo comparativo, métricas y runner empírico. | Hito 2 | `experiments/tasks/`, `qa_reports/formal-dose/`, `qa_reports/catalog-corpus/`, `docs/research/` y suite de 607 pruebas. |
 
 
 
@@ -586,8 +608,8 @@ graph TD
         SHOP --> PACK
     end
 
-    subgraph TESTS ["SUITE MODULAR DE PRUEBAS (303 tests)"]
-        THARNESS["Pruebas del Harness (282)<br/>tests/harness/"]
+    subgraph TESTS ["SUITE MODULAR DE PRUEBAS (607 tests)"]
+        THARNESS["Pruebas del Harness (586)<br/>tests/harness/"]
         TDEMO["Pruebas de la demo clínica (21)<br/>tests/demo/"]
     end
 
@@ -603,7 +625,7 @@ graph TD
 
 - **Banco experimental (`experiments/supermercado/`):** aplicación de comercio electrónico utilizada como sujeto de prueba de los experimentos controlados, junto con el paquete de tareas y el oráculo.
 
-- **Suite modular:** 282 pruebas del arnés y 21 pruebas de la aplicación clínica, ejecutables por separado o en conjunto.
+- **Suite modular:** 586 pruebas del arnés y 21 pruebas de la aplicación clínica, ejecutables por separado o en conjunto.
 
 ## 8.3 Reproducibilidad y configuración del entorno
 
@@ -627,7 +649,7 @@ El runner `test.ps1` permite ejecutar las pruebas por área:
 | `.\test.ps1 db` | Persistencia SQLite |
 | `.\test.ps1 demo` | Suite de la aplicación clínica |
 | `.\test.ps1 harness` | Suite del motor del arnés |
-| `.\test.ps1 all` | Suite integral del repositorio: 303 pruebas |
+| `.\test.ps1 all` | Suite integral del repositorio: 607 pruebas |
 
 
 La ejecución directa de la suite completa puede realizarse con:
@@ -636,12 +658,12 @@ La ejecución directa de la suite completa puede realizarse con:
 python -m pytest -q
 ```
 
-Resultado registrado al cierre de esta actualización: **303 pruebas aprobadas**.
+Resultado registrado al cierre de esta actualización: **607 pruebas aprobadas**.
 
 
 # 9. DESARROLLO E INCREMENTOS
 
-El Hito 0 consolidó el estado *As-Is* del arnés y de los bancos de prueba; el incremento del Hito 1 agrega el catálogo normativo, las políticas, la compuerta de validación y la evaluación experimental. Los componentes se describen según su estado verificable, distinguiendo los mecanismos operativos de las capacidades que permanecen en desarrollo.
+El Hito 0 consolidó el estado *As-Is* del arnés y de los bancos de prueba; el incremento del Hito 1 agregó el catálogo normativo, las políticas, la compuerta de validación y la evaluación experimental; el incremento del Hito 2 agrega la calibración ciega del detector, la ampliación de la cobertura normativa y el gate de evidencia documental. Los componentes se describen según su estado verificable, distinguiendo los mecanismos operativos de las capacidades que permanecen en desarrollo.
 
 ## 9.1 Objetivo y alcance del incremento As-Is
 
@@ -652,7 +674,7 @@ El Incremento 0 tiene como objetivo establecer una línea base técnica: separar
 | Componente del incremento | Estado As-Is | Evidencia en el repositorio |
 | - | :-: | - |
 | **Backend clínico transaccional** | Operativo | Modelos SQLAlchemy, endpoints FastAPI y esquemas Pydantic en `src/backend/` y `src/database/`. |
-| **Suite de pruebas modular** | Operativo | 303 pruebas aprobadas: 282 en `tests/harness/` y 21 en `tests/demo/`. |
+| **Suite de pruebas modular** | Operativo | 607 pruebas aprobadas: 586 en `tests/harness/` y 21 en `tests/demo/`. |
 | **Motor de grafos parametrizable** | Operativo | `src/harness/graph_engine.py` acepta directorios de escaneo configurables. |
 | **Analizador de linaje y taint** | Operativo | `src/harness/data_lineage.py` y `src/harness/taint_flow.py` identifican relaciones y posibles flujos *source-to-sink*. |
 | **Persistencia SQLite** | Operativo | `src/harness/db.py`, `.harness/schema.sql` y base de datos del arnés. |
@@ -670,7 +692,7 @@ El Incremento 0 tiene como objetivo establecer una línea base técnica: separar
 
 1. **Desacoplamiento del arnés y las aplicaciones:** se separó el núcleo del arnés (`src/harness/`) de las aplicaciones evaluadas y se parametrizaron los directorios de escaneo para reducir dependencias de rutas fijas.
 
-2. **Modularización de la suite de pruebas:** se organizó la suite en 303 pruebas distribuidas entre `tests/harness/` y `tests/demo/`, con ejecución selectiva mediante marcadores y el runner `test.ps1`.
+2. **Modularización de la suite de pruebas:** se organizó la suite en 607 pruebas distribuidas entre `tests/harness/` y `tests/demo/`, con ejecución selectiva mediante marcadores y el runner `test.ps1`.
 
 3. **Descarte de hooks invasivos:** se evaluó incorporar hooks automáticos de pre-ejecución y se descartaron por la complejidad añadida respecto del beneficio observado.
 
@@ -698,7 +720,7 @@ Se declara explícitamente el estado de la deuda técnica:
 
 7. **Contexto a nivel de archivo:** aunque el grafo permite seleccionar vecindades topológicas, el contexto puede contener archivos completos. La selección a nivel de símbolos todavía requiere desarrollo y evaluación.
 
-8. **Cobertura del catálogo:** 16 de 37 controles no tienen detector todavía; están declarados como gaps (`implemented: false` con `gap_reason`) y no como silencio.
+8. **Cobertura del catálogo:** 11 de 37 controles no tienen detector todavía. Seis de ellos se exigen como evidencia documental verificable (`harness-evidence`) y cinco permanecen como gaps declarados (`implemented: false` con `gap_reason`), no como silencio.
 
 ## 9.5 Relación con los objetivos del proyecto
 
@@ -708,24 +730,71 @@ El incremento actual proporciona evidencia de avance en los cinco objetivos:
 
 - **OE2:** se dispone de un motor de grafos y selección topológica acotada; falta consolidar selección a nivel de símbolos y medir su efecto aislado.
 
-- **OE3:** el núcleo del arnés está desacoplado y cuenta con 282 pruebas propias; la orquestación autónoma de roles sigue bajo supervisión.
+- **OE3:** el núcleo del arnés está desacoplado y cuenta con 586 pruebas propias; la orquestación autónoma de roles sigue bajo supervisión.
 
 - **OE4:** se formalizó el catálogo de controles, el motor de políticas, la validación y la compuerta de *pre-commit*.
 
-- **OE5:** se ejecutaron dos experimentos controlados y se documentaron sus resultados, costos y limitaciones. La evidencia de dosis muestra un efecto estadísticamente significativo de la compuerta sobre las violaciones confirmadas en la muestra evaluada.
+- **OE5:** se ejecutaron cuatro bloques experimentales y se documentaron sus resultados, costos y limitaciones. La evidencia de dosis muestra un efecto estadísticamente significativo de la compuerta sobre las violaciones confirmadas en la muestra evaluada; el bloque D muestra que ese efecto no se traduce en mejora funcional y que el costo es sustancial.
+
+## 9.6 Incremento del Hito 2: cobertura normativa, calibración y gate de evidencia
+
+### Objetivo y alcance
+
+El incremento del Hito 2 no agrega funcionalidades al agente: cierra tres preguntas que el Hito 1 dejó abiertas. ¿El detector funciona fuera de los casos para los que fue escrito? ¿Qué aristas de la ley quedan sin control y por qué? ¿Cuánto cuesta la gobernanza en el ciclo de desarrollo?
+
+### Funcionalidades implementadas
+
+| Capacidad | Estado | Evidencia en el repositorio |
+| - | :-: | - |
+| **Familia `code_hygiene`** | Operativa | Cinco detectores nuevos: caché de datos de salud sin cifrado, campo ORM sin cifrado, ruta clínica sin autenticación, export clínico no estructurado y ruta con datos personales sin autenticación (`policy_families.py`). |
+| **Cobertura de 30 aristas** | Documentada y verificada | `docs/research/ley-21719-coverage.md`: cada arista de la ley clasificada en detectar, riesgo, evidencia o manual, con su estado. |
+| **Gate de evidencia** | Operativo | `src/harness/evidence.py` y `harness-evidence`: manifiesto con artefacto, responsable y vencimiento; seis controles documentales lo exigen desde el pack. |
+| **Completitud del índice** | Operativa | `ChangeSet.complete`: la ausencia de una ruta de derechos es violación solo cuando el análisis cubre el árbol completo. |
+| **Herramientas de validación** | Operativas | `harness/eval/triage.py` (triage sobre código real) y `harness/eval/label_agreement.py` (muestreo ciego y kappa de Cohen). |
+| **Corrección del pack** | Verificada | `CORE-CHECK-003` tenía la categoría inexistente `PERSONAL_DATA`; corregida a `IDENTIFIER_RUT` y `PERSONAL_CONTACT`. El audit del pack se corrigió respecto del alcance real del hook. |
+
+### Decisiones técnicas y alternativas descartadas
+
+1. **No promover todos los avisos a violación:** los cinco controles en modo riesgo (`privacy.rights_reachability`, `consent_transparency`, `retention_minimization`, `minors_and_sensitive` y `third_party_transfers`) detectan un riesgo potencial, no una violación demostrada. Promoverlos habría bloqueado commits legítimos y entrenado al equipo a saltear la compuerta. La excepción es `rights_reachability`, que sube a violación únicamente con índice completo.
+
+2. **Evidencia en integración continua, no en el hook:** que falte una evaluación de impacto es un estado del repositorio, no una propiedad del commit que se revisa. Bloquear cada commit por eso habría producido el mismo efecto de saturación.
+
+3. **Canales nuevos como funcionalidad con prueba, no como más rondas ciegas:** cerrada la calibración con una sonda de convergencia en 42/42, los tres canales siguientes (modelo de respuesta importado, exclusión calculada, sinks de cookie y cabecera) se incorporaron al corpus de regresión con pruebas, en lugar de repetir rondas de 42 casos.
+
+4. **Sin detección donde no hay prueba posible:** las aristas documentales y semánticas no reciben un detector que simule un juicio jurídico. Se exige el artefacto o se firma una lista de verificación.
+
+### Problemas encontrados y correcciones
+
+1. **Compuerta inutilizable por latencia:** el resumen interprocedural de efectos (`_call_effects`) marcaba progreso en cada acierto en lugar de hacerlo solo cuando el conjunto crecía, de modo que el punto fijo ejecutaba siempre las 146 iteraciones completas. Sobre un módulo de 3 000 líneas implicaba 244 segundos por control y cerca de 15 minutos para el hook de *pre-commit*. Corregida la condición de corte, el costo bajó a 6,5 segundos por control y 76 segundos para el hook completo.
+
+2. **Falso positivo crítico sobre el propio código:** el detector interpretaba la iteración de una lista de nombres de campo como exportación de columnas, lo que producía tres hallazgos `CRITICAL` sobre `dimension_policy.py` y bloqueaba cualquier commit que tocara ese archivo. La corrección exige que la variable del bucle seleccione una columna (`row[c]` o `getattr(row, c)`).
+
+3. **Ruta de salud clasificada como ruta clínica:** un endpoint `/health` se reportaba como endpoint clínico sin control de acceso. Los *healthchecks* se excluyen explícitamente.
+
+4. **Categoría de dato inexistente:** `CORE-CHECK-003` declaraba `PERSONAL_DATA`, que no existe en el catálogo, por lo que su detector no podía dispararse nunca. Es el tipo de defecto que un informe de cobertura puede ocultar: el control figuraba como implementado.
+
+### Relación con los objetivos
+
+- **OE4:** la cobertura pasa de 21 a 26 controles con detector y las 30 aristas de la ley quedan clasificadas con su modo y su estado; las documentales dejan de ser un gap silencioso y pasan a ser un requisito verificable.
+- **OE5:** la evaluación se amplía con dos bloques nuevos —calibración ciega y costo en el ciclo— y con una medición de acuerdo entre etiquetas.
+- **OE1, OE2 y OE3:** sin cambios de alcance en este incremento.
 
 
 # 10. PRUEBAS, EVALUACIÓN Y RESULTADOS
 
 ## 10.1 Protocolo experimental
 
-Para evaluar el efecto de las reglas, las *skills* y las compuertas de cumplimiento, se ejecutaron dos experimentos sobre el banco de comercio electrónico (`experiments/supermercado/`). Ambos utilizaron pruebas ocultas y reglas Semgrep independientes como oráculo. El modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de las comparaciones.
+Para evaluar el efecto de las reglas, las *skills* y las compuertas de cumplimiento, se ejecutaron cuatro bloques experimentales. Los dos primeros comparan configuraciones sobre el banco de comercio electrónico (`experiments/supermercado/`) con pruebas ocultas y reglas Semgrep independientes como oráculo. El tercero mide la calidad del detector con corpus ciegos sellados. El cuarto mide el costo y la preservación funcional sobre el paquete de trampas Tier D. El modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de cada comparación.
 
 - **Experimento formal:** doce tareas × tres brazos (`baseline`, `harness`, `harness_compliance`) × tres repeticiones = **108 ejecuciones**.
 
 - **Experimento de dosis:** cinco brazos (`baseline`, `rules`, `rules_skills`, `rules_skills_gate`, `rules_skills_gate_enforced`) × cuatro tareas × cinco repeticiones = **100 ejecuciones**.
 
-La suite de pruebas del repositorio se ejecutó como verificación de preservación funcional y registró **303 pruebas aprobadas**.
+- **Calibración ciega:** 21 rondas selladas con autores independientes, **907 casos** en total, evaluados una sola vez cada uno y reportados antes de cualquier corrección.
+
+- **Bloque D:** diez trampas × dos brazos × tres repeticiones = **60 ejecuciones**, más seis repeticiones de control tras unificar la capa de evidencia.
+
+La suite de pruebas del repositorio se ejecutó como verificación de preservación funcional y registró **607 pruebas aprobadas**.
 
 **Alcance de la evaluación:** estos experimentos comparan configuraciones de reglas, *skills* y compuertas de cumplimiento. No aíslan el efecto causal del contexto seleccionado mediante grafos; esa evaluación requiere un diseño factorial posterior.
 
@@ -785,11 +854,102 @@ En los contrastes `8/0`, los ocho pares discordantes favorecen a la configuraci�
 
 - La compuerta se invocó 25 veces en cada uno de los dos brazos que la incorporaban.
 
-- La suite consolidada del repositorio registró 303 pruebas aprobadas. Este resultado aporta evidencia de preservación funcional para el estado verificado, sin equivaler a una certificación exhaustiva de ausencia de regresiones en cualquier entorno.
+- La suite consolidada del repositorio registró 607 pruebas aprobadas. Este resultado aporta evidencia de preservación funcional para el estado verificado, sin equivaler a una certificación exhaustiva de ausencia de regresiones en cualquier entorno.
 
 **Nota de adjudicación de T34:** la prueba T34 rechazaba el nombre `api_key` aunque su valor estuviera vacío o enmascarado. Era un artefacto del test, no una violación. Corregido el test, los aprobados corregidos son **20/20** en `rules_skills_gate` y **18/20** en `enforced`; los dos restantes de `enforced` son T31 con 404 (completitud), no privacidad. Las violaciones confirmadas no se re-puntuaron: siguen en **0**. La tabla de dosis usa los conteos corregidos de pruebas ocultas; los conteos crudos y el desglose por tipo de fallo están en `docs/research/dose-conclusions.md` y `formal-results-dose.md`.
 
-## 10.3 Análisis e interpretación de resultados
+## 10.3 Resultados de la calibración ciega del detector
+
+La calibración mide una propiedad distinta de los dos experimentos anteriores: no cuánto ayuda el arnés al agente, sino cuánto acierta el detector que la compuerta ejecuta. Cada ronda se selló antes de correrla y se reporta el número **previo** a cualquier corrección.
+
+### Tabla 10.4 — Las 21 rondas selladas
+
+| Ronda | Casos | Aciertos (pre-fix) | Precisión [IC 95 %] | Exhaustividad [IC 95 %] |
+| :-: | :-: | :-: | - | - |
+| 1 | 36 | 26/36 | 0,867 [0,621; 0,963] | 0,619 [0,409; 0,792] |
+| 2 | 42 | 37/42 | 0,944 [0,742; 0,990] | 0,810 [0,600; 0,923] |
+| 3 | 38 | 25/38 | 1,000 [0,676; 1,000] | 0,364 [0,197; 0,570] |
+| 4 | 35 | 31/35 | 1,000 [0,806; 1,000] | 0,800 [0,584; 0,919] |
+| 5 | 42 | 32/42 | 0,824 [0,590; 0,938] | 0,667 [0,454; 0,828] |
+| 6 | 42 | 37/42 | 0,944 [0,742; 0,990] | 0,810 [0,600; 0,923] |
+| 7 | 42 | 34/42 | 0,741 [0,553; 0,868] | 0,952 [0,773; 0,992] |
+| 8 | 42 | 34/42 | 0,842 [0,624; 0,945] | 0,762 [0,549; 0,894] |
+| 9 | 42 | 31/42 | 0,708 [0,508; 0,851] | 0,810 [0,600; 0,923] |
+| 10 | 42 | 38/42 | 0,947 [0,754; 0,991] | 0,857 [0,654; 0,950] |
+| 11 | 42 | 32/42 | 0,789 [0,567; 0,915] | 0,714 [0,500; 0,862] |
+| 12 | 42 | 35/42 | 0,889 [0,672; 0,969] | 0,762 [0,549; 0,894] |
+| 13 | 42 | 28/42 | 0,765 [0,527; 0,904] | 0,565 [0,368; 0,744] |
+| 14 | 42 | 37/42 | 1,000 [0,816; 1,000] | 0,773 [0,566; 0,899] |
+| 15 | 42 | 35/42 | 1,000 [0,785; 1,000] | 0,667 [0,454; 0,828] |
+| 16 | 42 | 28/42 | 0,733 [0,480; 0,891] | 0,524 [0,324; 0,717] |
+| 17 | 42 | 34/42 | 0,842 [0,624; 0,945] | 0,762 [0,549; 0,894] |
+| 18 | 42 | 31/42 | 0,917 [0,646; 0,985] | 0,524 [0,324; 0,717] |
+| 19 | 42 | 30/42 | 0,680 [0,484; 0,828] | 0,810 [0,600; 0,923] |
+| 20 | 42 | 42/42 | 1,000 [0,845; 1,000] | 1,000 [0,845; 1,000] |
+| 21 | 84 | 82/84 | 0,955 [0,849; 0,987] | 1,000 [0,916; 1,000] |
+
+Los intervalos son la parte honesta de la tabla. Un 42/42 permite una exhaustividad real de 0,845; un 82/84 permite 0,916. Con muestras de este tamaño, un resultado perfecto es compatible con una tasa de fallo no despreciable.
+
+### Lectura de la trayectoria
+
+- **Las rondas 1 a 5 midieron el punto de partida:** la primera ronda, con 36 casos, reveló diez fallos sobre modismos comunes (borrados de ORM, vistas de administración basadas en clases, `log.info`, `private_key`, proyección booleana de credenciales y enmascaramiento manual con f-string). La precisión inicial era 0,867 y la exhaustividad 0,619.
+- **Las rondas 6 a 19 desplazaron la frontera, no la cerraron:** cada ronda introdujo un canal nuevo (plantillas y *streams*, el contrato del modelo de respuesta, la exclusión calculada, los *sinks* de cookie y cabecera). La exhaustividad osciló entre 0,524 y 0,952 según qué canal dominara la muestra. Una ronda con exhaustividad alta y precisión baja indica que el detector se amplió; una con precisión alta y exhaustividad baja indica que se volvió conservador.
+- **La ronda 20 fue la sonda de convergencia:** un autor nuevo, con un enunciado sin énfasis en ningún canal, obtuvo 42/42 en la primera corrida. Es la señal que las rondas anteriores no podían dar: sin un canal nuevo que descubrir, el detector se mantuvo.
+- **La ronda 21 estrechó el intervalo:** dos autores escribieron 42 casos cada uno, con 12 casos por control (6/6), para un total de 84. El resultado fue 82/84, con dos falsos positivos y ningún falso negativo. Ambos falsos positivos compartían forma: una rama enmascarada con un literal `'***'` y un campo `last_password_change` leído como credencial. Se corrigieron después de la medición y el conjunto quedó en 84/84 como regresión.
+
+**Lo que esta tabla no prueba:** que el detector cubra las violaciones que un desarrollador comete en un repositorio real. Los casos son módulos de 20 a 55 líneas escritos por encargo. La sección 10.6 reporta el primer acercamiento a código real y su resultado.
+
+## 10.4 Resultados del bloque D: costo y preservación funcional
+
+El bloque D responde una pregunta que los experimentos de dosis no responden: si el arnés mejora la privacidad, ¿mejora también el trabajo, o solo lo encarece?
+
+| Métrica agregada (30 corridas por brazo) | Con compuerta | Línea base |
+| - | -: | -: |
+| Pruebas ocultas aprobadas | 30/30 | 30/30 |
+| Verificación de evidencia | 30/30 | 30/30 |
+| Mediana de tiempo de ciclo | 274,6 s | 110,0 s |
+| Mediana de tokens por corrida | 1.807.683 | 548.913 |
+| Mediana de herramientas por corrida | 43,5 | 25,5 |
+| Llamadas a la compuerta | 53 | 0 |
+| Violaciones de política, alcance o privacidad | 0 | 0 |
+| Cambios no solicitados | 0 | 0 |
+
+- **Completitud funcional saturada:** el modelo resolvió las diez trampas sin el arnés. La prueba oculta pasó 30/30 en ambos brazos. El bloque no puede discriminar porque no hay margen de mejora.
+- **Sin ventaja de evidencia:** la diferencia inicial en la verificación de evidencia (30/30 frente a 28/30) provenía de una inconsistencia del propio arnés —dos mecanismos distintos calculaban los destinatarios de terceros—, no del agente. Unificada la fuente y repetidas las corridas de D03, ambos brazos quedaron en 30/30. **El bloque corregido no muestra ventaja funcional ni de evidencia para el brazo con compuerta; solo sobrevive la diferencia de costo.**
+- **El costo es estadísticamente significativo:** el brazo con compuerta fue más lento en 10 de 10 tareas (prueba de signos bilateral, *p* = 0,00195). El tiempo de ciclo se multiplicó por 2,5 y los tokens por 3,3.
+- **Ningún brazo produjo violaciones:** la compuerta no se activó como corrección porque no había nada que corregir en este paquete. Su valor medido aquí es de auditoría, no de prevención.
+
+Este resultado es un hallazgo, no un fracaso del experimento. Delimita el aporte del arnés: en tareas donde el modelo ya cumple, la gobernanza cuesta y no mejora el resultado. El beneficio aparece donde el modelo falla por omisión, que es lo que midieron los experimentos de dosis.
+
+## 10.5 Acuerdo entre etiquetas
+
+Para estimar la reproducibilidad de las etiquetas del corpus se extrajo una muestra estratificada de 30 casos —15 violaciones y 15 casos limpios— y se entregó a un evaluador independiente sin acceso al corpus ni a las etiquetas originales. El evaluador reprodujo **30/30** etiquetas, con un **kappa de Cohen de 1,000**.
+
+El alcance de esta medición es acotado: el evaluador es un modelo de la misma familia en un rol distinto, no una persona. Respalda que las etiquetas no dependen de una redacción particular del enunciado; no reemplaza la adjudicación humana.
+
+## 10.6 Triage sobre código real
+
+La calibración usa módulos aislados. Para observar el comportamiento sobre código multi-archivo se ejecutó la compuerta sobre una aplicación real del repositorio (`experiments/supermercado/app`, nueve módulos, ~61 KB) y sobre trece variantes del bloque D con defectos sembrados y mutaciones documentadas.
+
+- **Aplicación limpia:** **0 hallazgos**. La revisión manual confirmó que es un verdadero negativo y no un fallo por omisión: la aplicación anonimiza en la retención, filtra el marketing por consentimiento y no registra datos personales.
+- **Trece variantes:** **13/13** correctas frente a los detectores heredados. Con los controles `v2.*`, las tres variantes limpias no produjeron hallazgos, y se detectaron las dos variantes con defectos `v2` relevantes (exposición en bitácora y credenciales).
+- **Un falso negativo confirmado:** una variante envía el RUT a una bitácora a través de una función auxiliar ubicada en otro módulo. El detector no sigue el flujo entre archivos en ese caso. Es el límite *cross-module* ya documentado, ahora con evidencia sobre código real.
+
+## 10.7 Cobertura normativa
+
+| Modo | Aristas | Significado |
+| - | -: | - |
+| Detectar | 15 | Finding con archivo y línea; bloquea si la severidad es alta y el estado es violación. |
+| Detectar como riesgo | 5 | Se reporta sin bloquear: un índice parcial no prueba una violación de derechos o de retención. |
+| Exigir evidencia | 6 | El merge se bloquea si falta el artefacto (EIPD, registro de incidentes, FHIR, aislamiento de salud, PCI, retención tributaria). |
+| Manual | 4 | Lista de verificación firmada por una persona, con el artículo citado. |
+| **Total** | **30** | Aristas derivadas de la Ley N° 21.719 en el pack sectorial. |
+
+Sobre el catálogo completo (37 controles), **26 tienen detector determinista**, **6 se exigen como evidencia** y **5 permanecen como gap declarado** con su motivo. La distinción entre detectar y exigir evidencia no es una excusa de cobertura: es la consecuencia de que un detector solo puede afirmar lo que una prueba en el código sostiene.
+
+Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declara como gap porque la fuga la evalúa el detector de `CORE-CHECK-002`. Por eso el pack tiene 19 aristas de la ley implementadas (14 en modo detectar y 5 en modo riesgo) más 7 detectores `v2.*`, que suman los 26 controles con detector.
+
+## 10.8 Análisis e interpretación de resultados
 
 - **Las reglas por sí solas no mostraron un efecto detectable:** la comparación `rules` frente a `baseline` no presentó una diferencia estadísticamente significativa en las violaciones confirmadas (tres frente a dos pares discordantes; *p* = 1,0). Esto indica que documentar reglas en `AGENTS.md` no fue suficiente para modificar el resultado de manera detectable en esta muestra.
 
@@ -801,7 +961,15 @@ En los contrastes `8/0`, los ocho pares discordantes favorecen a la configuraci�
 
 - **El costo de la compuerta es medible:** `rules_skills_gate` utilizó aproximadamente 2,3 veces los tokens de `baseline` (35,8 M frente a 15,6 M) y requirió 46,3 segundos adicionales por tarea en promedio. El costo debe formar parte de cualquier interpretación del beneficio de privacidad.
 
-## 10.4 Limitaciones identificadas
+- **La calibración ciega cambia el estatus de la afirmación sobre el detector:** antes del Hito 2, "el detector funciona" se sostenía con 22 casos curados por sus propios autores. Después, se sostiene con 907 casos escritos por autores sin acceso al repositorio, sellados antes de la corrida y medidos antes de la corrección. La diferencia no es de cantidad, sino de qué se puede afirmar.
+
+- **La trayectoria importa más que el número final:** el detector pasó de 26/36 a 82/84 porque cada ronda expuso un canal que el corpus anterior no cubría. Un único resultado alto habría sido compatible con un corpus complaciente; una serie con caídas en las rondas que introducen canales nuevos no lo es.
+
+- **El bloque D separa auditoría de corrección:** cuando el modelo resuelve la tarea sin ayuda, el arnés no mejora el resultado y cuesta 2,5 veces más tiempo y 3,3 veces más tokens. El beneficio del arnés no está en hacer mejor el trabajo, sino en impedir que un trabajo aparentemente correcto introduzca una violación. Son dos afirmaciones distintas y la evidencia sostiene solo la segunda.
+
+- **El propio arnés resultó ser objeto de auditoría:** en este incremento se encontraron dos defectos que ningún test detectaba —un punto fijo que multiplicaba por 40 la latencia de la compuerta y un falso positivo crítico que bloqueaba commits legítimos sobre el propio motor—, además de una categoría de dato inexistente que impedía que un control declarado como implementado se disparara. La conclusión metodológica es que la cobertura declarada debe verificarse con el mismo rigor que la detección.
+
+## 10.9 Limitaciones identificadas
 
 1. **Potencia estadística:** el experimento formal quedó subpotenciado para el resultado binario. El experimento de dosis obtuvo contrastes significativos para la compuerta, pero se limita a veinte pares por comparación.
 
@@ -819,6 +987,16 @@ En los contrastes `8/0`, los ocho pares discordantes favorecen a la configuraci�
 
 8. **Completitud vs privacidad:** las dos fallas de T31 en `enforced` son 404 (tarea no implementada), no violaciones; la completitud se mide aparte de la privacidad.
 
+9. **Tamaño de los casos ciegos:** los corpus de calibración son módulos de 20 a 55 líneas, no repositorios completos. La ronda 21 usó 84 casos y permite una exhaustividad real de 0,916; sigue siendo una muestra pequeña para un detector con siete controles.
+
+10. **Saturación del bloque D:** el modelo resolvió las diez trampas sin el arnés, de modo que ese bloque no puede medir mejora funcional. Solo mide costo. Un paquete de trampas más difíciles sería necesario para observar el efecto sobre la completitud.
+
+11. **Independencia del corpus ciego:** los autores no acceden al repositorio, pero son instancias del mismo modelo. La independencia es de información, no de sesgo inductivo.
+
+12. **Acuerdo entre etiquetas como proxy:** el kappa de 1,000 proviene de un modelo de la misma familia en otro rol. Es evidencia de reproducibilidad, no de validez humana.
+
+13. **Naturaleza de la cobertura normativa:** la clasificación de las 30 aristas es una derivación técnica revisada contra el texto legal por los autores del proyecto, no una validación jurídica. La propia revisión encontró citas imprecisas en el pack, que se corrigieron.
+
 
 # 11. DISCUSIÓN, CONCLUSIONES Y TRABAJO FUTURO
 
@@ -834,35 +1012,37 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 - **Controles normativos:** el proyecto demuestra la viabilidad técnica de representar algunos escenarios de privacidad mediante reglas ejecutables y pruebas. Esto no equivale a demostrar cumplimiento integral de la Ley N° 21.719.
 
-- **Madurez del artefacto:** existen componentes operativos y una suite de 303 pruebas aprobadas, pero persisten tareas de integración, validación de *skills* en IDE, orquestación supervisada de roles, ampliación experimental y adjudicación independiente.
+- **Madurez del artefacto:** existen componentes operativos y una suite de 607 pruebas aprobadas, además de una medición de calidad del detector sobre 907 casos ciegos; persisten tareas de integración, validación de *skills* en IDE, orquestación supervisada de roles, ampliación experimental sobre código real y adjudicación humana.
 
 ## 11.2 Conclusiones
 
-1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
+1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. El bloque D acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
 
-2. **Consolidación técnica:** el núcleo del arnés se organizó en `src/harness/`, con 282 pruebas propias. La aplicación clínica se organiza en `src/backend/` y `src/database/`, con 21 pruebas propias. La suite consolidada cuenta con 303 pruebas aprobadas.
+2. **Consolidación técnica:** el núcleo del arnés se organizó en `src/harness/`, con 586 pruebas propias. La aplicación clínica se organiza en `src/backend/` y `src/database/`, con 21 pruebas propias. La suite consolidada cuenta con 607 pruebas aprobadas.
 
-3. **Catálogo y validación:** se formalizó un catálogo de controles con identificadores del proyecto, motores de políticas, validación y compuerta de *pre-commit*.
+3. **Catálogo y validación:** se formalizó un catálogo de controles con identificadores del proyecto, motores de políticas, validación y compuerta de *pre-commit*. La cobertura se documenta arista por arista: 15 se detectan, 5 se reportan como riesgo, 6 se exigen como evidencia y 4 quedan a cargo de una persona.
 
-4. **Evidencia experimental:** se ejecutaron dos experimentos controlados, uno formal de 108 ejecuciones y otro de dosis de 100 ejecuciones. Sus resultados, costos y limitaciones se documentan por separado.
+4. **Evidencia experimental:** se ejecutaron cuatro bloques experimentales —108 ejecuciones del experimento formal, 100 del experimento de dosis, 907 casos de calibración ciega y 66 ejecuciones del bloque D—, con sus resultados, costos y limitaciones documentados por separado.
 
-5. **Límites de las conclusiones:** el prototipo demuestra factibilidad técnica y evidencia inicial de la utilidad de una compuerta de cumplimiento. Todavía no permite afirmar que todos los componentes formen un *harness* plenamente integrado ni que los resultados se generalicen a otros modelos o dominios.
+5. **Calidad medida del detector:** la calibración ciega sostiene una precisión de 0,955 [0,849; 0,987] y una exhaustividad de 1,000 [0,916; 1,000] sobre la ronda de mayor tamaño. La serie completa muestra que el detector mejoró porque cada ronda expuso un canal que el corpus anterior no cubría, no porque el corpus se ajustara al detector.
+
+6. **Límites de las conclusiones:** el prototipo demuestra factibilidad técnica, evidencia inicial de la utilidad de una compuerta de cumplimiento y una medición acotada de la calidad del detector. No permite afirmar que todos los componentes formen un *harness* plenamente integrado, que los resultados se generalicen a otros modelos o dominios, ni que el arnés mejore la completitud funcional del trabajo asistido.
 
 ## 11.3 Trabajo futuro comprometido
 
-De acuerdo con la planificación vigente al 4 de noviembre de 2026, las siguientes actividades se concentran en los hitos 3 y 4:
+De acuerdo con la planificación vigente al 24 de noviembre de 2026, el Hito 2 es el penúltimo entregable; las siguientes actividades se concentran en la entrega final:
 
-1. **Consolidación del visualizador (Hito 3):** refinar la interfaz de navegación de grafos y la inspección de dependencias y linaje de datos.
+1. **Adjudicación humana:** incorporar al menos un evaluador humano —idealmente con formación jurídica y con formación en desarrollo— sobre una muestra del corpus, para reemplazar el acuerdo entre modelos por un acuerdo entre personas. Es la limitación que más condiciona la interpretación de los resultados.
 
-2. **Validación del pipeline de *skills* (Hito 3):** completar pruebas del flujo de las doce habilidades en el entorno del IDE y documentar sus criterios de activación y salida.
+2. **Código real a mayor escala:** repetir el triage sobre entre tres y cinco repositorios reales, con adjudicación de cada hallazgo, para estimar la precisión fuera de los módulos aislados y medir el ruido que la compuerta introduce en un flujo de revisión.
 
-3. **Ampliación de la evaluación (Hito 3):** revisar la matriz experimental, reconciliar el resultado de T34 y ampliar las tareas o repeticiones cuando el tiempo disponible lo permita.
+3. **Piloto del bloque D con instrumento completo:** ejecutar los dos brazos del bloque D con el detector actual y un paquete de trampas más difíciles, dado que el paquete vigente está saturado y no permite medir mejora funcional.
 
-4. **Adjudicación independiente (Hito 3 / Hito 4):** incorporar un segundo adjudicador ciego para revisar casos ambiguos y falsos positivos.
+4. **Validación del pipeline de *skills*:** completar las pruebas del flujo de las doce habilidades en el entorno del IDE y documentar sus criterios de activación y salida.
 
-5. **Cobertura de modelos y dominios (Hito 4):** incorporar otra configuración de modelo y, si la planificación lo permite, un segundo banco de prueba.
+5. **Consolidación documental:** cerrar la trazabilidad entre objetivos, requerimientos, pruebas, experimentos, resultados y limitaciones, e incorporar las decisiones de arquitectura como registros formales.
 
-6. **Consolidación documental (Hito 4):** cerrar la trazabilidad entre objetivos, requerimientos, pruebas, experimentos, resultados y limitaciones.
+6. **Cobertura de modelos y dominios:** incorporar una segunda configuración de modelo y, si la planificación lo permite, un segundo banco de prueba.
 
 
 # 12. REFERENCIAS Y ANEXOS
@@ -933,29 +1113,29 @@ De acuerdo con la planificación vigente al 4 de noviembre de 2026, las siguient
 
 ### Anexo B: Catálogo de controles normativos
 
-El catálogo formalizado en `.harness/packs/catalog.full.json` reúne **37 controles: 21 implementados con detector y 16 declarados como gaps**, organizados en cinco familias: clínicos (`CL-DATAPROT`), núcleo (`CORE-CHECK`), salud (`HEALTH-CHECK`), comercio electrónico (`ECOM-CHECK`) y detectores técnicos (`v2.*`). Cada control declara qué verifica, cómo se comprueba y su estado; los gaps se reportan con su motivo y como cobertura pendiente, no como silencio. La correspondencia normativa es una derivación técnica de la Ley N° 21.719 y de las normas sectoriales aplicables, no una transcripción literal ni una certificación jurídica.
+El catálogo formalizado en `.harness/packs/catalog.full.json` reúne **37 controles: 26 implementados con detector, 6 exigidos como evidencia y 5 declarados como gaps**, organizados en cinco familias: clínicos (`CL-DATAPROT`), núcleo (`CORE-CHECK`), salud (`HEALTH-CHECK`), comercio electrónico (`ECOM-CHECK`) y detectores técnicos (`v2.*`). Cada control declara qué verifica, cómo se comprueba y su estado; los gaps se reportan con su motivo y como cobertura pendiente, no como silencio. La correspondencia normativa es una derivación técnica de la Ley N° 21.719 y de las normas sectoriales aplicables, no una transcripción literal ni una certificación jurídica.
 
 | ID | Control | Comprobación | Estado |
 | - | - | - | :-: |
 | `CL-DATAPROT-001` | Fuga de datos clínicos o RUT hacia logs y telemetría | Reemplazado por `v2.log_pii` | Gap |
-| `CL-DATAPROT-002` | Registros médicos en caché sin cifrado en reposo | Sin detector de sinks de caché (redis/cache) | Gap |
-| `CL-DATAPROT-003` | Entidades de salud sin cifrado a nivel de campo en el ORM | Sin verificación estática de transformadores de cifrado | Gap |
+| `CL-DATAPROT-002` | Registros médicos en caché sin cifrado en reposo | Familia `code_hygiene` (`cache_unencrypted`) | Implementado |
+| `CL-DATAPROT-003` | Entidades de salud sin cifrado a nivel de campo en el ORM | Familia `code_hygiene` (`orm_unencrypted`) | Implementado |
 | `CL-DATAPROT-004` | Borrado físico prematuro de fichas clínicas (conservación de 15 años) | Política `domain.prohibited_deletion` | Implementado |
-| `CL-DATAPROT-005` | Endpoints clínicos sin control de acceso | Sin detector; sólo indicadores de `CORE-CHECK-003` | Gap |
+| `CL-DATAPROT-005` | Endpoints clínicos sin control de acceso | Familia `code_hygiene` (`route_auth`) | Implementado |
 | `CL-DATAPROT-006` | Decisión clínica automatizada sin explicación ni revisión humana | Evaluación manual (evidencia documental) | Gap |
-| `CL-DATAPROT-007` | Portabilidad de ficha clínica en formato no estructurado | Sin verificación del formato de exportación | Gap |
+| `CL-DATAPROT-007` | Portabilidad de ficha clínica en formato no estructurado | Familia `code_hygiene` (`export_format`) | Implementado |
 | `CORE-CHECK-001` | Privacidad desde el diseño, minimización y seudonimización | Heurística heredada; sin detector en el motor de políticas | Gap |
 | `CORE-CHECK-002` | Deber de secreto: fugas en logs, consolas y cachés | Política `privacy.cwe_532` | Implementado |
-| `CORE-CHECK-003` | Derechos del titular y control de acceso | Indicadores de control de acceso; cobertura parcial | Gap |
+| `CORE-CHECK-003` | Derechos del titular y control de acceso | Familia `code_hygiene` (`personal_route_auth`) | Implementado |
 | `CORE-CHECK-004` | Decisiones automatizadas: derecho de oposición e intervención humana | Revisión humana documental | Gap |
 | `HEALTH-CHECK-001` | Conservación de 15 años frente a solicitudes de supresión | Política `domain.prohibited_deletion` | Implementado |
-| `HEALTH-CHECK-002` | Interoperabilidad de la ficha bajo HL7 FHIR R4 CL Core | Revisión documental de formato | Gap |
-| `HEALTH-CHECK-003` | Protección reforzada de datos de salud (aislamiento y cifrado) | Aislamiento y cifrado documental | Gap |
+| `HEALTH-CHECK-002` | Interoperabilidad de la ficha bajo HL7 FHIR R4 CL Core | `harness-evidence`: declaración FHIR | Evidencia exigida |
+| `HEALTH-CHECK-003` | Protección reforzada de datos de salud (aislamiento y cifrado) | `harness-evidence`: atestación de aislamiento | Evidencia exigida |
 | `CORE-CHECK-005` | Licitud del tratamiento y consentimiento | Política `privacy.consent_transparency` | Implementado |
 | `CORE-CHECK-006` | Derechos del titular: procedimiento y plazos | Política `privacy.rights_reachability` | Implementado |
 | `CORE-CHECK-007` | Deber de información y transparencia | Política `privacy.consent_transparency` | Implementado |
-| `CORE-CHECK-008` | Registro y comunicación de vulneraciones de seguridad | Evidencia documental | Gap |
-| `CORE-CHECK-009` | Evaluación de impacto en protección de datos (EIPD) | Evidencia documental | Gap |
+| `CORE-CHECK-008` | Registro y comunicación de vulneraciones de seguridad | `harness-evidence`: registro de incidentes | Evidencia exigida |
+| `CORE-CHECK-009` | Evaluación de impacto en protección de datos (EIPD) | `harness-evidence`: evaluación de impacto | Evidencia exigida |
 | `CORE-CHECK-010` | Encargados del tratamiento y cesión de datos | Política `privacy.third_party_transfers` | Implementado |
 | `CORE-CHECK-011` | Transferencias internacionales de datos | Política `privacy.third_party_transfers` | Implementado |
 | `CORE-CHECK-012` | Datos personales de niños, niñas y adolescentes | Política `privacy.minors_and_sensitive` | Implementado |
@@ -963,9 +1143,9 @@ El catálogo formalizado en `.harness/packs/catalog.full.json` reúne **37 contr
 | `ECOM-CHECK-001` | Comunicaciones promocionales y oposición al marketing directo | Política `privacy.consent_transparency` | Implementado |
 | `ECOM-CHECK-002` | Perfilamiento y recomendaciones personalizadas | Evidencia documental | Gap |
 | `ECOM-CHECK-003` | Datos de tarjeta de pago: secreto y seguridad | Política `privacy.payment_data_storage` | Implementado |
-| `ECOM-CHECK-004` | Cumplimiento PCI DSS para datos de tarjetas | Evidencia contractual | Gap |
+| `ECOM-CHECK-004` | Cumplimiento PCI DSS para datos de tarjetas | `harness-evidence`: atestación PCI | Evidencia exigida |
 | `ECOM-CHECK-005` | Pasarelas de pago, logística y otros encargados | Política `privacy.third_party_transfers` | Implementado |
-| `ECOM-CHECK-006` | Conservación de documentos tributarios como excepción | Evidencia documental (DL 825) | Gap |
+| `ECOM-CHECK-006` | Conservación de documentos tributarios como excepción | `harness-evidence`: política de retención | Evidencia exigida |
 | `ECOM-CHECK-007` | Situación socioeconómica y puntajes de crédito como datos sensibles | Política `privacy.minors_and_sensitive` | Implementado |
 | `v2.log_pii` | Datos personales escritos en bitácoras | Familia `sink_exposure` (sink: log) | Implementado |
 | `v2.admin_exposure` | Datos personales sin enmascarar en respuestas admin | Familia `sink_exposure` (sink: response, ruta admin) | Implementado |
@@ -975,11 +1155,11 @@ El catálogo formalizado en `.harness/packs/catalog.full.json` reúne **37 contr
 | `v2.api_key` | API key o secreto devuelto al cliente | Familia `credential_exposure` | Implementado |
 | `v2.credential_response` | Credenciales expuestas en respuestas de API | Familia `sink_exposure` (sink: response) | Implementado |
 
-Los detectores `v2.*` son los que opera la compuerta del experimento (`compliance_check.py`), agrupados en las familias `sink_exposure`, `retention_deletion` y `credential_exposure`. Los 16 gaps se declaran con su motivo (`gap_reason`) y se reportan como cobertura pendiente.
+Los detectores `v2.*` son los que opera la compuerta del experimento (`compliance_check.py`), agrupados en las familias `sink_exposure`, `retention_deletion`, `credential_exposure` y `code_hygiene`. Los cinco gaps restantes se declaran con su motivo (`gap_reason`) y se reportan como cobertura pendiente; los seis controles documentales se exigen como evidencia verificable mediante `harness-evidence`, que bloquea la integración mientras falte el artefacto, su responsable o su vigencia.
 
-##### Anexo C: Reporte de Verificación de la Suite Modular de Pruebas Unitarias (303 Tests)
+##### Anexo C: Reporte de Verificación de la Suite Modular de Pruebas Unitarias (607 Tests)
 
-Ejecución de la suite completa automatizada sobre el producto *As-Is* mediante Pytest:
+Ejecución de la suite completa automatizada sobre el producto al cierre del Hito 2 mediante Pytest:
 
 - **Comando de ejecución:** `pytest` (o bien `.\test.ps1 all`)
 
@@ -989,39 +1169,50 @@ Ejecución de la suite completa automatizada sobre el producto *As-Is* mediante 
 
 | Suite Modular | Archivo de Prueba | N° Tests | Área Evaluada | Resultado |
 | - | - | :-: | - | :-: |
+| `tests/demo/` | `test_appointments.py` | 2 | Citas y colisiones horarias | PASS |
+| `tests/demo/` | `test_audit.py` | 11 | Inmutabilidad de registros y eventos | PASS |
+| `tests/demo/` | `test_patients.py` | 5 | Pacientes y validación RUT Módulo-11 | PASS |
+| `tests/demo/` | `test_practitioners.py` | 3 | Autenticación y facultativos | PASS |
 | `tests/harness/` | `test_agentic_audit.py` | 6 | Auditoría de reglas y hallazgos | PASS |
-| `tests/harness/` | `test_catalog.py` | 5 | Catálogo de controles multi-marco | PASS |
-| `tests/harness/` | `test_catalog_corpus.py` | 1 | Corpus del catálogo | PASS |
+| `tests/harness/` | `test_antecedentes.py` | 17 | Registro de procesamiento y paquete por titular | PASS |
+| `tests/harness/` | `test_call_effects.py` | 4 | Resumen interprocedural de efectos | PASS |
+| `tests/harness/` | `test_catalog.py` | 6 | Catálogo de controles multi-marco | PASS |
+| `tests/harness/` | `test_catalog_corpus.py` | 2 | Corpus del catálogo | PASS |
+| `tests/harness/` | `test_code_hygiene.py` | 10 | Higiene de código: cifrado, autorización y export | PASS |
 | `tests/harness/` | `test_compliance_skills.py` | 12 | Skills de cumplimiento | PASS |
 | `tests/harness/` | `test_context_bench.py` | 5 | Benchmark de contexto | PASS |
 | `tests/harness/` | `test_context_semantic.py` | 5 | Contexto semántico | PASS |
+| `tests/harness/` | `test_control_matrix.py` | 81 | Matriz de cobertura de los 37 controles | PASS |
 | `tests/harness/` | `test_corpus.py` | 7 | Corpus de evaluación | PASS |
 | `tests/harness/` | `test_cursor_pilot.py` | 31 | Piloto Cursor | PASS |
 | `tests/harness/` | `test_data_lineage.py` | 3 | Linaje de datos sensibles | PASS |
 | `tests/harness/` | `test_db_persistence.py` | 3 | Persistencia SQLite | PASS |
-| `tests/harness/` | `test_dimension_policy.py` | 20 | Políticas por dimensión de la Ley 21.719 | PASS |
+| `tests/harness/` | `test_dimension_policy.py` | 23 | Políticas por dimensión de la Ley 21.719 | PASS |
+| `tests/harness/` | `test_doctor.py` | 1 | Diagnóstico del entorno | PASS |
+| `tests/harness/` | `test_evidence.py` | 11 | Gate de evidencia documental | PASS |
+| `tests/harness/` | `test_evidence_check.py` | 3 | Verificación de evidencia | PASS |
 | `tests/harness/` | `test_exposure_policy.py` | 12 | Exposición de datos en respuestas de API | PASS |
 | `tests/harness/` | `test_flow_bench.py` | 4 | Benchmark de flujo | PASS |
+| `tests/harness/` | `test_framework_coverage.py` | 146 | Cobertura de frameworks y canales de detección | PASS |
 | `tests/harness/` | `test_graph_engine.py` | 5 | Extracción AST y grafo | PASS |
+| `tests/harness/` | `test_label_agreement.py` | 3 | Muestreo ciego y kappa de Cohen | PASS |
 | `tests/harness/` | `test_normative_pack.py` | 73 | Paquete normativo Ley 21.719 | PASS |
+| `tests/harness/` | `test_opencode_runner.py` | 10 | Runner de OpenCode | PASS |
 | `tests/harness/` | `test_payment_policy.py` | 10 | Datos de pago persistidos | PASS |
-| `tests/harness/` | `test_policy_engine.py` | 9 | Motor de políticas | PASS |
-| `tests/harness/` | `test_policy_families.py` | 16 | Familias de detección | PASS |
+| `tests/harness/` | `test_policy_engine.py` | 13 | Motor de políticas | PASS |
+| `tests/harness/` | `test_policy_families.py` | 18 | Familias de detección | PASS |
 | `tests/harness/` | `test_prd_skill.py` | 5 | Skill de PRD | PASS |
-| `tests/harness/` | `test_precommit.py` | 12 | Compuerta de pre-commit | PASS |
+| `tests/harness/` | `test_precommit.py` | 18 | Compuerta de pre-commit | PASS |
 | `tests/harness/` | `test_render.py` | 9 | Renderizado de artefactos | PASS |
 | `tests/harness/` | `test_repo_config.py` | 1 | Configuración del repositorio | PASS |
 | `tests/harness/` | `test_skills_integrity.py` | 3 | Integridad de las skills | PASS |
 | `tests/harness/` | `test_taint_flow.py` | 19 | Flujo de datos a nivel de llamadas | PASS |
-| `tests/harness/` | `test_task_pack.py` | 2 | Paquete de tareas | PASS |
+| `tests/harness/` | `test_task_pack.py` | 3 | Paquete de tareas | PASS |
 | `tests/harness/` | `test_validation_engine.py` | 2 | Motor de validación | PASS |
 | `tests/harness/` | `test_variants.py` | 2 | Variantes de prueba | PASS |
-| `tests/demo/` | `test_patients.py` | 5 | Pacientes y validación RUT Módulo-11 | PASS |
-| `tests/demo/` | `test_appointments.py` | 2 | Citas y colisiones horarias | PASS |
-| `tests/demo/` | `test_audit.py` | 11 | Inmutabilidad de registros y eventos | PASS |
-| `tests/demo/` | `test_practitioners.py` | 3 | Autenticación y facultativos | PASS |
-| **TOTAL CONSOLIDADO** | **31 archivos** | **303** | **Cobertura de Harness y Aplicación Clínica** | **100% PASS** |
+| **TOTAL CONSOLIDADO** | **41 archivos** | **607** | **Cobertura de Harness y Aplicación Clínica** | **100% PASS** |
 
+Del total, **586** pruebas corresponden al arnés (`tests/harness/`) y **21** a la aplicación clínica (`tests/demo/`).
 
 **Evidencia de ejecución en consola:**
 
@@ -1030,14 +1221,17 @@ Ejecución de la suite completa automatizada sobre el producto *As-Is* mediante 
 platform win32 -- Python 3.13, pytest-9.0.3, pluggy-1.5.0
 rootdir: C:\Users\<usuario>\Documents\<proyecto>
 configfile: pytest.ini
-collected 303 items
+collected 607 items
 
-........................................................................ [ 23%]
-........................................................................ [ 47%]
-........................................................................ [ 71%]
-........................................................................ [ 95%]
-...............                                                          [100%]
+........................................................................ [ 12%]
+........................................................................ [ 24%]
+........................................................................ [ 36%]
+........................................................................ [ 48%]
+........................................................................ [ 60%]
+........................................................................ [ 72%]
+........................................................................ [ 84%]
+........................................................................ [ 96%]
+...........                                                              [100%]
 
-============================= 303 passed in 48.47s =============================
+============================= 607 passed in 110.65s =============================
 ```
-
