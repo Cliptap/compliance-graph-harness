@@ -231,7 +231,9 @@ El desarrollo asistido por IA converge en torno a modelos generativos, agentes c
 
 4. **Cumplimiento normativo como código (*Compliance as Code*):** herramientas de análisis estático como Semgrep permiten definir reglas automatizadas sobre patrones de código. En este proyecto se utilizan tanto como apoyo al análisis como parte de un oráculo independiente en los experimentos. Sus resultados requieren adjudicación, pues pueden existir falsos positivos y hallazgos que no constituyan una violación confirmada.
 
-5. **Agent Skills y *harness engineering*:** la especificación abierta de Agent Skills define una estructura basada en una carpeta con un archivo de definición, metadatos obligatorios de nombre y descripción, y recursos opcionales como scripts y referencias. También describe un mecanismo de carga progresiva, en el que el agente descubre las *skills* por sus metadatos y carga las instrucciones y recursos cuando corresponde \[12\]\[13\]. Por su parte, OpenAI describe *harness engineering* como el diseño del entorno, las herramientas, la estructura del repositorio y los mecanismos de feedback que permiten a los agentes realizar trabajo de ingeniería de software de manera más confiable \[14\]. Zhong y Zhu proponen además una formulación del *harness* como una capa de ejecución que media entre el modelo, el proyecto y el entorno \[15\].
+5. **Análisis estático de privacidad:** una línea de trabajo específica aplica análisis de flujo a la protección de datos. Paralegal detecta violaciones de políticas de privacidad en Rust a partir de un grafo de dependencias del programa y de marcadores que los desarrolladores aplican al código, y se compara con CodeQL y con control de flujo de información \[20\]. Tang, Østvold y Bruntink identifican flujos de datos personales para priorizar la revisión de código y reportan una precisión de 0,87 sobre cuatro aplicaciones, sin poder medir exhaustividad por falta de verdad de referencia \[21\]. Ran, Zhang y Tang publican un banco de 1.951 instancias anotadas sobre quince repositorios Android y comparan once métodos, entre ellos modelos de lenguaje, recuperación aumentada y un agente \[22\]. Estos trabajos son el punto de comparación directo de este informe: coinciden en el objeto —detectar tratamiento de datos personales en el código— y difieren en escala y en el mecanismo de evaluación.
+
+6. **Agent Skills y *harness engineering*:** la especificación abierta de Agent Skills define una estructura basada en una carpeta con un archivo de definición, metadatos obligatorios de nombre y descripción, y recursos opcionales como scripts y referencias. También describe un mecanismo de carga progresiva, en el que el agente descubre las *skills* por sus metadatos y carga las instrucciones y recursos cuando corresponde \[12\]\[13\]. Por su parte, OpenAI describe *harness engineering* como el diseño del entorno, las herramientas, la estructura del repositorio y los mecanismos de feedback que permiten a los agentes realizar trabajo de ingeniería de software de manera más confiable \[14\]. Zhong y Zhu proponen además una formulación del *harness* como una capa de ejecución que media entre el modelo, el proyecto y el entorno \[15\].
 
 ## 5.2 Análisis crítico y tabla comparativa
 
@@ -840,6 +842,8 @@ Para evaluar el efecto de las reglas, las *skills* y las compuertas de cumplimie
 
 La suite de pruebas del repositorio se ejecutó como verificación de preservación funcional y registró **613 pruebas aprobadas**.
 
+**Definición de las métricas.** Para cada control se cuenta la matriz de confusión sobre los casos etiquetados: verdaderos positivos (VP), falsos positivos (FP), falsos negativos (FN) y verdaderos negativos (VN). Precisión = VP/(VP+FP); exhaustividad = VP/(VP+FN); exactitud = (VP+VN)/total. Los intervalos son de Wilson al 95 %, elegidos porque se comportan mejor que el intervalo normal con muestras pequeñas y con proporciones cercanas a 0 o a 1.
+
 **Alcance de la evaluación:** estos experimentos comparan configuraciones de reglas, *skills* y compuertas de cumplimiento. No aíslan el efecto causal del contexto seleccionado mediante grafos; esa evaluación requiere un diseño factorial posterior.
 
 ## 10.2 Resultados obtenidos
@@ -1013,7 +1017,7 @@ La calibración usa módulos aislados. Para observar el comportamiento sobre có
 
 - **Aplicación limpia:** **0 hallazgos**. La revisión manual confirmó que es un verdadero negativo y no un fallo por omisión: la aplicación anonimiza en la retención, filtra el marketing por consentimiento y no registra datos personales.
 - **Trece variantes:** **13/13** correctas frente a los detectores heredados. Con los controles `v2.*`, las tres variantes limpias no produjeron hallazgos, y se detectaron las dos variantes con defectos `v2` relevantes (exposición en bitácora y credenciales).
-- **Un falso negativo confirmado:** una variante envía el RUT a una bitácora a través de una función auxiliar ubicada en otro módulo. El detector no sigue el flujo entre archivos en ese caso. Es el límite *cross-module* ya documentado, ahora con evidencia sobre código real.
+- **Un falso negativo confirmado:** una variante envía el RUT a una bitácora a través de una función auxiliar ubicada en otro módulo. El detector no sigue el flujo entre archivos en ese caso. Es el límite *cross-module* ya documentado, ahora con evidencia sobre código real. La escala es la limitación principal de esta medición: los trabajos comparables evalúan entre cuatro y quince aplicaciones \[20\]\[21\]\[22\], y este informe evalúa una.
 
 ## 10.7 Cobertura normativa
 
@@ -1063,38 +1067,49 @@ La variable 4 no se mide en este informe: exigiría observar cómo documenta sus
 
 ## 10.9 Limitaciones identificadas
 
-1. **Potencia estadística:** el experimento formal quedó subpotenciado para el resultado binario. El experimento de dosis obtuvo contrastes significativos para la compuerta, pero se limita a veinte pares por comparación.
+Las limitaciones se organizan según el tipo de validez afectada, siguiendo la clasificación habitual en ingeniería de software empírica.
 
-2. **Un solo modelo principal:** los resultados corresponden a `opencode-go/deepseek-v4.1-flash`; la corrida con Cursor es provisional y no se combina con los resultados principales.
+### Validez de constructo
 
-3. **Adjudicación única:** las tareas, pruebas, detector y oráculo comparten autoría. El segundo evaluador de la sección 10.5 es un modelo, no una persona: falta un adjudicador humano.
+1. **Adjudicación.** Las tareas, pruebas, detector y oráculo comparten autoría. El segundo evaluador de la sección 10.5 es un modelo de la misma familia: mide reproducibilidad, no validez humana.
 
-4. **Falsos positivos del oráculo:** existen falsos positivos documentados de Semgrep en escenarios de pseudonimización y retención. Deben mantenerse identificados y no interpretarse automáticamente como violaciones confirmadas.
+2. **Independencia del corpus ciego.** Los autores no acceden al repositorio, pero son instancias del mismo modelo. La independencia es de información, no de sesgo inductivo.
 
-5. **Trampas explícitas poco discriminantes:** en un paquete de escenarios agresivos que instruían a violar controles, el modelo se negó o implementó una alternativa segura en todos los brazos. Por ello, la evaluación depende de escenarios más sutiles.
+3. **Oráculo.** Las pruebas ocultas y Semgrep no representan todas las violaciones posibles, y existen falsos positivos documentados en escenarios de pseudonimización y retención.
 
-6. **Alcance de las tareas:** el experimento formal cubrió doce tareas y el de dosis cuatro. La generalización a otros dominios requiere más evidencia.
+4. **Sujeto del estudio.** La premisa del proyecto es que un desarrollador puede pasar por alto un hallazgo, pero ningún experimento observa a una persona. Se mide el comportamiento del agente y la calidad del detector, no la conducta de revisión humana.
 
-7. **Efecto del contexto no aislado:** no se evaluó mediante estos experimentos una condición independiente de selección contextual por grafos.
+5. **Cobertura normativa.** La clasificación de las 30 aristas es una derivación técnica revisada contra el texto legal por los autores del proyecto, no una validación jurídica.
 
-8. **Completitud vs privacidad:** las dos fallas de T31 en `enforced` son 404 (tarea no implementada), no violaciones; la completitud se mide aparte de la privacidad.
+6. **Alcance de la calibración.** La serie ciega mide siete de los 26 controles. Los cinco detectores incorporados en este incremento cuentan con pruebas unitarias y casos de regresión, pero no con una medición ciega propia.
 
-9. **Tamaño de los casos ciegos:** los corpus de calibración son módulos de 20 a 55 líneas, no repositorios completos. La ronda 21 usó 84 casos y permite una exhaustividad real de 0,916; sigue siendo una muestra pequeña para un detector con siete controles.
+### Validez interna
 
-10. **Saturación del experimento de preservación funcional:** el modelo resolvió las diez trampas sin el arnés, de modo que ese bloque no puede medir mejora funcional. Solo mide costo. Un paquete de trampas más difíciles sería necesario para observar el efecto sobre la completitud.
+7. **Atribución causal.** Los brazos varían reglas, procedimientos y compuerta, pero no incorporan una condición independiente de selección de contexto. Los resultados no permiten atribuir a los grafos los cambios observados.
 
-11. **Independencia del corpus ciego:** los autores no acceden al repositorio, pero son instancias del mismo modelo. La independencia es de información, no de sesgo inductivo.
+8. **Trampas explícitas poco discriminantes.** En un paquete de escenarios que instruían a violar controles, el modelo se negó o implementó una alternativa segura en todos los brazos. La evaluación depende de escenarios más sutiles.
 
-12. **Acuerdo entre etiquetas como proxy:** el kappa de 1,000 proviene de un modelo de la misma familia en otro rol. Es evidencia de reproducibilidad, no de validez humana.
+9. **Saturación.** En el experimento de preservación funcional el modelo resolvió las diez trampas sin el arnés, de modo que ese bloque no puede medir mejora funcional: solo mide costo.
 
-13. **Naturaleza de la cobertura normativa:** la clasificación de las 30 aristas es una derivación técnica revisada contra el texto legal por los autores del proyecto, no una validación jurídica. La propia revisión encontró citas imprecisas en el pack, que se corrigieron.
+10. **Condiciones de medición del costo.** Los tiempos son de reloj de pared en un solo equipo, con las corridas en orden fijo y sin aleatorización. La prueba de signos controla la dirección, no la magnitud.
 
-14. **Condiciones de medición del costo:** los tiempos son de reloj de pared en un solo equipo, con las corridas en orden fijo y sin aleatorización. La razón de costo puede variar con la carga del equipo o con el orden de ejecución; la prueba de signos controla la dirección, no la magnitud.
+11. **Completitud frente a privacidad.** Las dos fallas de T31 en el brazo con corrección externa son tareas no implementadas, no violaciones; la completitud se mide aparte.
 
-15. **El sujeto es un agente, no un desarrollador:** la premisa del proyecto es que un desarrollador puede pasar por alto un hallazgo, pero ningún experimento observa a una persona. Lo medido es el comportamiento del agente y la calidad del detector, no la conducta de revisión humana.
+### Validez externa
 
-16. **La calibración cubre 7 de los 26 controles:** la serie ciega mide la familia `v2.*`. Los cinco detectores incorporados en este incremento cuentan con pruebas unitarias y casos de regresión, pero no con una medición ciega propia.
+12. **Un solo modelo principal.** Los resultados corresponden a un modelo; la corrida con otro es provisional y no se combina con los principales.
 
+13. **Alcance de las tareas.** El experimento formal cubrió doce tareas y el de dosis cuatro. La generalización a otros dominios requiere más evidencia.
+
+14. **Tamaño de los casos ciegos.** Los corpus de calibración son módulos de 20 a 55 líneas, no repositorios completos. La ronda de 84 casos permite una exhaustividad real de 0,916.
+
+15. **Escala del código real.** El triage cubre una aplicación y trece variantes; los trabajos comparables evalúan entre cuatro y quince aplicaciones \[20\]\[21\]\[22\].
+
+### Validez de conclusión
+
+16. **Potencia estadística.** El experimento formal quedó subpotenciado para el resultado binario, y el de dosis se limita a veinte pares por comparación.
+
+17. **Intervalos.** Se reportan intervalos de Wilson porque, con muestras pequeñas, un resultado perfecto sigue siendo compatible con una tasa de fallo no despreciable.
 
 # 11. DISCUSIÓN, CONCLUSIONES Y TRABAJO FUTURO
 
@@ -1188,6 +1203,12 @@ De acuerdo con la planificación vigente al 24 de noviembre de 2026, el Hito 2 e
 18. Model Context Protocol. (2026). *Specification — Overview*. Versión 2026-07-28. [https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/index.mdx](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/index.mdx)
 
 19. Repositorio oficial del proyecto. (2026). *Harness de Desarrollo Asistido por IA y Gobernanza de Software*. [https://github.com/Cliptap/compliance-graph-harness](https://github.com/Cliptap/compliance-graph-harness)
+
+20. Adam, J., Zech, C., Zhu, L., Rajesh, S., Harbison, N., Jethwa, M., Crichton, W., Krishnamurthi, S., & Schwarzkopf, M. (2025). *Paralegal: Practical Static Analysis for Privacy Bugs*. 19th USENIX Symposium on Operating Systems Design and Implementation (OSDI 25), 957–978. [https://www.usenix.org/conference/osdi25/presentation/adam](https://www.usenix.org/conference/osdi25/presentation/adam)
+
+21. Tang, F., Østvold, B. M., & Bruntink, M. (2023). *Helping Code Reviewer Prioritize: Pinpointing Personal Data and its Processing*. 22nd International Conference on Intelligent Software Methodologies, Tools and Techniques (SOMET 2023). [https://doi.org/10.3233/FAIA230228](https://doi.org/10.3233/FAIA230228)
+
+22. Ran, H., Zhang, H., & Tang, X. (2025). *GDPR-Bench-Android: A Benchmark for Evaluating Automated GDPR Compliance Detection in Android*. arXiv:2511.00619. [https://arxiv.org/abs/2511.00619](https://arxiv.org/abs/2511.00619)
 
 ## 12.2 Anexos
 
