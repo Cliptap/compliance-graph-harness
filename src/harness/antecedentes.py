@@ -350,7 +350,7 @@ def scan_register(root: Path, scan_dirs: list[str]) -> Register:
     root_schema = Path(root) / "schema.sql"
     if root_schema.is_file():
         files["schema.sql"] = root_schema.read_text(encoding="utf-8", errors="replace")
-    findings = PersonalDataDimensionsPolicy().evaluate(_REGISTER_SPEC, files)
+    findings = PersonalDataDimensionsPolicy(complete=True).evaluate(_REGISTER_SPEC, files)
 
     by_entity: dict[tuple[str, str], ProcessingActivity] = {}
     for field in data_map.fields:

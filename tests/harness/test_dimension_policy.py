@@ -58,6 +58,27 @@ def test_all_rights_routes_and_blocked_state_clear_the_rights_check():
     assert rights == []
 
 
+def test_missing_rights_route_blocks_on_a_complete_scan():
+    findings = PersonalDataDimensionsPolicy(complete=True).evaluate(SPEC, {"src/models.py": CUSTOMER})
+    rights = [f for f in findings if f.policy_id == "privacy.rights_reachability"]
+    assert rights
+    assert all(f.status == "VIOLATION" and f.severity == "HIGH" for f in rights)
+
+
+def test_missing_rights_route_stays_a_warning_on_a_diff():
+    findings = PersonalDataDimensionsPolicy().evaluate(SPEC, {"src/models.py": CUSTOMER})
+    rights = [f for f in findings if f.policy_id == "privacy.rights_reachability"]
+    assert rights
+    assert all(f.status == "WARNING" for f in rights)
+
+
+def test_complete_scan_with_every_rights_route_reports_no_rights_finding():
+    files = {"src/models.py": CUSTOMER, "src/api.py": RIGHTS}
+    rights = [f for f in PersonalDataDimensionsPolicy(complete=True).evaluate(SPEC, files)
+              if f.policy_id == "privacy.rights_reachability"]
+    assert rights == []
+
+
 def test_pre_ticked_consent_is_a_violation():
     code = CUSTOMER + "\n    marketing_consent = Column(Boolean, default=True)\n"
     findings = PersonalDataDimensionsPolicy().evaluate(SPEC, {"src/models.py": code})

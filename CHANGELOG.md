@@ -86,6 +86,9 @@ semántico.
   `getattr(row, c)`): iterar una lista de nombres de campo para testear pertenencia
   (`any(m in field for m in MASKERS)`) ya no se reporta como export. Era un falso positivo
   `CRITICAL` sobre `dimension_policy.py` que bloqueaba cualquier commit que tocara ese archivo.
+- `privacy.rights_reachability` es `HIGH`/`VIOLATION` cuando el `ChangeSet` declara ser completo
+  (`build_change_set(files, complete=True)`, usado por `scan_register`); en un diff sigue siendo
+  `MEDIUM`/`WARNING`, porque la ausencia de una ruta no se puede probar sobre archivos parciales.
 - `_call_effects` converge en la primera pasada sin crecimiento: el fixpoint marcaba `changed` aunque
   el conjunto no creciera y corría las 146 iteraciones completas (244 s por control sobre un módulo
   de 3 000 líneas, ~15 min el hook de pre-commit; ahora 6,5 s y 76 s el hook).

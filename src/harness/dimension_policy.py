@@ -118,6 +118,9 @@ class ChangeSet:
     files: dict[str, str] = field(default_factory=dict)
     fields: list[FieldInfo] = field(default_factory=list)
     routes: list[RouteInfo] = field(default_factory=list)
+    # ``True`` when ``files`` is the whole project tree. Absence checks (a route
+    # that does not exist) can only be stated as a violation on a complete set.
+    complete: bool = False
 
     def field_names(self) -> set[str]:
         return {f.name for f in self.fields}
@@ -232,8 +235,8 @@ def extract_routes(path: str, content: str) -> list[tuple[str, str, int]]:
     return routes
 
 
-def build_change_set(files: dict[str, str]) -> ChangeSet:
-    cs = ChangeSet(files={p.replace("\\", "/"): c for p, c in files.items()})
+def build_change_set(files: dict[str, str], complete: bool = False) -> ChangeSet:
+    cs = ChangeSet(files={p.replace("\\", "/"): c for p, c in files.items()}, complete=complete)
     for path, content in cs.files.items():
         cs.fields.extend(FieldInfo(name, path, line, persisted) for name, line, persisted in extract_fields(path, content))
         cs.routes.extend(RouteInfo(route, method, path, line) for method, route, line in extract_routes(path, content))
@@ -253,15 +256,16 @@ def _first_file_with(cs: ChangeSet, names: set[str]) -> FieldInfo | None:
 class PersonalDataDimensionsPolicy(BasePolicy):
     """Aggregates the deterministic checks of T16-T20 into one pass over the change set."""
 
-    def __init__(self) -> None:
+    def __init__(self, complete: bool = False) -> None:
         super().__init__(
             policy_id="privacy.dimensions",
             description="Rights, consent, sensitive data, retention and third-party transfer checks.",
             severity="HIGH",
         )
+        self.complete = complete
 
     def evaluate(self, task_spec: TaskSpec, modified_files: dict[str, str], diff: str | None = None) -> list[Finding]:
-        cs = build_change_set(modified_files)
+        cs = build_change_set(modified_files, complete=self.complete)
         findings = [
             *self._rights(cs),
             *self._consent(cs),
@@ -283,18 +287,19 @@ class PersonalDataDimensionsPolicy(BasePolicy):
         anchor = _first_file_with(cs, set(PERSONAL_FIELDS) | set(SENSITIVE_FIELDS))
         routes = " ".join(r.path.lower().replace("/", " ").replace("_", "-") for r in cs.routes)
         out = []
+        severity, status = ("HIGH", "VIOLATION") if cs.complete else ("MEDIUM", "WARNING")
         for right, keywords in RIGHT_ROUTES.items():
             if any(k in routes for k in keywords):
                 continue
             out.append(_finding(
-                "privacy.rights_reachability", anchor.path, anchor.line, "MEDIUM", "WARNING",
+                "privacy.rights_reachability", anchor.path, anchor.line, severity, status,
                 f"No route exposes the data-subject right of {right} (Ley 21.719 Art. 4-11, 10).",
                 f"Personal data model '{anchor.name}' in {anchor.path}",
                 f"Expose a reachable endpoint for {right}; Art. 10 requires it to be expeditious and effective.",
             ))
         if out and not any(f.name in BLOCKED_FIELDS for f in cs.fields) and not cs.contains("blocked"):
             out.append(_finding(
-                "privacy.rights_reachability", anchor.path, anchor.line, "MEDIUM", "WARNING",
+                "privacy.rights_reachability", anchor.path, anchor.line, severity, status,
                 "No blocked state is modelled for personal data (Ley 21.719 Art. 8, block right).",
                 f"Model '{anchor.name}' has no blocked/blocked_at field",
                 "Model a blocked state that processing paths must honour.",
