@@ -1,28 +1,28 @@
 {
   "corpus": "harness/eval/catalog_corpus_heldout.json",
   "catalog": "C:\\Users\\andre\\Documents\\VSC Projects\\Gentle-AI\\vibecoding\\.harness\\packs\\catalog.full.json",
-  "cases": 240,
-  "passed": 240,
+  "cases": 246,
+  "passed": 246,
   "controls": {
     "v2.admin_exposure": {
-      "tp": 24,
+      "tp": 25,
       "fp": 0,
       "fn": 0,
-      "tn": 17,
+      "tn": 19,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.862,
+        0.867,
         1.0
       ],
       "recall_ci": [
-        0.862,
+        0.867,
         1.0
       ]
     },
     "v2.api_key": {
-      "tp": 25,
+      "tp": 26,
       "fp": 0,
       "fn": 0,
       "tn": 14,
@@ -30,11 +30,11 @@
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.867,
+        0.871,
         1.0
       ],
       "recall_ci": [
-        0.867,
+        0.871,
         1.0
       ]
     },
@@ -107,19 +107,19 @@
       ]
     },
     "v2.reset_token": {
-      "tp": 22,
+      "tp": 23,
       "fp": 0,
       "fn": 0,
-      "tn": 7,
+      "tn": 8,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
       "precision_ci": [
-        0.851,
+        0.857,
         1.0
       ],
       "recall_ci": [
-        0.851,
+        0.857,
         1.0
       ]
     }
@@ -2002,7 +2002,8 @@
       "expected": "violation",
       "detected": true,
       "other_findings": [
-        "v2.api_key"
+        "v2.api_key",
+        "v2.credential_response"
       ],
       "passed": true
     },
@@ -2248,6 +2249,60 @@
     {
       "id": "r21b-cred-05",
       "control": "v2.credential_response",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "feat_exclusion_module_constant",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "feat_exclusion_helper_function",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "detected": false,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "feat_exclusion_partial",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [],
+      "passed": true
+    },
+    {
+      "id": "feat_cookie_reset_token",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.api_key",
+        "v2.credential_response"
+      ],
+      "passed": true
+    },
+    {
+      "id": "feat_header_api_key",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "detected": true,
+      "other_findings": [
+        "v2.credential_response",
+        "v2.reset_token"
+      ],
+      "passed": true
+    },
+    {
+      "id": "feat_cookie_session_clean",
+      "control": "v2.reset_token",
       "expected": "clean",
       "detected": false,
       "other_findings": [],

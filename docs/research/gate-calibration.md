@@ -1109,6 +1109,25 @@ The two false positives are the same shape: a serializer method field whose mask
 Regression state: sealed round-21 set **84/84**, curated 22/22, regression corpus **240/240**
 (238 + 2), full suite **550 passed**. The 82/84 remains the pre-fix measurement.
 
+## Channels after round 21 (feature work)
+
+With the blind loop closed at the current scope, the next work is channel coverage in the
+regression corpus. Three channels were implemented, each with tests:
+
+| Channel | Behaviour |
+|---|---|
+| Imported response model | `response_model=CustomerOut` resolves `from app.schemas import CustomerOut` against the project files, so the declared fields (inherited and annotated included) project the payload |
+| Computed exclusion | `model_dump(exclude=HIDDEN)`, `exclude=hidden_fields()` and `response_model_exclude=HIDDEN` resolve a literal set through a module constant, an alias or a function return |
+| Cookie and header sinks | `response.set_cookie('reset_token', token)`, `set_signed_cookie` and `response.headers['X-Api-Key'] = key` are response sinks; a plain session cookie (`sid`, `session_id`) is the mechanism, not a leak |
+
+Limits of this pass: the imported model must be a `from X import Name` import and the module must be
+in the same evaluation set; a cookie is only flagged when its name maps to a sensitive field, so a
+reset token under a neutral cookie name is still a false negative; the exclusion resolves literal
+sets, not a set computed at runtime from configuration.
+
+Regression state: sealed round-21 set **84/84**, curated 22/22, regression corpus **246/246**
+(240 + 6), full suite **558 passed**.
+
 ## Interpretation
 
 - The curated 22/22 says the detector handles the cases it was built around; it does not estimate
@@ -1322,6 +1341,9 @@ Regression state: sealed round-21 set **84/84**, curated 22/22, regression corpu
 
 1. The 84-case neutral round is done (round 21, 82/84 pre-fix). The accuracy interval is now
    [0.917, 0.993] pre-fix and [0.956, 1.000] post-fix.
+2. Channel coverage: imported response models, computed exclusions and cookie/header sinks are
+   implemented. The next channels are runtime-computed sets from configuration, a reset token under
+   a neutral cookie name, and streams assembled in another module.
 2. Grow the regression corpus with real code from the target app, starting with imported response
    models and streams assembled across modules.
 3. Extend the calibration beyond the 7 v2 controls and the legacy policies.

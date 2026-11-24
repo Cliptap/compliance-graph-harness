@@ -453,12 +453,16 @@ def _response_assignment(node: ast.AST) -> ast.AST | None:
 
 
 def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[str, set[str]]:
-    """Literal field lists (``self.columns = ['id', 'rut', 'email']``) by name."""
+    """Literal field lists (``self.columns = ['id', 'rut', 'email']``) by name.
+
+    Also maps a function that returns such a literal to its categories, so
+    ``model_dump(exclude=hidden_fields())`` can be resolved.
+    """
     mapping: dict[str, set[str]] = {}
     for node in ast.walk(tree):
         if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
             continue
-        if not isinstance(node.value, (ast.List, ast.Tuple)):
+        if not isinstance(node.value, (ast.List, ast.Tuple, ast.Set)):
             continue
         found: set[str] = set()
         for element in node.value.elts:
@@ -473,6 +477,35 @@ def _field_lists(tree: ast.AST, catalog: Catalog, categories: set[str]) -> dict[
             token = _identifier(target)
             if token:
                 mapping[token] = mapping.get(token, set()) | found
+    for func in (node for node in ast.walk(tree)
+                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))):
+        for child in ast.walk(func):
+            if not isinstance(child, ast.Return) or not isinstance(
+                    child.value, (ast.List, ast.Tuple, ast.Set)):
+                continue
+            found = set()
+            for element in child.value.elts:
+                if isinstance(element, ast.Constant) and isinstance(element.value, str):
+                    category = _field_category(catalog, element.value)
+                    if category in categories:
+                        found.add(category)
+            if found:
+                mapping[func.name] = mapping.get(func.name, set()) | found
+    for _ in range(3):
+        changed = False
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+                continue
+            if not isinstance(node.value, ast.Name) or node.value.id not in mapping:
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                token = _identifier(target)
+                if token and token not in mapping:
+                    mapping[token] = set(mapping[node.value.id])
+                    changed = True
+        if not changed:
+            break
     return mapping
 
 
@@ -594,8 +627,9 @@ def _is_model_lookup(node: ast.AST) -> bool:
         isinstance(arg, ast.Name) and arg.id[:1].isupper() for arg in node.args)
 
 
-def _excluded_categories(node: ast.Call, catalog: Catalog) -> set[str]:
-    """``model_dump(exclude={'email', 'phone'})``: categories removed from the payload."""
+def _excluded_categories(node: ast.Call, catalog: Catalog,
+                         field_lists: dict[str, set[str]] | None = None) -> set[str]:
+    """``model_dump(exclude={'email'})`` or ``exclude=HIDDEN``: categories removed."""
     found: set[str] = set()
     for keyword in node.keywords:
         if keyword.arg != "exclude":
@@ -605,21 +639,46 @@ def _excluded_categories(node: ast.Call, catalog: Catalog) -> set[str]:
                 category = _field_category(catalog, child.value)
                 if category:
                     found.add(category)
+            elif isinstance(child, (ast.Name, ast.Attribute)) and field_lists:
+                token = _identifier(child)
+                if token in field_lists:
+                    found |= field_lists[token]
     return found
 
 
-def _header_redirect_value(node: ast.AST) -> ast.AST | None:
-    """``response.headers['Location'] = target`` carries the value into the response."""
+def _header_value(node: ast.AST) -> tuple[str, ast.AST] | None:
+    """``response.headers['X'] = value`` carries the value into the response."""
     if not isinstance(node, ast.Assign) or len(node.targets) != 1:
         return None
     target = node.targets[0]
     if not isinstance(target, ast.Subscript) or not isinstance(target.slice, ast.Constant):
         return None
-    if not isinstance(target.slice.value, str) or target.slice.value.lower() not in {"location", "link"}:
+    name = target.slice.value
+    if not isinstance(name, str):
         return None
     if "headers" not in ast.unparse(target.value):
         return None
-    return node.value
+    return name, node.value
+
+
+def _cookie_value(node: ast.AST) -> tuple[str, ast.AST] | None:
+    """``response.set_cookie('name', value)`` sends the value to the client."""
+    if not isinstance(node, ast.Call):
+        return None
+    if _call_name(node).rsplit(".", 1)[-1] not in {"set_cookie", "set_signed_cookie"}:
+        return None
+    if len(node.args) < 2:
+        return None
+    name = node.args[0].value if isinstance(node.args[0], ast.Constant) else ""
+    return (name if isinstance(name, str) else ""), node.args[1]
+
+
+def _header_redirect_value(node: ast.AST) -> ast.AST | None:
+    """``response.headers['Location'] = target`` carries the value into the response."""
+    header = _header_value(node)
+    if header is None or header[0].lower() not in {"location", "link"}:
+        return None
+    return header[1]
 
 
 def _filters_known_fields(node: ast.DictComp, field_lists: dict[str, set[str]]) -> bool:
@@ -633,7 +692,8 @@ def _filters_known_fields(node: ast.DictComp, field_lists: dict[str, set[str]]) 
 
 
 def _dump_receiver_blocks(node: ast.AST, env: dict[str, set[str]] | None,
-                          catalog: Catalog) -> set[int]:
+                          catalog: Catalog,
+                          field_lists: dict[str, set[str]] | None = None) -> set[int]:
     """Receiver names whose dump removes every category they carry."""
     blocked: set[int] = set()
     for child in ast.walk(node):
@@ -645,7 +705,7 @@ def _dump_receiver_blocks(node: ast.AST, env: dict[str, set[str]] | None,
                 blocked.update(id(nested) for nested in ast.walk(keyword.value))
         if not isinstance(receiver, ast.Name):
             continue
-        excluded = _excluded_categories(child, catalog)
+        excluded = _excluded_categories(child, catalog, field_lists)
         carried = (env or {}).get(receiver.id, set())
         if excluded and carried and carried <= excluded:
             blocked.update(id(nested) for nested in ast.walk(receiver))
@@ -702,8 +762,59 @@ def _model_field_names(cls: ast.ClassDef, classes: dict[str, ast.ClassDef],
     return fields
 
 
+class _ModuleIndex:
+    """Resolve a class imported from another file in the same project."""
+
+    def __init__(self, files: dict[str, str]):
+        self.files = files
+        self._trees: dict[str, ast.Module | None] = {}
+
+    def tree(self, path: str) -> ast.Module | None:
+        if path not in self._trees:
+            content = self.files.get(path)
+            try:
+                self._trees[path] = ast.parse(content) if content is not None else None
+            except SyntaxError:
+                self._trees[path] = None
+        return self._trees[path]
+
+    def resolve(self, path: str, name: str) -> tuple[ast.Module, ast.ClassDef] | None:
+        tree = self.tree(path)
+        if tree is None:
+            return None
+        local = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+        if name in local:
+            return tree, local[name]
+        module = self._imported_module(tree, name)
+        if module is None:
+            return None
+        for candidate in (module.replace(".", "/") + ".py",
+                          module.replace(".", "/") + "/__init__.py"):
+            other = self.tree(candidate)
+            if other is None:
+                continue
+            classes = {node.name: node for node in ast.walk(other)
+                       if isinstance(node, ast.ClassDef)}
+            if name in classes:
+                return other, classes[name]
+        return None
+
+    @staticmethod
+    def _imported_module(tree: ast.Module, name: str) -> str | None:
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom) or not node.module:
+                continue
+            for alias in node.names:
+                if (alias.asname or alias.name) == name:
+                    return node.module
+        return None
+
+
 def _response_model_categories(func: ast.AST, tree: ast.AST, catalog: Catalog,
-                               categories: set[str]
+                               categories: set[str],
+                               field_lists: dict[str, set[str]] | None = None,
+                               index: "_ModuleIndex | None" = None,
+                               path: str = ""
                                ) -> tuple[set[str] | None, set[str], set[str] | None]:
     """Sensitive categories and field names the declared response model can carry.
 
@@ -723,10 +834,21 @@ def _response_model_categories(func: ast.AST, tree: ast.AST, catalog: Catalog,
                 names = [child.id for child in ast.walk(keyword.value)
                          if isinstance(child, ast.Name)]
                 model = next((name for name in names if name in classes), None)
+                model_tree = tree
+                if model is None and index is not None and path:
+                    for candidate in names:
+                        resolved = index.resolve(path, candidate)
+                        if resolved is not None:
+                            model_tree, model_class = resolved
+                            model = model_class.name
+                            break
                 if model is None:
                     continue
-                fields = _model_field_names(classes[model], classes)
-                declared = _model_class_fields(tree, catalog, categories).get(model, set())
+                model_classes = classes if model_tree is tree else {
+                    node.name: node for node in ast.walk(model_tree)
+                    if isinstance(node, ast.ClassDef)}
+                fields = _model_field_names(model_classes[model], model_classes)
+                declared = _model_class_fields(model_tree, catalog, categories).get(model, set())
             elif keyword.arg in {"response_model_exclude", "response_model_include"}:
                 found: set[str] = set()
                 names_found: set[str] = set()
@@ -736,6 +858,10 @@ def _response_model_categories(func: ast.AST, tree: ast.AST, catalog: Catalog,
                         category = _field_category(catalog, child.value)
                         if category:
                             found.add(category)
+                    elif isinstance(child, (ast.Name, ast.Attribute)) and field_lists:
+                        token = _identifier(child)
+                        if token in field_lists:
+                            found |= field_lists[token]
                 if keyword.arg == "response_model_exclude":
                     excluded |= found
                     if fields is not None:
@@ -821,7 +947,7 @@ def _sink_categories(catalog: Catalog, node: ast.AST, allowed: set[str],
             for nested in ast.walk(keyword.value):
                 blocked_args.add(id(nested))
     blocked: set[int] = set()
-    blocked |= _dump_receiver_blocks(node, env, catalog)
+    blocked |= _dump_receiver_blocks(node, env, catalog, field_lists)
     if field_lists:
         for child in ast.walk(node):
             if isinstance(child, ast.DictComp) and _filters_known_fields(child, field_lists):
@@ -1084,7 +1210,8 @@ class _TaintTracker(ast.NodeVisitor):
                  module_constants: dict[str, object] | None = None,
                  self_constants: dict[str, object] | None = None,
                  initial_env: dict[str, set[str]] | None = None,
-                 cache_env: dict[str, set[str]] | None = None):
+                 cache_env: dict[str, set[str]] | None = None,
+                 field_lists: dict[str, set[str]] | None = None):
         self.catalog = catalog
         self.categories = set(categories)
         self.summaries = summaries or {}
@@ -1094,6 +1221,7 @@ class _TaintTracker(ast.NodeVisitor):
         self.self_constants = self_constants or {}
         self.env: dict[str, set[str]] = dict(initial_env or {})
         self.cache_env = cache_env or {}
+        self.field_lists = field_lists or {}
         self.key_aliases: dict[str, str] = {}
         self.serialized: set[str] = set()
 
@@ -1247,7 +1375,7 @@ class _TaintTracker(ast.NodeVisitor):
                     blocked_args.add(id(nested))
         dict_keys: set[int] = set()
         dict_blocked: set[int] = set()
-        blocked = _dump_receiver_blocks(node, self.env, self.catalog)
+        blocked = _dump_receiver_blocks(node, self.env, self.catalog, self.field_lists)
         skip = _skip_nodes(node)
         projection = _projection_tokens(node)
         callees = {id(child.func) for child in ast.walk(node) if isinstance(child, ast.Call)}
@@ -1456,7 +1584,8 @@ def _function_summaries(tree: ast.AST, catalog: Catalog,
                 env = _TaintTracker(catalog, categories, summaries,
                                     module_constants=module_constants,
                                     self_constants=class_constants.get(
-                                        enclosing.get(id(func), ""), {})).scan(func)
+                                        enclosing.get(id(func), ""), {}),
+                                    field_lists=field_lists).scan(func)
                 for node in ast.walk(func):
                     if isinstance(node, ast.Return) and node.value is not None \
                             and not _value_is_masked(catalog, node.value):
@@ -1555,7 +1684,8 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                 tracker = _TaintTracker(catalog, categories, summaries, others,
                                         module_constants=module_constants,
                                         self_constants=class_constants.get(
-                                            enclosing.get(id(func), ""), {}))
+                                            enclosing.get(id(func), ""), {}),
+                                        field_lists=field_lists)
                 tracker.env[param] = set(categories)
                 env = tracker.scan(func)
                 hit = False
@@ -1647,6 +1777,7 @@ class SinkExposureFamily(PolicyFamily):
         findings: list[Finding] = []
         sinks = set(control.detection.sinks)
         categories = set(control.data_categories)
+        index = _ModuleIndex(files)
         for path, content in files.items():
             if not path.endswith(".py"):
                 continue
@@ -1672,7 +1803,7 @@ class SinkExposureFamily(PolicyFamily):
             if "response" in sinks:
                 findings.extend(self._scan_responses(control, path, tree, categories, summaries,
                                                      param_returns, field_lists, param_responses,
-                                                     attr_map, cache_env))
+                                                     attr_map, cache_env, index))
                 findings.extend(self._scan_serializers(control, path, tree, categories))
                 findings.extend(self._scan_graphql_types(control, path, tree, categories))
                 if control.detection.context.get("route") == "admin":
@@ -1698,7 +1829,8 @@ class SinkExposureFamily(PolicyFamily):
                                 self._module_constants,
                                 self._class_constants.get(class_name, {}),
                                 initial_env=self._global_env,
-                                cache_env=cache_env).scan(func)
+                                cache_env=cache_env,
+                                field_lists=field_lists).scan(func)
             clean = _clean_container_names(func, summaries)
             for node in ast.walk(func):
                 if not isinstance(node, ast.Call):
@@ -1738,7 +1870,7 @@ class SinkExposureFamily(PolicyFamily):
 
     def _scan_responses(self, control, path, tree, categories, summaries,
                         param_returns, field_lists, param_responses, attr_map,
-                        cache_env=None) -> list[Finding]:
+                        cache_env=None, index=None) -> list[Finding]:
         out = []
         admin_only = control.detection.context.get("route") == "admin"
         streaming = _streaming_functions(tree)
@@ -1754,7 +1886,8 @@ class SinkExposureFamily(PolicyFamily):
                                 attr_map.get(class_name, {}), self._module_constants,
                                 self._class_constants.get(class_name, {}),
                                 initial_env=self._global_env,
-                                cache_env=cache_env).scan(func)
+                                cache_env=cache_env,
+                                field_lists=field_lists).scan(func)
             clean = _clean_container_names(func, summaries)
             dumps = _dump_names(func)
             for node in ast.walk(func):
@@ -1795,7 +1928,7 @@ class SinkExposureFamily(PolicyFamily):
                                                param_returns, field_lists,
                                                attr_map.get(class_name, {}), cache_env, clean)
                 declared, excluded, fields = _response_model_categories(
-                    func, tree, self.catalog, categories)
+                    func, tree, self.catalog, categories, field_lists, index, path)
                 if fields is not None and isinstance(payload, ast.Dict):
                     filtered: set[str] = set()
                     for key, value in zip(payload.keys, payload.values):
@@ -1858,6 +1991,24 @@ class SinkExposureFamily(PolicyFamily):
                 out.append(_finding(control, path, getattr(func, "lineno", 1),
                                     f"Exported columns include {sorted(column_categories)}.",
                                     func.name))
+            for node in ast.walk(func):
+                header = _header_value(node)
+                cookie = _cookie_value(node) if header is None else None
+                if header is None and cookie is None:
+                    continue
+                if cookie is not None \
+                        and _field_category(self.catalog, cookie[0]) not in categories:
+                    # a session cookie is the mechanism, not a leak
+                    continue
+                candidate = header[1] if header is not None else cookie[1]
+                matched = self._categories(candidate, categories, env, summaries,
+                                           param_returns, field_lists,
+                                           attr_map.get(class_name, {}), cache_env, clean)
+                if matched:
+                    out.append(_finding(control, path, node.lineno,
+                                        f"Response header or cookie exposes "
+                                        f"{sorted(matched)} without masking.",
+                                        ast.unparse(node)[:200]))
             for node in ast.walk(func):
                 if not isinstance(node, ast.Yield) or node.value is None:
                     continue
@@ -1989,9 +2140,10 @@ class SinkExposureFamily(PolicyFamily):
                                         f"Redirect inside '{_call_name(node)}' exposes "
                                         f"{sorted(matched)}.", ast.unparse(node)))
             for node in ast.walk(func):
-                value = _header_redirect_value(node)
-                if value is None:
+                header = _header_value(node)
+                if header is None:
                     continue
+                value = header[1]
                 text = ast.unparse(node)
                 if self.catalog.is_sanitizer(text):
                     continue
@@ -1999,7 +2151,7 @@ class SinkExposureFamily(PolicyFamily):
                                            param_returns, field_lists, attrs, cache_env)
                 if matched:
                     out.append(_finding(control, path, node.lineno,
-                                        f"Redirect header exposes {sorted(matched)}.", text))
+                                        f"Response header exposes {sorted(matched)}.", text))
         return out
 
     def _scan_csv(self, control, path, tree, categories, summaries,
@@ -2842,6 +2994,7 @@ class CredentialExposureFamily(PolicyFamily):
         sinks = set(control.detection.sinks)
         categories = set(control.data_categories)
         out: list[Finding] = []
+        index = _ModuleIndex(files)
         for path, content in files.items():
             if not path.endswith(".py"):
                 continue
@@ -2875,7 +3028,8 @@ class CredentialExposureFamily(PolicyFamily):
                                     attrs, self._module_constants,
                                     self._class_constants.get(class_name, {}),
                                     initial_env=self._global_env,
-                                    cache_env=cache_env).scan(func)
+                                    cache_env=cache_env,
+                                    field_lists=field_lists).scan(func)
                 endpoint = _is_endpoint(func)
                 clean = _clean_container_names(func, summaries)
                 for child in ast.walk(func):
@@ -2927,13 +3081,24 @@ class CredentialExposureFamily(PolicyFamily):
                                and isinstance(node.value, ast.Attribute)
                                and node.value.attr == "data")
                 response_value = _response_assignment(node)
-                header_value = _header_redirect_value(node) if "redirect" in sinks else None
+                header_value = None
+                if "redirect" in sinks or "response" in sinks:
+                    header = _header_value(node)
+                    header_value = header[1] if header is not None else None
+                cookie_value = None
+                cookie_name = ""
+                if "response" in sinks:
+                    cookie = _cookie_value(node)
+                    if cookie is not None:
+                        cookie_name, cookie_value = cookie
                 if not (is_sink or return_call or return_name or return_data
-                        or response_value is not None or header_value is not None):
+                        or response_value is not None or header_value is not None
+                        or cookie_value is not None):
                     continue
                 target = response_value if response_value is not None else (
                     header_value if header_value is not None else (
-                        node.value if (return_call or return_name or return_data) else node))
+                        cookie_value if cookie_value is not None else (
+                            node.value if (return_call or return_name or return_data) else node)))
                 text = ast.unparse(target)
                 if self.catalog.is_sanitizer(text):
                     continue
@@ -2942,11 +3107,14 @@ class CredentialExposureFamily(PolicyFamily):
                                            param_returns, field_lists,
                                            attrs_by_node.get(id(node)), cache_env,
                                            clean_by_node.get(id(node)))
+                if cookie_name and _field_category(self.catalog, cookie_name) not in categories:
+                    # a session cookie is the mechanism, not a leak
+                    tainted = set()
                 func = func_by_node.get(id(node))
                 declared = excluded = fields = None
                 if func is not None:
                     declared, excluded, fields = _response_model_categories(
-                        func, tree, self.catalog, categories)
+                        func, tree, self.catalog, categories, field_lists, index, path)
                     if fields is not None and isinstance(target, ast.Dict):
                         filtered: set[str] = set()
                         for key, value in zip(target.keys, target.values):

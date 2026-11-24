@@ -78,6 +78,10 @@ semántico.
   `_fingerprint` como metadata; `signing_key` como credencial.
 - Literales con `*` como máscara (ramas de un `IfExp`); `_change` como metadata
   (`last_password_change`).
+- `response_model` importado resuelto contra los archivos del proyecto; sets de exclusión
+  (`exclude=HIDDEN`, `hidden_fields()`, `response_model_exclude=HIDDEN`) resueltos por constante,
+  alias o retorno de función; `set_cookie`/`set_signed_cookie` y headers de respuesta como sinks
+  (una cookie de sesión no se marca).
 - Fijado en Python 3.13: `pydantic 2.9.2`, `sqlalchemy 2.0.58`, `numpy 2.1.3`, `pandas 2.2.3` y
   `asyncpg 0.30.0` tienen wheels para 3.13; `cursor-sdk 1.0.40` agregado a las dependencias de
   desarrollo.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes. Round-17 regression cases: field exclusion, ORJSONResponse, Location headers and prefixed SQL tables. Round-18 regression cases: template contexts, column-tuple streams and named audit loggers. Round-19 regression cases: model properties, response_model exclusion and signed or templated payloads. Round-21 regression cases: masked serializer method branches and password-change metadata.",
+  "description": "Held-out cases written from each v2 control's intent, with patterns the curated corpus does not use (attribute access, f-strings, FastAPI decorators, psycopg placeholders, soft delete). expected is the label for the named control. Blind round-1 regression cases: log.info sink, admin class context, manual f-string mask, private_key, boolean projection. Blind round-3 regression cases: Django/DRF/ORM/CLI framework coverage. Blind round-4 regression cases: Flask/SQLAlchemy/GraphQL/Celery coverage. Blind round-5 regression cases: prose context, derived prefixes, admin path, dict(__dict__), helper cutoff. Interprocedural regression cases: helper returns, append-built admin payloads and credential sources in redirects. Round-6 regression cases: dynamic column lists, callee names, ORM instance deletes, helper-built queries and parameter flows. Round-7 regression cases: keyword parameter effects, masking calls and names, credential metadata, nested-call precision and constructor cutoffs. Cross-module regression case: imported producer names that state their payload. Round-8 regression cases: class-state payloads, imported key readers, masked arguments and keyword-only retention. Round-9 regression cases: constant branches, inheritance, key assignment, parameter tables and CamelCase precision. Round-10 regression cases: decorator logs, dict.get projections, delete-method cutoffs, low retention fields and DTO cutoffs. Round-11 regression cases: error paths, DRF source fields, write-only fields, derived counts and delete-method gating. Round-12 regression cases: admin inlines, nested serializers, error middleware, redirects and class aliases. Round-13 regression cases: management commands, signals, custom managers, async deletes and serializer method chains. Round-14 regression cases: forms, GraphQL types, JWT payloads, async purge and repository aliases. Round-15 regression cases: pydantic/dataclass output models, cache and session round-trips, and a DB session that is not a credential. Round-16 regression cases: canonical cache keys, model inheritance, cached retention windows and instance deletes. Round-17 regression cases: field exclusion, ORJSONResponse, Location headers and prefixed SQL tables. Round-18 regression cases: template contexts, column-tuple streams and named audit loggers. Round-19 regression cases: model properties, response_model exclusion and signed or templated payloads. Round-21 regression cases: masked serializer method branches and password-change metadata. Channel regression cases: computed exclusions, cookie/header sinks and session cookies.",
   "cases": [
     {
       "id": "log_attr_phone",
@@ -1681,6 +1681,48 @@
       "expected": "clean",
       "path": "app/api/accounts.py",
       "code": "from fastapi import APIRouter, Depends, HTTPException\nfrom sqlalchemy.orm import Session\n\nfrom app.db import get_session\nfrom app.models import Account\nfrom app.schemas import AccountSecurityOut\n\nrouter = APIRouter(prefix='/accounts', tags=['accounts'])\n\n\n@router.get('/{account_id}/security', response_model=AccountSecurityOut)\ndef account_security(account_id: int, session: Session = Depends(get_session)):\n    account = session.get(Account, account_id)\n    if account is None:\n        raise HTTPException(status_code=404, detail='Account not found')\n    return {\n        'id': account.id,\n        'has_password': bool(account.password_hash),\n        'mfa_enabled': account.mfa_enabled,\n        'last_password_change': account.last_password_change,\n        'failed_login_count': account.failed_login_count,\n    }\n\n\n@router.post('/{account_id}/security/mfa')\ndef toggle_mfa(account_id: int, enabled: bool, session: Session = Depends(get_session)):\n    account = session.get(Account, account_id)\n    if account is None:\n        raise HTTPException(status_code=404, detail='Account not found')\n    account.mfa_enabled = enabled\n    session.add(account)\n    session.commit()\n    return {'id': account.id, 'mfa_enabled': account.mfa_enabled}\n"
+    },
+    {
+      "id": "feat_exclusion_module_constant",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/customers.py",
+      "code": "from fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter()\nHIDDEN = ('email', 'phone')\n\n\nclass CustomerOut(BaseModel):\n    id: int\n    email: str\n    phone: str\n\n\n@router.get('/customers/{customer_id}')\ndef get_customer(customer_id: int):\n    row = load_customer(customer_id)\n    model = CustomerOut(id=row.id, email=row.email, phone=row.phone)\n    return model.model_dump(exclude=HIDDEN)\n"
+    },
+    {
+      "id": "feat_exclusion_helper_function",
+      "control": "v2.admin_exposure",
+      "expected": "clean",
+      "path": "app/admin/customers.py",
+      "code": "from fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter()\n\n\ndef hidden_fields():\n    return ('email', 'phone')\n\n\nclass CustomerOut(BaseModel):\n    id: int\n    email: str\n    phone: str\n\n\n@router.get('/customers/{customer_id}')\ndef get_customer(customer_id: int):\n    row = load_customer(customer_id)\n    model = CustomerOut(id=row.id, email=row.email, phone=row.phone)\n    return model.model_dump(exclude=hidden_fields())\n"
+    },
+    {
+      "id": "feat_exclusion_partial",
+      "control": "v2.admin_exposure",
+      "expected": "violation",
+      "path": "app/admin/customers.py",
+      "code": "from fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter()\nHIDDEN = ('phone',)\n\n\nclass CustomerOut(BaseModel):\n    id: int\n    email: str\n    rut: str\n    phone: str\n\n\n@router.get('/customers/{customer_id}')\ndef get_customer(customer_id: int):\n    row = load_customer(customer_id)\n    model = CustomerOut(id=row.id, email=row.email, rut=row.rut, phone=row.phone)\n    return model.model_dump(exclude=HIDDEN)\n"
+    },
+    {
+      "id": "feat_cookie_reset_token",
+      "control": "v2.reset_token",
+      "expected": "violation",
+      "path": "app/auth/reset.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nrouter = APIRouter()\n\n\n@router.post('/auth/password-reset')\ndef request_reset(email: str):\n    token = issue_reset_token(email)\n    response = JSONResponse({'detail': 'if the account exists, an email was sent'})\n    response.set_cookie('reset_token', token, httponly=True)\n    return response\n"
+    },
+    {
+      "id": "feat_header_api_key",
+      "control": "v2.api_key",
+      "expected": "violation",
+      "path": "app/integrations/rotate.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nrouter = APIRouter()\n\n\n@router.post('/integrations/{integration_id}/rotate')\ndef rotate(integration_id: int):\n    integration = load_integration(integration_id)\n    new_key = rotate_api_key(integration)\n    response = JSONResponse({'rotated': True})\n    response.headers['X-Api-Key'] = new_key\n    return response\n"
+    },
+    {
+      "id": "feat_cookie_session_clean",
+      "control": "v2.reset_token",
+      "expected": "clean",
+      "path": "app/auth/login.py",
+      "code": "from fastapi import APIRouter\nfrom fastapi.responses import JSONResponse\n\nrouter = APIRouter()\n\n\n@router.post('/auth/login')\ndef login(email: str):\n    session_id = create_session(email)\n    response = JSONResponse({'ok': True})\n    response.set_cookie('sid', session_id, httponly=True)\n    return response\n"
     }
   ]
 }
