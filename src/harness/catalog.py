@@ -47,6 +47,9 @@ class Control:
     implemented: bool
     pack_control: str | None = None
     gap_reason: str | None = None
+    # Documentary controls carry the artifact a project must produce instead of a
+    # detector: an impact assessment, an incident register, a PCI attestation.
+    evidence: str | None = None
 
     def framework_labels(self) -> list[str]:
         return [f"{ref.framework} {ref.ref}" for ref in self.frameworks]
@@ -127,6 +130,7 @@ def _control(raw: dict) -> Control:
         implemented=bool(raw.get("implemented", True)),
         pack_control=raw.get("pack_control"),
         gap_reason=raw.get("gap_reason"),
+        evidence=raw.get("evidence"),
     )
 
 
@@ -165,6 +169,9 @@ def _validate(catalog: Catalog) -> None:
                 raise CatalogError(f"{control.id}: unknown sink {sink}")
         if not control.implemented and not control.gap_reason:
             raise CatalogError(f"{control.id}: an unimplemented control needs gap_reason")
+        if control.evidence and control.implemented:
+            raise CatalogError(
+                f"{control.id}: evidence is for controls no detector can decide")
     for table, categories in catalog.tables.items():
         for category in categories:
             if category not in catalog.data_categories:
