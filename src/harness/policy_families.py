@@ -1701,8 +1701,10 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                         hit = True
                         break
                 if hit:
+                    before = len(param_returns[name])
                     param_returns[name].update({index, param})
-                    changed = True
+                    if len(param_returns[name]) != before:
+                        changed = True
         if not changed:
             break
     param_logs: dict[str, set[int | str]] = {name: set() for name in functions}

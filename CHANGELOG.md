@@ -82,6 +82,9 @@ semántico.
   sin autenticación, export clínico no estructurado y ruta con datos personales sin autenticación
   (`CL-DATAPROT-002/003/005/007`, `CORE-CHECK-003`). Matriz de cobertura de las 30 aristas en
   `docs/research/ley-21719-coverage.md`.
+- `_call_effects` converge en la primera pasada sin crecimiento: el fixpoint marcaba `changed` aunque
+  el conjunto no creciera y corría las 146 iteraciones completas (244 s por control sobre un módulo
+  de 3 000 líneas, ~15 min el hook de pre-commit; ahora 6,5 s y 76 s el hook).
 - `response_model` importado resuelto contra los archivos del proyecto; sets de exclusión
   (`exclude=HIDDEN`, `hidden_fields()`, `response_model_exclude=HIDDEN`) resueltos por constante,
   alias o retorno de función; `set_cookie`/`set_signed_cookie` y headers de respuesta como sinks
