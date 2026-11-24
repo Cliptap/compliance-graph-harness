@@ -127,7 +127,8 @@ no forma parte de la CI.
 ## Documentación
 
 - `docs/`: definición del proyecto, informe acumulativo y notas de investigación.
-- `docs/research/gate-calibration.md`: calibración ciega del gate.
+- `docs/research/hito-calibracion-ciega.md`: resumen de cierre del hito (alcance, resultados, decisiones y estado).
+- `docs/research/gate-calibration.md`: calibración ciega del gate, ronda por ronda.
 - `docs/research/d-block-protocol-results.md`: bloque D y desviaciones del instrumento.
 - `harness/README.md`: instalador multi-IDE.
 
