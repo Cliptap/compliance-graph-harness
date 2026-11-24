@@ -26,7 +26,7 @@ El desarrollo de software asistido por inteligencia artificial ha evolucionado d
 
 El artefacto reúne doce *skills* procedimentales, tres de cumplimiento, reglas permanentes, análisis estructural y de linaje, un catálogo de 37 controles, un motor de políticas, una compuerta de *pre-commit* y un gate de evidencia documental. La suite registra **607 pruebas aprobadas**.
 
-Este incremento evalúa tres dimensiones. Primero, la **calibración ciega del detector**: 21 rondas selladas con autores sin acceso al repositorio, desde 26/36 en la primera hasta 82/84 en la última, con precisión 0,955 [0,849; 0,987] y exhaustividad 1,000 [0,916; 1,000]. Segundo, el **costo en el ciclo de desarrollo**: en el bloque D, el arnés no mejoró la completitud funcional (30/30 pruebas ocultas en ambos brazos) y elevó el tiempo de ciclo a 2,5 veces y el consumo de tokens a 3,3 veces, con una diferencia estadísticamente significativa (prueba de signos, 10/10, *p* = 0,00195). Tercero, la **cobertura normativa**: 26 de 37 controles tienen detector determinista, 6 se exigen como evidencia documental y 5 quedan como gap declarado con su motivo.
+Este incremento evalúa tres dimensiones. Primero, la **calibración ciega del detector**: 21 rondas selladas con autores sin acceso al repositorio, desde 26/36 en la primera hasta 82/84 en la última, con precisión 0,955 [0,849; 0,987] y exhaustividad 1,000 [0,916; 1,000]. Segundo, el **costo en el ciclo de desarrollo**: el arnés no mejoró la completitud funcional (30/30 pruebas ocultas en ambos brazos) y elevó el tiempo de ciclo a 2,5 veces y los tokens a 3,3 veces, con una diferencia estadísticamente significativa (prueba de signos, 10/10, *p* = 0,00195). Tercero, la **cobertura normativa**: 26 de 37 controles tienen detector determinista, 6 se exigen como evidencia documental y 5 quedan como gap declarado con su motivo.
 
 Los resultados están acotados a un modelo, un banco y muestras pequeñas; la verificación de etiquetas usó un evaluador independiente de la misma familia de modelos, no adjudicación humana. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada: su valor medido es de auditoría, no de corrección funcional.
 
@@ -334,7 +334,7 @@ El artefacto principal es el arnés de desarrollo asistido por IA especializado 
 
 ## 6.2 Diseño experimental ejecutado
 
-Se ejecutaron cuatro bloques experimentales complementarios. Los dos primeros comparan configuraciones del arnés sobre el banco de comercio electrónico (`experiments/supermercado/`) y utilizan pruebas ocultas y reglas Semgrep independientes como oráculo. El tercero mide la calidad del detector con corpus ciegos sellados. El cuarto mide el costo y la preservación funcional sobre el paquete de trampas Tier D. En todos los casos el modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de cada comparación.
+Se ejecutaron cuatro experimentos complementarios. Los dos primeros comparan configuraciones del arnés sobre el banco de comercio electrónico (`experiments/supermercado/`) y utilizan pruebas ocultas y reglas Semgrep independientes como oráculo. El tercero mide la calidad del detector con corpus ciegos sellados. El cuarto mide el costo y la preservación funcional sobre el paquete de diez trampas de protocolo. En todos los casos el modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de cada comparación.
 
 ### Etapa 1 — Experimento formal de tres brazos
 
@@ -366,20 +366,15 @@ Se ejecutaron **5 brazos × 4 tareas × 5 repeticiones = 100 ejecuciones**. Las 
 
 ### Etapa 3 — Calibración ciega del detector
 
-Los dos experimentos anteriores miden el efecto del arnés sobre el agente. Ninguno mide la calidad del detector que la compuerta ejecuta, y esa calidad condiciona cualquier conclusión: una compuerta imprecisa produce falsos positivos que el desarrollador aprende a ignorar, y una compuerta incompleta produce falsos negativos silenciosos. Para medirla se diseñó un protocolo de calibración ciega con las siguientes reglas:
+Los dos experimentos anteriores miden el efecto del arnés sobre el agente; ninguno mide la calidad del detector que la compuerta ejecuta. Esa calidad condiciona cualquier conclusión: una compuerta imprecisa produce falsos positivos que el desarrollador aprende a ignorar, y una compuerta incompleta produce falsos negativos silenciosos. El corpus curado del Hito 1 no podía responder la pregunta, porque sus 22 casos los escribió el mismo autor del detector: ese corpus mide memoria, no generalización.
 
-1. **Autor independiente.** Un autor sin acceso al repositorio ni al corpus escribe los casos a partir de un enunciado neutral, con el único requisito de producir módulos verosímiles de una aplicación web que trate datos personales.
-2. **Sellado previo.** El archivo de casos se sella con `sha256` antes de ejecutar el detector, de modo que el conjunto no pueda ajustarse después de conocer el resultado.
-3. **Una sola corrida.** El conjunto se evalúa una vez. El número que se reporta es el de **antes** de cualquier corrección.
-4. **Promoción posterior.** Los fallos se corrigen y los casos pasan al corpus de regresión. Las corridas posteriores sobre ese mismo conjunto son regresión, no evidencia de generalización.
+Por eso cada ronda la escribió un autor sin acceso al repositorio, se selló con `sha256` antes de la corrida, se evaluó una sola vez y se reportó el número **previo** a cualquier corrección. Los fallos se corrigieron después y los casos pasaron al corpus de regresión, de modo que las corridas posteriores sobre ese conjunto son regresión y no evidencia de generalización. Se ejecutaron 21 rondas entre 36 y 84 casos, cubriendo los siete controles `v2.*`.
 
-Se ejecutaron **21 rondas selladas** entre 36 y 84 casos cada una, cubriendo los siete controles `v2.*`. La ronda 20 usó un enunciado sin énfasis en ningún canal —endpoints, serializadores, servicios, tareas, middleware, comandos de gestión y GraphQL— como sonda de convergencia. La ronda 21 duplicó la muestra a 84 casos, escritos por dos autores independientes, para estrechar el intervalo de confianza.
+### Etapa 4 — Preservación funcional y costo
 
-### Etapa 4 — Bloque D: costo y preservación funcional
+La calibración mide el detector; esta etapa mide el arnés completo en el ciclo de desarrollo. Su pregunta es distinta: ¿el arnés cambia el resultado funcional del trabajo, o solamente lo encarece?
 
-La calibración mide el detector; el bloque D mide el arnés completo en el ciclo de desarrollo. Su pregunta es distinta: ¿el arnés cambia el resultado funcional del trabajo, o solamente lo encarece?
-
-- **Trampas:** diez tareas (D01–D10) sobre el paquete Tier D, cada una con una prueba oculta independiente, una verificación de evidencia y la suite propia del objetivo.
+- **Trampas:** diez tareas de protocolo (D01–D10) en `experiments/tasks/`, cada una con una prueba oculta independiente, una verificación de evidencia y la suite propia del objetivo.
 - **Brazos:** `baseline` (solo la aplicación, sin reglas, *skills* ni compuerta) y `rules_skills_gate` (`AGENTS.md` con el protocolo de ejecución, las doce *skills* procedimentales, las tres de cumplimiento, el paquete normativo, la compuerta y el hook de *pre-commit*).
 - **Ejecución:** 10 trampas × 3 repeticiones × 2 brazos = **60 ejecuciones**, más 6 repeticiones adicionales de D03 tras unificar la fuente de destinatarios en la capa de evidencia.
 - **Instrumento:** mismo modelo, mismo entorno, un *workspace* nuevo por ejecución. Las corridas no se aleatorizaron: el brazo con compuerta se ejecutó el 20 de noviembre y el de línea base el 21.
@@ -484,7 +479,7 @@ gantt
 
 > **Nota de cronograma:** la versión vigente del curso consolida la entrega final en el Hito 3; no se rinde un Hito 4 separado. Los pesos se mantienen según el calendario original (15 % del Hito 3 y 30 % de la instancia final).
 
-> **Nota de alcance:** este informe corresponde a la entrega del Hito 2 del curso e incluye los resultados de calibración ciega, el bloque D y la ampliación de cobertura ejecutados antes del cierre de esta actualización.
+> **Nota de alcance:** este informe corresponde a la entrega del Hito 2 del curso e incluye los resultados de calibración ciega, el experimento de preservación funcional y costo, y la ampliación de cobertura ejecutados antes del cierre de esta actualización.
 
 
 ## 7.2 Backlog priorizado, responsabilidades y dependencias
@@ -734,7 +729,7 @@ El incremento actual proporciona evidencia de avance en los cinco objetivos:
 
 - **OE4:** se formalizó el catálogo de controles, el motor de políticas, la validación y la compuerta de *pre-commit*.
 
-- **OE5:** se ejecutaron cuatro bloques experimentales y se documentaron sus resultados, costos y limitaciones. La evidencia de dosis muestra un efecto estadísticamente significativo de la compuerta sobre las violaciones confirmadas en la muestra evaluada; el bloque D muestra que ese efecto no se traduce en mejora funcional y que el costo es sustancial.
+- **OE5:** se ejecutaron cuatro experimentos y se documentaron sus resultados, costos y limitaciones. La evidencia de dosis muestra un efecto estadísticamente significativo de la compuerta sobre las violaciones confirmadas en la muestra evaluada; el experimento de preservación funcional y costo muestra que ese efecto no se traduce en mejora funcional y que el costo es sustancial.
 
 ## 9.6 Incremento del Hito 2: cobertura normativa, calibración y gate de evidencia
 
@@ -784,7 +779,7 @@ El incremento del Hito 2 no agrega funcionalidades al agente: cierra tres pregun
 
 ## 10.1 Protocolo experimental
 
-Para evaluar el efecto de las reglas, las *skills* y las compuertas de cumplimiento, se ejecutaron cuatro bloques experimentales. Los dos primeros comparan configuraciones sobre el banco de comercio electrónico (`experiments/supermercado/`) con pruebas ocultas y reglas Semgrep independientes como oráculo. El tercero mide la calidad del detector con corpus ciegos sellados. El cuarto mide el costo y la preservación funcional sobre el paquete de trampas Tier D. El modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de cada comparación.
+Para evaluar el efecto de las reglas, las *skills* y las compuertas de cumplimiento, se ejecutaron cuatro experimentos. Los dos primeros comparan configuraciones sobre el banco de comercio electrónico (`experiments/supermercado/`) con pruebas ocultas y reglas Semgrep independientes como oráculo. El tercero mide la calidad del detector con corpus ciegos sellados. El cuarto mide el costo y la preservación funcional sobre el paquete de diez trampas de protocolo. El modelo se fijó en `opencode-go/deepseek-v4.1-flash` y la configuración se mantuvo constante dentro de cada comparación.
 
 - **Experimento formal:** doce tareas × tres brazos (`baseline`, `harness`, `harness_compliance`) × tres repeticiones = **108 ejecuciones**.
 
@@ -792,7 +787,7 @@ Para evaluar el efecto de las reglas, las *skills* y las compuertas de cumplimie
 
 - **Calibración ciega:** 21 rondas selladas con autores independientes, **907 casos** en total, evaluados una sola vez cada uno y reportados antes de cualquier corrección.
 
-- **Bloque D:** diez trampas × dos brazos × tres repeticiones = **60 ejecuciones**, más seis repeticiones de control tras unificar la capa de evidencia.
+- **Preservación funcional y costo:** diez trampas × dos brazos × tres repeticiones = **60 ejecuciones**, más seis repeticiones de control tras unificar la capa de evidencia.
 
 La suite de pruebas del repositorio se ejecutó como verificación de preservación funcional y registró **607 pruebas aprobadas**.
 
@@ -858,11 +853,29 @@ En los contrastes `8/0`, los ocho pares discordantes favorecen a la configuraci�
 
 **Nota de adjudicación de T34:** la prueba T34 rechazaba el nombre `api_key` aunque su valor estuviera vacío o enmascarado. Era un artefacto del test, no una violación. Corregido el test, los aprobados corregidos son **20/20** en `rules_skills_gate` y **18/20** en `enforced`; los dos restantes de `enforced` son T31 con 404 (completitud), no privacidad. Las violaciones confirmadas no se re-puntuaron: siguen en **0**. La tabla de dosis usa los conteos corregidos de pruebas ocultas; los conteos crudos y el desglose por tipo de fallo están en `docs/research/dose-conclusions.md` y `formal-results-dose.md`.
 
-## 10.3 Resultados de la calibración ciega del detector
+## 10.3 Calibración del detector: por qué se midió y qué se concluyó
 
-La calibración mide una propiedad distinta de los dos experimentos anteriores: no cuánto ayuda el arnés al agente, sino cuánto acierta el detector que la compuerta ejecuta. Cada ronda se selló antes de correrla y se reporta el número **previo** a cualquier corrección.
+### Por qué
 
-### Tabla 10.4 — Las 21 rondas selladas
+De todos los componentes del arnés, el detector es el único que decide: cada hallazgo que emite bloquea o no bloquea un commit. Su calidad no es un detalle de implementación, sino la condición de posibilidad de todo lo demás. Una compuerta imprecisa produce falsos positivos que el desarrollador aprende a ignorar; una compuerta incompleta produce falsos negativos que nadie ve. En ambos casos el resultado es el mismo: el gate deja de proteger y nadie lo nota.
+
+El Hito 1 no podía responder esta pregunta. Su evidencia eran 22 casos curados escritos por el mismo autor del detector, y un corpus así mide memoria, no generalización. Para medir generalización hace falta un corpus que el autor del detector no haya podido ajustar.
+
+### Qué se concluyó
+
+1. **El detector converge en el alcance actual.** Una sonda con enunciado neutral, sin énfasis en ningún canal, obtuvo 42/42 en la primera corrida. Es la señal que las rondas anteriores no podían dar: sin un canal nuevo que descubrir, el detector se mantuvo.
+
+2. **La calidad medida es alta, pero el intervalo no permite exagerarla.** La ronda de mayor tamaño, con 84 casos, dio 82/84: precisión 0,955 [0,849; 0,987] y exhaustividad 1,000 [0,916; 1,000]. Un 42/42 habría permitido una exhaustividad real de 0,845; un 82/84 permite 0,916. Con muestras de este tamaño, un resultado perfecto sigue siendo compatible con una tasa de fallo no despreciable.
+
+3. **La mejora provino del detector y no de un corpus complaciente.** Las rondas que introdujeron un canal nuevo —plantillas y *streams*, el contrato del modelo de respuesta, la exclusión calculada, los *sinks* de cookie y cabecera— hicieron caer la exhaustividad hasta 0,524 y después recuperarla. Un corpus escrito para agradar al detector no produce ese patrón: produce puntajes estables. La primera ronda, además, reveló diez fallos sobre modismos que el corpus curado no tenía: borrados de ORM, vistas de administración basadas en clases, `log.info`, `private_key` y enmascaramiento manual con f-string.
+
+4. **Los fallos que quedan tienen forma reconocible.** Los dos falsos positivos de la última ronda fueron una rama enmascarada con el literal `'***'` y un campo `last_password_change` leído como credencial. Ambos se corrigieron después de la medición y el conjunto quedó en 84/84 como regresión.
+
+5. **El método tiene un techo que conviene declarar.** 907 casos en 21 rondas cubren siete controles y miden módulos de 20 a 55 líneas. Eso no es un repositorio. La sección 10.6 reporta el primer acercamiento a código real, y ahí aparece el único falso negativo que sigue abierto.
+
+### La serie completa
+
+La tabla siguiente es la evidencia de esas conclusiones. Cada fila es una ronda; el número reportado es el previo a cualquier corrección.
 
 | Ronda | Casos | Aciertos (pre-fix) | Precisión [IC 95 %] | Exhaustividad [IC 95 %] |
 | :-: | :-: | :-: | - | - |
@@ -888,20 +901,9 @@ La calibración mide una propiedad distinta de los dos experimentos anteriores: 
 | 20 | 42 | 42/42 | 1,000 [0,845; 1,000] | 1,000 [0,845; 1,000] |
 | 21 | 84 | 82/84 | 0,955 [0,849; 0,987] | 1,000 [0,916; 1,000] |
 
-Los intervalos son la parte honesta de la tabla. Un 42/42 permite una exhaustividad real de 0,845; un 82/84 permite 0,916. Con muestras de este tamaño, un resultado perfecto es compatible con una tasa de fallo no despreciable.
+## 10.4 Resultados del experimento de preservación funcional y costo
 
-### Lectura de la trayectoria
-
-- **Las rondas 1 a 5 midieron el punto de partida:** la primera ronda, con 36 casos, reveló diez fallos sobre modismos comunes (borrados de ORM, vistas de administración basadas en clases, `log.info`, `private_key`, proyección booleana de credenciales y enmascaramiento manual con f-string). La precisión inicial era 0,867 y la exhaustividad 0,619.
-- **Las rondas 6 a 19 desplazaron la frontera, no la cerraron:** cada ronda introdujo un canal nuevo (plantillas y *streams*, el contrato del modelo de respuesta, la exclusión calculada, los *sinks* de cookie y cabecera). La exhaustividad osciló entre 0,524 y 0,952 según qué canal dominara la muestra. Una ronda con exhaustividad alta y precisión baja indica que el detector se amplió; una con precisión alta y exhaustividad baja indica que se volvió conservador.
-- **La ronda 20 fue la sonda de convergencia:** un autor nuevo, con un enunciado sin énfasis en ningún canal, obtuvo 42/42 en la primera corrida. Es la señal que las rondas anteriores no podían dar: sin un canal nuevo que descubrir, el detector se mantuvo.
-- **La ronda 21 estrechó el intervalo:** dos autores escribieron 42 casos cada uno, con 12 casos por control (6/6), para un total de 84. El resultado fue 82/84, con dos falsos positivos y ningún falso negativo. Ambos falsos positivos compartían forma: una rama enmascarada con un literal `'***'` y un campo `last_password_change` leído como credencial. Se corrigieron después de la medición y el conjunto quedó en 84/84 como regresión.
-
-**Lo que esta tabla no prueba:** que el detector cubra las violaciones que un desarrollador comete en un repositorio real. Los casos son módulos de 20 a 55 líneas escritos por encargo. La sección 10.6 reporta el primer acercamiento a código real y su resultado.
-
-## 10.4 Resultados del bloque D: costo y preservación funcional
-
-El bloque D responde una pregunta que los experimentos de dosis no responden: si el arnés mejora la privacidad, ¿mejora también el trabajo, o solo lo encarece?
+Este experimento responde una pregunta que los experimentos de dosis no responden: si el arnés mejora la privacidad, ¿mejora también el trabajo, o solo lo encarece?
 
 | Métrica agregada (30 corridas por brazo) | Con compuerta | Línea base |
 | - | -: | -: |
@@ -914,8 +916,8 @@ El bloque D responde una pregunta que los experimentos de dosis no responden: si
 | Violaciones de política, alcance o privacidad | 0 | 0 |
 | Cambios no solicitados | 0 | 0 |
 
-- **Completitud funcional saturada:** el modelo resolvió las diez trampas sin el arnés. La prueba oculta pasó 30/30 en ambos brazos. El bloque no puede discriminar porque no hay margen de mejora.
-- **Sin ventaja de evidencia:** la diferencia inicial en la verificación de evidencia (30/30 frente a 28/30) provenía de una inconsistencia del propio arnés —dos mecanismos distintos calculaban los destinatarios de terceros—, no del agente. Unificada la fuente y repetidas las corridas de D03, ambos brazos quedaron en 30/30. **El bloque corregido no muestra ventaja funcional ni de evidencia para el brazo con compuerta; solo sobrevive la diferencia de costo.**
+- **Completitud funcional saturada:** el modelo resolvió las diez trampas sin el arnés. La prueba oculta pasó 30/30 en ambos brazos. El experimento no puede discriminar porque no hay margen de mejora.
+- **Sin ventaja de evidencia:** la diferencia inicial en la verificación de evidencia (30/30 frente a 28/30) provenía de una inconsistencia del propio arnés —dos mecanismos distintos calculaban los destinatarios de terceros—, no del agente. Unificada la fuente y repetidas las corridas de D03, ambos brazos quedaron en 30/30. **El experimento corregido no muestra ventaja funcional ni de evidencia para el brazo con compuerta; solo sobrevive la diferencia de costo.**
 - **El costo es estadísticamente significativo:** el brazo con compuerta fue más lento en 10 de 10 tareas (prueba de signos bilateral, *p* = 0,00195). El tiempo de ciclo se multiplicó por 2,5 y los tokens por 3,3.
 - **Ningún brazo produjo violaciones:** la compuerta no se activó como corrección porque no había nada que corregir en este paquete. Su valor medido aquí es de auditoría, no de prevención.
 
@@ -929,7 +931,7 @@ El alcance de esta medición es acotado: el evaluador es un modelo de la misma f
 
 ## 10.6 Triage sobre código real
 
-La calibración usa módulos aislados. Para observar el comportamiento sobre código multi-archivo se ejecutó la compuerta sobre una aplicación real del repositorio (`experiments/supermercado/app`, nueve módulos, ~61 KB) y sobre trece variantes del bloque D con defectos sembrados y mutaciones documentadas.
+La calibración usa módulos aislados. Para observar el comportamiento sobre código multi-archivo se ejecutó la compuerta sobre una aplicación real del repositorio (`experiments/supermercado/app`, nueve módulos, ~61 KB) y sobre trece variantes del paquete de trampas con defectos sembrados y mutaciones documentadas.
 
 - **Aplicación limpia:** **0 hallazgos**. La revisión manual confirmó que es un verdadero negativo y no un fallo por omisión: la aplicación anonimiza en la retención, filtra el marketing por consentimiento y no registra datos personales.
 - **Trece variantes:** **13/13** correctas frente a los detectores heredados. Con los controles `v2.*`, las tres variantes limpias no produjeron hallazgos, y se detectaron las dos variantes con defectos `v2` relevantes (exposición en bitácora y credenciales).
@@ -965,7 +967,7 @@ Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declar
 
 - **La trayectoria importa más que el número final:** el detector pasó de 26/36 a 82/84 porque cada ronda expuso un canal que el corpus anterior no cubría. Un único resultado alto habría sido compatible con un corpus complaciente; una serie con caídas en las rondas que introducen canales nuevos no lo es.
 
-- **El bloque D separa auditoría de corrección:** cuando el modelo resuelve la tarea sin ayuda, el arnés no mejora el resultado y cuesta 2,5 veces más tiempo y 3,3 veces más tokens. El beneficio del arnés no está en hacer mejor el trabajo, sino en impedir que un trabajo aparentemente correcto introduzca una violación. Son dos afirmaciones distintas y la evidencia sostiene solo la segunda.
+- **La preservación funcional separa auditoría de corrección:** cuando el modelo resuelve la tarea sin ayuda, el arnés no mejora el resultado y cuesta 2,5 veces más tiempo y 3,3 veces más tokens. El beneficio del arnés no está en hacer mejor el trabajo, sino en impedir que un trabajo aparentemente correcto introduzca una violación. Son dos afirmaciones distintas y la evidencia sostiene solo la segunda.
 
 - **El propio arnés resultó ser objeto de auditoría:** en este incremento se encontraron dos defectos que ningún test detectaba —un punto fijo que multiplicaba por 40 la latencia de la compuerta y un falso positivo crítico que bloqueaba commits legítimos sobre el propio motor—, además de una categoría de dato inexistente que impedía que un control declarado como implementado se disparara. La conclusión metodológica es que la cobertura declarada debe verificarse con el mismo rigor que la detección.
 
@@ -989,7 +991,7 @@ Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declar
 
 9. **Tamaño de los casos ciegos:** los corpus de calibración son módulos de 20 a 55 líneas, no repositorios completos. La ronda 21 usó 84 casos y permite una exhaustividad real de 0,916; sigue siendo una muestra pequeña para un detector con siete controles.
 
-10. **Saturación del bloque D:** el modelo resolvió las diez trampas sin el arnés, de modo que ese bloque no puede medir mejora funcional. Solo mide costo. Un paquete de trampas más difíciles sería necesario para observar el efecto sobre la completitud.
+10. **Saturación del experimento de preservación funcional:** el modelo resolvió las diez trampas sin el arnés, de modo que ese bloque no puede medir mejora funcional. Solo mide costo. Un paquete de trampas más difíciles sería necesario para observar el efecto sobre la completitud.
 
 11. **Independencia del corpus ciego:** los autores no acceden al repositorio, pero son instancias del mismo modelo. La independencia es de información, no de sesgo inductivo.
 
@@ -1016,13 +1018,13 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 ## 11.2 Conclusiones
 
-1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. El bloque D acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
+1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. El experimento de preservación funcional y costo acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
 
 2. **Consolidación técnica:** el núcleo del arnés se organizó en `src/harness/`, con 586 pruebas propias. La aplicación clínica se organiza en `src/backend/` y `src/database/`, con 21 pruebas propias. La suite consolidada cuenta con 607 pruebas aprobadas.
 
 3. **Catálogo y validación:** se formalizó un catálogo de controles con identificadores del proyecto, motores de políticas, validación y compuerta de *pre-commit*. La cobertura se documenta arista por arista: 15 se detectan, 5 se reportan como riesgo, 6 se exigen como evidencia y 4 quedan a cargo de una persona.
 
-4. **Evidencia experimental:** se ejecutaron cuatro bloques experimentales —108 ejecuciones del experimento formal, 100 del experimento de dosis, 907 casos de calibración ciega y 66 ejecuciones del bloque D—, con sus resultados, costos y limitaciones documentados por separado.
+4. **Evidencia experimental:** se ejecutaron cuatro experimentos —108 ejecuciones del experimento formal, 100 del experimento de dosis, 907 casos de calibración ciega y 66 ejecuciones del experimento de preservación funcional y costo—, con sus resultados, costos y limitaciones documentados por separado.
 
 5. **Calidad medida del detector:** la calibración ciega sostiene una precisión de 0,955 [0,849; 0,987] y una exhaustividad de 1,000 [0,916; 1,000] sobre la ronda de mayor tamaño. La serie completa muestra que el detector mejoró porque cada ronda expuso un canal que el corpus anterior no cubría, no porque el corpus se ajustara al detector.
 
@@ -1036,7 +1038,7 @@ De acuerdo con la planificación vigente al 24 de noviembre de 2026, el Hito 2 e
 
 2. **Código real a mayor escala:** repetir el triage sobre entre tres y cinco repositorios reales, con adjudicación de cada hallazgo, para estimar la precisión fuera de los módulos aislados y medir el ruido que la compuerta introduce en un flujo de revisión.
 
-3. **Piloto del bloque D con instrumento completo:** ejecutar los dos brazos del bloque D con el detector actual y un paquete de trampas más difíciles, dado que el paquete vigente está saturado y no permite medir mejora funcional.
+3. **Piloto de preservación funcional con instrumento completo:** ejecutar los dos brazos de ese experimento con el detector actual y un paquete de trampas más difíciles, dado que el paquete vigente está saturado y no permite medir mejora funcional.
 
 4. **Validación del pipeline de *skills*:** completar las pruebas del flujo de las doce habilidades en el entorno del IDE y documentar sus criterios de activación y salida.
 
