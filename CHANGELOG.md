@@ -82,6 +82,10 @@ semántico.
   sin autenticación, export clínico no estructurado y ruta con datos personales sin autenticación
   (`CL-DATAPROT-002/003/005/007`, `CORE-CHECK-003`). Matriz de cobertura de las 30 aristas en
   `docs/research/ley-21719-coverage.md`.
+- La familia de retención escanea las cadenas de los archivos Python: un `DELETE FROM orders`
+  crudo ejecutado por el driver era invisible, porque solo se analizaban los archivos `.sql`.
+- La compuerta excluye `experiments/`: contiene fixtures deliberadamente vulnerables (defectos
+  sembrados, RUT en bitácoras, credenciales en respuestas) que no debe bloquear.
 - `_column_tuple_rows` exige que la variable del bucle seleccione una columna (`row[c]` /
   `getattr(row, c)`): iterar una lista de nombres de campo para testear pertenencia
   (`any(m in field for m in MASKERS)`) ya no se reporta como export. Era un falso positivo

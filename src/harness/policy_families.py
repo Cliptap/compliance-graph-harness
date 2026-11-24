@@ -2315,6 +2315,12 @@ class RetentionDeletionFamily(PolicyFamily):
                 text = ast.unparse(child).lower() + " " + getattr(node, "name", "").lower() \
                     + " " + path.lower() + " " + (class_name or "").lower()
                 matched = {table for table in tables if table.rstrip("s") in text}
+            if not matched and isinstance(child, ast.Constant) and isinstance(child.value, str):
+                for line in child.value.splitlines():
+                    sql = DELETE_RE.search(line.lower())
+                    if sql and sql.group(1) in tables:
+                        matched = {sql.group(1)}
+                        break
             if not matched:
                 continue
             table = sorted(matched)[0]

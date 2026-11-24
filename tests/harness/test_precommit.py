@@ -7,7 +7,8 @@ import pytest
 
 from src.harness.catalog import load_catalog
 from src.harness.precommit import (
-    DEFAULT_PACK, LEGACY_CONTROLS, collect_staged, evaluate, format_report, install_hook, main,
+    DEFAULT_PACK, LEGACY_CONTROLS, _eligible, collect_staged, evaluate, format_report,
+    install_hook, main,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -200,3 +201,11 @@ def test_run_with_a_rut_value_is_flagged():
     result = evaluate({"app/x.py": code}, PACK)
     ids = {f.policy_id for f in result.findings}
     assert "privacy.cwe_532" in ids or "v2.log_pii" in ids
+
+
+def test_the_gate_skips_tests_evaluation_and_deliberately_vulnerable_fixtures():
+    assert not _eligible("tests/harness/test_precommit.py")
+    assert not _eligible("harness/eval/semgrep_bench.py")
+    assert not _eligible("experiments/variants/v01/app/main.py")
+    assert not _eligible("experiments/tasks/formal_run.py")
+    assert _eligible("app/main.py")

@@ -4,6 +4,8 @@ The OpenCode runner replaces the Cursor SDK runner. The dose arms isolate the
 components of the harness:
 
 - ``baseline``: application only.
+- ``gate_only``: application plus the compliance CLI, the pack and the commit hook, with a minimal
+  instruction to run the gate. No rules, no skills, no execution protocol: the analyzer as a tool.
 - ``rules``: application plus ``AGENTS.md``, no skills.
 - ``rules_skills``: rules plus the 12 pipeline skills in ``.agents/skills``.
 - ``rules_skills_gate``: plus the compliance skills, the normative pack and the
@@ -41,8 +43,7 @@ COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.db", ".pytest_ca
 GITIGNORE = "__pycache__/\n*.pyc\n.pytest_cache/\n*.db\n"
 GITATTRIBUTES = "* text=auto\n"
 
-COMPLIANCE_GATE_INSTRUCTIONS = """
-## Compuerta de cumplimiento (OpenCode)
+COMPLIANCE_GATE_INSTRUCTIONS = """## Compuerta de cumplimiento (OpenCode)
 
 ## Protocolo de ejecución obligatorio
 
@@ -137,6 +138,18 @@ if __name__ == "__main__":
     raise SystemExit(main())
 '''
 
+MINIMAL_GATE_INSTRUCTIONS = """## Compuerta de cumplimiento
+
+Antes de terminar cualquier tarea que modifique código, ejecutá en la raíz del repositorio:
+
+```
+python compliance_check.py
+```
+
+Si informa infracciones, corregilas y volvé a ejecutarlo. El hook de pre-commit rechaza el commit
+si queda una fuga con severidad bloqueante.
+"""
+
 
 @dataclass(frozen=True)
 class OpenCodeArm:
@@ -149,6 +162,7 @@ class OpenCodeArm:
 
 ARMS: dict[str, OpenCodeArm] = {
     "baseline": OpenCodeArm("baseline", harness_files=False, skills=False, gate=False, enforce=False),
+    "gate_only": OpenCodeArm("gate_only", harness_files=False, skills=False, gate=True, enforce=False),
     "rules": OpenCodeArm("rules", harness_files=True, skills=False, gate=False, enforce=False),
     "rules_skills": OpenCodeArm("rules_skills", harness_files=True, skills=True, gate=False, enforce=False),
     "rules_skills_gate": OpenCodeArm(
@@ -211,15 +225,19 @@ def prepare_workspace(arm: str, task: dict, dest: Path) -> Path:
         for skill in PIPELINE_SKILLS:
             _copy(ROOT / ".agents" / "skills" / skill, dest / ".agents" / "skills" / skill)
     if config.gate:
-        for skill in COMPLIANCE_SKILLS:
-            _copy(ROOT / ".agents" / "skills" / skill, dest / ".agents" / "skills" / skill)
         _copy(ROOT / PACK_REL, dest / PACK_REL)
         (dest / "compliance_check.py").write_text(COMPLIANCE_CLI, encoding="utf-8", newline="\n")
-        (dest / "AGENTS.md").write_text(
-            (dest / "AGENTS.md").read_text(encoding="utf-8") + COMPLIANCE_GATE_INSTRUCTIONS,
-            encoding="utf-8",
-            newline="\n",
-        )
+        if config.skills:
+            for skill in COMPLIANCE_SKILLS:
+                _copy(ROOT / ".agents" / "skills" / skill, dest / ".agents" / "skills" / skill)
+            (dest / "AGENTS.md").write_text(
+                (dest / "AGENTS.md").read_text(encoding="utf-8") + COMPLIANCE_GATE_INSTRUCTIONS,
+                encoding="utf-8",
+                newline="\n",
+            )
+        else:
+            (dest / "AGENTS.md").write_text(
+                MINIMAL_GATE_INSTRUCTIONS, encoding="utf-8", newline="\n")
     (dest / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
     (dest / ".gitattributes").write_text(GITATTRIBUTES, encoding="utf-8")
     for args in (
@@ -241,8 +259,8 @@ def skill_permissions(arm: str) -> dict[str, str]:
     config = ARMS[arm]
     if config.skills:
         allowed.extend(PIPELINE_SKILLS)
-    if config.gate:
-        allowed.extend(COMPLIANCE_SKILLS)
+        if config.gate:
+            allowed.extend(COMPLIANCE_SKILLS)
     permission = {"*": "deny"}
     permission.update({name: "allow" for name in allowed})
     return permission
