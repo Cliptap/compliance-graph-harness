@@ -82,6 +82,10 @@ semántico.
   sin autenticación, export clínico no estructurado y ruta con datos personales sin autenticación
   (`CL-DATAPROT-002/003/005/007`, `CORE-CHECK-003`). Matriz de cobertura de las 30 aristas en
   `docs/research/ley-21719-coverage.md`.
+- `_column_tuple_rows` exige que la variable del bucle seleccione una columna (`row[c]` /
+  `getattr(row, c)`): iterar una lista de nombres de campo para testear pertenencia
+  (`any(m in field for m in MASKERS)`) ya no se reporta como export. Era un falso positivo
+  `CRITICAL` sobre `dimension_policy.py` que bloqueaba cualquier commit que tocara ese archivo.
 - `_call_effects` converge en la primera pasada sin crecimiento: el fixpoint marcaba `changed` aunque
   el conjunto no creciera y corría las 146 iteraciones completas (244 s por control sobre un módulo
   de 3 000 líneas, ~15 min el hook de pre-commit; ahora 6,5 s y 76 s el hook).
