@@ -47,10 +47,14 @@ humana) las firma una persona.
 
 | Modo | Controles |
 |---|---:|
-| Detectar | 19 |
+| Detectar | 15 |
 | Detectar solo como riesgo (WARNING) | 5 |
 | Exigir evidencia | 6 |
 | Manual | 4 |
+
+Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declara como gap pero cuya
+fuga evalúa el detector de `CORE-CHECK-002`. De ahí que el pack tenga 26 controles implementados: 19
+aristas de la ley (14 en modo detectar más 5 en modo riesgo) y 7 detectores `v2.*`.
 
 ## Qué significa cada modo en el gate
 
