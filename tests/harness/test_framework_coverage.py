@@ -1517,3 +1517,147 @@ def test_password_change_timestamp_is_not_a_credential():
             "        'last_password_change': account.last_password_change,\n"
             "    }\n")
     assert "v2.credential_response" not in ids(code)
+
+
+def ids_files(files: dict[str, str]) -> set[str]:
+    findings = ENGINE.evaluate(SPEC, files)
+    return {finding.policy_id for finding in findings}
+
+
+SCHEMA_SAFE = ("from pydantic import BaseModel\n\n\n"
+               "class CustomerOut(BaseModel):\n"
+               "    id: int\n"
+               "    full_name: str\n"
+               "    email_masked: str\n")
+
+SCHEMA_RAW = ("from pydantic import BaseModel\n\n\n"
+              "class CustomerOut(BaseModel):\n"
+              "    id: int\n"
+              "    email: str\n")
+
+
+def test_imported_response_model_projects_the_payload():
+    code = ("from fastapi import APIRouter\n\n"
+            "from app.schemas import CustomerOut\n\n"
+            "router = APIRouter(prefix='/admin')\n\n\n"
+            "@router.get('/customers/{customer_id}', response_model=CustomerOut)\n"
+            "def get_customer(customer_id: int):\n"
+            "    row = load_customer(customer_id)\n"
+            "    return {\n"
+            "        'id': row.id,\n"
+            "        'full_name': row.full_name,\n"
+            "        'email': row.email,\n"
+            "        'email_masked': '***@example.com',\n"
+            "    }\n")
+    assert "v2.admin_exposure" not in ids_files({
+        "app/schemas.py": SCHEMA_SAFE,
+        "app/admin/customers.py": code,
+    })
+
+
+def test_imported_response_model_that_declares_email_is_flagged():
+    code = ("from fastapi import APIRouter\n\n"
+            "from app.schemas import CustomerOut\n\n"
+            "router = APIRouter(prefix='/admin')\n\n\n"
+            "@router.get('/customers/{customer_id}', response_model=CustomerOut)\n"
+            "def get_customer(customer_id: int):\n"
+            "    row = load_customer(customer_id)\n"
+            "    return {'id': row.id, 'email': row.email}\n")
+    assert "v2.admin_exposure" in ids_files({
+        "app/schemas.py": SCHEMA_RAW,
+        "app/admin/customers.py": code,
+    })
+
+
+def test_exclusion_set_from_module_constant():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter()\n"
+            "HIDDEN = ('email', 'phone')\n\n\n"
+            "class CustomerOut(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n"
+            "    phone: str\n\n\n"
+            "@router.get('/customers/{customer_id}')\n"
+            "def get_customer(customer_id: int):\n"
+            "    row = load_customer(customer_id)\n"
+            "    model = CustomerOut(id=row.id, email=row.email, phone=row.phone)\n"
+            "    return model.model_dump(exclude=HIDDEN)\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/customers.py")
+
+
+def test_exclusion_set_from_helper_function():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter()\n\n\n"
+            "def hidden_fields():\n"
+            "    return ('email', 'phone')\n\n\n"
+            "class CustomerOut(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n"
+            "    phone: str\n\n\n"
+            "@router.get('/customers/{customer_id}')\n"
+            "def get_customer(customer_id: int):\n"
+            "    row = load_customer(customer_id)\n"
+            "    model = CustomerOut(id=row.id, email=row.email, phone=row.phone)\n"
+            "    return model.model_dump(exclude=hidden_fields())\n")
+    assert "v2.admin_exposure" not in ids(code, "app/admin/customers.py")
+
+
+def test_exclusion_set_that_misses_a_field_still_flags():
+    code = ("from fastapi import APIRouter\n"
+            "from pydantic import BaseModel\n\n"
+            "router = APIRouter()\n"
+            "HIDDEN = ('phone',)\n\n\n"
+            "class CustomerOut(BaseModel):\n"
+            "    id: int\n"
+            "    email: str\n"
+            "    rut: str\n"
+            "    phone: str\n\n\n"
+            "@router.get('/customers/{customer_id}')\n"
+            "def get_customer(customer_id: int):\n"
+            "    row = load_customer(customer_id)\n"
+            "    model = CustomerOut(id=row.id, email=row.email, rut=row.rut, phone=row.phone)\n"
+            "    return model.model_dump(exclude=HIDDEN)\n")
+    assert "v2.admin_exposure" in ids(code, "app/admin/customers.py")
+
+
+def test_reset_token_in_cookie_is_flagged():
+    code = ("from fastapi import APIRouter\n"
+            "from fastapi.responses import JSONResponse\n\n"
+            "router = APIRouter()\n\n\n"
+            "@router.post('/auth/password-reset')\n"
+            "def request_reset(email: str):\n"
+            "    token = issue_reset_token(email)\n"
+            "    response = JSONResponse({'detail': 'if the account exists, an email was sent'})\n"
+            "    response.set_cookie('reset_token', token, httponly=True)\n"
+            "    return response\n")
+    assert "v2.reset_token" in ids(code)
+
+
+def test_credential_in_custom_header_is_flagged():
+    code = ("from fastapi import APIRouter\n"
+            "from fastapi.responses import JSONResponse\n\n"
+            "router = APIRouter()\n\n\n"
+            "@router.post('/integrations/{integration_id}/rotate')\n"
+            "def rotate(integration_id: int):\n"
+            "    integration = load_integration(integration_id)\n"
+            "    new_key = rotate_api_key(integration)\n"
+            "    response = JSONResponse({'rotated': True})\n"
+            "    response.headers['X-Api-Key'] = new_key\n"
+            "    return response\n")
+    assert "v2.api_key" in ids(code)
+
+
+def test_opaque_session_cookie_is_clean():
+    code = ("from fastapi import APIRouter\n"
+            "from fastapi.responses import JSONResponse\n\n"
+            "router = APIRouter()\n\n\n"
+            "@router.post('/auth/login')\n"
+            "def login(email: str):\n"
+            "    session_id = create_session(email)\n"
+            "    response = JSONResponse({'ok': True})\n"
+            "    response.set_cookie('session_id', session_id, httponly=True)\n"
+            "    return response\n")
+    assert "v2.reset_token" not in ids(code)
+    assert "v2.api_key" not in ids(code)
