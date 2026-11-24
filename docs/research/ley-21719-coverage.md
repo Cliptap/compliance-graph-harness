@@ -26,21 +26,21 @@ humana) las firma una persona.
 | `CORE-CHECK-005` | licitud y consentimiento | detectar | `privacy.consent_transparency` | implementado |
 | `CORE-CHECK-006` | derechos del titular: procedimiento y plazos | detectar | `privacy.rights_reachability` | implementado: VIOLATION en escaneo completo, WARNING en diff (T32) |
 | `CORE-CHECK-007` | deber de información y transparencia | detectar (WARNING) | `privacy.consent_transparency` | implementado, sin violación confirmada |
-| `CORE-CHECK-008` | registro y comunicación de vulneraciones | evidencia | — | documental |
-| `CORE-CHECK-009` | evaluación de impacto | evidencia | — | documental |
+| `CORE-CHECK-008` | registro y comunicación de vulneraciones | evidencia | `harness-evidence` | exigido (T33) |
+| `CORE-CHECK-009` | evaluación de impacto | evidencia | `harness-evidence` | exigido (T33) |
 | `CORE-CHECK-010` | encargados del tratamiento y cesión | detectar (WARNING) | `privacy.third_party_transfers` | implementado, sin violación confirmada |
 | `CORE-CHECK-011` | transferencias internacionales | detectar (WARNING) | `privacy.third_party_transfers` | implementado, sin violación confirmada |
 | `CORE-CHECK-012` | datos de niños, niñas y adolescentes | detectar | `privacy.minors_and_sensitive` | implementado |
 | `CORE-CHECK-013` | conservación, supresión y limitación | detectar (WARNING) | `privacy.retention_minimization` | implementado, sin violación confirmada |
 | `HEALTH-CHECK-001` | conservación de 15 años de la ficha clínica | detectar | `domain.prohibited_deletion` | implementado |
-| `HEALTH-CHECK-002` | interoperabilidad FHIR R4 | evidencia | — | documental |
-| `HEALTH-CHECK-003` | protección reforzada de datos de salud | evidencia | — | documental |
+| `HEALTH-CHECK-002` | interoperabilidad FHIR R4 | evidencia | `harness-evidence` | exigido (T33) |
+| `HEALTH-CHECK-003` | protección reforzada de datos de salud | evidencia | `harness-evidence` | exigido (T33) |
 | `ECOM-CHECK-001` | marketing directo y oposición | detectar | `privacy.consent_transparency` | implementado |
 | `ECOM-CHECK-002` | perfilamiento y recomendaciones | manual | — | documental |
 | `ECOM-CHECK-003` | datos de tarjetas de pago | detectar | `privacy.payment_data_storage` | implementado |
-| `ECOM-CHECK-004` | PCI DSS | evidencia | — | contractual |
+| `ECOM-CHECK-004` | PCI DSS | evidencia | `harness-evidence` | exigido (T33) |
 | `ECOM-CHECK-005` | pasarelas y operadores logísticos | detectar (WARNING) | `privacy.third_party_transfers` | implementado, sin violación confirmada |
-| `ECOM-CHECK-006` | retención de documentos tributarios | evidencia | — | documental (solapa `v2.billing_retention`) |
+| `ECOM-CHECK-006` | retención de documentos tributarios | evidencia | `harness-evidence` | exigido (T33) |
 | `ECOM-CHECK-007` | situación socioeconómica y puntajes | detectar | `privacy.minors_and_sensitive` | implementado |
 
 ## Resumen
@@ -60,8 +60,36 @@ humana) las firma una persona.
   puede probar una violación de retención. La excepción es `privacy.rights_reachability`, que sube a
   VIOLATION solo cuando el `ChangeSet` declara ser completo.
 - **Evidencia**: el merge se bloquea si falta el artefacto (EIPD, registro de incidentes, contrato,
-  atestación PCI). No hay detector; hay un requisito.
+  atestación PCI). No hay detector; hay un requisito, y se verifica con `harness-evidence`.
 - **Manual**: checklist firmado por una persona con el artículo citado.
+
+## Cómo se exige la evidencia
+
+El manifiesto es `.harness/evidence.json` (plantilla en `.harness/evidence.example.json`). Cada
+entrada declara el control, el archivo, el responsable y la vigencia:
+
+```json
+{
+  "version": 1,
+  "evidence": [
+    {
+      "control": "CORE-CHECK-009",
+      "artifact": "docs/compliance/eipd.md",
+      "owner": "DPO",
+      "granted_at": "2026-01-01",
+      "expires_at": "2027-01-01"
+    }
+  ]
+}
+```
+
+`harness-evidence --root .` (o `python -m src.harness.evidence`) sale con código 1 y lista qué falta,
+de quién es y hasta cuándo vale. Los seis controles exigidos salen del propio pack
+(`evidence` en la entrada del control), no de una lista paralela.
+
+Se corre en CI, no en el hook de pre-commit: que falte una EIPD es un estado del repositorio, no una
+propiedad del commit que se está revisando. Bloquear cada commit por eso entrena al equipo a saltear
+el hook.
 
 ## Deriva conocida
 
@@ -79,7 +107,8 @@ humana) las firma una persona.
    cuando el `ChangeSet` es completo (`complete=True`) y sigue `MEDIUM`/`WARNING` en un diff, porque
    un diff no puede probar que una ruta no existe. Lo no demostrable (retención mínima, contratos)
    queda como WARNING a propósito.
-2. **Evidence-gate** para las 6 aristas documentales: bloquear el merge si falta el artefacto, con
-   el artículo citado en el mensaje.
+2. ~~**Evidence-gate** para las 6 aristas documentales~~ (T33): `harness-evidence` con manifiesto,
+   responsable y vencimiento. Falta cablearlo en el CI del proyecto que adopte el harness: este
+   repositorio no trata datos personales, así que no tiene artefactos propios que exhibir.
 3. **Ampliar la familia `code_hygiene`** con los tokens de cada proyecto (nombres de rutas clínicas,
    modelos de salud) para que el modo detectar no dependa de una lista fija.

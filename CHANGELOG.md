@@ -86,6 +86,10 @@ semántico.
   `getattr(row, c)`): iterar una lista de nombres de campo para testear pertenencia
   (`any(m in field for m in MASKERS)`) ya no se reporta como export. Era un falso positivo
   `CRITICAL` sobre `dimension_policy.py` que bloqueaba cualquier commit que tocara ese archivo.
+- `harness-evidence`: gate de evidencia para los 6 controles documentales del pack (EIPD, registro
+  de incidentes, FHIR, aislamiento de salud, PCI, retención tributaria). Manifiesto
+  `.harness/evidence.json` con artefacto, responsable y vencimiento; el control exige el artefacto
+  desde la entrada `evidence` del pack.
 - `privacy.rights_reachability` es `HIGH`/`VIOLATION` cuando el `ChangeSet` declara ser completo
   (`build_change_set(files, complete=True)`, usado por `scan_register`); en un diff sigue siendo
   `MEDIUM`/`WARNING`, porque la ausencia de una ruta no se puede probar sobre archivos parciales.
