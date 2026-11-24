@@ -877,11 +877,28 @@ def _response_model_categories(func: ast.AST, tree: ast.AST, catalog: Catalog,
     return declared, excluded, fields
 
 
+def _used_as_column(name: str, body: list[ast.AST]) -> bool:
+    """``name`` selects a column from a row: ``row[name]`` or ``getattr(row, name)``."""
+    for stmt in body:
+        for node in ast.walk(stmt):
+            if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Name) \
+                    and node.slice.id == name:
+                return True
+            if isinstance(node, ast.Call) and _call_name(node) == "getattr" \
+                    and len(node.args) >= 2 and isinstance(node.args[1], ast.Name) \
+                    and node.args[1].id == name:
+                return True
+    return False
+
+
 def _column_tuple_rows(func: ast.AST, field_lists: dict[str, set[str]]) -> set[str]:
     """Rows built by iterating a literal column tuple that names sensitive fields.
 
     ``EXPORT_COLUMNS = ('id', 'email'); [getattr(row, c) for c in EXPORT_COLUMNS]``
     exports the email column by construction.
+
+    The loop variable must select a column from a row. Iterating a field-name list to
+    test membership (``any(m in field for m in MASKERS)``) is not an export.
     """
     if not field_lists:
         return set()
@@ -893,14 +910,19 @@ def _column_tuple_rows(func: ast.AST, field_lists: dict[str, set[str]]) -> set[s
         return set()
     found: set[str] = set()
     for node in ast.walk(func):
-        iterables: list[ast.AST] = []
+        iterables: list[tuple[ast.AST, ast.AST, list[ast.AST]]] = []
         if isinstance(node, (ast.For, ast.AsyncFor)):
-            iterables.append(node.iter)
+            iterables.append((node.iter, node.target, node.body))
         elif isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
-            iterables.extend(generator.iter for generator in node.generators)
-        for iterable in iterables:
-            if isinstance(iterable, ast.Name) and iterable.id in field_lists:
-                found |= field_lists[iterable.id]
+            body = [node.key, node.value] if isinstance(node, ast.DictComp) else [node.elt]
+            iterables.extend((generator.iter, generator.target, body)
+                             for generator in node.generators)
+        for iterable, target, body in iterables:
+            if not isinstance(iterable, ast.Name) or iterable.id not in field_lists:
+                continue
+            if not isinstance(target, ast.Name) or not _used_as_column(target.id, body):
+                continue
+            found |= field_lists[iterable.id]
     return found
 
 

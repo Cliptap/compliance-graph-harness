@@ -24,7 +24,7 @@ humana) las firma una persona.
 | `CORE-CHECK-003` | derechos del titular y control de acceso | detectar | `code_hygiene: personal_route_auth` | implementado (T31) |
 | `CORE-CHECK-004` | decisiones automatizadas: oposición e intervención humana | manual | — | documental |
 | `CORE-CHECK-005` | licitud y consentimiento | detectar | `privacy.consent_transparency` | implementado |
-| `CORE-CHECK-006` | derechos del titular: procedimiento y plazos | detectar (WARNING) | `privacy.rights_reachability` | implementado, sin violación confirmada |
+| `CORE-CHECK-006` | derechos del titular: procedimiento y plazos | detectar | `privacy.rights_reachability` | implementado: VIOLATION en escaneo completo, WARNING en diff (T32) |
 | `CORE-CHECK-007` | deber de información y transparencia | detectar (WARNING) | `privacy.consent_transparency` | implementado, sin violación confirmada |
 | `CORE-CHECK-008` | registro y comunicación de vulneraciones | evidencia | — | documental |
 | `CORE-CHECK-009` | evaluación de impacto | evidencia | — | documental |
@@ -57,7 +57,8 @@ humana) las firma una persona.
 - **Detectar**: finding con archivo y línea; si la severidad es HIGH/CRITICAL y el estado es
   VIOLATION, el commit se bloquea.
 - **Detectar (WARNING)**: el finding se reporta pero no bloquea. Es deliberado: un índice parcial no
-  puede probar una violación de derechos o de retención.
+  puede probar una violación de retención. La excepción es `privacy.rights_reachability`, que sube a
+  VIOLATION solo cuando el `ChangeSet` declara ser completo.
 - **Evidencia**: el merge se bloquea si falta el artefacto (EIPD, registro de incidentes, contrato,
   atestación PCI). No hay detector; hay un requisito.
 - **Manual**: checklist firmado por una persona con el artículo citado.
@@ -73,9 +74,11 @@ humana) las firma una persona.
 
 ## Próximos pasos
 
-1. **Promover a VIOLATION** los WARNING que sí son demostrables por código: ruta de derechos
-   ausente y consentimiento pre-tildado. Los que no son demostrables (retención mínima, contratos)
-   quedan como WARNING a propósito.
+1. ~~**Promover a VIOLATION** los WARNING demostrables por código~~ (T32). El consentimiento
+   pre-tildado ya era `HIGH`/`VIOLATION`; la ausencia de ruta de derechos ahora es `HIGH`/`VIOLATION`
+   cuando el `ChangeSet` es completo (`complete=True`) y sigue `MEDIUM`/`WARNING` en un diff, porque
+   un diff no puede probar que una ruta no existe. Lo no demostrable (retención mínima, contratos)
+   queda como WARNING a propósito.
 2. **Evidence-gate** para las 6 aristas documentales: bloquear el merge si falta el artefacto, con
    el artículo citado en el mensaje.
 3. **Ampliar la familia `code_hygiene`** con los tokens de cada proyecto (nombres de rutas clínicas,

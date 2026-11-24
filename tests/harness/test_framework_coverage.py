@@ -1622,6 +1622,41 @@ def test_exclusion_set_that_misses_a_field_still_flags():
     assert "v2.admin_exposure" in ids(code, "app/admin/customers.py")
 
 
+def test_field_list_used_for_a_membership_test_is_not_an_export():
+    code = (
+        "MASKERS = ('redact', 'hash', 'token')\n"
+        "SENSITIVE = ('token', 'secret')\n"
+        "\n"
+        "def scrub(record):\n"
+        "    if record.name in SENSITIVE and not any(m in record.name for m in MASKERS):\n"
+        "        return ','.join(['name', record.name])\n"
+        "    return ''\n"
+    )
+    assert not ids(code)
+
+
+def test_column_list_that_selects_rows_is_still_an_export():
+    code = (
+        "COLUMNS = ('id', 'reset_token')\n"
+        "\n"
+        "def dump(rows):\n"
+        "    for row in rows:\n"
+        "        yield ','.join(str(row[column]) for column in COLUMNS)\n"
+    )
+    assert "v2.reset_token" in ids(code)
+
+
+def test_dict_comprehension_over_a_column_list_is_an_export():
+    code = (
+        "COLUMNS = ('id', 'reset_token')\n"
+        "\n"
+        "def dump(rows):\n"
+        "    body = ','.join(str(value) for row in rows for value in row.values())\n"
+        "    return [{column: row[column] for column in COLUMNS} for row in rows]\n"
+    )
+    assert "v2.reset_token" in ids(code)
+
+
 def test_reset_token_in_cookie_is_flagged():
     code = ("from fastapi import APIRouter\n"
             "from fastapi.responses import JSONResponse\n\n"
