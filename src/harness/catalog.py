@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 POLICY_FAMILIES = frozenset(
-    {"sink_exposure", "retention_deletion", "credential_exposure", "legacy"})
+    {"sink_exposure", "retention_deletion", "credential_exposure", "code_hygiene", "legacy"})
 
 
 class CatalogError(ValueError):

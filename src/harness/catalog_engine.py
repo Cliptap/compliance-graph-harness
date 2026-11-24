@@ -10,6 +10,7 @@ from src.harness.catalog import Catalog, CatalogError, Control
 from src.harness.contracts import Finding, TaskSpec
 from src.harness.policy_engine import PolicyEngine
 from src.harness.policy_families import (
+    CodeHygieneFamily,
     CredentialExposureFamily,
     PolicyFamily,
     RetentionDeletionFamily,
@@ -20,6 +21,7 @@ FAMILIES: dict[str, type[PolicyFamily]] = {
     "sink_exposure": SinkExposureFamily,
     "retention_deletion": RetentionDeletionFamily,
     "credential_exposure": CredentialExposureFamily,
+    "code_hygiene": CodeHygieneFamily,
 }
 
 

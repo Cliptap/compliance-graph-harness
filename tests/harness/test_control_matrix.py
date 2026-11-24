@@ -46,6 +46,59 @@ RETENTION_NEG = (
 PAYMENT_POS = "from sqlalchemy import Column\n\nclass P(Base):\n    __tablename__ = 'p'\n    card_number = Column(String(19))\n"
 PAYMENT_NEG = "from sqlalchemy import Column\n\nclass P(Base):\n    __tablename__ = 'p'\n    gateway_token = Column(String)\n"
 
+CACHE_POS = (
+    "def prime(patient):\n"
+    "    cache.set(f'patient:{patient.id}', {'diagnosis': patient.diagnosis})\n"
+)
+CACHE_NEG = (
+    "def prime(patient):\n"
+    "    cache.set(f'patient:{patient.id}', encrypt({'diagnosis': patient.diagnosis}))\n"
+)
+ORM_POS = "class Patient(Base):\n    __tablename__ = 'patients'\n    diagnosis = Column(String)\n"
+ORM_NEG = ("class Patient(Base):\n    __tablename__ = 'patients'\n"
+           "    diagnosis = Column(EncryptedType(String, 'key'))\n")
+ROUTE_AUTH_POS = (
+    "@router.get('/patients/{patient_id}')\n"
+    "def get_patient(patient_id: int):\n"
+    "    return {'id': patient_id}\n"
+)
+ROUTE_AUTH_NEG = (
+    "@router.get('/patients/{patient_id}')\n"
+    "def get_patient(patient_id: int, user=Depends(require_clinical_role)):\n"
+    "    return {'id': patient_id}\n"
+)
+EXPORT_POS = (
+    "@router.get('/patients/export')\n"
+    "def export_patients():\n"
+    "    body = '\\n'.join(','.join([row.id, row.full_name]) for row in load_patients())\n"
+    "    return PlainTextResponse(body, media_type='text/csv')\n"
+)
+EXPORT_NEG = (
+    "@router.get('/patients/export')\n"
+    "def export_patients():\n"
+    "    return JSONResponse({'resourceType': 'Bundle'}, media_type='application/fhir+json')\n"
+)
+PERSONAL_ROUTE_POS = (
+    "@router.get('/customers/{customer_id}')\n"
+    "def get_customer(customer_id: int):\n"
+    "    customer = load_customer(customer_id)\n"
+    "    return {'email': customer.email, 'phone': customer.phone}\n"
+)
+PERSONAL_ROUTE_NEG = (
+    "@router.get('/customers/{customer_id}')\n"
+    "def get_customer(customer_id: int, user=Depends(current_customer)):\n"
+    "    customer = load_customer(customer_id)\n"
+    "    return {'email': customer.email, 'phone': customer.phone}\n"
+)
+
+HYGIENE_CASES: dict[str, tuple[str, str, str]] = {
+    "CL-DATAPROT-002": ("src/cache.py", CACHE_POS, CACHE_NEG),
+    "CL-DATAPROT-003": ("src/models.py", ORM_POS, ORM_NEG),
+    "CL-DATAPROT-005": ("src/clinical_api.py", ROUTE_AUTH_POS, ROUTE_AUTH_NEG),
+    "CL-DATAPROT-007": ("src/clinical_export.py", EXPORT_POS, EXPORT_NEG),
+    "CORE-CHECK-003": ("src/customers_api.py", PERSONAL_ROUTE_POS, PERSONAL_ROUTE_NEG),
+}
+
 LEGACY_CASES: dict[str, tuple[str, str, str]] = {
     "CL-DATAPROT-004": ("src/clinical.py", DOMAIN_POS, DOMAIN_NEG),
     "HEALTH-CHECK-001": ("src/clinical.py", DOMAIN_POS, DOMAIN_NEG),
@@ -66,6 +119,7 @@ LEGACY_CASES: dict[str, tuple[str, str, str]] = {
 BLOCKING_LEGACY = {
     "CL-DATAPROT-004", "HEALTH-CHECK-001", "CORE-CHECK-002", "CORE-CHECK-005",
     "CORE-CHECK-007", "ECOM-CHECK-001", "ECOM-CHECK-003", "CORE-CHECK-012", "ECOM-CHECK-007",
+    "CL-DATAPROT-002", "CL-DATAPROT-003", "CL-DATAPROT-005", "CL-DATAPROT-007", "CORE-CHECK-003",
 }
 WARNING_ONLY_LEGACY = {"CORE-CHECK-006", "CORE-CHECK-010", "CORE-CHECK-011", "CORE-CHECK-013", "ECOM-CHECK-005"}
 
@@ -96,6 +150,7 @@ def _corpus_positive_negative(control_id: str) -> tuple[str, str, str]:
 
 def _all_cases() -> dict[str, tuple[str, str, str]]:
     cases = dict(LEGACY_CASES)
+    cases.update(HYGIENE_CASES)
     for control in _catalog().controls:
         if control.implemented and control.id.startswith("v2."):
             cases[control.id] = _corpus_positive_negative(control.id)
@@ -127,7 +182,7 @@ def test_negative_case_does_not_fire_its_control(control_id):
 def test_gap_controls_are_declared_with_reason():
     catalog = _catalog()
     gaps = [c for c in catalog.controls if not c.implemented]
-    assert len(gaps) == 16
+    assert len(gaps) == 11
     assert all(c.gap_reason for c in gaps)
     assert set(_engine().gaps()) == {c.id for c in gaps}
 

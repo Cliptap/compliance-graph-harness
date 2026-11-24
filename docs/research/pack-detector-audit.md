@@ -38,15 +38,15 @@ that makes the mapping explicit. Run date: 2026-10-28.
 | Control | Detector | Implemented | Corpus cases | Gap |
 |---|---|---|---|---|
 | CL-DATAPROT-001 | `privacy.cwe_532` | yes | log-rut-fstring, log-diagnosis-print, log-via-variable, 6 flow cases | — |
-| CL-DATAPROT-002 | — | no | — | cache encryptor sinks not analyzed |
-| CL-DATAPROT-003 | — | no | — | ORM encryption-transformer coverage not verifiable |
+| CL-DATAPROT-002 | `code_hygiene` (cache_unencrypted) | yes | cache_unencrypted pos/neg | — |
+| CL-DATAPROT-003 | `code_hygiene` (orm_unencrypted) | yes | orm_unencrypted pos/neg | — |
 | CL-DATAPROT-004 | `domain.prohibited_deletion` | yes | del-session-delete-patient, del-raw-sql | — |
-| CL-DATAPROT-005 | — | no | — | route authorization needs authentication coverage (CORE-CHECK-003 indicators only) |
+| CL-DATAPROT-005 | `code_hygiene` (route_auth) | yes | route_auth pos/neg | — |
 | CL-DATAPROT-006 | — | no | — | human-in-the-loop is documentary |
-| CL-DATAPROT-007 | — | no | — | export format (FHIR/raw) not verified |
+| CL-DATAPROT-007 | `code_hygiene` (export_format) | yes | export_format pos/neg | — |
 | CORE-CHECK-001 | — | no | — | legacy auditor heuristic only |
 | CORE-CHECK-002 | `privacy.cwe_532` | yes | 9 log/flow cases | — |
-| CORE-CHECK-003 | — | no | — | access-control indicators only; rights moved to CORE-CHECK-006 |
+| CORE-CHECK-003 | `code_hygiene` (personal_route_auth) | yes | personal_route_auth pos/neg | rights stay in CORE-CHECK-006 |
 | CORE-CHECK-004 | — | no | — | human-in-the-loop is documentary |
 | HEALTH-CHECK-001 | `domain.prohibited_deletion` | yes | del-session-delete-patient, del-raw-sql | — |
 | HEALTH-CHECK-002 | — | no | — | FHIR format is documentary |
@@ -80,12 +80,13 @@ that makes the mapping explicit. Run date: 2026-10-28.
    violation, only potential risk. T7 must seed potential-risk traps for them and report them in the
    secondary outcome, not in `oracle_violations`. A code-only check cannot prove that data was kept
    longer than needed.
-3. `CL-DATAPROT-002/003/005/007` still have no detector. They are `implemented: false` with a
-   `gap_reason` so no report can claim coverage.
-4. The pre-commit gate evaluates only `privacy.cwe_532`, `privacy.api_exposure` and
-   `privacy.payment_data_storage`. The dimension policies run in `compliance_check`, the validation
-   engine and the experiment metrics, not in the hook (blocking a commit on a missing right would be
-   a false positive on a partial index).
+3. `CL-DATAPROT-002/003/005/007` and the access-control half of `CORE-CHECK-003` now have a
+   deterministic detector in the `code_hygiene` family (T31). The remaining eleven gaps are
+   documentary or semantic; see `ley-21719-coverage.md`.
+4. The pre-commit gate evaluates the five legacy policies (`SensitiveLoggingPolicy`,
+   `ApiPersonalDataExposurePolicy`, `PaymentDataStoragePolicy`, `PersonalDataDimensionsPolicy`,
+   `DomainInvariantPolicy`) plus the full v2 `CatalogEngine`, including the `code_hygiene` family
+   (`precommit.py:106-119`). The WARNING-only dimension findings are reported but do not block.
 5. Layer C (agent review with the pack as a checklist) produces `potential_risk` and is not counted
    by `compliance_score`.
 6. Layer B is Python-only (AST). The route/SQL/Prisma/template artifacts are language-neutral, but

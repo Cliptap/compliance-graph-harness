@@ -78,6 +78,10 @@ semántico.
   `_fingerprint` como metadata; `signing_key` como credencial.
 - Literales con `*` como máscara (ramas de un `IfExp`); `_change` como metadata
   (`last_password_change`).
+- Familia `code_hygiene`: caché de datos de salud sin cifrado, campo ORM sin cifrado, ruta clínica
+  sin autenticación, export clínico no estructurado y ruta con datos personales sin autenticación
+  (`CL-DATAPROT-002/003/005/007`, `CORE-CHECK-003`). Matriz de cobertura de las 30 aristas en
+  `docs/research/ley-21719-coverage.md`.
 - `response_model` importado resuelto contra los archivos del proyecto; sets de exclusión
   (`exclude=HIDDEN`, `hidden_fields()`, `response_model_exclude=HIDDEN`) resueltos por constante,
   alias o retorno de función; `set_cookie`/`set_signed_cookie` y headers de respuesta como sinks
