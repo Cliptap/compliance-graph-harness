@@ -368,15 +368,14 @@
         "SENSITIVE_HEALTH"
       ],
       "detection": {
-        "policy": "legacy",
+        "policy": "code_hygiene",
         "params": {
-          "legacy_policy": ""
+          "kind": "cache_unencrypted"
         }
       },
       "severity": "HIGH",
       "remediation": "Remediate the finding.",
-      "implemented": false,
-      "gap_reason": "No detector: cache encryptor sinks (redis.set/cache.put) are not analyzed yet."
+      "implemented": true
     },
     {
       "id": "CL-DATAPROT-003",
@@ -405,15 +404,14 @@
         "SENSITIVE_HEALTH"
       ],
       "detection": {
-        "policy": "legacy",
+        "policy": "code_hygiene",
         "params": {
-          "legacy_policy": ""
+          "kind": "orm_unencrypted"
         }
       },
       "severity": "HIGH",
       "remediation": "Remediate the finding.",
-      "implemented": false,
-      "gap_reason": "No detector: ORM encryption-transformer coverage is not statically verifiable yet."
+      "implemented": true
     },
     {
       "id": "CL-DATAPROT-004",
@@ -486,15 +484,14 @@
         "SENSITIVE_HEALTH"
       ],
       "detection": {
-        "policy": "legacy",
+        "policy": "code_hygiene",
         "params": {
-          "legacy_policy": ""
+          "kind": "route_auth"
         }
       },
       "severity": "HIGH",
       "remediation": "Remediate the finding.",
-      "implemented": false,
-      "gap_reason": "No detector: route authorization coverage needs the T16 rights reachability work; only CORE-CHECK-003 indicators exist."
+      "implemented": true
     },
     {
       "id": "CL-DATAPROT-006",
@@ -560,15 +557,14 @@
         "SENSITIVE_HEALTH"
       ],
       "detection": {
-        "policy": "legacy",
+        "policy": "code_hygiene",
         "params": {
-          "legacy_policy": ""
+          "kind": "export_format"
         }
       },
       "severity": "MEDIUM",
       "remediation": "Remediate the finding.",
-      "implemented": false,
-      "gap_reason": "No detector: export format (FHIR/raw) is not verified by code."
+      "implemented": true
     },
     {
       "id": "CORE-CHECK-001",
@@ -640,18 +636,18 @@
         }
       ],
       "data_categories": [
-        "PERSONAL_DATA"
+        "IDENTIFIER_RUT",
+        "PERSONAL_CONTACT"
       ],
       "detection": {
-        "policy": "legacy",
+        "policy": "code_hygiene",
         "params": {
-          "legacy_policy": ""
+          "kind": "personal_route_auth"
         }
       },
       "severity": "HIGH",
       "remediation": "Remediate the finding.",
-      "implemented": false,
-      "gap_reason": "Only access-control indicators (current_user/rbac); T16 covers data-subject rights, not authentication."
+      "implemented": true
     },
     {
       "id": "CORE-CHECK-004",

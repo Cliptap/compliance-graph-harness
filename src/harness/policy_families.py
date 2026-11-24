@@ -11,7 +11,7 @@ import ast
 import re
 from pathlib import Path
 
-from src.harness.catalog import Catalog, Control
+from src.harness.catalog import Catalog, CatalogError, Control
 from src.harness.contracts import Finding, TaskSpec
 
 RUT_VALUE_RE = re.compile(r"\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b")
@@ -580,6 +580,8 @@ def _stored_value_key(node: ast.Call,
 
 def _cache_store(node: ast.Call) -> tuple[ast.AST, ast.AST] | None:
     """``cache.set(key, value)``: the key node and the stored value."""
+    if not isinstance(node, ast.Call):
+        return None
     func = node.func
     if not isinstance(func, ast.Attribute) or func.attr not in {"set", "add", "setdefault"}:
         return None
@@ -1699,8 +1701,10 @@ def _call_effects(tree: ast.AST, catalog: Catalog, categories: set[str],
                         hit = True
                         break
                 if hit:
+                    before = len(param_returns[name])
                     param_returns[name].update({index, param})
-                    changed = True
+                    if len(param_returns[name]) != before:
+                        changed = True
         if not changed:
             break
     param_logs: dict[str, set[int | str]] = {name: set() for name in functions}
@@ -2982,6 +2986,188 @@ def _secret_header_bindings(tree: ast.AST) -> set[str]:
             if "api-key" in lowered or "api_key" in lowered or "authorization" in lowered:
                 names.update(target.id for target in node.targets if isinstance(target, ast.Name))
     return names
+
+
+ENCRYPTION_MARKERS = ("encrypt", "fernet", "aes", "kms", "sealed", "cipher", "pgp")
+CLINICAL_TOKENS = ("patient", "clinical", "ficha", "medical", "health", "diagnos", "record")
+EXPORT_TOKENS = ("export", "portability", "download", "exportar")
+STRUCTURED_EXPORT_MARKERS = ("application/fhir", "fhir", "jsonresponse", "jsonify", "orjson",
+                             "json.dumps", "jsondumps", "asdict")
+UNSTRUCTURED_EXPORT_MARKERS = ("text/csv", "text/plain", "plaintextresponse", "csv.",
+                               "','.join", '",".join', "httpresponse(")
+AUTH_DECORATORS = ("login_required", "staff_member_required", "permission_classes", "require_",
+                   "is_authenticated")
+AUTH_CALLABLE_TOKENS = ("current", "require", "auth", "admin", "user", "permission", "staff")
+ROUTE_MARKERS = (".get(", ".post(", ".put(", ".patch(", ".delete(", ".route(", ".api_route(")
+HEALTHCHECK_PATHS = ("/health", "/healthz", "/live", "/ready", "/ping", "/status")
+ORM_FIELD_CALLS = {"Column", "mapped_column", "Field", "CharField", "TextField", "JSONField",
+                   "EmailField"}
+
+
+def _has_encryption(node: ast.AST) -> bool:
+    text = ast.unparse(node).lower()
+    return any(marker in text for marker in ENCRYPTION_MARKERS)
+
+
+def _route_functions(tree: ast.AST):
+    for func in _leaf_functions(tree):
+        decorators = " ".join(ast.unparse(item) for item in func.decorator_list).lower()
+        if any(marker in decorators for marker in ROUTE_MARKERS):
+            yield func, decorators
+
+
+def _route_protected(func: ast.AST, decorators: str) -> bool:
+    if any(marker in decorators for marker in AUTH_DECORATORS):
+        return True
+    for node in ast.walk(func.args):
+        if not isinstance(node, ast.Call) or _call_name(node) not in {"Depends", "Security"}:
+            continue
+        for arg in node.args:
+            if isinstance(arg, ast.Call):
+                name = _call_name(arg).rsplit(".", 1)[-1].lower()
+            elif isinstance(arg, ast.Name):
+                name = arg.id.lower()
+            else:
+                continue
+            if any(token in name for token in AUTH_CALLABLE_TOKENS):
+                return True
+    return False
+
+
+class CodeHygieneFamily(PolicyFamily):
+    """Structural checks: encryption at rest, route authorization and export format."""
+
+    def evaluate(self, control: Control, task: TaskSpec, files: dict[str, str]) -> list[Finding]:
+        kind = str(control.detection.params.get("kind", ""))
+        categories = set(control.data_categories)
+        out: list[Finding] = []
+        for path, content in files.items():
+            if not path.endswith(".py"):
+                continue
+            try:
+                tree = ast.parse(content)
+            except SyntaxError:
+                continue
+            if kind == "cache_unencrypted":
+                out.extend(self._cache(control, path, tree, categories))
+            elif kind == "orm_unencrypted":
+                out.extend(self._orm(control, path, tree, categories))
+            elif kind == "route_auth":
+                out.extend(self._route_auth(control, path, tree))
+            elif kind == "export_format":
+                out.extend(self._export(control, path, tree))
+            elif kind == "personal_route_auth":
+                out.extend(self._personal_route_auth(control, path, tree, categories))
+            else:
+                raise CatalogError(f"{control.id}: unknown code_hygiene kind {kind!r}")
+        return self._dedupe(out)
+
+    def _cache(self, control, path, tree, categories) -> list[Finding]:
+        out: list[Finding] = []
+        summaries = _function_summaries(tree, self.catalog, categories)
+        field_lists = _field_lists(tree, self.catalog, categories)
+        module_constants = _module_constants(tree)
+        class_constants = _class_constants(tree)
+        enclosing = _enclosing_classes(tree)
+        for func in _leaf_functions(tree):
+            env = _TaintTracker(self.catalog, categories, summaries,
+                                module_constants=module_constants,
+                                self_constants=class_constants.get(
+                                    enclosing.get(id(func), ""), {}),
+                                field_lists=field_lists).scan(func)
+            for node in ast.walk(func):
+                entry = _cache_store(node)
+                if entry is None or _has_encryption(entry[1]):
+                    continue
+                matched = _sink_categories(self.catalog, entry[1], categories, env, summaries,
+                                           None, field_lists)
+                if matched:
+                    out.append(_finding(control, path, node.lineno,
+                                        f"Cached {sorted(matched)} is not encrypted at rest.",
+                                        ast.unparse(node)[:200]))
+        return out
+
+    def _orm(self, control, path, tree, categories) -> list[Finding]:
+        out: list[Finding] = []
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+                continue
+            if not isinstance(node.value, ast.Call):
+                continue
+            if _call_name(node.value).rsplit(".", 1)[-1] not in ORM_FIELD_CALLS:
+                continue
+            if _has_encryption(node.value):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if not isinstance(target, ast.Name):
+                    continue
+                category = _field_category(self.catalog, target.id)
+                if category not in categories:
+                    continue
+                out.append(_finding(
+                    control, path, node.lineno,
+                    f"Field '{target.id}' stores {category} without field encryption.",
+                    ast.unparse(node)[:200]))
+                break
+        return out
+
+    def _route_auth(self, control, path, tree) -> list[Finding]:
+        out: list[Finding] = []
+        for func, decorators in _route_functions(tree):
+            if any(marker in decorators for marker in HEALTHCHECK_PATHS):
+                continue
+            text = (func.name + " " + decorators).lower()
+            if not any(token in text for token in CLINICAL_TOKENS):
+                continue
+            if _route_protected(func, decorators):
+                continue
+            out.append(_finding(
+                control, path, func.lineno,
+                f"Clinical route '{func.name}' has no authentication or role check.", func.name))
+        return out
+
+    def _export(self, control, path, tree) -> list[Finding]:
+        out: list[Finding] = []
+        for func, decorators in _route_functions(tree):
+            text = (func.name + " " + decorators + " " + path).lower()
+            if not any(token in text for token in EXPORT_TOKENS):
+                continue
+            body = ast.unparse(func).lower()
+            if not any(token in text + " " + body for token in CLINICAL_TOKENS):
+                continue
+            if any(marker in body for marker in STRUCTURED_EXPORT_MARKERS):
+                continue
+            if not any(marker in body for marker in UNSTRUCTURED_EXPORT_MARKERS):
+                continue
+            out.append(_finding(
+                control, path, func.lineno,
+                f"Clinical export '{func.name}' uses an unstructured format.", func.name))
+        return out
+
+    def _personal_route_auth(self, control, path, tree, categories) -> list[Finding]:
+        out: list[Finding] = []
+        summaries = _function_summaries(tree, self.catalog, categories)
+        field_lists = _field_lists(tree, self.catalog, categories)
+        for func, decorators in _route_functions(tree):
+            if _route_protected(func, decorators):
+                continue
+            if "{" not in decorators and "<" not in decorators:
+                continue
+            env = _TaintTracker(self.catalog, categories, summaries,
+                                field_lists=field_lists).scan(func)
+            for node in ast.walk(func):
+                if not isinstance(node, ast.Return) or node.value is None:
+                    continue
+                matched = _sink_categories(self.catalog, node.value, categories, env, summaries,
+                                           None, field_lists)
+                if matched:
+                    out.append(_finding(
+                        control, path, node.lineno,
+                        f"Route '{func.name}' returns {sorted(matched)} without authentication.",
+                        ast.unparse(node.value)[:200]))
+                    break
+        return out
 
 
 class CredentialExposureFamily(PolicyFamily):
