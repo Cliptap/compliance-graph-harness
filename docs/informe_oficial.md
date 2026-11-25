@@ -24,11 +24,11 @@
 
 Los agentes de programación cumplen lo que se les pide, pero no garantizan lo que nadie les pidió. Entre esas omisiones están los deberes de protección de datos personales: una aplicación puede pasar todas sus pruebas mientras registra el RUT de sus usuarios en una bitácora. La Ley N° 21.719, cuya entrada en vigencia está prevista para el 1 de diciembre de 2026, contempla sanciones de hasta 20.000 UTM para las infracciones gravísimas. Este proyecto construye y evalúa un arnés que traduce deberes seleccionados de esa ley en controles verificables por el software.
 
-En las tareas donde el agente omitía un requisito de privacidad, la compuerta lo detectó y el agente lo corrigió: ocho violaciones confirmadas en la línea base frente a cero en la configuración con compuerta, sobre veinte pares (McNemar, *p* = 0,0078). El costo fue de 2,3 veces los tokens y 46 segundos más por tarea.
+En octubre, la compuerta eliminó las violaciones confirmadas del banco de pruebas: ocho en la línea base frente a cero con la compuerta, sobre veinte pares (McNemar, *p* = 0,0078), a un costo de 2,3 veces los tokens.
 
-La evaluación posterior acota ese resultado en dos direcciones. La calibración ciega del detector, en 21 rondas con autores sin acceso al repositorio, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos. Cuando el modelo ya resuelve la tarea sin ayuda, el arnés no mejora la completitud funcional y eleva el tiempo de ciclo a 2,5 veces y los tokens a 3,3 veces. Su valor medido es de auditoría, no de corrección.
+La replicación con el modelo actual no reprodujo ese resultado. Las cuatro tareas quedaron saturadas: la compuerta sola igualó al arnés completo, con cero violaciones confirmadas en ambos brazos y sin pares discordantes (*p* = 1,0). El arnés procedural no aporta un valor medible en privacidad, y basta una instrucción de una línea para que el agente use la compuerta. La calibración ciega del detector, en 21 rondas, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos.
 
-De las treinta aristas de la ley, quince se detectan en el código, cinco se reportan como riesgo, seis se exigen como evidencia documental y cuatro quedan a cargo de una persona. Los resultados están acotados a un modelo, un banco y muestras pequeñas, y la verificación de etiquetas es de modelos, no de personas. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
+De las treinta aristas de la ley, quince se detectan en el código, cinco se reportan como riesgo, seis se exigen como evidencia documental y cuatro quedan a cargo de una persona. Los resultados están acotados a un modelo, un banco y muestras pequeñas. El aporte que la evidencia sostiene es la capa de verificación —catálogo, compuerta y gate de evidencia—, y su valor medido es de auditoría, no de corrección. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
 
 
 # 1. INTRODUCCIÓN
@@ -1033,7 +1033,26 @@ Sobre el catálogo completo (37 controles), **26 tienen detector determinista**,
 
 Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declara como gap porque la fuga la evalúa el detector de `CORE-CHECK-002`. Por eso el pack tiene 19 aristas de la ley implementadas (14 en modo detectar y 5 en modo riesgo) más 7 detectores `v2.*`, que suman los 26 controles con detector.
 
-## 10.8 Análisis e interpretación de resultados
+## 10.8 Replicación del experimento de dosis con el modelo actual
+
+El contraste de dosis se midió en octubre con el modelo fijado. Para saber si se sostiene, se repitieron las mismas cuatro tareas con el modelo actual y se agregó un brazo que separa la herramienta del arnés procedural: `gate_only` recibe la compuerta, el catálogo y el enganche de integración, con una instrucción mínima de ejecutar la compuerta. No recibe reglas, ni procedimientos, ni protocolo de ejecución.
+
+| Brazo | Corridas | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana | Llamadas a la compuerta |
+| - | -: | -: | -: | -: | -: | -: | -: | -: |
+| `gate_only` | 12 | 0 | 0 | 3 | 9 | 268,3 s | 2.973.747 | 2 |
+| `rules_skills_gate` | 12 | 0 | 0 | 2 | 10 | 264,2 s | 2.528.101 | 2 |
+
+- **Cero violaciones confirmadas en ambos brazos.** Las 24 ejecuciones aprobaron la prueba oculta.
+- **Sin pares discordantes:** McNemar exacto bilateral, *p* = 1,0. El diseño no distingue los brazos.
+- **Costo indistinguible:** 268,3 frente a 264,2 segundos de mediana. La diferencia de tokens, 15 % a favor del brazo completo, queda dentro de una dispersión de 1,6 a 5,5 millones y no es atribuible.
+- **Dos tiempos agotados:** el brazo completo alcanzó el límite de 600 segundos en dos de doce corridas; el mínimo, en ninguna.
+- **Los cinco casos latentes son un falso positivo del oráculo.** Corresponden a T31 y a la regla `delete from orders`, que no mira la condición. El código generado calcula el plazo de 2.190 días, salta las órdenes dentro de la retención y solo después borra.
+
+**Lectura.** Con el modelo actual las cuatro trampas están saturadas: el agente las resuelve con una instrucción de una línea y sin ayuda procedural. El contraste de ocho a cero no se reproduce porque la línea base ya no produce violaciones, de modo que no hay nada que la compuerta corrija. La diferencia entre la herramienta sola y la herramienta con reglas, doce procedimientos, tres de cumplimiento y un protocolo es indistinguible en privacidad.
+
+**Lo que falta para cerrarlo.** Sin un brazo sin herramienta no puede afirmarse que el modelo resuelva las trampas sin la compuerta; solo que los dos brazos con compuerta son iguales. Esa es la celda que falta para completar el diseño.
+
+## 10.9 Análisis e interpretación de resultados
 
 - **Las reglas por sí solas no mostraron un efecto detectable:** la comparación `rules` frente a `baseline` no presentó una diferencia estadísticamente significativa en las violaciones confirmadas (tres frente a dos pares discordantes; *p* = 1,0). Esto indica que documentar reglas permanentes no fue suficiente para modificar el resultado de manera detectable en esta muestra.
 
@@ -1065,7 +1084,7 @@ Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declar
 
 La variable 4 no se mide en este informe: exigiría observar cómo documenta sus decisiones un desarrollador con y sin el arnés, y eso requiere un estudio con personas. Se declara como pendiente en lugar de sustituirla por un indicador indirecto.
 
-## 10.9 Limitaciones identificadas
+## 10.10 Limitaciones identificadas
 
 Las limitaciones se organizan según el tipo de validez afectada, siguiendo la clasificación habitual en ingeniería de software empírica.
 
@@ -1111,6 +1130,10 @@ Las limitaciones se organizan según el tipo de validez afectada, siguiendo la c
 
 17. **Intervalos.** Se reportan intervalos de Wilson porque, con muestras pequeñas, un resultado perfecto sigue siendo compatible con una tasa de fallo no despreciable.
 
+18. **Sin línea base fresca en la replicación.** La comparación de la sección 10.8 distingue dos brazos con compuerta, no la compuerta frente al uso de ninguna herramienta.
+
+19. **Vigencia temporal de la evidencia.** El mismo instrumento dio resultados distintos en octubre y en noviembre. Un resultado sobre comportamiento de modelos no es estable en el tiempo, y esa inestabilidad debe considerarse al interpretar cualquier medición de este tipo.
+
 # 11. DISCUSIÓN, CONCLUSIONES Y TRABAJO FUTURO
 
 ## 11.1 Discusión
@@ -1125,6 +1148,8 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 - **Controles normativos:** el proyecto demuestra la viabilidad técnica de representar algunos escenarios de privacidad mediante reglas ejecutables y pruebas. Esto no equivale a demostrar cumplimiento integral de la Ley N° 21.719.
 
+- **La replicación acota el aporte:** el efecto medido en octubre no se reprodujo con el modelo actual. Cuando el modelo ya cumple, el arnés no cambia el resultado y su costo es el mismo que el de la herramienta sola. Lo que la evidencia sostiene no es que el arnés procedural mejore el cumplimiento, sino que la capa de verificación lo hace medible y auditable.
+
 - **Contraste con el estado del arte:** la comparación de la sección 5.2 anticipaba que un motor de reglas estático detecta aquello que sus reglas describen. La medición de la sección 10.3 lo confirma con un número: 51 de 84 casos frente a 82 del detector calibrado, y una exhaustividad de 0,286 frente a 1,000. La diferencia no está en la existencia de la herramienta, que es madura, sino en la calibración del instrumento y en el análisis de flujo.
 
 - **Asimetría entre el título y la evidencia:** el proyecto se nombra por dos mecanismos —grafos de dependencias y linaje de datos— y la evidencia de este informe mide el de gobernanza. El componente de grafos está implementado, pero su efecto no se aísla en ningún experimento ejecutado. La asimetría debe leerse como alcance declarado, no como equivalencia de madurez.
@@ -1133,7 +1158,7 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 ## 11.2 Conclusiones
 
-1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. El experimento de preservación funcional y costo acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
+1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. La replicación con el modelo actual no reprodujo ese contraste: las cuatro tareas quedaron saturadas y la compuerta sola igualó al arnés completo, con cero violaciones confirmadas en ambos brazos y sin pares discordantes (McNemar, *p* = 1,0). El experimento de preservación funcional y costo acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
 
 2. **Consolidación técnica:** el núcleo del arnés se organizó como módulo independiente, con 592 pruebas propias, y la aplicación clínica con 21. La suite consolidada cuenta con 613 pruebas aprobadas.
 
