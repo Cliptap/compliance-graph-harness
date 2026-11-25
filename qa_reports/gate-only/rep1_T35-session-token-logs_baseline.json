@@ -1,0 +1,304 @@
+{
+  "task": "T35-session-token-logs",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T35-session-token-logs-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 209.87,
+    "tool_calls_by_name": {
+      "glob": 2,
+      "bash": 4,
+      "read": 6,
+      "edit": 5
+    },
+    "files_read": [
+      "TASK.md",
+      "app/main.py",
+      "app/security.py",
+      "tests/test_app.py",
+      "tests/conftest.py",
+      "README.md"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 338034,
+      "input_tokens": 36263,
+      "output_tokens": 2421,
+      "reasoning_tokens": 5078,
+      "cache_read_tokens": 294272,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.010822,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 209.87,
+      "latency_ms": 209870,
+      "rounds": 11,
+      "tool_calls": 17,
+      "turns": 11,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 338034,
+        "input_tokens": 36263,
+        "output_tokens": 2421,
+        "reasoning_tokens": 5078,
+        "cache_read_tokens": 294272,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.010822
+    },
+    "quality": {
+      "tests": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 2,
+      "lines_added": 38,
+      "lines_deleted": 0,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 0,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 100.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": []
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "app/main.py",
+        "app/security.py",
+        "tests/test_app.py",
+        "tests/conftest.py",
+        "README.md"
+      ],
+      "files_read_count": 6,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.16666666666666666
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7630,
+          "input": 5637,
+          "output": 131,
+          "reasoning": 70,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000971526
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 10498,
+          "input": 2730,
+          "output": 328,
+          "reasoning": 16,
+          "cache": {
+            "write": 0,
+            "read": 7424
+          }
+        },
+        "cost": 0.000638172
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 29227,
+          "input": 18562,
+          "output": 194,
+          "reasoning": 359,
+          "cache": {
+            "write": 0,
+            "read": 10112
+          }
+        },
+        "cost": 0.003146436
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35204,
+          "input": 1994,
+          "output": 206,
+          "reasoning": 4332,
+          "cache": {
+            "write": 0,
+            "read": 28672
+          }
+        },
+        "cost": 0.003107916
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35475,
+          "input": 4626,
+          "output": 205,
+          "reasoning": 52,
+          "cache": {
+            "write": 0,
+            "read": 30592
+          }
+        },
+        "cost": 0.000939876
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 35692,
+          "input": 289,
+          "output": 203,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 35200
+          }
+        },
+        "cost": 0.00027075
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36153,
+          "input": 250,
+          "output": 429,
+          "reasoning": 18,
+          "cache": {
+            "write": 0,
+            "read": 35456
+          }
+        },
+        "cost": 0.000412068
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36696,
+          "input": 583,
+          "output": 490,
+          "reasoning": 39,
+          "cache": {
+            "write": 0,
+            "read": 35584
+          }
+        },
+        "cost": 0.000511602
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36772,
+          "input": 614,
+          "output": 62,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 36096
+          }
+        },
+        "cost": 0.000237588
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 36904,
+          "input": 200,
+          "output": 53,
+          "reasoning": 43,
+          "cache": {
+            "write": 0,
+            "read": 36608
+          }
+        },
+        "cost": 0.000197424
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 37783,
+          "input": 778,
+          "output": 120,
+          "reasoning": 149,
+          "cache": {
+            "write": 0,
+            "read": 36736
+          }
+        },
+        "cost": 0.000388308
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 2,
+      "bash": 4,
+      "read": 6,
+      "edit": 5
+    },
+    "changed_files": {
+      "app/main.py": [
+        25,
+        0
+      ],
+      "tests/test_app.py": [
+        13,
+        0
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "T35-session-token-logs",
+    "hidden_tests_passed": true,
+    "hidden_output": ".                                                                        [100%]\n1 passed in 0.34s\n",
+    "oracle": {
+      "error": null,
+      "findings": []
+    },
+    "expected_rules": [
+      "dumbo.log-sensitive"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  },
+  "evidence": null
+}
