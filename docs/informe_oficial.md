@@ -1058,6 +1058,8 @@ El contraste de dosis se midió en octubre con el modelo fijado. Para saber si s
 
 - **Las *skills* no bastaron para eliminar las violaciones:** `rules_skills` redujo las violaciones confirmadas de ocho a tres y los hallazgos Semgrep de once a tres. Sin embargo, el contraste pareado no alcanzó significancia estadística (*p* = 0,125) y se observaron fallas de comportamiento.
 
+- **El escalón que incorporó la compuerta es donde las violaciones llegaron a cero:** `rules_skills` registró tres violaciones confirmadas y `rules_skills_gate` ninguna. El contraste pareado de ese escalón es 3/0 (*p* = 0,25): la dirección es la esperada, pero con veinte pares no alcanza significancia. El único contraste significativo es el del paquete completo frente a la línea base (8/0; *p* = 0,0078).
+
 - **La compuerta fue el componente con el efecto más claro:** `rules_skills_gate` presentó cero violaciones confirmadas frente a ocho en `baseline` (ocho pares discordantes; *p* = 0,0078). El contraste para cualquier falla también favoreció a esta configuración (12/0; *p* = 0,0005). El resultado está acotado a las tareas, el modelo y las condiciones evaluadas.
 
 - **El enforcement externo no aportó una mejora demostrable en esta muestra:** el brazo `rules_skills_gate_enforced` no activó el bucle externo de corrección durante las ejecuciones reportadas. La compuerta asesora presentó un resultado comparable en violaciones confirmadas con menor complejidad operativa.
