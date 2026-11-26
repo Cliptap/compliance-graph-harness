@@ -254,6 +254,22 @@ def prepare_workspace(arm: str, task: dict, dest: Path) -> Path:
     return dest
 
 
+# Only the engine and the pack travel to the agent's sandbox. The benchmark
+# (hidden tests, oracle rules, manifest) stays in the repository, which is why
+# the harness root is never exported: an agent with a shell could read it.
+def prepare_harness_bundle(dest: Path) -> Path:
+    """Copy the minimum the gate CLI needs, without the benchmark."""
+    if dest.exists():
+        _remove(dest)
+    dest.mkdir(parents=True)
+    _copy(ROOT / "src" / "harness", dest / "src" / "harness")
+    _copy(ROOT / "harness" / "eval" / "pilot_metrics.py",
+          dest / "harness" / "eval" / "pilot_metrics.py")
+    _copy(ROOT / ".harness" / "packs" / "catalog.full.json",
+          dest / ".harness" / "packs" / "catalog.full.json")
+    return dest
+
+
 def skill_permissions(arm: str) -> dict[str, str]:
     allowed = []
     config = ARMS[arm]

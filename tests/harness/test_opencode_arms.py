@@ -15,7 +15,9 @@ TASKS = Path(__file__).resolve().parents[2] / "experiments" / "tasks"
 if str(TASKS) not in sys.path:
     sys.path.insert(0, str(TASKS))
 
-from opencode_arms import ARMS, prepare_workspace, skill_permissions  # noqa: E402
+from opencode_arms import (  # noqa: E402
+    ARMS, prepare_harness_bundle, prepare_workspace, skill_permissions,
+)
 
 TASK = {
     "id": "T01-payment-method",
@@ -64,3 +66,41 @@ def test_the_three_compared_arms_differ_only_in_the_expected_fields(arm):
         "rules_skills_gate": (True, True, True),
     }[arm]
     assert (config.harness_files, config.skills, config.gate) == expected
+
+
+def test_the_bundle_carries_the_engine_and_not_the_benchmark(tmp_path):
+    bundle = prepare_harness_bundle(tmp_path / "bundle")
+    assert (bundle / "src" / "harness" / "precommit.py").is_file()
+    assert (bundle / "harness" / "eval" / "pilot_metrics.py").is_file()
+    assert (bundle / ".harness" / "packs" / "catalog.full.json").is_file()
+    assert not (bundle / "experiments").exists()
+    assert not (bundle / "docs").exists()
+
+
+def test_the_bundle_is_importable(tmp_path):
+    import subprocess
+
+    bundle = prepare_harness_bundle(tmp_path / "bundle")
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "from src.harness.precommit import evaluate; "
+         "from harness.eval.pilot_metrics import changed_files; print('ok')"],
+        cwd=bundle, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr[-500:]
+    assert "ok" in result.stdout
+
+
+def test_the_gate_arm_gets_the_bundle_and_baseline_gets_nothing(tmp_path):
+    from opencode_run import build_environment
+
+    scope = {"task_id": "T", "goal": "g", "allowed_paths": ["app/"]}
+    gate_env = build_environment(tmp_path / "gate", scope, tmp_path / "ws",
+                                 tmp_path / "missing-auth.json", "model", "gate_only")
+    root = gate_env["VIBECODING_HARNESS_ROOT"]
+    assert "harness-bundle" in root
+    assert (Path(root) / "src" / "harness" / "precommit.py").is_file()
+    assert not (Path(root) / "experiments").exists()
+
+    base_env = build_environment(tmp_path / "base", scope, tmp_path / "ws",
+                                 tmp_path / "missing-auth.json", "model", "baseline")
+    assert "VIBECODING_HARNESS_ROOT" not in base_env

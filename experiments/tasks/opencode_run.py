@@ -32,7 +32,8 @@ for path in (str(ROOT), str(HERE)):
 from evaluate import evaluate, load_manifest, task_by_id  # noqa: E402
 from evidence_check import run_evidence  # noqa: E402
 from opencode_arms import (  # noqa: E402
-    ARMS, prepare_sandbox, prepare_workspace, skill_permissions, write_arm_config,
+    ARMS, prepare_harness_bundle, prepare_sandbox, prepare_workspace, skill_permissions,
+    write_arm_config,
 )
 from harness.eval.pilot_metrics import (  # noqa: E402
     changed_files, classify_findings, compliance_score, context_relevance,
@@ -160,7 +161,14 @@ def build_environment(sandbox: Path, scope: dict, workspace: Path, auth_file: Pa
     env = os.environ.copy()
     env.update(prepare_sandbox(sandbox, model, auth_file))
     write_arm_config(sandbox, arm, model)
-    env["VIBECODING_HARNESS_ROOT"] = str(ROOT)
+    # The gate CLI imports the engine from a bundle that carries src/harness and the
+    # pack only. Exporting the repository root let the agent read the hidden tests
+    # and the oracle rules with a shell.
+    if ARMS[arm].gate:
+        bundle = prepare_harness_bundle(sandbox / "harness-bundle")
+        env["VIBECODING_HARNESS_ROOT"] = str(bundle)
+    else:
+        env.pop("VIBECODING_HARNESS_ROOT", None)
     env["VIBECODING_WORKSPACE"] = str(workspace)
     env["VIBECODING_SCOPE"] = json.dumps(scope, ensure_ascii=False)
     env.pop("OPENCODE_CONFIG", None)
