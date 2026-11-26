@@ -840,6 +840,8 @@ Para evaluar el efecto de las reglas, las *skills* y las compuertas de cumplimie
 
 - **Preservación funcional y costo:** diez trampas × dos brazos × tres repeticiones = **60 ejecuciones**, más seis repeticiones de control tras unificar la capa de evidencia.
 
+- **Replicación aislada:** tres brazos (`baseline`, `gate_only`, `rules_skills_gate`) × cuatro tareas × seis repeticiones = **72 ejecuciones**, con el repositorio fuera del entorno del agente.
+
 La suite de pruebas del repositorio se ejecutó como verificación de preservación funcional y registró **613 pruebas aprobadas**.
 
 **Definición de las métricas.** Para cada control se cuenta la matriz de confusión sobre los casos etiquetados: verdaderos positivos (VP), falsos positivos (FP), falsos negativos (FN) y verdaderos negativos (VN). Precisión = VP/(VP+FP); exhaustividad = VP/(VP+FN); exactitud = (VP+VN)/total. Los intervalos son de Wilson al 95 %, elegidos porque se comportan mejor que el intervalo normal con muestras pequeñas y con proporciones cercanas a 0 o a 1.
@@ -1067,6 +1069,14 @@ El contraste de dosis se midió en octubre. Para saber si se sostiene, se repiti
 
 - **El enforcement externo no aportó una mejora demostrable en esta muestra:** el brazo `rules_skills_gate_enforced` no activó el bucle externo de corrección durante las ejecuciones reportadas. La compuerta asesora presentó un resultado comparable en violaciones confirmadas con menor complejidad operativa.
 
+- **La replicación aísla el componente:** en el entorno limpio, `baseline` cometió seis violaciones, `gate_only` ninguna y el arnés completo una. El contraste principal es 6/0 (*p* = 0,031) y el contraste entre los dos brazos con compuerta es 0/1 (*p* = 1,0): el efecto proviene de la compuerta y la capa procedural no agrega nada medible.
+
+- **La significancia depende de los tiempos agotados:** al excluir las ocho corridas que alcanzaron el límite de 600 segundos, el contraste principal queda 5/0 (*p* = 0,0625). La dirección es robusta; la significancia, limítrofe, y conviene declararlo.
+
+- **El costo se replica:** 1,7 veces el tiempo de ciclo y 2,8 veces los tokens en la corrida limpia, frente a 2,3 veces los tokens en octubre. Dos mediciones separadas dan el mismo orden de magnitud.
+
+- **El aislamiento del entorno es parte del método:** la primera medición dio cero en todos los brazos porque el agente podía leer el benchmark desde el repositorio. Una fuga así empuja todas las comparaciones hacia "sin efecto" y no se detecta mirando los resultados, solo el entorno.
+
 - **El costo de la compuerta es medible:** `rules_skills_gate` utilizó aproximadamente 2,3 veces los tokens de `baseline` (35,8 M frente a 15,6 M) y requirió 46,3 segundos adicionales por tarea en promedio. El costo debe formar parte de cualquier interpretación del beneficio de privacidad.
 
 - **La calibración ciega cambia el estatus de la afirmación sobre el detector:** antes del Hito 2, "el detector funciona" se sostenía con 22 casos curados por sus propios autores. Después, se sostiene con 907 casos escritos por autores sin acceso al repositorio, sellados antes de la corrida y medidos antes de la corrección. La diferencia no es de cantidad, sino de qué se puede afirmar.
@@ -1082,10 +1092,10 @@ El contraste de dosis se midió en octubre. Para saber si se sostiene, se repiti
 | Variable (sección 2.3) | Dónde se mide | Estado |
 | - | - | - |
 | 1. Efectividad de gobernanza (*goldplating*, alcance, dependencias) | Cambios no solicitados en ambos experimentos | Parcial: se reporta el conteo, no la tasa por tarea |
-| 2. Eficiencia contextual (tokens y tiempo de ciclo) | 10.2 y 10.4 | Medida |
+| 2. Eficiencia contextual (tokens y tiempo de ciclo) | 10.2, 10.4 y 10.8 | Medida |
 | 3. Preservación funcional | 10.2, 10.4 y la suite de 613 pruebas | Medida |
 | 4. Trazabilidad de decisiones | — | No medida |
-| 5. Capacidad de auditoría normativa | 10.2, 10.3 y 10.6 | Medida |
+| 5. Capacidad de auditoría normativa | 10.2, 10.3, 10.6 y 10.8 | Medida |
 
 La variable 4 no se mide en este informe: exigiría observar cómo documenta sus decisiones un desarrollador con y sin el arnés, y eso requiere un estudio con personas. Se declara como pendiente en lugar de sustituirla por un indicador indirecto.
 
@@ -1138,6 +1148,8 @@ Las limitaciones se organizan según el tipo de validez afectada, siguiendo la c
 18. **Vigencia temporal de la evidencia.** El mismo instrumento dio resultados distintos en octubre y en noviembre. Un resultado sobre comportamiento de modelos no es estable en el tiempo, y esa inestabilidad debe considerarse al interpretar cualquier medición de este tipo.
 
 19. **Contaminación del entorno en corridas previas.** La raíz del repositorio se exportaba para que la compuerta importara el motor, y el agente podía leer el benchmark con la *shell*: 21 de 247 corridas históricas lo hicieron. La medición que se reporta es la del entorno aislado; las anteriores no son interpretables en este punto.
+20. **Aislamiento a nivel de variables de entorno.** El entorno aislado impide el acceso por la variable del arnés, pero el perfil del usuario sigue apuntando a la carpeta real: un agente decidido podría llegar al repositorio por ruta absoluta. El registro de comandos lo detectaría; un contenedor lo impediría.
+
 
 # 11. DISCUSIÓN, CONCLUSIONES Y TRABAJO FUTURO
 
@@ -1169,11 +1181,11 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 3. **Catálogo y validación:** se formalizó un catálogo de controles con identificadores del proyecto, motores de políticas, validación y compuerta de *pre-commit*. La cobertura se documenta arista por arista: 15 se detectan, 5 se reportan como riesgo, 6 se exigen como evidencia y 4 quedan a cargo de una persona.
 
-4. **Evidencia experimental:** se ejecutaron cuatro experimentos —108 ejecuciones del experimento formal, 100 del experimento de dosis, 907 casos de calibración ciega y 66 ejecuciones del experimento de preservación funcional y costo—, con sus resultados, costos y limitaciones documentados por separado.
+4. **Evidencia experimental:** se ejecutaron cinco experimentos —108 ejecuciones del experimento formal, 100 del experimento de dosis, 72 de la replicación aislada, 907 casos de calibración ciega y 66 ejecuciones del experimento de preservación funcional y costo—, con sus resultados, costos y limitaciones documentados por separado.
 
 5. **Calidad medida del detector:** la calibración ciega sostiene una precisión de 0,955 [0,849; 0,987] y una exhaustividad de 1,000 [0,916; 1,000] sobre la ronda de mayor tamaño. La serie completa muestra que el detector mejoró porque cada ronda expuso un canal que el corpus anterior no cubría, no porque el corpus se ajustara al detector.
 
-6. **Límites de las conclusiones:** el prototipo demuestra factibilidad técnica, evidencia inicial de la utilidad de una compuerta de cumplimiento y una medición acotada de la calidad del detector. No permite afirmar que todos los componentes formen un *harness* plenamente integrado, que los resultados se generalicen a otros modelos o dominios, ni que el arnés mejore la completitud funcional del trabajo asistido.
+6. **Límites de las conclusiones:** el prototipo demuestra factibilidad técnica, evidencia de que la compuerta reduce las violaciones de privacidad confirmadas en dos mediciones independientes y una medición acotada de la calidad del detector. No permite afirmar que todos los componentes formen un *harness* plenamente integrado, que los resultados se generalicen a otros modelos o dominios, ni que el arnés mejore la completitud funcional. La significancia de la comparación principal desciende a *p* = 0,0625 al excluir las corridas que agotaron el tiempo límite.
 
 ## 11.3 Trabajo futuro comprometido
 
@@ -1183,7 +1195,7 @@ De acuerdo con la planificación vigente al 24 de noviembre de 2026, el Hito 2 e
 
 2. **Código real a mayor escala:** repetir el triage sobre entre tres y cinco repositorios reales, con adjudicación de cada hallazgo, para estimar la precisión fuera de los módulos aislados y medir el ruido que la compuerta introduce en un flujo de revisión. La misma línea debe incluir una comparación con Semgrep en modo *taint*, para separar el efecto de las reglas del efecto del motor.
 
-3. **Piloto de preservación funcional con instrumento completo:** ejecutar los dos brazos de ese experimento con el detector actual y un paquete de trampas más difíciles, dado que el paquete vigente está saturado y no permite medir mejora funcional.
+3. **Pruebas separadas y aislamiento reforzado:** dividir cada prueba oculta en una parte funcional y una de privacidad, para no depender del oráculo, y ejecutar el experimento en un contenedor que impida el acceso por ruta absoluta.
 
 4. **Validación del pipeline de *skills*:** completar las pruebas del flujo de las doce habilidades en el entorno del IDE y documentar sus criterios de activación y salida.
 
