@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -98,10 +99,31 @@ def parse_events(lines: list[str]) -> tuple[list[dict], dict | None]:
     return events, error
 
 
+# The read tool is not the only way to reach the benchmark: a shell command can
+# cat or grep it. Any command naming the benchmark or an absolute path outside the
+# workspace marks the run, so contamination is detected instead of inferred.
+CONTAMINATION_MARKERS = ("experiments/", "experiments\\", "oracle", "hidden/", "hidden\\",
+                         "manifest.json", "qa_reports", "docs/research")
+
+
+def _outside_workspace(command: str, workspace: Path) -> bool:
+    lowered = command.lower()
+    if any(marker in lowered for marker in CONTAMINATION_MARKERS):
+        return True
+    for token in re.findall(r"[A-Za-z]:[\\/][^\s\"']+", command):
+        try:
+            Path(token).resolve().relative_to(workspace.resolve())
+        except ValueError:
+            return True
+    return False
+
+
 def summarize_events(events: list[dict], workspace: Path, gate_enabled: bool = False) -> dict:
     steps = []
     tool_calls: Counter[str] = Counter()
     files_read: list[str] = []
+    bash_commands: list[str] = []
+    contamination: list[str] = []
     gate_calls = 0
     tokens = Counter()
     cost = 0.0
@@ -136,6 +158,10 @@ def summarize_events(events: list[dict], workspace: Path, gate_enabled: bool = F
                 if relative not in files_read:
                     files_read.append(relative)
             command = payload.get("command")
+            if isinstance(command, str) and tool == "bash":
+                bash_commands.append(command[:400])
+                if _outside_workspace(command, workspace):
+                    contamination.append(command[:200])
             if (gate_enabled and tool == "bash" and isinstance(command, str)
                     and "compliance_check.py" in command):
                 gate_calls += 1
@@ -143,6 +169,9 @@ def summarize_events(events: list[dict], workspace: Path, gate_enabled: bool = F
         "steps": steps,
         "tool_calls": tool_calls,
         "files_read": files_read,
+        "bash_commands": bash_commands[:200],
+        "contaminated": bool(contamination),
+        "contamination_evidence": contamination[:5],
         "gate_calls": gate_calls,
         "tokens": {
             "total_tokens": tokens["total"],

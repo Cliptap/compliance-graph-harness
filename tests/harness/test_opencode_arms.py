@@ -104,3 +104,30 @@ def test_the_gate_arm_gets_the_bundle_and_baseline_gets_nothing(tmp_path):
     base_env = build_environment(tmp_path / "base", scope, tmp_path / "ws",
                                  tmp_path / "missing-auth.json", "model", "baseline")
     assert "VIBECODING_HARNESS_ROOT" not in base_env
+
+
+def _bash_event(command: str) -> dict:
+    return {"type": "tool_use", "part": {"tool": "bash", "state": {"input": {"command": command}}}}
+
+
+def test_a_shell_command_that_touches_the_benchmark_marks_the_run(tmp_path):
+    from opencode_run import summarize_events
+
+    stats = summarize_events([_bash_event("cat experiments/tasks/hidden/test_t31_x.py")], tmp_path)
+    assert stats["contaminated"] is True
+    assert stats["contamination_evidence"]
+
+
+def test_a_shell_command_outside_the_workspace_marks_the_run(tmp_path):
+    from opencode_run import summarize_events
+
+    stats = summarize_events([_bash_event('cat "C:/Users/someone/other/secret.py"')], tmp_path)
+    assert stats["contaminated"] is True
+
+
+def test_an_ordinary_command_is_clean_and_recorded(tmp_path):
+    from opencode_run import summarize_events
+
+    stats = summarize_events([_bash_event("python -m pytest tests -q")], tmp_path)
+    assert stats["contaminated"] is False
+    assert stats["bash_commands"] == ["python -m pytest tests -q"]
