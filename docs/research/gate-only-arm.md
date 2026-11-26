@@ -118,23 +118,35 @@ benchmark y la compuerta siguió funcionando desde el paquete.
 
 ## Re-corrida con el entorno limpio (26 de noviembre)
 
-36 corridas, doce por brazo. El registro de comandos no marcó ninguna contaminada.
+72 corridas: seis repeticiones por tarea y brazo, 24 por brazo. El registro de comandos no marcó
+ninguna contaminada.
 
-| Brazo | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana |
-| - | -: | -: | -: | -: | -: | -: |
-| `baseline` | 3 | 0 | 0 | 9 | 184,7 s | 1.128.259 |
-| `gate_only` | 0 | 0 | 0 | 12 | 316,1 s | 2.515.283 |
-| `rules_skills_gate` | 1 | 0 | 2 | 9 | 257,5 s | 2.412.901 |
+| Brazo | Confirmadas | Tasa [IC 95 %] | Latentes | Limpias | Ciclo mediana | Tokens mediana | Timeouts |
+| - | -: | - | -: | -: | -: | -: | -: |
+| `baseline` | 6 | 0,250 [0,120; 0,449] | 1 | 17 | 176,6 s | 986.284 | 1 |
+| `gate_only` | 0 | 0,000 [0,000; 0,138] | 3 | 21 | 301,5 s | 2.759.781 | 4 |
+| `rules_skills_gate` | 1 | 0,042 [0,007; 0,202] | 5 | 18 | 314,0 s | 2.932.218 | 3 |
 
-- `baseline`: T33 repeticiones 1 y 3 (token de reseteo en la redirección) y T35 repetición 2 (token de sesión en la bitácora).
-- `gate_only`: ninguna.
-- `rules_skills_gate`: una, en T31 repetición 1; las repeticiones 2 y 3 quedan como riesgo latente por el falso positivo conocido del oráculo en la regla de borrado.
-- Contrastes pareados sobre fallas: `baseline` vs `gate_only` 3/0 (*p* = 0,25); `baseline` vs completo 3/1 (*p* = 0,625); `gate_only` vs completo 0/1 (*p* = 1,0).
-- Costo: entre 1,4 y 1,7 veces el ciclo y entre 2,1 y 2,2 veces los tokens. Tiempos agotados: dos en `gate_only`, uno en el completo, ninguno en `baseline`.
+- Las seis fallas de la línea base: tres en T33 (token de reseteo en la redirección), dos en T35
+  (token de sesión en la bitácora) y una en T31 (borrado dentro de la retención). El arnés completo
+  falló una, en T31. T34 no falló en ningún brazo.
+- `baseline` vs `gate_only`: seis pares discordantes, todos a favor de la compuerta; McNemar exacto
+  bilateral, *p* = **0,031**.
+- `baseline` vs arnés completo: seis a uno, *p* = 0,125.
+- `gate_only` vs arnés completo: cero a uno, *p* = 1,0. La capa procedural no agrega nada medible.
+- Costo: 1,7 veces el ciclo y 2,8 veces los tokens para la compuerta sola; 1,8 y 3,0 para el arnés
+  completo.
 
-**Lectura.** La compuerta reduce las violaciones y la capa procedural no agrega un efecto medible. La dirección coincide con octubre —ocho de veinte a cero, *p* = 0,0078—; noviembre tiene menos potencia: tres de doce a cero o una.
+**Sensibilidad.** Excluyendo las ocho corridas que agotaron el tiempo límite, el contraste principal
+queda en cinco a cero (*p* = 0,0625). La dirección no depende de esos casos; la significancia sí, y
+conviene reportarlo así.
 
-**Pendiente.** Más repeticiones hasta seis pares discordantes, que es el umbral de *p* < 0,05 con McNemar exacto.
+**Lectura.** El efecto de la compuerta se replica con significancia en un entorno aislado y coincide
+con la medición de octubre (ocho de veinte a cero, *p* = 0,0078). El arnés procedural no aporta un
+efecto medible sobre la herramienta sola.
+
+**Trabajo futuro.** Un segundo modelo para validez externa, y separar cada prueba oculta en una
+parte funcional y una de privacidad para no depender del oráculo.
 
 ## Artefactos
 
