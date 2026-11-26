@@ -90,6 +90,34 @@ el agente cumple sin ayuda. Lo que el trabajo sostiene es más acotado y más ú
 - **El método para detectarlo** —corpus ciego sellado, clasificación de cuatro celdas y brazos que
   separan analizador, procedimiento y modelo— es parte del aporte.
 
+## Fuga del benchmark (26 de noviembre)
+
+El entorno de ejecución exportaba `VIBECODING_HARNESS_ROOT` apuntando a la raíz del repositorio,
+para que la compuerta pudiera importar el motor. El agente tiene shell. Resultado: **21 de 247
+corridas leyeron las pruebas ocultas o las reglas del oráculo** con la herramienta de lectura.
+
+| Experimento | Corridas | Contaminadas | Brazos |
+| - | -: | -: | - |
+| `formal-dose` | 100 | 4 | baseline 1, gate 1, enforced 2 |
+| `formal-opencode` | 108 | 9 | harness 4, harness_compliance 5 |
+| `gate-only` | 36 | 7 | baseline 2, gate_only 3, completo 2 |
+| `hard-traps` | 3 | 1 | baseline 1 |
+
+No fue una fuga de memoria: en 247 corridas no hay una sola llamada a una herramienta de memoria, el
+sandbox no declara MCP y `XDG_CONFIG_HOME` está aislado.
+
+**Efecto sobre este experimento.** Excluyendo las siete corridas contaminadas quedan 29: diez de
+`baseline`, nueve de `gate_only` y diez del brazo completo. El resultado no cambia: cero violaciones
+confirmadas en los tres brazos. La contaminación no explica el resultado, pero impide afirmarlo como
+una medición ciega.
+
+**Arreglo.** La compuerta ahora importa el motor desde un paquete por corrida que contiene
+`src/harness`, `harness/eval/pilot_metrics.py` y el pack, y nada más. Los brazos sin compuerta no
+reciben la variable. Una corrida de validación con `gate_only` no registró ninguna lectura del
+benchmark y la compuerta siguió funcionando desde el paquete.
+
+La comparación se repite con el entorno limpio; los resultados quedan en `qa_reports/clean-env/`.
+
 ## Artefactos
 
 - `qa_reports/gate-only/rep{1,2,3}_{tarea}_{brazo}.json`: reportes por ejecución.
