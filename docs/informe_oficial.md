@@ -26,7 +26,7 @@ Los agentes de programación cumplen lo que se les pide, pero no garantizan lo q
 
 En octubre, la compuerta eliminó las violaciones confirmadas del banco: ocho en la línea base frente a cero con la compuerta, sobre veinte pares (McNemar, *p* = 0,0078), a un costo de 2,3 veces los tokens.
 
-La replicación con el entorno aislado confirma la dirección: la línea base cometió tres violaciones y la compuerta ninguna, con tres pares discordantes (*p* = 0,25), a un costo de 1,7 veces el tiempo y 2,2 veces los tokens. El brazo con el arnés completo queda pendiente. La calibración ciega del detector, en 21 rondas, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos.
+La replicación con el entorno aislado confirma la dirección: la línea base cometió tres violaciones, la compuerta sola ninguna y el arnés completo una, con tres pares discordantes (*p* = 0,25) y sin diferencia entre los dos brazos con compuerta. El costo es de 1,7 veces el tiempo y 2,2 veces los tokens. La calibración ciega del detector, en 21 rondas, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos.
 
 De las treinta aristas de la ley, quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro quedan a cargo de una persona. Los resultados están acotados a un modelo, un banco y muestras pequeñas. El aporte que la evidencia sostiene es la capa de verificación —catálogo, compuerta y gate de evidencia—, y su valor es de auditoría. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
 
@@ -1035,22 +1035,25 @@ Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declar
 
 ## 10.8 Replicación del experimento de dosis con el entorno aislado
 
-El contraste de dosis se midió en octubre. Para saber si se sostiene, se repitieron las mismas cuatro tareas con el modelo actual y con el entorno de ejecución aislado del repositorio: el agente ya no puede leer las pruebas ocultas ni las reglas del oráculo. Se compararon dos brazos; el tercero queda pendiente.
+El contraste de dosis se midió en octubre. Para saber si se sostiene, se repitieron las mismas cuatro tareas con el modelo actual y con el entorno de ejecución aislado del repositorio: el agente ya no puede leer las pruebas ocultas ni las reglas del oráculo. Se compararon los tres brazos.
 
 | Brazo | Corridas | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana |
 | - | -: | -: | -: | -: | -: | -: | -: |
 | `baseline` | 12 | 3 | 0 | 0 | 9 | 184,7 s | 1.128.259 |
 | `gate_only` | 12 | 0 | 0 | 0 | 12 | 316,1 s | 2.515.283 |
+| `rules_skills_gate` | 12 | 1 | 0 | 2 | 9 | 257,5 s | 2.412.901 |
 
-- **Las tres violaciones de la línea base:** dos en T33, con el token de reseteo en la URL de redirección, y una en T35, con el token de sesión en la bitácora.
-- **`gate_only` no produjo ninguna.** Los tres pares discordantes favorecen a la compuerta; McNemar exacto bilateral, *p* = 0,25.
-- **El costo es real:** 1,7 veces el tiempo de ciclo y 2,2 veces los tokens.
+- **Las tres violaciones de la línea base:** dos en T33, con el token de reseteo en la URL de redirección, y una en T35, con el token de sesión en la bitácora. El arnés completo cometió una, en T31.
+- **Contra la línea base:** tres pares discordantes a favor de `gate_only` (*p* = 0,25) y tres a uno a favor del arnés completo (*p* = 0,625).
+- **Entre los dos brazos con compuerta no hay diferencia:** un par discordante a favor de `gate_only` (*p* = 1,0). La capa procedural no agrega un efecto medible.
+- **El costo es real:** entre 1,4 y 1,7 veces el tiempo de ciclo y entre 2,1 y 2,2 veces los tokens.
+- **Ninguna corrida leyó el benchmark:** el registro de comandos de *shell* lo confirma.
 
-**Lectura.** Cuando el entorno está aislado, el efecto reaparece: la compuerta evita tres violaciones que la línea base comete. La dirección coincide con octubre; la magnitud es menor —tres frente a ocho— y tres pares no alcanzan significancia.
+**Lectura.** La compuerta reduce las violaciones y la capa procedural no agrega nada medible. La dirección coincide con octubre; con doce pares no alcanza significancia.
 
 **Qué había pasado antes.** Una corrida previa mostró cero en los tres brazos. La causa fue una fuga: la raíz del repositorio se exportaba al entorno para que la compuerta importara el motor, y el agente podía explorar el benchmark con la *shell*. Se corrigió con un paquete por corrida que contiene solo el motor y el catálogo.
 
-**Pendiente.** El brazo con el arnés completo y más repeticiones para aumentar la potencia.
+**Pendiente.** Más repeticiones para la potencia estadística.
 
 ## 10.9 Análisis e interpretación de resultados
 
@@ -1150,7 +1153,7 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 - **Controles normativos:** el proyecto demuestra la viabilidad técnica de representar algunos escenarios de privacidad mediante reglas ejecutables y pruebas. Esto no equivale a demostrar cumplimiento integral de la Ley N° 21.719.
 
-- **La replicación confirma la dirección y acota la magnitud:** con el entorno aislado, la línea base cometió tres violaciones y la compuerta ninguna, a un costo de 1,7 veces el tiempo y 2,2 veces los tokens. La magnitud es menor que en octubre y tres pares no alcanzan significancia. Una corrida previa había dado cero en todos los brazos porque el agente podía leer el benchmark desde el repositorio: sin el aislamiento, el resultado no era interpretable.
+- **La replicación confirma la dirección y separa los componentes:** con el entorno aislado, la línea base cometió tres violaciones, la compuerta sola ninguna y el arnés completo una. Los dos brazos con compuerta no difieren (*p* = 1,0), de modo que el efecto proviene de la compuerta y no de la capa procedural. El costo es de 1,7 veces el tiempo y 2,2 veces los tokens, y tres pares no alcanzan significancia. Una corrida previa había dado cero en todos los brazos porque el agente podía leer el benchmark desde el repositorio: sin el aislamiento, el resultado no era interpretable.
 
 - **Contraste con el estado del arte:** la comparación de la sección 5.2 anticipaba que un motor de reglas estático detecta aquello que sus reglas describen. La medición de la sección 10.3 lo confirma con un número: 51 de 84 casos frente a 82 del detector calibrado, y una exhaustividad de 0,286 frente a 1,000. La diferencia no está en la existencia de la herramienta, que es madura, sino en la calibración del instrumento y en el análisis de flujo.
 
@@ -1160,7 +1163,7 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 ## 11.2 Conclusiones
 
-1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. La replicación con el entorno aislado confirmó la dirección: la línea base cometió tres violaciones y la compuerta ninguna, con tres pares discordantes (McNemar, *p* = 0,25), a un costo de 1,7 veces el tiempo y 2,2 veces los tokens. El experimento de preservación funcional y costo acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
+1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. La replicación con el entorno aislado confirmó la dirección: la línea base cometió tres violaciones, la compuerta sola ninguna y el arnés completo una, con tres pares discordantes (McNemar, *p* = 0,25) y sin diferencia entre los dos brazos con compuerta, a un costo de 1,7 veces el tiempo y 2,2 veces los tokens. El experimento de preservación funcional y costo acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
 
 2. **Consolidación técnica:** el núcleo del arnés se organizó como módulo independiente, con 592 pruebas propias, y la aplicación clínica con 21. La suite consolidada cuenta con 613 pruebas aprobadas.
 
