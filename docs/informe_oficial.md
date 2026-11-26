@@ -26,7 +26,7 @@ Los agentes de programación cumplen lo que se les pide, pero no garantizan lo q
 
 En octubre, la compuerta eliminó las violaciones confirmadas del banco: ocho en la línea base frente a cero con la compuerta, sobre veinte pares (McNemar, *p* = 0,0078), a un costo de 2,3 veces los tokens.
 
-La replicación con el modelo actual no lo reprodujo. Las cuatro tareas quedaron saturadas: los tres brazos —sin herramienta, con la compuerta sola y con el arnés completo— dieron cero violaciones confirmadas, sin pares discordantes (*p* = 1,0), y la compuerta agregó 1,5 veces el tiempo y casi tres veces los tokens. El valor de una compuerta de cumplimiento es función de la tasa de error del agente. La calibración ciega del detector, en 21 rondas, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos.
+La replicación con el entorno aislado confirma la dirección: la línea base cometió tres violaciones y la compuerta ninguna, con tres pares discordantes (*p* = 0,25), a un costo de 1,7 veces el tiempo y 2,2 veces los tokens. El brazo con el arnés completo queda pendiente. La calibración ciega del detector, en 21 rondas, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos.
 
 De las treinta aristas de la ley, quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro quedan a cargo de una persona. Los resultados están acotados a un modelo, un banco y muestras pequeñas. El aporte que la evidencia sostiene es la capa de verificación —catálogo, compuerta y gate de evidencia—, y su valor es de auditoría. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
 
@@ -1033,29 +1033,24 @@ Sobre el catálogo completo (37 controles), **26 tienen detector determinista**,
 
 Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declara como gap porque la fuga la evalúa el detector de `CORE-CHECK-002`. Por eso el pack tiene 19 aristas de la ley implementadas (14 en modo detectar y 5 en modo riesgo) más 7 detectores `v2.*`, que suman los 26 controles con detector.
 
-## 10.8 Replicación del experimento de dosis con el modelo actual
+## 10.8 Replicación del experimento de dosis con el entorno aislado
 
-El contraste de dosis se midió en octubre con el modelo fijado. Para saber si se sostiene, y para separar el modelo del arnés, se repitieron las mismas cuatro tareas con tres brazos: sin ninguna herramienta, con la compuerta sola y con el arnés completo.
+El contraste de dosis se midió en octubre. Para saber si se sostiene, se repitieron las mismas cuatro tareas con el modelo actual y con el entorno de ejecución aislado del repositorio: el agente ya no puede leer las pruebas ocultas ni las reglas del oráculo. Se compararon dos brazos; el tercero queda pendiente.
 
-- **`baseline`:** la aplicación, el enunciado de la tarea y su suite.
-- **`gate_only`:** la compuerta, el catálogo y el enganche de integración, con una instrucción mínima de ejecutarla. Sin reglas, sin procedimientos y sin protocolo.
-- **`rules_skills_gate`:** el arnés completo.
+| Brazo | Corridas | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana |
+| - | -: | -: | -: | -: | -: | -: | -: |
+| `baseline` | 12 | 3 | 0 | 0 | 9 | 184,7 s | 1.128.259 |
+| `gate_only` | 12 | 0 | 0 | 0 | 12 | 316,1 s | 2.515.283 |
 
-| Brazo | Corridas | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana | Llamadas a la compuerta |
-| - | -: | -: | -: | -: | -: | -: | -: | -: |
-| `baseline` | 12 | 0 | 0 | 3 | 9 | 183,1 s | 1.006.682 | 0 |
-| `gate_only` | 12 | 0 | 0 | 3 | 9 | 268,3 s | 2.973.747 | 2 |
-| `rules_skills_gate` | 12 | 0 | 0 | 2 | 10 | 264,2 s | 2.528.101 | 2 |
+- **Las tres violaciones de la línea base:** dos en T33, con el token de reseteo en la URL de redirección, y una en T35, con el token de sesión en la bitácora.
+- **`gate_only` no produjo ninguna.** Los tres pares discordantes favorecen a la compuerta; McNemar exacto bilateral, *p* = 0,25.
+- **El costo es real:** 1,7 veces el tiempo de ciclo y 2,2 veces los tokens.
 
-- **Cero violaciones confirmadas en los tres brazos.** Las 36 ejecuciones aprobaron la prueba oculta.
-- **Sin pares discordantes:** McNemar exacto bilateral, *p* = 1,0 tanto para `baseline` frente a `gate_only` como para `baseline` frente a `rules_skills_gate`.
-- **La compuerta cuesta:** 183,1 segundos y 1,0 millón de tokens en `baseline`, frente a 268,3 segundos y 2,97 millones en `gate_only`. Es 1,5 veces el tiempo y casi tres veces los tokens, sin beneficio medido.
-- **Dos tiempos agotados:** el brazo completo alcanzó el límite de 600 segundos en dos de doce corridas; los otros dos brazos, en ninguna.
-- **Los ocho casos latentes son un falso positivo del oráculo.** Corresponden a T31 y a la regla `delete from orders`, que no mira la condición. El código generado calcula el plazo de 2.190 días y salta las órdenes dentro de la retención. El patrón aparece también en `baseline`, en las tres repeticiones, sin que ninguna herramienta lo indique.
+**Lectura.** Cuando el entorno está aislado, el efecto reaparece: la compuerta evita tres violaciones que la línea base comete. La dirección coincide con octubre; la magnitud es menor —tres frente a ocho— y tres pares no alcanzan significancia.
 
-**Lectura.** Con el modelo actual las cuatro trampas están saturadas: el agente las resuelve sin reglas, sin procedimientos y sin compuerta. El contraste de ocho a cero no se reproduce porque la línea base ya no produce violaciones, de modo que no hay nada que la compuerta corrija. Ni el arnés procedural ni la compuerta aportan un valor medible en privacidad sobre estas tareas, y la compuerta agrega costo.
+**Qué había pasado antes.** Una corrida previa mostró cero en los tres brazos. La causa fue una fuga: la raíz del repositorio se exportaba al entorno para que la compuerta importara el motor, y el agente podía explorar el benchmark con la *shell*. Se corrigió con un paquete por corrida que contiene solo el motor y el catálogo.
 
-**Qué implica.** El valor de una compuerta de cumplimiento es función de la tasa de error del agente. Cuando esa tasa es cero, la compuerta no previene: audita, y cuesta. Este experimento no mide la utilidad del catálogo ni del gate de evidencia, que no dependen del error del agente.
+**Pendiente.** El brazo con el arnés completo y más repeticiones para aumentar la potencia.
 
 ## 10.9 Análisis e interpretación de resultados
 
@@ -1139,7 +1134,7 @@ Las limitaciones se organizan según el tipo de validez afectada, siguiendo la c
 
 18. **Vigencia temporal de la evidencia.** El mismo instrumento dio resultados distintos en octubre y en noviembre. Un resultado sobre comportamiento de modelos no es estable en el tiempo, y esa inestabilidad debe considerarse al interpretar cualquier medición de este tipo.
 
-19. **Saturación del paquete de trampas.** Las cuatro tareas dejaron de discriminar para el modelo actual. Un paquete más difícil, o tareas donde el agente efectivamente omita un requisito, es condición para volver a medir el efecto de la compuerta.
+19. **Contaminación del entorno en corridas previas.** La raíz del repositorio se exportaba para que la compuerta importara el motor, y el agente podía leer el benchmark con la *shell*: 21 de 247 corridas históricas lo hicieron. La medición que se reporta es la del entorno aislado; las anteriores no son interpretables en este punto.
 
 # 11. DISCUSIÓN, CONCLUSIONES Y TRABAJO FUTURO
 
@@ -1155,7 +1150,7 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 - **Controles normativos:** el proyecto demuestra la viabilidad técnica de representar algunos escenarios de privacidad mediante reglas ejecutables y pruebas. Esto no equivale a demostrar cumplimiento integral de la Ley N° 21.719.
 
-- **La replicación refuta el efecto medido:** con el modelo actual, la línea base sin ninguna herramienta tampoco produjo violaciones. El arnés no cambió el resultado y la compuerta agregó 1,5 veces el tiempo y casi tres veces los tokens. Lo que la evidencia sostiene no es que el arnés mejore el cumplimiento, sino que el valor de una compuerta es función de la tasa de error del agente: cuando esa tasa cae a cero, la compuerta audita y cuesta.
+- **La replicación confirma la dirección y acota la magnitud:** con el entorno aislado, la línea base cometió tres violaciones y la compuerta ninguna, a un costo de 1,7 veces el tiempo y 2,2 veces los tokens. La magnitud es menor que en octubre y tres pares no alcanzan significancia. Una corrida previa había dado cero en todos los brazos porque el agente podía leer el benchmark desde el repositorio: sin el aislamiento, el resultado no era interpretable.
 
 - **Contraste con el estado del arte:** la comparación de la sección 5.2 anticipaba que un motor de reglas estático detecta aquello que sus reglas describen. La medición de la sección 10.3 lo confirma con un número: 51 de 84 casos frente a 82 del detector calibrado, y una exhaustividad de 0,286 frente a 1,000. La diferencia no está en la existencia de la herramienta, que es madura, sino en la calibración del instrumento y en el análisis de flujo.
 
@@ -1165,7 +1160,7 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 ## 11.2 Conclusiones
 
-1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. La replicación con el modelo actual no reprodujo ese contraste: los tres brazos —sin herramienta, con la compuerta sola y con el arnés completo— quedaron en cero violaciones confirmadas, sin pares discordantes (McNemar, *p* = 1,0), y la compuerta agregó 1,5 veces el tiempo y casi tres veces los tokens. El experimento de preservación funcional y costo acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
+1. **Respuesta a la pregunta del proyecto:** en el banco y las condiciones evaluadas, la configuración `rules_skills_gate` redujo las violaciones de privacidad confirmadas de ocho a cero frente a `baseline` (McNemar, *p* = 0,0078). El resultado se obtuvo con veinte pares y cuatro tareas, y tuvo un costo aproximado de 2,3 veces más tokens y 46,3 segundos adicionales por tarea. La replicación con el entorno aislado confirmó la dirección: la línea base cometió tres violaciones y la compuerta ninguna, con tres pares discordantes (McNemar, *p* = 0,25), a un costo de 1,7 veces el tiempo y 2,2 veces los tokens. El experimento de preservación funcional y costo acota ese resultado: cuando el modelo ya resuelve la tarea sin el arnés, la compuerta no mejora la completitud funcional y el costo sube a 2,5 veces el tiempo de ciclo y 3,3 veces los tokens. No se afirma una reducción general del tiempo de ciclo, la eliminación de alucinaciones ni un efecto causal del contexto estructural.
 
 2. **Consolidación técnica:** el núcleo del arnés se organizó como módulo independiente, con 592 pruebas propias, y la aplicación clínica con 21. La suite consolidada cuenta con 613 pruebas aprobadas.
 

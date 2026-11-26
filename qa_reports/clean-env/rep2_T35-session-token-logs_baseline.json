@@ -1,0 +1,412 @@
+{
+  "task": "T35-session-token-logs",
+  "arm": "baseline",
+  "workspace": "C:\\Users\\andre\\AppData\\Local\\Temp\\t7-opencode\\workspaces\\T35-session-token-logs-baseline",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runner": "opencode",
+  "live": {
+    "status": "finished",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "cycle_time_s": 105.8,
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 5,
+      "read": 6,
+      "edit": 3
+    },
+    "files_read": [
+      "TASK.md",
+      "README.md",
+      "app/main.py",
+      "app/security.py",
+      "tests/conftest.py",
+      "tests/test_app.py"
+    ],
+    "gate_calls": 0,
+    "gate_rounds": 0,
+    "gate_unresolved": 0,
+    "tokens": {
+      "total_tokens": 268678,
+      "input_tokens": 32519,
+      "output_tokens": 1390,
+      "reasoning_tokens": 2193,
+      "cache_read_tokens": 232576,
+      "cache_write_tokens": 0
+    },
+    "cost": 0.007725,
+    "stderr_tail": ""
+  },
+  "summary": {
+    "status": "finished",
+    "error": null,
+    "efficiency": {
+      "cycle_time_s": 105.8,
+      "latency_ms": 105800,
+      "rounds": 10,
+      "tool_calls": 15,
+      "turns": 10,
+      "usage_reported": true,
+      "tokens": {
+        "total_tokens": 268678,
+        "input_tokens": 32519,
+        "output_tokens": 1390,
+        "reasoning_tokens": 2193,
+        "cache_read_tokens": 232576,
+        "cache_write_tokens": 0
+      },
+      "cost_usd": 0.007725
+    },
+    "quality": {
+      "tests": {
+        "passed": 26,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "timeout": false
+      },
+      "files_changed": 1,
+      "lines_added": 6,
+      "lines_deleted": 1,
+      "unrequested_changes": 0,
+      "defects_introduced": null
+    },
+    "governance": {
+      "policy_violations": 17,
+      "scope_violations": 0,
+      "privacy_findings": 0,
+      "potential_risks_detected": 0,
+      "architecture_violations": null,
+      "compliance_score": 0.0,
+      "gate_rounds": 0,
+      "gate_calls": 0,
+      "gate_unresolved": 0,
+      "findings": [
+        {
+          "policy_id": "v2.log_pii",
+          "severity": "HIGH",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 192
+        },
+        {
+          "policy_id": "v2.reset_token",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 227
+        },
+        {
+          "policy_id": "v2.reset_token",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 233
+        },
+        {
+          "policy_id": "v2.reset_token",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 768
+        },
+        {
+          "policy_id": "v2.reset_token",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 214
+        },
+        {
+          "policy_id": "v2.reset_token",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 192
+        },
+        {
+          "policy_id": "v2.api_key",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 227
+        },
+        {
+          "policy_id": "v2.api_key",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 233
+        },
+        {
+          "policy_id": "v2.api_key",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 768
+        },
+        {
+          "policy_id": "v2.api_key",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 214
+        },
+        {
+          "policy_id": "v2.api_key",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 192
+        },
+        {
+          "policy_id": "v2.credential_response",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 193
+        },
+        {
+          "policy_id": "v2.credential_response",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 214
+        },
+        {
+          "policy_id": "v2.credential_response",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 227
+        },
+        {
+          "policy_id": "v2.credential_response",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 233
+        },
+        {
+          "policy_id": "v2.credential_response",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 244
+        },
+        {
+          "policy_id": "v2.credential_response",
+          "severity": "CRITICAL",
+          "status": "VIOLATION",
+          "file": "app/main.py",
+          "line": 768
+        }
+      ]
+    },
+    "context": {
+      "files_read": [
+        "TASK.md",
+        "README.md",
+        "app/main.py",
+        "app/security.py",
+        "tests/conftest.py",
+        "tests/test_app.py"
+      ],
+      "files_read_count": 6,
+      "symbols_retrieved": null,
+      "context_tokens": null,
+      "relevance_ratio": 0.16666666666666666
+    },
+    "review": {
+      "required_corrections": null,
+      "manual_changes_after": null,
+      "human_review_minutes": null
+    },
+    "rounds": [
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 7526,
+          "input": 5637,
+          "output": 84,
+          "reasoning": 13,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        },
+        "cost": 0.000909126
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 8536,
+          "input": 836,
+          "output": 260,
+          "reasoning": 16,
+          "cache": {
+            "write": 0,
+            "read": 7424
+          }
+        },
+        "cost": 0.000313272
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 23418,
+          "input": 14866,
+          "output": 186,
+          "reasoning": 174,
+          "cache": {
+            "write": 0,
+            "read": 8192
+          }
+        },
+        "cost": 0.002470476
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 31905,
+          "input": 7329,
+          "output": 135,
+          "reasoning": 1401,
+          "cache": {
+            "write": 0,
+            "read": 23040
+          }
+        },
+        "cost": 0.00209007
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 32071,
+          "input": 1583,
+          "output": 139,
+          "reasoning": 13,
+          "cache": {
+            "write": 0,
+            "read": 30336
+          }
+        },
+        "cost": 0.000419658
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 32296,
+          "input": 213,
+          "output": 211,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 31872
+          }
+        },
+        "cost": 0.000254166
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 32413,
+          "input": 310,
+          "output": 62,
+          "reasoning": 41,
+          "cache": {
+            "write": 0,
+            "read": 32000
+          }
+        },
+        "cost": 0.0002043
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 33045,
+          "input": 193,
+          "output": 232,
+          "reasoning": 364,
+          "cache": {
+            "write": 0,
+            "read": 32256
+          }
+        },
+        "cost": 0.000483318
+      },
+      {
+        "kind": "step",
+        "reason": "tool-calls",
+        "tokens": {
+          "total": 33508,
+          "input": 914,
+          "output": 39,
+          "reasoning": 171,
+          "cache": {
+            "write": 0,
+            "read": 32384
+          }
+        },
+        "cost": 0.000360252
+      },
+      {
+        "kind": "step",
+        "reason": "stop",
+        "tokens": {
+          "total": 33960,
+          "input": 638,
+          "output": 42,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 33280
+          }
+        },
+        "cost": 0.00022074
+      }
+    ],
+    "tool_calls_by_name": {
+      "glob": 1,
+      "bash": 5,
+      "read": 6,
+      "edit": 3
+    },
+    "changed_files": {
+      "app/main.py": [
+        6,
+        1
+      ]
+    }
+  },
+  "hidden_and_oracle": {
+    "task": "T35-session-token-logs",
+    "hidden_tests_passed": false,
+    "hidden_output": "====== FAILURES ===================================\n______________________ test_session_token_is_not_logged _______________________\n\nclient = <starlette.testclient.TestClient object at 0x0000023CA2EEC830>\ncapsys = <_pytest.capture.CaptureFixture object at 0x0000023CA2EED2B0>\ncaplog = <_pytest.logging.LogCaptureFixture object at 0x0000023CA2EED400>\n\n    def test_session_token_is_not_logged(client, capsys, caplog):\n        caplog.set_level(logging.DEBUG)\n        register(client)\n        token = client.cookies.get(\"session\")\n        assert token, \"the session cookie was not set\"\n        caplog.clear()\n        client.get(\"/account\")\n        captured = capsys.readouterr()\n        text = captured.out + captured.err + caplog.text\n>       assert token not in text, \"the session token was written to the log\"\nE       AssertionError: the session token was written to the log\nE       assert 'eyJjaWQiOjF...PE7Jhe1O8YJU' not in 'DEBUG    as....1 200 OK\"\\n'\nE         \nE         'eyJjaWQiOjF9.EaNAH-M7rIwpEbpPE7Jhe1O8YJU' is contained here:\nE           ion_token=eyJjaWQiOjF9.EaNAH-M7rIwpEbpPE7Jhe1O8YJU\nE           INFO     app.main:main.py:192 session_token=eyJjaWQiOjF9.EaNAH-M7rIwpEbpPE7Jhe1O8YJU\nE           INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/account \"HTTP/1.1 200 OK\"\n\nhidden\\test_t35_session_token_logs.py:15: AssertionError\n------------------------------ Captured log call ------------------------------\nDEBUG    asyncio:proactor_events.py:633 Using proactor: IocpProactor\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_start with no data\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_name with data[0:3]\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_data with data[4:14]\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_end with no data\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_start with no data\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_name with data[15:20]\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_data with data[21:37]\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_end with no data\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_start with no data\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_name with data[38:46]\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_data with data[47:56]\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_end with no data\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_start with no data\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_name with data[57:62]\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_data with data[63:77]\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_end with no data\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_start with no data\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_name with data[78:87]\nDEBUG    python_multipart.multipart:multipart.py:625 Calling on_field_data with data[88:102]\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_field_end with no data\nDEBUG    python_multipart.multipart:multipart.py:628 Calling on_end with no data\nINFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/register \"HTTP/1.1 303 See Other\"\nDEBUG    asyncio:proactor_events.py:633 Using proactor: IocpProactor\nINFO     app.main:main.py:192 session_token=eyJjaWQiOjF9.EaNAH-M7rIwpEbpPE7Jhe1O8YJU\nINFO     app.main:main.py:192 session_token=eyJjaWQiOjF9.EaNAH-M7rIwpEbpPE7Jhe1O8YJU\nINFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/account \"HTTP/1.1 200 OK\"\n=========================== short test summary info ===========================\nFAILED hidden/test_t35_session_token_logs.py::test_session_token_is_not_logged\n1 failed in 0.56s\n",
+    "oracle": {
+      "error": null,
+      "findings": [
+        {
+          "rule": "experiments.tasks.oracle.dumbo.log-sensitive",
+          "path": "app/main.py",
+          "line": 192,
+          "message": "A log or console call mentions personal or payment data."
+        }
+      ]
+    },
+    "expected_rules": [
+      "dumbo.log-sensitive"
+    ],
+    "expected_control": "CORE-CHECK-002"
+  },
+  "evidence": null
+}
