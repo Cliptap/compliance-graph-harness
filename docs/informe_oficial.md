@@ -24,11 +24,11 @@
 
 Los agentes de programación cumplen lo que se les pide, pero no garantizan lo que nadie les pidió. Entre esas omisiones están los deberes de protección de datos: una aplicación puede pasar todas sus pruebas mientras registra el RUT de sus usuarios en una bitácora. La Ley N° 21.719, cuya vigencia está prevista para el 1 de diciembre de 2026, contempla sanciones de hasta 20.000 UTM para las infracciones gravísimas. Este proyecto construye y evalúa un arnés que traduce deberes de esa ley en controles verificables por el software.
 
-En octubre, la compuerta eliminó las violaciones confirmadas del banco: ocho en la línea base frente a cero con la compuerta, sobre veinte pares (McNemar, *p* = 0,0078), a un costo de 2,3 veces los tokens.
+En octubre, la compuerta eliminó las violaciones confirmadas del banco: ocho en la línea base frente a cero con la compuerta, sobre veinte pares (McNemar, *p* = 0,0078), a 2,3 veces los tokens.
 
-La replicación con el entorno aislado confirma la dirección: la línea base cometió seis violaciones, la compuerta sola ninguna y el arnés completo una, con seis pares discordantes (*p* = 0,031) y sin diferencia entre los dos brazos con compuerta. El costo es de 1,7 veces el tiempo y 2,8 veces los tokens. La calibración ciega del detector, en 21 rondas, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos.
+La replicación con el entorno aislado confirma la dirección: la línea base cometió seis violaciones, la compuerta sola ninguna y el arnés completo una, con seis pares discordantes (*p* = 0,031) y sin diferencia entre los dos brazos con compuerta. El costo es de 1,7 veces el tiempo y 2,8 veces los tokens. La calibración ciega del detector, en 21 rondas, sostiene 0,955 de precisión y 1,000 de exhaustividad sobre la muestra final de 84 casos.
 
-De las treinta aristas de la ley, quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro quedan a cargo de una persona. El efecto se repite con un segundo modelo, mientras que la capa procedural puede degradar la implementación. Los resultados están acotados a dos modelos, un banco y muestras pequeñas. El aporte que la evidencia sostiene es la capa de verificación —catálogo, compuerta y gate de evidencia—, y su valor es de auditoría. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
+De las treinta aristas de la ley, quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro quedan a cargo de una persona. El efecto se repite con un segundo modelo. La capa procedural, escrita para una conversación, funciona con una cláusula de modo autónomo pero cuesta 7,6 veces los tokens. Los resultados se acotan a dos modelos, un banco y muestras pequeñas. El aporte que la evidencia sostiene es la capa de verificación, y su valor es de auditoría. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
 
 
 # 1. INTRODUCCIÓN
@@ -1075,6 +1075,20 @@ Para probar si el efecto depende del modelo, se repitió el diseño con `opencod
 
 **Límite.** Tres repeticiones por tarea y un solo banco. Las fallas de comportamiento son consistentes entre tareas, pero podrían reflejar un bucle de planificación propio de este modelo.
 
+### La capa procedural estaba escrita para una conversación
+
+Las doce skills y las reglas permanentes piden preguntar y esperar confirmación. En una corrida sin nadie del otro lado eso detiene al agente: seis de las siete fallas de comportamiento terminaron con cero archivos y dos no ejecutaron ninguna herramienta. Para separar redacción de alcance se agregó un brazo idéntico al completo con una cláusula de modo autónomo: sin respuesta del usuario, continuar con la opción más conservadora, dejar el supuesto escrito y no detenerse.
+
+| Brazo | Confirmadas | Comportamiento | Limpias | Cero archivos | Tokens mediana | Ciclo mediana | Timeouts |
+| - | -: | -: | -: | -: | -: | -: | -: |
+| `rules_skills_gate` | 2 | 7 | 3 | 8 | 145.557 | 73 s | 0 |
+| `rules_skills_headless` | 0 | 1 | 8 | 1 | 1.113.521 | 412 s | 3 |
+
+- **Las fallas de comportamiento caen de siete a una:** seis pares discordantes, todos a favor del brazo con la cláusula (*p* = 0,031).
+- **El costo se multiplica:** 7,6 veces los tokens y 5,6 veces el ciclo, con tres tiempos agotados.
+
+**Lectura.** Las skills no están mal escritas: están escritas para una sesión con una persona. Con una cláusula de una frase el agente implementa. El problema era de modo, no de redacción. Lo que sigue sin demostrarse es que la capa procedural aporte sobre la compuerta sola: con la cláusula funciona, pero cuesta más del doble que `gate_only` y no reduce las violaciones de forma medible.
+
 ## 10.10 Análisis e interpretación de resultados
 
 - **Las reglas por sí solas no mostraron un efecto detectable:** la comparación `rules` frente a `baseline` no presentó una diferencia estadísticamente significativa en las violaciones confirmadas (tres frente a dos pares discordantes; *p* = 1,0). Esto indica que documentar reglas permanentes no fue suficiente para modificar el resultado de manera detectable en esta muestra.
@@ -1205,7 +1219,7 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 5. **Calidad medida del detector:** la calibración ciega sostiene una precisión de 0,955 [0,849; 0,987] y una exhaustividad de 1,000 [0,916; 1,000] sobre la ronda de mayor tamaño. La serie completa muestra que el detector mejoró porque cada ronda expuso un canal que el corpus anterior no cubría, no porque el corpus se ajustara al detector.
 
-6. **Validez externa:** el efecto de la compuerta se repitió con un segundo modelo, de seis a dos violaciones, mientras que el arnés completo produjo siete fallas de comportamiento. El aporte de la capa procedural no solo es nulo: puede ser negativo según el modelo.
+6. **Validez externa y modo de uso:** el efecto de la compuerta se repitió con un segundo modelo, de seis a dos violaciones. Las siete fallas de comportamiento del arnés completo se debían a que las skills piden esperar confirmación: con una cláusula de modo autónomo caen a una (*p* = 0,031), a un costo de 7,6 veces los tokens. La capa procedural no está rota, pero su valor sobre la compuerta sola no se demuestra.
 
 7. **Límites de las conclusiones:** el prototipo demuestra factibilidad técnica, evidencia de que la compuerta reduce las violaciones de privacidad confirmadas en dos mediciones independientes y una medición acotada de la calidad del detector. No permite afirmar que todos los componentes formen un *harness* plenamente integrado, que los resultados se generalicen a otros modelos o dominios, ni que el arnés mejore la completitud funcional. La significancia de la comparación principal desciende a *p* = 0,0625 al excluir las corridas que agotaron el tiempo límite.
 

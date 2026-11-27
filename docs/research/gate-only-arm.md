@@ -162,6 +162,30 @@ contaminada.
   tokens.
 - El costo por corrida es menor que con deepseek: 325 mil tokens de línea base frente a 986 mil.
 
+## Cláusula de modo autónomo (26 de noviembre)
+
+Las doce skills y las reglas piden preguntar y esperar confirmación. En una corrida sin nadie del
+otro lado eso detiene al agente: seis de las siete fallas de comportamiento terminaron con cero
+archivos y dos no ejecutaron ninguna herramienta.
+
+Se agregó un brazo idéntico al completo con una cláusula: sin respuesta del usuario, continuar con la
+opción más conservadora, dejar el supuesto escrito y no detenerse.
+
+| Brazo | Confirmadas | Comportamiento | Limpias | Cero archivos | Tokens mediana | Ciclo mediana | Timeouts |
+| - | -: | -: | -: | -: | -: | -: | -: |
+| `rules_skills_gate` | 2 | 7 | 3 | 8 | 145.557 | 73 s | 0 |
+| `rules_skills_headless` | 0 | 1 | 8 | 1 | 1.113.521 | 412 s | 3 |
+
+- Fallas de comportamiento: seis pares discordantes, todos a favor de la cláusula (*p* = 0,031).
+- Costo: 7,6 veces los tokens y 5,6 veces el ciclo, con tres tiempos agotados.
+
+**Lectura.** Las skills no están mal escritas: están escritas para una sesión con una persona. Una
+cláusula de una frase resuelve la ejecución. Lo que sigue sin demostrarse es que la capa procedural
+aporte sobre la compuerta sola: funciona, pero cuesta más del doble.
+
+**Implicación de producto.** Las doce skills necesitan un modo autónomo explícito; hoy lo asumen
+implícito y eso las hace fallar en cualquier ejecución sin humano.
+
 **Lectura.** El efecto de la compuerta se repite entre familias de modelos. La capa procedural no:
 con deepseek fue neutra y con `gpt-6-luna` interfirió con la implementación.
 
