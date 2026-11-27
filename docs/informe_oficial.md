@@ -17,11 +17,14 @@
 
 ### RESUMEN EJECUTIVO
 
-El proyecto construye un arnés para la Ley N° 21.719, cuya vigencia se postergó al 15 de octubre de 2027. Los agentes cumplen lo que se les pide, pero no lo que nadie les pidió: una aplicación puede pasar sus pruebas mientras registra el RUT de sus usuarios en una bitácora. El arnés traduce deberes de la ley en condiciones verificables sobre el código. Una compuerta las evalúa en cada cambio y bloquea los hallazgos graves; un segundo control exige la evidencia documental que ningún analizador decide, como la evaluación de impacto. El catálogo tiene 37 controles: treinta aristas de la ley —quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro las firma una persona— y siete detectores técnicos.
+Los agentes cumplen lo que se les pide, pero no lo que nadie les pidió: una aplicación puede pasar sus pruebas mientras registra el RUT de sus usuarios en una bitácora. La Ley N° 21.719, que entra en vigencia el 15 de octubre de 2027, exige deberes que nadie escribe en el código si no se los pide. El objetivo es determinar si un arnés de desarrollo reduce esas violaciones en el código que produce un agente, y a qué costo.
 
-Para medir si sirve, cuatro tareas de un banco de comercio electrónico se ejecutaron con un agente en tres configuraciones: sin ayuda, con la compuerta sola y con el arnés completo. En la primera medición, la compuerta eliminó las violaciones confirmadas: ocho sin ayuda frente a cero con la compuerta, sobre veinte pares (McNemar, *p* = 0,0078), a 2,3 veces los tokens. La repetición, en un entorno donde el agente no ve las pruebas ni las reglas del banco, confirmó la dirección: seis violaciones sin ayuda, ninguna con la compuerta sola y una con el arnés completo (*p* = 0,031), a 1,7 veces el tiempo y 2,8 veces los tokens. El arnés completo no superó a la compuerta sola.
+El arnés traduce esos deberes en condiciones verificables: un catálogo de 37 controles —treinta aristas de la ley y siete detectores técnicos—, una compuerta que evalúa cada cambio y bloquea los hallazgos graves, y un segundo control que exige la evidencia documental que ningún analizador decide, como la evaluación de impacto. Es un prototipo operativo: 26 controles tienen detector, seis se exigen como evidencia, cinco son gaps y la visualización está pendiente.
 
-El detector, medido con 21 rondas de casos escritos sin acceso al repositorio, sostiene 0,955 de precisión y 1,000 de exhaustividad. El efecto se repite con un segundo modelo, con resultados acotados a dos modelos, un banco y muestras pequeñas. El arnés no certifica cumplimiento jurídico: es una red de seguridad.
+Se midió con cuatro tareas de un banco de comercio electrónico, un agente fijo y tres configuraciones —sin ayuda, con la compuerta sola y con el arnés completo—, con un oráculo independiente y sin que el agente vea las pruebas. El detector se calibró con 21 rondas ciegas: 0,955 de precisión y 1,000 de exhaustividad. La compuerta redujo las violaciones confirmadas de ocho a cero sobre veinte pares (McNemar, *p* = 0,0078) y, en la repetición aislada, de seis a cero y una (*p* = 0,031), a 1,7 veces el tiempo y 2,8 veces los tokens.
+
+La conclusión es que el aporte está en la capa de verificación, no en el pipeline: el arnés completo no superó a la compuerta sola. No certifica cumplimiento jurídico; es una red de seguridad, y los resultados se acotan a dos modelos, un banco y muestras pequeñas.
+
 
 # 1. INTRODUCCIÓN
 
