@@ -1,8 +1,5 @@
 # INFORME DE AVANCE — HITO 2: CALIBRACIÓN CIEGA, COBERTURA NORMATIVA Y COSTO EN EL CICLO
 
-> **Estado:** segundo incremento funcional del arnés especializado en la Ley N° 21.719. Integra la calibración ciega del detector, la ampliación de la cobertura normativa y la medición del costo que la gobernanza impone al ciclo de desarrollo. Las capacidades indicadas como propuestas, planificadas o futuras no forman parte de la implementación validada.  
-**Fecha de corte de esta actualización:** 24 de noviembre de 2026.
-
 ### PORTADA
 
 **Proyecto:** Arnés de Supervisión de Software Asistido por IA mediante Grafos de Dependencias y Linaje de Datos bajo la Ley N° 21.719  
@@ -16,18 +13,15 @@
 - Bastian Oyanedel
 
 **Profesor Guía:** David Araya  
-**Fecha de Entrega del Hito 2:** 24 de noviembre de 2026  
-**Fecha de actualización del informe:** 24 de noviembre de 2026
-
+**Fecha de Entrega del Hito 2:** 27 de noviembre de 2026
 
 ### RESUMEN EJECUTIVO
 
-El proyecto construye un arnés para la Ley N° 21.719, cuya vigencia se postergó al 15 de octubre de 2027. Los agentes cumplen lo que se les pide, pero no lo que nadie les pidió: una aplicación puede pasar sus pruebas mientras registra el RUT de sus usuarios en una bitácora. El arnés traduce deberes de la ley —no exponer identificadores ni credenciales, no borrar antes del plazo legal— en condiciones verificables sobre el código. Una compuerta las evalúa en cada cambio y bloquea los hallazgos graves; un segundo control exige la evidencia documental que ningún analizador decide, como la evaluación de impacto. De las treinta aristas, quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro las firma una persona.
+El proyecto construye un arnés para la Ley N° 21.719, cuya vigencia se postergó al 15 de octubre de 2027. Los agentes cumplen lo que se les pide, pero no lo que nadie les pidió: una aplicación puede pasar sus pruebas mientras registra el RUT de sus usuarios en una bitácora. El arnés traduce deberes de la ley en condiciones verificables sobre el código. Una compuerta las evalúa en cada cambio y bloquea los hallazgos graves; un segundo control exige la evidencia documental que ningún analizador decide, como la evaluación de impacto. El catálogo tiene 37 controles: treinta aristas de la ley —quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro las firma una persona— y siete detectores técnicos.
 
 Para medir si sirve, cuatro tareas de un banco de comercio electrónico se ejecutaron con un agente en tres configuraciones: sin ayuda, con la compuerta sola y con el arnés completo. En la primera medición, la compuerta eliminó las violaciones confirmadas: ocho sin ayuda frente a cero con la compuerta, sobre veinte pares (McNemar, *p* = 0,0078), a 2,3 veces los tokens. La repetición, en un entorno donde el agente no ve las pruebas ni las reglas del banco, confirmó la dirección: seis violaciones sin ayuda, ninguna con la compuerta sola y una con el arnés completo (*p* = 0,031), a 1,7 veces el tiempo y 2,8 veces los tokens. El arnés completo no superó a la compuerta sola.
 
 El detector, medido con 21 rondas de casos escritos sin acceso al repositorio, sostiene 0,955 de precisión y 1,000 de exhaustividad. El efecto se repite con un segundo modelo, con resultados acotados a dos modelos, un banco y muestras pequeñas. El arnés no certifica cumplimiento jurídico: es una red de seguridad.
-
 
 # 1. INTRODUCCIÓN
 
@@ -42,7 +36,6 @@ En la fase actual, el arnés se validó experimentalmente sobre un banco de come
 **Estructura del informe:** el documento presenta el problema y la pregunta de investigación (sección 2), los objetivos (3), la justificación y el alcance (4), el estado del arte (5), la metodología y el diseño experimental ejecutado (6), la planificación (7), el diseño de la solución (8), los incrementos desarrollados (9), la evaluación y los resultados (10), la discusión y las conclusiones (11) y las referencias (12).
 
 **Convenciones de vocabulario.** Se usa «arnés» como traducción de *harness* y se reserva el término inglés, en cursiva, cuando se nombra el concepto de la literatura. «Compuerta» designa el punto de control que decide si un cambio se bloquea. «Control» es una condición verificable derivada de la ley. «Arista» es un deber identificado en la norma, que puede dar lugar a uno o varios controles. «Brazo» es cada configuración experimental que se compara. Los términos que se usan una sola vez se explican donde aparecen.
-
 
 # 2. PROBLEMA U OPORTUNIDAD
 
@@ -96,7 +89,6 @@ Para evaluar esta interrogante se consideran las siguientes variables, donde el 
 
 5. **Capacidad de auditoría normativa:** detección y remediación de violaciones técnicas de privacidad confirmadas mediante pruebas y reglas independientes, sin alterar el comportamiento funcional esperado.
 
-
 # 3. OBJETIVOS
 
 ## 3.1 Objetivo general
@@ -116,7 +108,6 @@ Diseñar, implementar y evaluar un arnés de gobernanza **especializado en la Le
 - **OE5 — Evaluación experimental:** ejecutar y ampliar un protocolo comparativo sobre bancos de prueba controlados, midiendo violaciones de privacidad confirmadas, fallas de comportamiento, pruebas funcionales, consumo de tokens y tiempo de ciclo. El protocolo deberá explicitar las limitaciones de tamaño muestral, adjudicación y generalización de los resultados.
 
 El cumplimiento de cada objetivo se evalúa con los criterios de la sección 6.4 y se traza en la matriz de la sección 7.4.
-
 
 # 4. JUSTIFICACIÓN Y ALCANCE
 
@@ -214,7 +205,6 @@ Para preservar el rigor y la viabilidad del proyecto, se establecen las siguient
 
 8. **Sandboxing empresarial o sistema multiagente complejo:** no se implementa una infraestructura de aislamiento ni una arquitectura multiagente de nivel empresarial.
 
-
 # 5. ESTADO DEL ARTE, MARCO CONCEPTUAL Y BRECHA
 
 ## 5.1 Antecedentes del ecosistema
@@ -299,6 +289,7 @@ El catálogo es el aporte normativo del proyecto: una correspondencia explícita
 | `CL-DATAPROT-006` | Decisión clínica automatizada sin garantías de explicación, intervención humana y revisión | 19.628 art. 8 bis | CWE-693; ISO/IEC 27001:2022 A.8.28 | manual |
 | `CL-DATAPROT-007` | Exportación de portabilidad de ficha clínica en formato no estructurado | 19.628 art. 9; 20.584 art. 13 inc. 1; 21.668 art. único | CWE-20; ISO/IEC 27001:2022 A.8.28 | detectar |
 
+
 **Núcleo de la ley**
 
 | ID | Qué verifica | Base normativa | Referencia técnica | Modo |
@@ -317,6 +308,7 @@ El catálogo es el aporte normativo del proyecto: una correspondencia explícita
 | `CORE-CHECK-012` | Datos personales de niños, niñas y adolescentes | 19.628 art. 16 quáter | — | detectar |
 | `CORE-CHECK-013` | Conservación, supresión y limitación de la finalidad | 19.628 art. 3 let. b), art. 3 let. c), art. 14 let. d), art. 7 inc. 2 N° ii | — | riesgo |
 
+
 **Salud**
 
 | ID | Qué verifica | Base normativa | Referencia técnica | Modo |
@@ -324,6 +316,7 @@ El catálogo es el aporte normativo del proyecto: una correspondencia explícita
 | `HEALTH-CHECK-001` | Conservación de 15 años de la ficha clínica frente a solicitudes de supresión | 20.584 art. 13; 19.628 art. 7 inc. 2 N° ii, art. 8 ter | — | detectar |
 | `HEALTH-CHECK-002` | Interoperabilidad de la ficha clínica bajo HL7 FHIR R4 CL Core (estándar del proyecto) | 20.584 art. 13 inc. 1 y 2; 21.668 art. único; 19.628 art. 9 | — | evidencia |
 | `HEALTH-CHECK-003` | Protección reforzada de datos de salud (aislamiento y cifrado según el riesgo) | 19.628 art. 2 let. g), art. 16 bis | — | evidencia |
+
 
 **Comercio electrónico**
 
@@ -337,6 +330,7 @@ El catálogo es el aporte normativo del proyecto: una correspondencia explícita
 | `ECOM-CHECK-006` | Conservación de documentos tributarios como excepción a la supresión | DL 825 art. 58; DL 830 art. 17, art. 200; 19.628 art. 7 inc. 2 N° ii, art. 3 let. c) | — | evidencia |
 | `ECOM-CHECK-007` | Situación socioeconómica y puntajes de crédito como datos sensibles | 19.628 art. 2 let. g), art. 16 | — | detectar |
 
+
 **Detectores técnicos**
 
 | ID | Qué verifica | Base normativa | Referencia técnica | Modo |
@@ -348,6 +342,7 @@ El catálogo es el aporte normativo del proyecto: una correspondencia explícita
 | `v2.customer_hard_delete` | Customer hard delete inside retention | 21.719 art. 4 y art. 10 | ISO/IEC 27001:2022 A.8.10; CWE-404 | detectar |
 | `v2.log_pii` | Personal data written to logs | 21.719 art. 14 bis | ISO/IEC 27001:2022 A.8.12; CWE-532 | detectar |
 | `v2.reset_token` | Password-reset token returned to the client | 21.719 art. 14 bis | ISO/IEC 27001:2022 A.8.24; CWE-522 | detectar |
+
 
 Los 37 controles se distribuyen así: 30 aristas derivadas de la ley —15 detectables, 5 de riesgo, 6 de evidencia y 4 manuales— más 7 detectores técnicos que operan sobre las mismas categorías de datos. De las 15 aristas detectables, 14 tienen detector propio y `CL-DATAPROT-001` queda cubierta por el detector de `CORE-CHECK-002`; junto con las 5 de riesgo y los 7 detectores técnicos suman los 26 controles implementados. Los cinco controles restantes se declaran como gaps con su motivo, no como silencio.
 
@@ -374,7 +369,6 @@ El estado del arte presenta mecanismos de asistencia, agentes, workflows especia
 **workflows especializados + contexto estructural + políticas verificables + validación determinista + evidencia experimental.**
 
 La contribución buscada no consiste en afirmar que un componente aislado resuelve los riesgos del desarrollo asistido por IA, sino en evaluar qué efectos produce una combinación concreta de controles sobre tareas reproducibles y bajo qué costos y limitaciones.
-
 
 # 6. METODOLOGÍA
 
@@ -437,8 +431,11 @@ Por eso cada ronda la escribió un autor sin acceso al repositorio, se selló co
 La calibración mide el detector; esta etapa mide el arnés completo en el ciclo de desarrollo. Su pregunta es distinta: ¿el arnés cambia el resultado funcional del trabajo, o solamente lo encarece?
 
 - **Trampas:** diez tareas de protocolo (D01–D10), cada una con una prueba oculta independiente, una verificación de evidencia y la suite propia del objetivo.
+
 - **Brazos:** `baseline` (solo la aplicación, sin reglas, procedimientos ni compuerta) y `rules_skills_gate` (reglas permanentes con el protocolo de ejecución, los doce procedimientos de desarrollo, los tres de cumplimiento, el catálogo, la compuerta y el enganche de integración).
+
 - **Ejecución:** 10 trampas × 3 repeticiones × 2 brazos = **60 ejecuciones**, más 6 repeticiones adicionales de D03 tras unificar la fuente de destinatarios en la capa de evidencia.
+
 - **Instrumento:** mismo modelo, mismo entorno, un *workspace* nuevo por ejecución. Las corridas no se aleatorizaron: el brazo con compuerta se ejecutó el 20 de noviembre y el de línea base el 21.
 
 ### Oráculo y clasificación de resultados
@@ -505,7 +502,6 @@ Esto produciría cuatro condiciones: A (sin gobernanza y sin contexto estructura
 
 - **Alcance de los factores:** los experimentos actuales no aíslan el efecto causal del componente de contexto estructural.
 
-
 # 7. PLANIFICACIÓN Y GESTIÓN
 
 ## 7.1 Cronograma general e hitos institucionales
@@ -539,10 +535,10 @@ gantt
 | **Hito 2** | 24 de noviembre | 15% | Segundo incremento: calibración ciega del detector, ampliación de la cobertura normativa, gate de evidencia y medición del costo en el ciclo de desarrollo. |
 | **Hito 3** | Primera semana de diciembre | 15% + 30% | Entrega final: producto consolidado, memoria formal, validación de objetivos, conclusiones y defensa ante comisión evaluadora. |
 
+
 > **Nota de cronograma:** la versión vigente del curso consolida la entrega final en el Hito 3; no se rinde un Hito 4 separado. Los pesos se mantienen según el calendario original (15 % del Hito 3 y 30 % de la instancia final).
 
 > **Nota de alcance:** este informe corresponde a la entrega del Hito 2 del curso e incluye los resultados de calibración ciega, el experimento de preservación funcional y costo, y la ampliación de cobertura ejecutados antes del cierre de esta actualización.
-
 
 ## 7.2 Backlog priorizado, responsabilidades y dependencias
 
@@ -583,7 +579,6 @@ El equipo opera bajo un régimen de responsabilidad compartida. Ambos integrante
 | **OE3 — Arquitectura desacoplada y roles** | RF-H05: motor parametrizable y especificaciones de roles. | Hito 0 | El módulo del arnés y sus 592 pruebas. |
 | **OE4 — Catálogo y políticas de privacidad** | RF-H06 a RF-H08: catálogo, detección CWE-532/CWE-200, validación y compuerta. | Hito 1 | El catálogo de controles, los motores de políticas, el motor de validación y la compuerta. |
 | **OE5 — Evaluación experimental** | RNF-01 a RNF-03: protocolo comparativo, métricas y ejecución empírica. | Hito 2 | Los cuatro experimentos, sus reportes y la suite de 613 pruebas. |
-
 
 
 # 8. DISEÑO DE LA SOLUCIÓN
@@ -704,7 +699,6 @@ python -m pytest -q
 
 Resultado registrado al cierre de esta actualización: **613 pruebas aprobadas**. Los resultados corresponden al estado del repositorio etiquetado como `hito-2` (24 de noviembre de 2026); el historial de cambios conserva cada versión intermedia.
 
-
 # 9. DESARROLLO E INCREMENTOS
 
 El Hito 0 consolidó el estado *As-Is* del arnés y de los bancos de prueba; el incremento del Hito 1 agregó el catálogo normativo, las políticas, la compuerta de validación y la evaluación experimental; el incremento del Hito 2 agrega la calibración ciega del detector, la ampliación de la cobertura normativa y el gate de evidencia documental. Los componentes se describen según su estado verificable, distinguiendo los mecanismos operativos de las capacidades que permanecen en desarrollo.
@@ -797,6 +791,7 @@ El incremento del Hito 2 no agrega funcionalidades al agente: cierra tres pregun
 | **Herramientas de validación** | Operativas | Triage sobre código real, muestreo ciego con kappa de Cohen y comparación con reglas Semgrep. |
 | **Corrección del catálogo** | Verificada | `CORE-CHECK-003` declaraba una categoría de dato inexistente, de modo que su detector no podía dispararse; la revisión del catálogo se corrigió respecto del alcance real de la compuerta. |
 
+
 ### Decisiones técnicas y alternativas descartadas
 
 1. **No promover todos los avisos a violación:** los cinco controles en modo riesgo (`privacy.rights_reachability`, `consent_transparency`, `retention_minimization`, `minors_and_sensitive` y `third_party_transfers`) detectan un riesgo potencial, no una violación demostrada. Promoverlos habría bloqueado commits legítimos y entrenado al equipo a saltear la compuerta. La excepción es `rights_reachability`, que sube a violación únicamente con índice completo.
@@ -820,9 +815,10 @@ El incremento del Hito 2 no agrega funcionalidades al agente: cierra tres pregun
 ### Relación con los objetivos
 
 - **OE4:** la cobertura pasa de 21 a 26 controles con detector y las 30 aristas de la ley quedan clasificadas con su modo y su estado; las documentales dejan de ser un gap silencioso y pasan a ser un requisito verificable.
-- **OE5:** la evaluación se amplía con dos bloques nuevos —calibración ciega y costo en el ciclo— y con una medición de acuerdo entre etiquetas.
-- **OE1, OE2 y OE3:** sin cambios de alcance en este incremento.
 
+- **OE5:** la evaluación se amplía con dos bloques nuevos —calibración ciega y costo en el ciclo— y con una medición de acuerdo entre etiquetas.
+
+- **OE1, OE2 y OE3:** sin cambios de alcance en este incremento.
 
 # 10. PRUEBAS, EVALUACIÓN Y RESULTADOS
 
@@ -918,7 +914,7 @@ El Hito 1 no podía responder esta pregunta. Su evidencia eran 22 casos curados 
 
 1. **El detector converge en el alcance actual.** Una sonda con enunciado neutral, sin énfasis en ningún canal, obtuvo 42/42 en la primera corrida. Es la señal que las rondas anteriores no podían dar: sin un canal nuevo que descubrir, el detector se mantuvo.
 
-2. **La calidad medida es alta, pero el intervalo no permite exagerarla.** La ronda de mayor tamaño, con 84 casos, dio 82/84: precisión 0,955 [0,849; 0,987] y exhaustividad 1,000 [0,916; 1,000]. Un 42/42 habría permitido una exhaustividad real de 0,845; un 82/84 permite 0,916. Con muestras de este tamaño, un resultado perfecto sigue siendo compatible con una tasa de fallo no despreciable.
+2. **La calidad medida es alta, pero el intervalo no permite exagerarla.** La ronda de mayor tamaño, con 84 casos, dio 82/84: precisión 0,955 \[0,849; 0,987\] y exhaustividad 1,000 \[0,916; 1,000\]. Un 42/42 habría permitido una exhaustividad real de 0,845; un 82/84 permite 0,916. Con muestras de este tamaño, un resultado perfecto sigue siendo compatible con una tasa de fallo no despreciable.
 
 3. **La mejora provino del detector y no de un corpus complaciente.** Las rondas que introdujeron un canal nuevo —plantillas y *streams*, el contrato del modelo de respuesta, la exclusión calculada, los *sinks* de cookie y cabecera— hicieron caer la exhaustividad hasta 0,524 y después recuperarla. Un corpus escrito para agradar al detector no produce ese patrón: produce puntajes estables. La primera ronda, además, reveló diez fallos sobre modismos que el corpus curado no tenía: borrados de ORM, vistas de administración basadas en clases, `log.info`, `private_key` y enmascaramiento manual con f-string.
 
@@ -930,29 +926,30 @@ El Hito 1 no podía responder esta pregunta. Su evidencia eran 22 casos curados 
 
 La tabla siguiente es la evidencia de esas conclusiones. Cada fila es una ronda; el número reportado es el previo a cualquier corrección.
 
-| Ronda | Casos | Aciertos (pre-fix) | Precisión [IC 95 %] | Exhaustividad [IC 95 %] |
+| Ronda | Casos | Aciertos (pre-fix) | Precisión \[IC 95 %\] | Exhaustividad \[IC 95 %\] |
 | :-: | :-: | :-: | - | - |
-| 1 | 36 | 26/36 | 0,867 [0,621; 0,963] | 0,619 [0,409; 0,792] |
-| 2 | 42 | 37/42 | 0,944 [0,742; 0,990] | 0,810 [0,600; 0,923] |
-| 3 | 38 | 25/38 | 1,000 [0,676; 1,000] | 0,364 [0,197; 0,570] |
-| 4 | 35 | 31/35 | 1,000 [0,806; 1,000] | 0,800 [0,584; 0,919] |
-| 5 | 42 | 32/42 | 0,824 [0,590; 0,938] | 0,667 [0,454; 0,828] |
-| 6 | 42 | 37/42 | 0,944 [0,742; 0,990] | 0,810 [0,600; 0,923] |
-| 7 | 42 | 34/42 | 0,741 [0,553; 0,868] | 0,952 [0,773; 0,992] |
-| 8 | 42 | 34/42 | 0,842 [0,624; 0,945] | 0,762 [0,549; 0,894] |
-| 9 | 42 | 31/42 | 0,708 [0,508; 0,851] | 0,810 [0,600; 0,923] |
-| 10 | 42 | 38/42 | 0,947 [0,754; 0,991] | 0,857 [0,654; 0,950] |
-| 11 | 42 | 32/42 | 0,789 [0,567; 0,915] | 0,714 [0,500; 0,862] |
-| 12 | 42 | 35/42 | 0,889 [0,672; 0,969] | 0,762 [0,549; 0,894] |
-| 13 | 42 | 28/42 | 0,765 [0,527; 0,904] | 0,565 [0,368; 0,744] |
-| 14 | 42 | 37/42 | 1,000 [0,816; 1,000] | 0,773 [0,566; 0,899] |
-| 15 | 42 | 35/42 | 1,000 [0,785; 1,000] | 0,667 [0,454; 0,828] |
-| 16 | 42 | 28/42 | 0,733 [0,480; 0,891] | 0,524 [0,324; 0,717] |
-| 17 | 42 | 34/42 | 0,842 [0,624; 0,945] | 0,762 [0,549; 0,894] |
-| 18 | 42 | 31/42 | 0,917 [0,646; 0,985] | 0,524 [0,324; 0,717] |
-| 19 | 42 | 30/42 | 0,680 [0,484; 0,828] | 0,810 [0,600; 0,923] |
-| 20 | 42 | 42/42 | 1,000 [0,845; 1,000] | 1,000 [0,845; 1,000] |
-| 21 | 84 | 82/84 | 0,955 [0,849; 0,987] | 1,000 [0,916; 1,000] |
+| 1 | 36 | 26/36 | 0,867 \[0,621; 0,963\] | 0,619 \[0,409; 0,792\] |
+| 2 | 42 | 37/42 | 0,944 \[0,742; 0,990\] | 0,810 \[0,600; 0,923\] |
+| 3 | 38 | 25/38 | 1,000 \[0,676; 1,000\] | 0,364 \[0,197; 0,570\] |
+| 4 | 35 | 31/35 | 1,000 \[0,806; 1,000\] | 0,800 \[0,584; 0,919\] |
+| 5 | 42 | 32/42 | 0,824 \[0,590; 0,938\] | 0,667 \[0,454; 0,828\] |
+| 6 | 42 | 37/42 | 0,944 \[0,742; 0,990\] | 0,810 \[0,600; 0,923\] |
+| 7 | 42 | 34/42 | 0,741 \[0,553; 0,868\] | 0,952 \[0,773; 0,992\] |
+| 8 | 42 | 34/42 | 0,842 \[0,624; 0,945\] | 0,762 \[0,549; 0,894\] |
+| 9 | 42 | 31/42 | 0,708 \[0,508; 0,851\] | 0,810 \[0,600; 0,923\] |
+| 10 | 42 | 38/42 | 0,947 \[0,754; 0,991\] | 0,857 \[0,654; 0,950\] |
+| 11 | 42 | 32/42 | 0,789 \[0,567; 0,915\] | 0,714 \[0,500; 0,862\] |
+| 12 | 42 | 35/42 | 0,889 \[0,672; 0,969\] | 0,762 \[0,549; 0,894\] |
+| 13 | 42 | 28/42 | 0,765 \[0,527; 0,904\] | 0,565 \[0,368; 0,744\] |
+| 14 | 42 | 37/42 | 1,000 \[0,816; 1,000\] | 0,773 \[0,566; 0,899\] |
+| 15 | 42 | 35/42 | 1,000 \[0,785; 1,000\] | 0,667 \[0,454; 0,828\] |
+| 16 | 42 | 28/42 | 0,733 \[0,480; 0,891\] | 0,524 \[0,324; 0,717\] |
+| 17 | 42 | 34/42 | 0,842 \[0,624; 0,945\] | 0,762 \[0,549; 0,894\] |
+| 18 | 42 | 31/42 | 0,917 \[0,646; 0,985\] | 0,524 \[0,324; 0,717\] |
+| 19 | 42 | 30/42 | 0,680 \[0,484; 0,828\] | 0,810 \[0,600; 0,923\] |
+| 20 | 42 | 42/42 | 1,000 \[0,845; 1,000\] | 1,000 \[0,845; 1,000\] |
+| 21 | 84 | 82/84 | 0,955 \[0,849; 0,987\] | 1,000 \[0,916; 1,000\] |
+
 
 **Cómo leer la serie.** Las 21 rondas no son una muestra única: cada una corrigió lo que la anterior expuso, de modo que los 907 casos se reportan como serie y no como muestra agregada. El único conjunto que puede leerse como muestra independiente es el de la última ronda sellada, con 84 casos, y es el que sostiene las cifras de precisión y exhaustividad citadas en el resumen.
 
@@ -971,7 +968,8 @@ Se ejecutaron las quince reglas Semgrep que el proyecto ya utiliza como oráculo
 | `v2.customer_hard_delete` | 9/12 | 1,000 | 0,500 | 12/12 |
 | `v2.log_pii` | 7/12 | 0,571 | 0,667 | 12/12 |
 | `v2.reset_token` | 7/12 | 1,000 | 0,167 | 12/12 |
-| **Total** | **51/84** | **0,800 [0,548; 0,930]** | **0,286 [0,172; 0,436]** | **82/84** |
+| **Total** | **51/84** | **0,800 \[0,548; 0,930\]** | **0,286 \[0,172; 0,436\]** | **82/84** |
+
 
 Dos lecturas importan más que el total.
 
@@ -996,9 +994,13 @@ Este experimento responde una pregunta que los experimentos de dosis no responde
 | Violaciones de política, alcance o privacidad | 0 | 0 |
 | Cambios no solicitados | 0 | 0 |
 
+
 - **Completitud funcional saturada:** el modelo resolvió las diez trampas sin el arnés. La prueba oculta pasó 30/30 en ambos brazos. El experimento no puede discriminar porque no hay margen de mejora.
+
 - **Sin ventaja de evidencia:** la diferencia inicial en la verificación de evidencia (30/30 frente a 28/30) provenía de una inconsistencia del propio arnés —dos mecanismos distintos calculaban los destinatarios de terceros—, no del agente. Unificada la fuente y repetidas las corridas de D03, ambos brazos quedaron en 30/30. **El experimento corregido no muestra ventaja funcional ni de evidencia para el brazo con compuerta; solo sobrevive la diferencia de costo.**
+
 - **El costo es estadísticamente significativo:** el brazo con compuerta fue más lento en 10 de 10 tareas (prueba de signos bilateral, *p* = 0,00195). El tiempo de ciclo se multiplicó por 2,5 y los tokens por 3,3.
+
 - **Ningún brazo produjo violaciones:** la compuerta no se activó como corrección porque no había nada que corregir en este paquete. Su valor medido aquí es de auditoría, no de prevención.
 
 **Por qué el costo no coincide con el del experimento de dosis.** El experimento de dosis reportó 2,3 veces los tokens y 46,3 segundos adicionales por tarea sobre cuatro tareas del banco de comercio electrónico; este experimento reporta 2,5 veces el tiempo de ciclo y 3,3 veces los tokens sobre diez trampas de protocolo. No son la misma medición: cambian las tareas, el tamaño del cambio pedido y el punto de partida de cada brazo. Lo que se sostiene en ambos es la dirección —la gobernanza cuesta más— y el orden de magnitud; el valor exacto depende de la tarea.
@@ -1016,7 +1018,9 @@ El alcance es acotado: ese evaluador es un modelo de la misma familia en un rol 
 La calibración usa módulos aislados. Para observar el comportamiento sobre código multi-archivo se ejecutó la compuerta sobre una aplicación real del repositorio (nueve módulos, ~61 KB) y sobre trece variantes del paquete de trampas con defectos sembrados y mutaciones documentadas.
 
 - **Aplicación limpia:** **0 hallazgos**. La revisión manual confirmó que es un verdadero negativo y no un fallo por omisión: la aplicación anonimiza en la retención, filtra el marketing por consentimiento y no registra datos personales.
+
 - **Trece variantes:** **13/13** correctas frente a los detectores heredados. Con los controles `v2.*`, las tres variantes limpias no produjeron hallazgos, y se detectaron las dos variantes con defectos `v2` relevantes (exposición en bitácora y credenciales).
+
 - **Un falso negativo confirmado:** una variante envía el RUT a una bitácora a través de una función auxiliar ubicada en otro módulo. El detector no sigue el flujo entre archivos en ese caso. Es el límite *cross-module* ya documentado, ahora con evidencia sobre código real. La escala es la limitación principal de esta medición: los trabajos comparables evalúan entre cuatro y quince aplicaciones \[20\]\[21\]\[22\], y este informe evalúa una.
 
 ## 10.7 Cobertura normativa
@@ -1029,6 +1033,7 @@ La calibración usa módulos aislados. Para observar el comportamiento sobre có
 | Manual | 4 | Lista de verificación firmada por una persona, con el artículo citado. |
 | **Total** | **30** | Aristas derivadas de la Ley N° 21.719 en el pack sectorial. |
 
+
 Sobre el catálogo completo (37 controles), **26 tienen detector determinista**, **6 se exigen como evidencia** y **5 permanecen como gap declarado** con su motivo. La distinción entre detectar y exigir evidencia no es una excusa de cobertura: es la consecuencia de que un detector solo puede afirmar lo que una prueba en el código sostiene.
 
 Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declara como gap porque la fuga la evalúa el detector de `CORE-CHECK-002`. Por eso el pack tiene 19 aristas de la ley implementadas (14 en modo detectar y 5 en modo riesgo) más 7 detectores `v2.*`, que suman los 26 controles con detector.
@@ -1037,16 +1042,21 @@ Las 15 aristas en modo *detectar* incluyen `CL-DATAPROT-001`, que el pack declar
 
 El contraste de dosis se midió en octubre. Para saber si se sostiene, se repitieron las mismas cuatro tareas con el modelo actual y con el entorno aislado: el agente no puede leer las pruebas ocultas ni las reglas del oráculo. Seis repeticiones por tarea y brazo: 24 corridas por brazo, 72 en total, ninguna contaminada según el registro de comandos.
 
-| Brazo | Corridas | Confirmadas | Tasa [IC 95 %] | Latentes | Limpias | Ciclo mediana | Tokens mediana |
+| Brazo | Corridas | Confirmadas | Tasa \[IC 95 %\] | Latentes | Limpias | Ciclo mediana | Tokens mediana |
 | - | -: | -: | - | -: | -: | -: | -: |
-| `baseline` | 24 | 6 | 0,250 [0,120; 0,449] | 1 | 17 | 176,6 s | 986.284 |
-| `gate_only` | 24 | 0 | 0,000 [0,000; 0,138] | 3 | 21 | 301,5 s | 2.759.781 |
-| `rules_skills_gate` | 24 | 1 | 0,042 [0,007; 0,202] | 5 | 18 | 314,0 s | 2.932.218 |
+| `baseline` | 24 | 6 | 0,250 \[0,120; 0,449\] | 1 | 17 | 176,6 s | 986.284 |
+| `gate_only` | 24 | 0 | 0,000 \[0,000; 0,138\] | 3 | 21 | 301,5 s | 2.759.781 |
+| `rules_skills_gate` | 24 | 1 | 0,042 \[0,007; 0,202\] | 5 | 18 | 314,0 s | 2.932.218 |
+
 
 - **Las seis violaciones de la línea base:** tres en T33, con el token de reseteo en la URL de redirección; dos en T35, con el token de sesión en la bitácora; una en T31, con un borrado dentro de la retención. El arnés completo cometió una, en T31. T34 no falló en ningún brazo.
+
 - **Contra la línea base:** seis pares discordantes a favor de `gate_only` (McNemar, *p* = 0,031) y seis a uno a favor del arnés completo (*p* = 0,125).
+
 - **Entre los dos brazos con compuerta no hay diferencia:** un par discordante (*p* = 1,0). La capa procedural no agrega un efecto medible.
+
 - **El costo es real:** 1,7 veces el tiempo de ciclo y 2,8 veces los tokens para `gate_only`; 1,8 y 3,0 para el arnés completo. Tiempos agotados: cuatro, tres y uno.
+
 - **Ninguna corrida leyó el benchmark:** el registro de comandos de *shell* lo confirma.
 
 **Lectura.** La compuerta reduce las violaciones de forma estadísticamente significativa en la comparación primaria, y la capa procedural no agrega nada medible. La dirección coincide con octubre, que dio ocho de veinte a cero (*p* = 0,0078).
@@ -1065,8 +1075,11 @@ Para probar si el efecto depende del modelo, se repitió el diseño con `opencod
 | `gate_only` | 12 | 2 | 0 | 2 | 8 | 267,4 s | 491.378 |
 | `rules_skills_gate` | 12 | 2 | **7** | 0 | 3 | 71,3 s | 134.298 |
 
+
 - **La compuerta vuelve a reducir las violaciones:** de seis a dos, con cuatro pares discordantes (*p* = 0,125). La dirección se repite; la potencia, con doce pares, no alcanza.
+
 - **El arnés completo produjo siete fallas de comportamiento:** en la mayoría de las corridas el agente no escribió código. En T34, las tres repeticiones terminaron con cero archivos modificados y unos 69 mil tokens: exploró, escribió un plan y terminó sin implementar.
+
 - **El contraste entre los dos brazos con compuerta es 0 a 7** a favor de `gate_only` (*p* = 0,0156).
 
 **Lectura.** El efecto de la compuerta no depende de una familia de modelos: se repite en las dos. La capa procedural, en cambio, sí: con el primer modelo fue neutra y con el segundo interfirió con la implementación. Eso convierte "no aporta" en "puede perjudicar", y refuerza que el aporte está en la compuerta y no en el pipeline.
@@ -1082,7 +1095,9 @@ Las doce skills y las reglas permanentes piden preguntar y esperar confirmación
 | `rules_skills_gate` | 2 | 7 | 3 | 8 | 145.557 | 73 s | 0 |
 | `rules_skills_headless` | 0 | 1 | 8 | 1 | 1.113.521 | 412 s | 3 |
 
+
 - **Las fallas de comportamiento caen de siete a una:** seis pares discordantes, todos a favor del brazo con la cláusula (*p* = 0,031).
+
 - **El costo se multiplica:** 7,6 veces los tokens y 5,6 veces el ciclo, con tres tiempos agotados.
 
 **Lectura.** Las skills no están mal escritas: están escritas para una sesión con una persona. Con una cláusula de una frase el agente implementa. El problema era de modo, no de redacción. Lo que sigue sin demostrarse es que la capa procedural aporte sobre la compuerta sola: con la cláusula funciona, pero cuesta más del doble que `gate_only` y no reduce las violaciones de forma medible.
@@ -1129,6 +1144,7 @@ Las doce skills y las reglas permanentes piden preguntar y esperar confirmación
 | 4. Trazabilidad de decisiones | — | No medida |
 | 5. Capacidad de auditoría normativa | 10.2, 10.3, 10.6 y 10.8 | Medida |
 
+
 La variable 4 no se mide en este informe: exigiría observar cómo documenta sus decisiones un desarrollador con y sin el arnés, y eso requiere un estudio con personas. Se declara como pendiente en lugar de sustituirla por un indicador indirecto.
 
 ## 10.11 Limitaciones identificadas
@@ -1151,37 +1167,37 @@ Las limitaciones se organizan según el tipo de validez afectada, siguiendo la c
 
 ### Validez interna
 
-7. **Atribución causal.** Los brazos varían reglas, procedimientos y compuerta, pero no incorporan una condición independiente de selección de contexto. Los resultados no permiten atribuir a los grafos los cambios observados.
+1. **Atribución causal.** Los brazos varían reglas, procedimientos y compuerta, pero no incorporan una condición independiente de selección de contexto. Los resultados no permiten atribuir a los grafos los cambios observados.
 
-8. **Trampas explícitas poco discriminantes.** En un paquete de escenarios que instruían a violar controles, el modelo se negó o implementó una alternativa segura en todos los brazos. La evaluación depende de escenarios más sutiles.
+2. **Trampas explícitas poco discriminantes.** En un paquete de escenarios que instruían a violar controles, el modelo se negó o implementó una alternativa segura en todos los brazos. La evaluación depende de escenarios más sutiles.
 
-9. **Saturación.** En el experimento de preservación funcional el modelo resolvió las diez trampas sin el arnés, de modo que ese bloque no puede medir mejora funcional: solo mide costo.
+3. **Saturación.** En el experimento de preservación funcional el modelo resolvió las diez trampas sin el arnés, de modo que ese bloque no puede medir mejora funcional: solo mide costo.
 
-10. **Condiciones de medición del costo.** Los tiempos son de reloj de pared en un solo equipo, con las corridas en orden fijo y sin aleatorización. La prueba de signos controla la dirección, no la magnitud.
+4. **Condiciones de medición del costo.** Los tiempos son de reloj de pared en un solo equipo, con las corridas en orden fijo y sin aleatorización. La prueba de signos controla la dirección, no la magnitud.
 
-11. **Completitud frente a privacidad.** Las dos fallas de T31 en el brazo con corrección externa son tareas no implementadas, no violaciones; la completitud se mide aparte.
+5. **Completitud frente a privacidad.** Las dos fallas de T31 en el brazo con corrección externa son tareas no implementadas, no violaciones; la completitud se mide aparte.
 
 ### Validez externa
 
-12. **Un solo modelo principal.** Los resultados corresponden a un modelo; la corrida con otro es provisional y no se combina con los principales.
+1. **Un solo modelo principal.** Los resultados corresponden a un modelo; la corrida con otro es provisional y no se combina con los principales.
 
-13. **Alcance de las tareas.** El experimento formal cubrió doce tareas y el de dosis cuatro. La generalización a otros dominios requiere más evidencia.
+2. **Alcance de las tareas.** El experimento formal cubrió doce tareas y el de dosis cuatro. La generalización a otros dominios requiere más evidencia.
 
-14. **Tamaño de los casos ciegos.** Los corpus de calibración son módulos de 20 a 55 líneas, no repositorios completos. La ronda de 84 casos permite una exhaustividad real de 0,916.
+3. **Tamaño de los casos ciegos.** Los corpus de calibración son módulos de 20 a 55 líneas, no repositorios completos. La ronda de 84 casos permite una exhaustividad real de 0,916.
 
-15. **Escala del código real.** El triage cubre una aplicación y trece variantes; los trabajos comparables evalúan entre cuatro y quince aplicaciones \[20\]\[21\]\[22\].
+4. **Escala del código real.** El triage cubre una aplicación y trece variantes; los trabajos comparables evalúan entre cuatro y quince aplicaciones \[20\]\[21\]\[22\].
 
 ### Validez de conclusión
 
-16. **Potencia estadística.** El experimento formal quedó subpotenciado para el resultado binario, y el de dosis se limita a veinte pares por comparación.
+1. **Potencia estadística.** El experimento formal quedó subpotenciado para el resultado binario, y el de dosis se limita a veinte pares por comparación.
 
-17. **Intervalos.** Se reportan intervalos de Wilson porque, con muestras pequeñas, un resultado perfecto sigue siendo compatible con una tasa de fallo no despreciable.
+2. **Intervalos.** Se reportan intervalos de Wilson porque, con muestras pequeñas, un resultado perfecto sigue siendo compatible con una tasa de fallo no despreciable.
 
-18. **Vigencia temporal de la evidencia.** El mismo instrumento dio resultados distintos en octubre y en noviembre. Un resultado sobre comportamiento de modelos no es estable en el tiempo, y esa inestabilidad debe considerarse al interpretar cualquier medición de este tipo.
+3. **Vigencia temporal de la evidencia.** El mismo instrumento dio resultados distintos en octubre y en noviembre. Un resultado sobre comportamiento de modelos no es estable en el tiempo, y esa inestabilidad debe considerarse al interpretar cualquier medición de este tipo.
 
-19. **Contaminación del entorno en corridas previas.** La raíz del repositorio se exportaba para que la compuerta importara el motor, y el agente podía leer el benchmark con la *shell*: 21 de 247 corridas históricas lo hicieron. La medición que se reporta es la del entorno aislado; las anteriores no son interpretables en este punto.
-20. **Aislamiento a nivel de variables de entorno.** El entorno aislado impide el acceso por la variable del arnés, pero el perfil del usuario sigue apuntando a la carpeta real: un agente decidido podría llegar al repositorio por ruta absoluta. El registro de comandos lo detectaría; un contenedor lo impediría.
+4. **Contaminación del entorno en corridas previas.** La raíz del repositorio se exportaba para que la compuerta importara el motor, y el agente podía leer el benchmark con la *shell*: 21 de 247 corridas históricas lo hicieron. La medición que se reporta es la del entorno aislado; las anteriores no son interpretables en este punto.
 
+5. **Aislamiento a nivel de variables de entorno.** El entorno aislado impide el acceso por la variable del arnés, pero el perfil del usuario sigue apuntando a la carpeta real: un agente decidido podría llegar al repositorio por ruta absoluta. El registro de comandos lo detectaría; un contenedor lo impediría.
 
 # 11. DISCUSIÓN, CONCLUSIONES Y TRABAJO FUTURO
 
@@ -1215,7 +1231,7 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 4. **Evidencia experimental:** se ejecutaron cinco experimentos —108 ejecuciones del experimento formal, 100 del experimento de dosis, 72 de la replicación aislada, 907 casos de calibración ciega y 66 ejecuciones del experimento de preservación funcional y costo—, con sus resultados, costos y limitaciones documentados por separado.
 
-5. **Calidad medida del detector:** la calibración ciega sostiene una precisión de 0,955 [0,849; 0,987] y una exhaustividad de 1,000 [0,916; 1,000] sobre la ronda de mayor tamaño. La serie completa muestra que el detector mejoró porque cada ronda expuso un canal que el corpus anterior no cubría, no porque el corpus se ajustara al detector.
+5. **Calidad medida del detector:** la calibración ciega sostiene una precisión de 0,955 \[0,849; 0,987\] y una exhaustividad de 1,000 \[0,916; 1,000\] sobre la ronda de mayor tamaño. La serie completa muestra que el detector mejoró porque cada ronda expuso un canal que el corpus anterior no cubría, no porque el corpus se ajustara al detector.
 
 6. **Validez externa y modo de uso:** el efecto de la compuerta se repitió con un segundo modelo, de seis a dos violaciones. Las siete fallas de comportamiento del arnés completo se debían a que las skills piden esperar confirmación: con una cláusula de modo autónomo caen a una (*p* = 0,031), a un costo de 7,6 veces los tokens. La capa procedural no está rota, pero su valor sobre la compuerta sola no se demuestra.
 
@@ -1236,7 +1252,6 @@ De acuerdo con la planificación vigente al 24 de noviembre de 2026, el Hito 2 e
 5. **Consolidación documental y del visualizador:** cerrar la trazabilidad entre objetivos, requerimientos, pruebas, experimentos, resultados y limitaciones, incorporar las decisiones de arquitectura como registros formales y completar el visualizador de dependencias, hoy pendiente.
 
 6. **Cobertura de modelos y dominios:** el segundo modelo ya está medido; falta ampliar a otros proveedores y, si la planificación lo permite, a un segundo banco de prueba.
-
 
 # 12. REFERENCIAS Y ANEXOS
 
@@ -1345,6 +1360,7 @@ raíz/
 Ejecución de la suite completa al cierre del Hito 2:
 
 - **Comando:** `pytest`, o el ejecutor de pruebas del proyecto.
+
 - **Entorno:** Python 3.13, Pytest 9.0.3, SQLite embebido, SQLAlchemy 2.0 asíncrono.
 
 | Área evaluada | Pruebas |
@@ -1356,6 +1372,7 @@ Ejecución de la suite completa al cierre del Hito 2:
 | Procedimientos, persistencia y entorno | 74 |
 | Aplicación clínica | 21 |
 | **Total** | **613** |
+
 
 La distribución por archivo no se reproduce aquí: el repositorio conserva el detalle y el comando la regenera.
 
@@ -1380,3 +1397,4 @@ collected 613 items
 
 ============================= 613 passed in 85.61s =============================
 ```
+
