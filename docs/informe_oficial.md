@@ -19,11 +19,11 @@
 
 Los agentes cumplen lo que se les pide, pero no lo que nadie les pidió: una aplicación puede pasar sus pruebas mientras registra el RUT de sus usuarios en una bitácora. La Ley N° 21.719, que entra en vigencia el 15 de octubre de 2027, exige deberes que nadie escribe en el código si no se los pide. El objetivo es determinar si un arnés de desarrollo reduce esas violaciones en el código que produce un agente, y a qué costo.
 
-El arnés traduce esos deberes en condiciones verificables: un catálogo de 37 controles —treinta aristas de la ley y siete detectores técnicos—, una compuerta que evalúa cada cambio y bloquea los hallazgos graves, y un segundo control que exige la evidencia documental que ningún analizador decide, como la evaluación de impacto. Es un prototipo operativo: 26 controles tienen detector, seis se exigen como evidencia, cinco son gaps y la visualización está pendiente.
+El arnés traduce esos deberes en condiciones verificables: un catálogo de 37 controles —treinta aristas de la ley y siete detectores técnicos—, una compuerta que evalúa cada cambio y bloquea los hallazgos graves, y un segundo control para la evidencia que ningún analizador decide. La investigación está terminada: se validó con dos modelos y 907 casos ciegos. El catálogo tiene 26 controles con detector, seis exigidos como evidencia y cinco gaps declarados.
 
-Se midió con cuatro tareas de un banco de comercio electrónico, un agente fijo y tres configuraciones —sin ayuda, con la compuerta sola y con el arnés completo—, con un oráculo independiente y sin que el agente vea las pruebas. El detector se calibró con 21 rondas ciegas: 0,955 de precisión y 1,000 de exhaustividad. La compuerta redujo las violaciones confirmadas de ocho a cero sobre veinte pares (McNemar, *p* = 0,0078) y, en la repetición aislada, de seis a cero y una (*p* = 0,031), a 1,7 veces el tiempo y 2,8 veces los tokens.
+Se midió con cuatro tareas de un banco de comercio electrónico y tres configuraciones —sin ayuda, con la compuerta sola y con el arnés completo—, con un oráculo independiente y sin que el agente vea las pruebas. La compuerta redujo las violaciones confirmadas de ocho a cero sobre veinte pares (McNemar, *p* = 0,0078) y, en la repetición aislada, de seis a cero y una (*p* = 0,031), a 1,7 veces el tiempo y 2,8 veces los tokens. El detector se calibró con 21 rondas ciegas: 0,955 de precisión y 1,000 de exhaustividad.
 
-La conclusión es que el aporte está en la capa de verificación, no en el pipeline: el arnés completo no superó a la compuerta sola. No certifica cumplimiento jurídico; es una red de seguridad, y los resultados se acotan a dos modelos, un banco y muestras pequeñas.
+La conclusión es que el aporte está en la capa de verificación, no en el pipeline: el arnés completo no superó a la compuerta sola. No certifica cumplimiento jurídico: es una red de seguridad, y los resultados se acotan a dos modelos, un banco y muestras pequeñas.
 
 
 # 1. INTRODUCCIÓN
