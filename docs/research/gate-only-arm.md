@@ -145,6 +145,26 @@ conviene reportarlo así.
 con la medición de octubre (ocho de veinte a cero, *p* = 0,0078). El arnés procedural no aporta un
 efecto medible sobre la herramienta sola.
 
+## Segundo modelo (26 de noviembre)
+
+Mismo diseño con `opencode-go/gpt-6-luna`, tres repeticiones por tarea y brazo: 36 corridas, ninguna
+contaminada.
+
+| Brazo | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana |
+| - | -: | -: | -: | -: | -: | -: |
+| `baseline` | 6 | 0 | 1 | 5 | 96,4 s | 325.034 |
+| `gate_only` | 2 | 0 | 2 | 8 | 267,4 s | 491.378 |
+| `rules_skills_gate` | 2 | **7** | 0 | 3 | 71,3 s | 134.298 |
+
+- `baseline` vs `gate_only`: cuatro pares discordantes a favor de la compuerta (*p* = 0,125).
+- `gate_only` vs arnés completo: cero a siete (*p* = 0,0156). Las siete fallas de comportamiento son
+  ausencias de implementación: en T34 el agente terminó con cero archivos modificados y unos 69 mil
+  tokens.
+- El costo por corrida es menor que con deepseek: 325 mil tokens de línea base frente a 986 mil.
+
+**Lectura.** El efecto de la compuerta se repite entre familias de modelos. La capa procedural no:
+con deepseek fue neutra y con `gpt-6-luna` interfirió con la implementación.
+
 **Trabajo futuro.** Un segundo modelo para validez externa, y separar cada prueba oculta en una
 parte funcional y una de privacidad para no depender del oráculo.
 

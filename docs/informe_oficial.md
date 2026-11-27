@@ -28,7 +28,7 @@ En octubre, la compuerta eliminó las violaciones confirmadas del banco: ocho en
 
 La replicación con el entorno aislado confirma la dirección: la línea base cometió seis violaciones, la compuerta sola ninguna y el arnés completo una, con seis pares discordantes (*p* = 0,031) y sin diferencia entre los dos brazos con compuerta. El costo es de 1,7 veces el tiempo y 2,8 veces los tokens. La calibración ciega del detector, en 21 rondas, sostiene una precisión de 0,955 y una exhaustividad de 1,000 sobre la muestra final de 84 casos.
 
-De las treinta aristas de la ley, quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro quedan a cargo de una persona. Los resultados están acotados a un modelo, un banco y muestras pequeñas. El aporte que la evidencia sostiene es la capa de verificación —catálogo, compuerta y gate de evidencia—, y su valor es de auditoría. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
+De las treinta aristas de la ley, quince se detectan, cinco se reportan como riesgo, seis se exigen como evidencia y cuatro quedan a cargo de una persona. El efecto se repite con un segundo modelo, mientras que la capa procedural puede degradar la implementación. Los resultados están acotados a dos modelos, un banco y muestras pequeñas. El aporte que la evidencia sostiene es la capa de verificación —catálogo, compuerta y gate de evidencia—, y su valor es de auditoría. El arnés no certifica cumplimiento jurídico: es una red de seguridad especializada.
 
 
 # 1. INTRODUCCIÓN
@@ -1057,7 +1057,25 @@ El contraste de dosis se midió en octubre. Para saber si se sostiene, se repiti
 
 **Qué había pasado antes.** Una corrida previa mostró cero en los tres brazos. La causa fue una fuga: la raíz del repositorio se exportaba al entorno para que la compuerta importara el motor, y el agente podía explorar el benchmark con la *shell*. Se corrigió con un paquete por corrida que contiene solo el motor y el catálogo.
 
-## 10.9 Análisis e interpretación de resultados
+## 10.9 El mismo experimento con un segundo modelo
+
+Para probar si el efecto depende del modelo, se repitió el diseño con `opencode-go/gpt-6-luna`, del mismo proveedor y con un costo por corrida comparable. Tres repeticiones por tarea y brazo: 36 corridas, ninguna contaminada según el registro de comandos.
+
+| Brazo | Corridas | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana |
+| - | -: | -: | -: | -: | -: | -: | -: |
+| `baseline` | 12 | 6 | 0 | 1 | 5 | 96,4 s | 325.034 |
+| `gate_only` | 12 | 2 | 0 | 2 | 8 | 267,4 s | 491.378 |
+| `rules_skills_gate` | 12 | 2 | **7** | 0 | 3 | 71,3 s | 134.298 |
+
+- **La compuerta vuelve a reducir las violaciones:** de seis a dos, con cuatro pares discordantes (*p* = 0,125). La dirección se repite; la potencia, con doce pares, no alcanza.
+- **El arnés completo produjo siete fallas de comportamiento:** en la mayoría de las corridas el agente no escribió código. En T34, las tres repeticiones terminaron con cero archivos modificados y unos 69 mil tokens: exploró, escribió un plan y terminó sin implementar.
+- **El contraste entre los dos brazos con compuerta es 0 a 7** a favor de `gate_only` (*p* = 0,0156).
+
+**Lectura.** El efecto de la compuerta no depende de una familia de modelos: se repite en las dos. La capa procedural, en cambio, sí: con el primer modelo fue neutra y con el segundo interfirió con la implementación. Eso convierte "no aporta" en "puede perjudicar", y refuerza que el aporte está en la compuerta y no en el pipeline.
+
+**Límite.** Tres repeticiones por tarea y un solo banco. Las fallas de comportamiento son consistentes entre tareas, pero podrían reflejar un bucle de planificación propio de este modelo.
+
+## 10.10 Análisis e interpretación de resultados
 
 - **Las reglas por sí solas no mostraron un efecto detectable:** la comparación `rules` frente a `baseline` no presentó una diferencia estadísticamente significativa en las violaciones confirmadas (tres frente a dos pares discordantes; *p* = 1,0). Esto indica que documentar reglas permanentes no fue suficiente para modificar el resultado de manera detectable en esta muestra.
 
@@ -1074,6 +1092,8 @@ El contraste de dosis se midió en octubre. Para saber si se sostiene, se repiti
 - **La significancia depende de los tiempos agotados:** al excluir las ocho corridas que alcanzaron el límite de 600 segundos, el contraste principal queda 5/0 (*p* = 0,0625). La dirección es robusta; la significancia, limítrofe, y conviene declararlo.
 
 - **El costo se replica:** 1,7 veces el tiempo de ciclo y 2,8 veces los tokens en la corrida limpia, frente a 2,3 veces los tokens en octubre. Dos mediciones separadas dan el mismo orden de magnitud.
+
+- **El segundo modelo separa lo que el primero confundía:** con `gpt-6-luna` la compuerta volvió a reducir las violaciones, de seis a dos, y la capa procedural produjo siete fallas de comportamiento. El beneficio de la compuerta no depende de la familia de modelos; el costo de la capa procedural, sí.
 
 - **El aislamiento del entorno es parte del método:** la primera medición dio cero en todos los brazos porque el agente podía leer el benchmark desde el repositorio. Una fuga así empuja todas las comparaciones hacia "sin efecto" y no se detecta mirando los resultados, solo el entorno.
 
@@ -1099,7 +1119,7 @@ El contraste de dosis se midió en octubre. Para saber si se sostiene, se repiti
 
 La variable 4 no se mide en este informe: exigiría observar cómo documenta sus decisiones un desarrollador con y sin el arnés, y eso requiere un estudio con personas. Se declara como pendiente en lugar de sustituirla por un indicador indirecto.
 
-## 10.10 Limitaciones identificadas
+## 10.11 Limitaciones identificadas
 
 Las limitaciones se organizan según el tipo de validez afectada, siguiendo la clasificación habitual en ingeniería de software empírica.
 
@@ -1185,7 +1205,9 @@ Los resultados permiten observar una trayectoria de desarrollo coherente: el pro
 
 5. **Calidad medida del detector:** la calibración ciega sostiene una precisión de 0,955 [0,849; 0,987] y una exhaustividad de 1,000 [0,916; 1,000] sobre la ronda de mayor tamaño. La serie completa muestra que el detector mejoró porque cada ronda expuso un canal que el corpus anterior no cubría, no porque el corpus se ajustara al detector.
 
-6. **Límites de las conclusiones:** el prototipo demuestra factibilidad técnica, evidencia de que la compuerta reduce las violaciones de privacidad confirmadas en dos mediciones independientes y una medición acotada de la calidad del detector. No permite afirmar que todos los componentes formen un *harness* plenamente integrado, que los resultados se generalicen a otros modelos o dominios, ni que el arnés mejore la completitud funcional. La significancia de la comparación principal desciende a *p* = 0,0625 al excluir las corridas que agotaron el tiempo límite.
+6. **Validez externa:** el efecto de la compuerta se repitió con un segundo modelo, de seis a dos violaciones, mientras que el arnés completo produjo siete fallas de comportamiento. El aporte de la capa procedural no solo es nulo: puede ser negativo según el modelo.
+
+7. **Límites de las conclusiones:** el prototipo demuestra factibilidad técnica, evidencia de que la compuerta reduce las violaciones de privacidad confirmadas en dos mediciones independientes y una medición acotada de la calidad del detector. No permite afirmar que todos los componentes formen un *harness* plenamente integrado, que los resultados se generalicen a otros modelos o dominios, ni que el arnés mejore la completitud funcional. La significancia de la comparación principal desciende a *p* = 0,0625 al excluir las corridas que agotaron el tiempo límite.
 
 ## 11.3 Trabajo futuro comprometido
 
@@ -1201,7 +1223,7 @@ De acuerdo con la planificación vigente al 24 de noviembre de 2026, el Hito 2 e
 
 5. **Consolidación documental y del visualizador:** cerrar la trazabilidad entre objetivos, requerimientos, pruebas, experimentos, resultados y limitaciones, incorporar las decisiones de arquitectura como registros formales y completar el visualizador de dependencias, hoy pendiente.
 
-6. **Cobertura de modelos y dominios:** incorporar una segunda configuración de modelo y, si la planificación lo permite, un segundo banco de prueba.
+6. **Cobertura de modelos y dominios:** el segundo modelo ya está medido; falta ampliar a otros proveedores y, si la planificación lo permite, a un segundo banco de prueba.
 
 
 # 12. REFERENCIAS Y ANEXOS
