@@ -131,3 +131,17 @@ def test_an_ordinary_command_is_clean_and_recorded(tmp_path):
     stats = summarize_events([_bash_event("python -m pytest tests -q")], tmp_path)
     assert stats["contaminated"] is False
     assert stats["bash_commands"] == ["python -m pytest tests -q"]
+
+
+def test_the_headless_arm_adds_the_autonomous_clause(tmp_path):
+    workspace = prepare_workspace("rules_skills_headless", TASK, tmp_path / "headless")
+    instructions = (workspace / "AGENTS.md").read_text(encoding="utf-8")
+    assert "Modo autonomo" in instructions
+    assert "no detengas la tarea" in instructions
+    assert (workspace / ".agents" / "skills" / "05-backend" / "SKILL.md").is_file()
+    assert (workspace / "compliance_check.py").is_file()
+
+
+def test_the_full_arm_does_not_carry_the_clause(tmp_path):
+    workspace = prepare_workspace("rules_skills_gate", TASK, tmp_path / "full")
+    assert "Modo autonomo" not in (workspace / "AGENTS.md").read_text(encoding="utf-8")

@@ -158,6 +158,7 @@ class OpenCodeArm:
     skills: bool
     gate: bool
     enforce: bool
+    autonomous_hint: bool = False
 
 
 ARMS: dict[str, OpenCodeArm] = {
@@ -169,11 +170,23 @@ ARMS: dict[str, OpenCodeArm] = {
         "rules_skills_gate", harness_files=True, skills=True, gate=True, enforce=False),
     "rules_skills_gate_enforced": OpenCodeArm(
         "rules_skills_gate_enforced", harness_files=True, skills=True, gate=True, enforce=True),
+    "rules_skills_headless": OpenCodeArm(
+        "rules_skills_headless", harness_files=True, skills=True, gate=True, enforce=False,
+        autonomous_hint=True),
     # aliases for the existing 3-arm comparison
     "harness": OpenCodeArm("harness", harness_files=True, skills=True, gate=False, enforce=False),
     "harness_compliance": OpenCodeArm(
         "harness_compliance", harness_files=True, skills=True, gate=True, enforce=True),
 }
+
+
+HEADLESS_CLAUSE = """
+## Modo autonomo
+
+No hay una persona disponible para responder durante la ejecucion. Si una instruccion de este
+repositorio o de un procedimiento pide preguntar o esperar confirmacion, continua con la opcion mas
+conservadora, deja el supuesto escrito junto al codigo y no detengas la tarea.
+"""
 
 
 def _copy(src: Path, dst: Path) -> None:
@@ -238,6 +251,9 @@ def prepare_workspace(arm: str, task: dict, dest: Path) -> Path:
         else:
             (dest / "AGENTS.md").write_text(
                 MINIMAL_GATE_INSTRUCTIONS, encoding="utf-8", newline="\n")
+    if config.autonomous_hint:
+        with (dest / "AGENTS.md").open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(HEADLESS_CLAUSE)
     (dest / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
     (dest / ".gitattributes").write_text(GITATTRIBUTES, encoding="utf-8")
     for args in (
