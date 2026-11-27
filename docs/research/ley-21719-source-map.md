@@ -24,7 +24,7 @@
 
 **Entry into force (P1, transitional Art. primero).** "entrarán en vigencia el día primero del mes vigésimo cuarto posterior a la publicación de esta ley en el Diario Oficial." Publication 13-12-2024, so 1-12-2026 (also stated in P5 recital 3).
 
-> **2026-11-27 — postponement.** The project owner reports that the entry into force was postponed to October 2027. The norm that grants the postponement is not cited yet; add it before the final report is published, and update reference [1] in the report, whose linked version still corresponds to the original 2026-12-01 date.
+> **2026-11-27 — postponement.** Ley N° 21.855 (Diario Oficial 23-11-2026) postponed the entry into force to **15-10-2027**. Reference [1] in the report links to the BCN version dated 2026-12-01, which still shows the original date; the report cites 21.855 [23] for the new one.
 
 **Ley 21.806 (05-02-2026).** On P2 its annotations only touch transitional Art. cuarto (appointment of the Agency council). No substantive obligation changed, as far as the annotations show.
 
