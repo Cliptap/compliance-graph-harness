@@ -15,7 +15,7 @@ TASKS = [
 ]
 CURSOR_ARMS = ["baseline", "harness", "harness_compliance"]
 OPENCODE_ARMS = ["baseline", "gate_only", "rules", "rules_skills", "rules_skills_gate",
-                 "rules_skills_gate_enforced", "harness", "harness_compliance"]
+                 "rules_skills_gate_enforced", "rules_skills_headless", "harness", "harness_compliance"]
 ARMS = OPENCODE_ARMS
 
 

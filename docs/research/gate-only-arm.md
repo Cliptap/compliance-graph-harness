@@ -145,6 +145,50 @@ conviene reportarlo así.
 con la medición de octubre (ocho de veinte a cero, *p* = 0,0078). El arnés procedural no aporta un
 efecto medible sobre la herramienta sola.
 
+## Segundo modelo (26 de noviembre)
+
+Mismo diseño con `opencode-go/gpt-6-luna`, tres repeticiones por tarea y brazo: 36 corridas, ninguna
+contaminada.
+
+| Brazo | Confirmadas | Comportamiento | Latentes | Limpias | Ciclo mediana | Tokens mediana |
+| - | -: | -: | -: | -: | -: | -: |
+| `baseline` | 6 | 0 | 1 | 5 | 96,4 s | 325.034 |
+| `gate_only` | 2 | 0 | 2 | 8 | 267,4 s | 491.378 |
+| `rules_skills_gate` | 2 | **7** | 0 | 3 | 71,3 s | 134.298 |
+
+- `baseline` vs `gate_only`: cuatro pares discordantes a favor de la compuerta (*p* = 0,125).
+- `gate_only` vs arnés completo: cero a siete (*p* = 0,0156). Las siete fallas de comportamiento son
+  ausencias de implementación: en T34 el agente terminó con cero archivos modificados y unos 69 mil
+  tokens.
+- El costo por corrida es menor que con deepseek: 325 mil tokens de línea base frente a 986 mil.
+
+## Cláusula de modo autónomo (26 de noviembre)
+
+Las doce skills y las reglas piden preguntar y esperar confirmación. En una corrida sin nadie del
+otro lado eso detiene al agente: seis de las siete fallas de comportamiento terminaron con cero
+archivos y dos no ejecutaron ninguna herramienta.
+
+Se agregó un brazo idéntico al completo con una cláusula: sin respuesta del usuario, continuar con la
+opción más conservadora, dejar el supuesto escrito y no detenerse.
+
+| Brazo | Confirmadas | Comportamiento | Limpias | Cero archivos | Tokens mediana | Ciclo mediana | Timeouts |
+| - | -: | -: | -: | -: | -: | -: | -: |
+| `rules_skills_gate` | 2 | 7 | 3 | 8 | 145.557 | 73 s | 0 |
+| `rules_skills_headless` | 0 | 1 | 8 | 1 | 1.113.521 | 412 s | 3 |
+
+- Fallas de comportamiento: seis pares discordantes, todos a favor de la cláusula (*p* = 0,031).
+- Costo: 7,6 veces los tokens y 5,6 veces el ciclo, con tres tiempos agotados.
+
+**Lectura.** Las skills no están mal escritas: están escritas para una sesión con una persona. Una
+cláusula de una frase resuelve la ejecución. Lo que sigue sin demostrarse es que la capa procedural
+aporte sobre la compuerta sola: funciona, pero cuesta más del doble.
+
+**Implicación de producto.** Las doce skills necesitan un modo autónomo explícito; hoy lo asumen
+implícito y eso las hace fallar en cualquier ejecución sin humano.
+
+**Lectura.** El efecto de la compuerta se repite entre familias de modelos. La capa procedural no:
+con deepseek fue neutra y con `gpt-6-luna` interfirió con la implementación.
+
 **Trabajo futuro.** Un segundo modelo para validez externa, y separar cada prueba oculta en una
 parte funcional y una de privacidad para no depender del oráculo.
 
