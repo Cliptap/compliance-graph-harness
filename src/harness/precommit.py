@@ -30,7 +30,10 @@ from src.harness.policy_engine import DomainInvariantPolicy, PolicyEngine, Sensi
 
 DEFAULT_PACK = Path(__file__).resolve().parents[2] / ".harness" / "packs" / "catalog.full.json"
 EXTENSIONS = (".py", ".js", ".jsx", ".ts", ".tsx")
-EXCLUDED_PREFIXES = ("tests/", "harness/eval/")
+# tests/ and harness/eval/ are test and evaluation code; experiments/ holds deliberately
+# vulnerable fixtures (seeded defects, RUTs in logs, credentials in responses) that the
+# gate must not block on.
+EXCLUDED_PREFIXES = ("tests/", "harness/eval/", "experiments/")
 BLOCKING_SEVERITIES = ("CRITICAL", "HIGH")
 HOOK_MARKER = "installed by the vibecoding harness (src.harness.precommit)"
 HOOK_BODY = (
